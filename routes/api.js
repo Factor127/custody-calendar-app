@@ -25,17 +25,25 @@ function requireOwner(req, res) {
 
 // ── First-time setup ──────────────────────────────────────────────────────────
 
-// POST /api/users/setup — create owner account (only works once)
+// POST /api/users/setup — create owner account
+// Multi-tenant: any email can set up their own account (no single-owner constraint).
+// Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
-  const existing = q.ownerExists.get();
-  if (existing) return res.status(409).json({ error: 'Owner already set up' });
-
-  const { name, pattern_type, pattern_data, anchor_date, days } = req.body;
+  const { magic, name, pattern_type, pattern_data, anchor_date, days } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+  if (!magic) return res.status(400).json({ error: 'Email verification required. Please use the link sent to your email.' });
+
+  // Validate the magic link (must be unused and unexpired)
+  const link = q.getMagicLink.get(magic);
+  if (!link) return res.status(400).json({ error: 'Your verification link is invalid or has expired. Please request a new one.' });
+  if (link.user_id) return res.status(409).json({ error: 'This email already has an account. Please log in instead.' });
+
+  // Consume the magic link and create the account
+  q.useMagicLink.run(magic);
 
   const id = uuidv4();
   const token = uuidv4();
-  q.createUser.run(id, name.trim(), 'owner', token);
+  q.createUserWithEmail.run(id, name.trim(), 'owner', token, link.email);
 
   // Save pattern for future reference / regeneration
   if (pattern_type && pattern_type !== 'none') {
@@ -123,20 +131,25 @@ router.post('/users/register', (req, res) => {
 
 // ── Calendar data ─────────────────────────────────────────────────────────────
 
-// GET /api/calendar/owner?token= — partner fetches owner's calendar (shortcut — no userId needed)
+// GET /api/calendar/owner?token= — partner fetches their co-parent's calendar
 // MUST be declared before /calendar/:userId or Express will treat 'owner' as a userId param
+// Multi-tenant: finds the owner via the partner's connection (not global getOwner)
 router.get('/calendar/owner', (req, res) => {
   const partner = requireToken(req, res);
   if (!partner) return;
   if (partner.role !== 'partner') return res.status(403).json({ error: 'Partner access only' });
 
-  const owner = q.getOwner.get();
-  if (!owner) return res.status(404).json({ error: 'No owner found' });
+  // Find which owner this partner is connected to (multi-tenant safe)
+  const conn = q.getConnectionByRequester.get(partner.id);
+  if (!conn) return res.status(403).json({ error: 'No connection found' });
 
-  const conn = q.getApprovedConnection.get(partner.id, owner.id);
-  if (!conn) return res.status(403).json({ error: 'No approved connection' });
+  const owner = q.getUserById.get(conn.target_id);
+  if (!owner) return res.status(404).json({ error: 'Co-parent account not found' });
 
-  const live = checkAndRenewConnection(conn);
+  const approvedConn = q.getApprovedConnection.get(partner.id, owner.id);
+  if (!approvedConn) return res.status(403).json({ error: 'No approved connection' });
+
+  const live = checkAndRenewConnection(approvedConn);
   if (live.status !== 'approved') {
     return res.status(403).json({ error: 'Connection expired', status: live.status });
   }
@@ -239,13 +252,17 @@ router.get('/invites/:token', (req, res) => {
 // ── Connections ───────────────────────────────────────────────────────────────
 
 // POST /api/connections/request — partner requests to view owner's calendar
+// Multi-tenant: finds the specific owner this partner was invited by (via invite.created_by)
 router.post('/connections/request', (req, res) => {
   const partner = requireToken(req, res);
   if (!partner) return;
   if (partner.role !== 'partner') return res.status(403).json({ error: 'Only partners can request connections' });
 
-  const owner = q.getOwner.get();
-  if (!owner) return res.status(404).json({ error: 'No owner found' });
+  // Find the owner this partner was invited by
+  const invite = q.getInviteByUsedBy.get(partner.id);
+  if (!invite) return res.status(404).json({ error: 'No invite found for this account' });
+  const owner = q.getUserById.get(invite.created_by);
+  if (!owner) return res.status(404).json({ error: 'Co-parent account not found' });
 
   // Check if already requested/approved
   const existing = q.getConnectionByRequester.get(partner.id);

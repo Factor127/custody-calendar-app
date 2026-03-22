@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spontany — Custody Calendar</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body { margin: 0; padding: 0; }
+
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(145deg, #f0fdf4 0%, #e8f0fe 60%, #fce4ec 100%);
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 20px;
+      padding: 44px 40px 36px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    }
+
+    .app-logo { font-size: 40px; text-align: center; margin-bottom: 8px; }
+    .app-name  { font-size: 28px; font-weight: 800; text-align: center; margin: 0 0 6px; color: var(--text); }
+    .app-tag   { text-align: center; color: var(--muted); font-size: 14px; margin: 0 0 36px; }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+    #sent-state  { display: none; text-align: center; }
+    .sent-icon   { font-size: 52px; margin-bottom: 12px; }
+
+    .error-box {
+      display: none;
+      background: #fce4ec;
+      border: 1px solid #f48fb1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #b71c1c;
+      margin-top: 12px;
+    }
+
+    .hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 460px) {
+      .login-card { padding: 32px 24px 28px; }
+      .app-name   { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="app-logo">📅</div>
+    <h1 class="app-name">Spontany</h1>
+    <p class="app-tag">Shared custody calendar for co-parents</p>
+
+    <!-- ── Login form ── -->
+    <div id="form-state">
+      <div class="field-group" style="margin-bottom:16px;">
+        <label class="field-label" for="email-input">Your email address</label>
+        <input
+          type="email"
+          id="email-input"
+          class="field-input"
+          placeholder="you@example.com"
+          autocomplete="email"
+          autocapitalize="none"
+        >
+      </div>
+
+      <button id="send-btn" class="btn btn-primary"
+              style="width:100%;justify-content:center;padding:13px;font-size:15px;"
+              onclick="requestLink()">
+        Send me a login link →
+      </button>
+
+      <p class="hint">
+        No password needed.<br>
+        We'll email you a secure one-click link.
+      </p>
+
+      <div class="error-box" id="error-box"></div>
+
+      <hr class="divider">
+
+      <p style="text-align:center;color:var(--muted);font-size:12px;margin:0;">
+        New here? Enter your email above — we'll walk you through setup.<br>
+        Already have an account? Same thing — just enter your email.
+      </p>
+    </div>
+
+    <!-- ── "Check your email" state ── -->
+    <div id="sent-state">
+      <div class="sent-icon">📬</div>
+      <h2 style="margin:0 0 10px;font-size:20px;">Check your email</h2>
+      <p style="color:var(--muted);font-size:14px;margin:0 0 6px;">
+        We sent a link to
+      </p>
+      <p style="font-weight:700;font-size:15px;margin:0 0 20px;word-break:break-all;" id="sent-email"></p>
+      <p style="color:var(--muted);font-size:14px;margin:0 0 24px;">
+        Click it to open your calendar. The link expires in 24 hours.
+      </p>
+      <p style="color:var(--muted);font-size:12px;">
+        Didn't get it? Check your spam folder, or
+        <a href="#" onclick="resetForm()" style="color:var(--blue);">try a different email</a>.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function requestLink() {
+  const emailEl = document.getElementById('email-input');
+  const email = emailEl.value.trim();
+
+  hideError();
+
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    showError('Please enter a valid email address.');
+    emailEl.focus();
+    return;
+  }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const res = await fetch('/api/auth/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      document.getElementById('form-state').style.display = 'none';
+      document.getElementById('sent-state').style.display = 'block';
+      document.getElementById('sent-email').textContent = email;
+    } else {
+      showError(data.error || 'Something went wrong. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Send me a login link →';
+    }
+  } catch(e) {
+    showError('Network error — please check your connection and try again.');
+    btn.disabled = false;
+    btn.textContent = 'Send me a login link →';
+  }
+}
+
+function resetForm() {
+  document.getElementById('sent-state').style.display = 'none';
+  document.getElementById('form-state').style.display = 'block';
+  document.getElementById('email-input').value = '';
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('send-btn').textContent = 'Send me a login link →';
+  document.getElementById('email-input').focus();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('error-box').style.display = 'none';
+}
+
+// Enter key submits
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('email-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') requestLink();
+  });
+});
+</script>
+</body>
+</html>

@@ -13,6 +13,10 @@ const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 
+// ── Safe migrations (run on every startup, idempotent) ───────────────────────
+try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* already exists */ }
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+
 // ── Schema ──────────────────────────────────────────────────────────────────
 
 db.exec(`
@@ -65,16 +69,30 @@ db.exec(`
     anchor_date TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS magic_links (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    user_id TEXT,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
-  getUserByToken: db.prepare('SELECT * FROM users WHERE access_token = ?'),
-  getUserById:    db.prepare('SELECT * FROM users WHERE id = ?'),
-  getOwner:       db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
-  createUser:     db.prepare('INSERT INTO users (id, name, role, access_token) VALUES (?, ?, ?, ?)'),
-  ownerExists:    db.prepare("SELECT 1 AS found FROM users WHERE role = 'owner' LIMIT 1"),
+  getUserByToken:      db.prepare('SELECT * FROM users WHERE access_token = ?'),
+  getUserById:         db.prepare('SELECT * FROM users WHERE id = ?'),
+  getUserByEmail:      db.prepare('SELECT * FROM users WHERE email = ?'),
+  // Legacy single-tenant helpers (kept for backward compat)
+  getOwner:            db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
+  ownerExists:         db.prepare("SELECT 1 AS found FROM users WHERE role = 'owner' LIMIT 1"),
+  createUser:          db.prepare('INSERT INTO users (id, name, role, access_token) VALUES (?, ?, ?, ?)'),
+  createUserWithEmail: db.prepare('INSERT INTO users (id, name, role, access_token, email) VALUES (?, ?, ?, ?, ?)'),
+  updateUserToken:     db.prepare('UPDATE users SET access_token = ? WHERE id = ?'),
+  updateUserEmail:     db.prepare('UPDATE users SET email = ? WHERE id = ?'),
 
   getDaysForUser: db.prepare(
     'SELECT date, owner, tags FROM calendar_days WHERE user_id = ? ORDER BY date'
@@ -99,9 +117,21 @@ const q = {
       anchor_date  = excluded.anchor_date
   `),
 
-  getInvite:    db.prepare('SELECT * FROM invites WHERE id = ?'),
-  createInvite: db.prepare('INSERT INTO invites (id, created_by, expires_at) VALUES (?, ?, ?)'),
-  claimInvite:  db.prepare('UPDATE invites SET used_by = ? WHERE id = ? AND used_by IS NULL'),
+  getInvite:         db.prepare('SELECT * FROM invites WHERE id = ?'),
+  getInviteByUsedBy: db.prepare('SELECT * FROM invites WHERE used_by = ? LIMIT 1'),
+  createInvite:      db.prepare('INSERT INTO invites (id, created_by, expires_at) VALUES (?, ?, ?)'),
+  claimInvite:       db.prepare('UPDATE invites SET used_by = ? WHERE id = ? AND used_by IS NULL'),
+
+  // Magic links (email auth)
+  createMagicLink: db.prepare(
+    'INSERT INTO magic_links (id, email, user_id, expires_at) VALUES (?, ?, ?, ?)'
+  ),
+  getMagicLink: db.prepare(
+    "SELECT * FROM magic_links WHERE id = ? AND used_at IS NULL AND expires_at > datetime('now')"
+  ),
+  useMagicLink: db.prepare(
+    "UPDATE magic_links SET used_at = datetime('now') WHERE id = ?"
+  ),
 
   getConnectionByRequester: db.prepare(
     'SELECT * FROM connections WHERE requester_id = ? ORDER BY created_at DESC LIMIT 1'

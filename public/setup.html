@@ -206,6 +206,14 @@ const DAY_ABBR  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const FULL_DAYS  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
+// Read email verification token from URL (set by /api/auth/verify after magic link click)
+const _urlParams    = new URLSearchParams(location.search);
+const MAGIC_TOKEN   = _urlParams.get('magic');
+const VERIFIED_EMAIL = _urlParams.get('email') || '';
+
+// Guard: if no magic token, this page was reached directly — send to login
+if (!MAGIC_TOKEN) { window.location.replace('/login'); }
+
 let currentStep    = 1;
 let isTwoWeek      = false;
 let weekStartDate  = null; // always a Sunday (Date object, midnight local)
@@ -444,6 +452,7 @@ async function saveAndFinish() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      magic:        MAGIC_TOKEN,   // proves email ownership via magic link flow
       name,
       pattern_type: patternType,
       pattern_data: patternData,

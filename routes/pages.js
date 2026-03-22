@@ -5,10 +5,15 @@ const { q } = require('../db');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 
+// Login page
+router.get('/login', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'login.html'));
+});
+
 // First-time setup page
+// Multi-tenant: any verified email can set up — requires ?magic= from auth flow
 router.get('/setup', (req, res) => {
-  const owner = q.ownerExists.get();
-  if (owner) return res.redirect('/');
+  if (!req.query.magic) return res.redirect('/login');
   res.sendFile(path.join(PUBLIC, 'setup.html'));
 });
 
