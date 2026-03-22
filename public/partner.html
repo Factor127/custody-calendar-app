@@ -122,7 +122,8 @@
   <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> My days</div>
   <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent days</div>
   <div class="legend-item" id="legend-owner" hidden>
-    <span class="legend-swatch" style="background:#e8f0fe;border:2px solid #1a73e8;"></span> Partner's custody day
+    <span class="dot partner-self" style="display:inline-block;"></span> Co-parent has kids
+    &nbsp;&nbsp;<span class="dot partner-free" style="display:inline-block;"></span> Co-parent free
   </div>
   <div class="legend-item" id="legend-both-free" hidden>
     <span style="color:var(--orange);">■</span> Both free
@@ -145,10 +146,15 @@ let myName = 'Me';
 let ownerName = 'Partner';
 let ownerId = null;
 let calendarDays = {};   // my days: date -> { owner, tags }
-let ownerDays = {};      // partner's days: date -> { owner }
+let ownerDays = {};      // owner's days: date -> { owner }
 let showOwnerOverlay = true;
 let editMode = null;
 let connStatus = null;
+
+// Local-time date string — avoids UTC off-by-one in UTC+ timezones (Israel = UTC+2)
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
 (async function init() {
   if (!MY_TOKEN) { window.location.href = '/'; return; }
@@ -223,9 +229,11 @@ async function loadOwnerCalendar(conn) {
 function renderCalendar() {
   const container = document.getElementById('calendar-container');
   const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const end = new Date(today.getFullYear(), today.getMonth() + 4, 0);
-  const todayStr = new Date().toISOString().slice(0,10);
+  // Fix: start at current month, not previous month
+  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  const end = new Date(today.getFullYear(), today.getMonth() + 5, 0);
+  // Fix: use local date — toISOString() is UTC and shifts date back in UTC+ timezones
+  const todayStr = toDateStr(today);
 
   let html = '';
   let cur = new Date(start);
@@ -253,31 +261,38 @@ function renderCalendar() {
       const dayData = calendarDays[dateStr];
       const oDay = ownerDays[dateStr];
 
-      const owner = dayData?.owner || 'self';
+      // Fix: don't default to 'self' — leave undefined so unset days render neutral (white)
+      const owner = dayData?.owner;
       const tags = dayData?.tags || [];
       const isToday = dateStr === todayStr;
 
-      // Both free: it's a coparent day for me AND owner has coparent day too (both without kids)
+      // Both free: I don't have kids AND owner doesn't have kids either (kids elsewhere)
       const bothFree = showOwnerOverlay && owner === 'coparent' && oDay && oDay.owner === 'coparent';
 
+      // Fix: handle undefined owner — no color class for unset days
       const tdClass = [
-        owner === 'self' ? 'r' : 'z',
+        owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
         isToday ? 'today' : '',
         bothFree ? 'bothfree' : ''
       ].filter(Boolean).join(' ');
 
       const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
 
-      let ownerStripe = '';
+      // Fix: show initials instead of stars, matching owner calendar style
+      const cellLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? ownerName[0] : '');
+
+      // Owner overlay: dot showing co-parent's schedule (teal = has kids, blue = free)
+      // Mirrors how owner's calendar shows partner dots at bottom of each cell
+      let ownerDotHtml = '';
       if (showOwnerOverlay && oDay) {
-        const stripeColor = oDay.owner === 'self' ? '#1a73e8' : 'transparent';
-        ownerStripe = `<div style="position:absolute;top:0;right:0;width:4px;height:100%;background:${stripeColor};opacity:0.7;"></div>`;
+        const dotClass = oDay.owner === 'self' ? 'partner-self' : 'partner-free';
+        ownerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}"></span></div>`;
       }
 
-      html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)" style="position:relative;">
+      html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
         <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
-        <div class="label">${owner === 'self' ? '★' : ''} ${tagHtml}</div>
-        ${ownerStripe}
+        <div class="label">${cellLabel} ${tagHtml}</div>
+        ${ownerDotHtml}
       </td>`;
 
       cellCount++;
