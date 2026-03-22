@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spontany Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: #f8f9fa; color: #202124; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { color: #5f6368; font-size: 13px; margin: 0 0 24px; }
+    .stats { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+    .stat-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 14px 20px; min-width: 120px; }
+    .stat-num { font-size: 28px; font-weight: 700; }
+    .stat-label { font-size: 12px; color: #5f6368; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #dadce0; font-size: 13px; }
+    th { text-align: left; padding: 10px 14px; background: #f8f9fa; font-size: 12px; color: #5f6368; font-weight: 700; border-bottom: 1px solid #dadce0; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8f9fa; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge-owner { background: #e8f0fe; color: #1967d2; }
+    .badge-partner { background: #e8f5e9; color: #2e7d32; }
+    .badge-approved { background: #e8f5e9; color: #2e7d32; }
+    .badge-pending  { background: #fff3e0; color: #e65100; }
+    .badge-none     { background: #f3f4f6; color: #5f6368; }
+    .btn-delete { padding: 5px 12px; border-radius: 5px; border: 1.5px solid #d93025; background: white; color: #d93025; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-delete:hover { background: #d93025; color: white; }
+    .muted { color: #5f6368; }
+    #error { color: #d93025; margin-bottom: 16px; font-size: 13px; display: none; }
+    .refresh { padding: 7px 14px; border-radius: 6px; border: 1.5px solid #dadce0; background: white; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+    .refresh:hover { background: #f8f9fa; }
+  </style>
+</head>
+<body>
+
+<h1>Spontany Admin</h1>
+<p class="sub">User management — handle with care.</p>
+
+<div id="error"></div>
+
+<div class="stats" id="stats"></div>
+
+<button class="refresh" onclick="load()">↺ Refresh</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Connection</th>
+      <th>Days saved</th>
+      <th>Joined</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="user-rows">
+    <tr><td colspan="7" class="muted">Loading…</td></tr>
+  </tbody>
+</table>
+
+<script>
+const params = new URLSearchParams(location.search);
+const ADMIN_TOKEN = params.get('token');
+
+if (!ADMIN_TOKEN) {
+  document.querySelector('.sub').textContent = 'Missing ?token= in URL.';
+}
+
+async function load() {
+  document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="muted">Loading…</td></tr>';
+  document.getElementById('error').style.display = 'none';
+
+  const res = await fetch(`/api/admin/users?token=${ADMIN_TOKEN}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const el = document.getElementById('error');
+    el.textContent = err.error || `Error ${res.status}`;
+    el.style.display = 'block';
+    document.getElementById('user-rows').innerHTML = '';
+    return;
+  }
+
+  const { users } = await res.json();
+
+  // Stats
+  const owners = users.filter(u => u.role === 'owner').length;
+  const partners = users.filter(u => u.role === 'partner').length;
+  const connected = users.filter(u => u.conn_status === 'approved').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${users.length}</div><div class="stat-label">Total users</div></div>
+    <div class="stat-card"><div class="stat-num">${owners}</div><div class="stat-label">Owners</div></div>
+    <div class="stat-card"><div class="stat-num">${partners}</div><div class="stat-label">Partners</div></div>
+    <div class="stat-card"><div class="stat-num">${connected}</div><div class="stat-label">Connected pairs</div></div>
+  `;
+
+  if (users.length === 0) {
+    document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="muted">No users yet.</td></tr>';
+    return;
+  }
+
+  document.getElementById('user-rows').innerHTML = users.map(u => {
+    const joined = new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const connBadge = u.conn_status === 'approved' ? 'approved'
+                    : u.conn_status === 'pending'  ? 'pending'
+                    : 'none';
+    const connLabel = u.conn_status || 'none';
+    return `<tr>
+      <td><strong>${esc(u.name)}</strong></td>
+      <td class="muted">${esc(u.email || '—')}</td>
+      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td><span class="badge badge-${connBadge}">${connLabel}</span></td>
+      <td class="muted">${u.day_count}</td>
+      <td class="muted">${joined}</td>
+      <td><button class="btn-delete" onclick="deleteUser('${u.id}','${esc(u.name)}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Delete "${name}" and all their data? This cannot be undone.`)) return;
+
+  const res = await fetch(`/api/admin/users/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+  if (res.ok) {
+    load();
+  } else {
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || 'Delete failed');
+  }
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+load();
+</script>
+</body>
+</html>

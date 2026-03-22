@@ -16,9 +16,11 @@ app.locals.BASE_URL = BASE_URL;
 // ── Routes ────────────────────────────────────────────────────────────────────
 const authRouter  = require('./routes/auth');
 const apiRouter   = require('./routes/api');
+const adminRouter = require('./routes/admin');
 const pagesRouter = require('./routes/pages');
 
 app.use('/api', authRouter);   // auth first (magic link endpoints)
+app.use('/api', adminRouter);  // admin before regular API
 app.use('/api', apiRouter);
 app.use('/', pagesRouter);
 
