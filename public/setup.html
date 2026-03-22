@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Custody Calendar — Setup</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* ── Week picker ── */
+    .week-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .week-picker-head {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding-bottom: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    .wp-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      padding: 10px 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.13s, border-color 0.13s, transform 0.1s;
+      min-height: 64px;
+    }
+
+    .wp-cell:active { transform: scale(0.95); }
+
+    .wp-cell .wp-num {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .wp-cell .wp-month {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .wp-cell.self {
+      background: var(--r);
+      border-color: var(--r-border);
+    }
+    .wp-cell.self .wp-num   { color: #1a6e32; }
+    .wp-cell.self .wp-month { color: #2e7d32; }
+
+    /* ── Week label ── */
+    .week-section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 16px 0 6px;
+    }
+
+    /* ── Expand button ── */
+    .expand-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--blue);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .expand-btn:hover {
+      background: #e8f0fe;
+      border-color: var(--blue);
+    }
+
+    /* ── Legend chips ── */
+    .wp-legend {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .wp-legend-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 4px;
+      vertical-align: middle;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="wizard">
+
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:36px;margin-bottom:6px;">📅</div>
+    <h1 style="margin:0;font-size:22px;">Custody Calendar</h1>
+    <p class="text-muted" style="margin:6px 0 0;">Takes about a minute to set up.</p>
+  </div>
+
+  <div class="progress-bar" style="margin-bottom:20px;">
+    <div class="progress-fill" id="progress" style="width:25%"></div>
+  </div>
+
+  <div class="wizard-card">
+
+    <!-- ── Step 1: Name ── -->
+    <div class="wizard-step active" id="step-1">
+      <div class="wizard-title">What's your name?</div>
+      <p class="wizard-sub">This is how you'll appear on shared views.</p>
+      <div class="field-group">
+        <label class="field-label" for="owner-name">Your first name</label>
+        <input id="owner-name" class="field-input" type="text" placeholder="e.g. Ran" autocomplete="off" autofocus>
+      </div>
+      <div class="wizard-nav">
+        <span></span>
+        <button class="btn btn-primary" onclick="step1Next()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 2: Week picker ── -->
+    <div class="wizard-step" id="step-2">
+      <div class="wizard-title">Which days are the kids with you?</div>
+      <p class="wizard-sub">Tap a day to mark it as yours. Tap again to unmark it.</p>
+
+      <div class="wp-legend">
+        <span><span class="wp-legend-swatch" style="background:var(--r);border-color:var(--r-border);"></span>Your day</span>
+        <span><span class="wp-legend-swatch" style="background:white;"></span>Co-parent's day</span>
+      </div>
+
+      <!-- Week 1 -->
+      <div id="week1-section">
+        <div class="week-section-label" id="week1-label"></div>
+        <div class="week-picker-grid" id="week1-heads"></div>
+        <div class="week-picker-grid" id="week1-cells"></div>
+      </div>
+
+      <!-- Week 2 (hidden until expanded) -->
+      <div id="week2-section" class="hidden">
+        <div class="week-section-label" id="week2-label"></div>
+        <div class="week-picker-grid" id="week2-cells"></div>
+      </div>
+
+      <!-- Expand to 2 weeks -->
+      <button class="expand-btn" id="expand-btn" onclick="expandToTwoWeeks()">
+        ↕ Two-week custody pattern? Press here to expand
+      </button>
+
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="step2Next()">Looks right →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: 3-month review ── -->
+    <div class="wizard-step" id="step-3">
+      <div class="wizard-title">Review your calendar</div>
+      <p class="wizard-sub">
+        Here's the next 3 months based on your pattern.
+        Tap any day to flip it.
+      </p>
+      <div id="review-calendar"></div>
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" onclick="saveAndFinish()">Save &amp; open my calendar →</button>
+      </div>
+    </div>
+
+    <!-- ── Step 4: Done ── -->
+    <div class="wizard-step" id="step-4">
+      <div class="success-icon">✓</div>
+      <div class="wizard-title" style="text-align:center;">All set!</div>
+      <p class="wizard-sub" style="text-align:center;">Opening your calendar…</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const DAY_ABBR  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const FULL_DAYS  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+let currentStep    = 1;
+let isTwoWeek      = false;
+let weekStartDate  = null; // always a Sunday (Date object, midnight local)
+
+// selected[i] = true if day i (0=Sun … 6=Sat) is "yours"
+let week1Selected  = [false,false,false,false,false,false,false];
+let week2Selected  = [false,false,false,false,false,false,false];
+
+let generatedDays  = []; // [{date,owner,tags}] built before review step
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  weekStartDate = getNextFullWeekStart();
+  renderWeekHeads();
+  renderWeekCells(1);
+});
+
+function getNextFullWeekStart() {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const dow = t.getDay(); // 0 = Sunday
+  if (dow === 0) return t;
+  const next = new Date(t);
+  next.setDate(t.getDate() + (7 - dow)); // next Sunday
+  return next;
+}
+
+function weekDateAt(weekNum, idx) {
+  // Returns the Date for day `idx` (0-6) in week `weekNum` (1 or 2)
+  const d = new Date(weekStartDate);
+  d.setDate(d.getDate() + (weekNum - 1) * 7 + idx);
+  return d;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-' + n).classList.add('active');
+  currentStep = n;
+  document.getElementById('progress').style.width = Math.round((n / 4) * 100) + '%';
+  window.scrollTo(0, 0);
+}
+
+function step1Next() {
+  if (!document.getElementById('owner-name').value.trim()) {
+    alert('Please enter your name');
+    return;
+  }
+  goStep(2);
+}
+
+function step2Next() {
+  buildGeneratedDays();
+  renderReviewCalendar();
+  goStep(3);
+}
+
+// ── Week picker rendering ─────────────────────────────────────────────────────
+function renderWeekHeads() {
+  document.getElementById('week1-heads').innerHTML =
+    DAY_ABBR.map(d => `<div class="week-picker-head">${d}</div>`).join('');
+}
+
+function renderWeekCells(weekNum) {
+  const selected = weekNum === 1 ? week1Selected : week2Selected;
+  const cells = DAY_ABBR.map((_, idx) => {
+    const d = weekDateAt(weekNum, idx);
+    const isSelf = selected[idx];
+    return `<div class="wp-cell ${isSelf ? 'self' : ''}"
+                 onclick="toggleWpDay(${weekNum},${idx},this)">
+              <div class="wp-num">${d.getDate()}</div>
+              <div class="wp-month">${MONTH_ABBR[d.getMonth()]}</div>
+            </div>`;
+  });
+  document.getElementById(`week${weekNum}-cells`).innerHTML = cells.join('');
+
+  // Week label
+  const start = weekDateAt(weekNum, 0);
+  const end   = weekDateAt(weekNum, 6);
+  const label = isTwoWeek
+    ? `Week ${weekNum} · ${MONTH_ABBR[start.getMonth()]} ${start.getDate()} – ${MONTH_ABBR[end.getMonth()]} ${end.getDate()}`
+    : `Week of ${MONTH_ABBR[start.getMonth()]} ${start.getDate()} – ${MONTH_ABBR[end.getMonth()]} ${end.getDate()}`;
+  document.getElementById(`week${weekNum}-label`).textContent = label;
+}
+
+function toggleWpDay(weekNum, idx, el) {
+  const sel = weekNum === 1 ? week1Selected : week2Selected;
+  sel[idx] = !sel[idx];
+  el.className = `wp-cell ${sel[idx] ? 'self' : ''}`;
+}
+
+// ── Expand to 2-week pattern ──────────────────────────────────────────────────
+function expandToTwoWeeks() {
+  isTwoWeek = true;
+  document.getElementById('expand-btn').classList.add('hidden');
+  document.getElementById('week2-section').classList.remove('hidden');
+
+  // Re-render week 1 label to say "Week 1"
+  const s1 = weekDateAt(1, 0), e1 = weekDateAt(1, 6);
+  document.getElementById('week1-label').textContent =
+    `Week 1 · ${MONTH_ABBR[s1.getMonth()]} ${s1.getDate()} – ${MONTH_ABBR[e1.getMonth()]} ${e1.getDate()}`;
+
+  renderWeekCells(2);
+}
+
+// ── Generate 12-month days from selected pattern ──────────────────────────────
+function buildGeneratedDays() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const yearOut = new Date(today);
+  yearOut.setFullYear(yearOut.getFullYear() + 1);
+
+  // Anchor at noon to neutralise DST shifts (Israel switches end of March —
+  // a midnight-based diff can be off by 1 hour, breaking Math.floor on week count)
+  const anchorNoon = new Date(
+    weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate(), 12
+  );
+
+  const days = [];
+
+  for (let d = new Date(today); d <= yearOut; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+
+    // Compute whole-day difference using noon — immune to DST hour shifts
+    const dNoon      = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    const daysDiff   = Math.round((dNoon - anchorNoon) / (24 * 60 * 60 * 1000));
+    const weekOffset = Math.floor(daysDiff / 7);
+
+    let isSelf;
+    if (!isTwoWeek) {
+      // Weekly: same days repeat every week
+      isSelf = week1Selected[dow];
+    } else {
+      // Bi-weekly: even weeks from anchor = week1 pattern, odd = week2 pattern
+      isSelf = ((weekOffset % 2) + 2) % 2 === 0
+        ? week1Selected[dow]
+        : week2Selected[dow];
+    }
+
+    days.push({ date: toDateStr(d), owner: isSelf ? 'self' : 'coparent', tags: [] });
+  }
+
+  generatedDays = days;
+}
+
+// Use local date parts — toISOString() would convert to UTC and shift the date
+// backwards for UTC+ timezones (e.g. Israel UTC+2: midnight local = 22:00 prev day UTC)
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── 3-month review calendar ───────────────────────────────────────────────────
+function renderReviewCalendar() {
+  // Build a date → entry map
+  const dayMap = {};
+  for (const d of generatedDays) dayMap[d.date] = d;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Show 3 full months starting this month
+  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  const end   = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+
+  let html = '';
+  let cur  = new Date(start);
+
+  while (cur <= end) {
+    const y           = cur.getFullYear();
+    const m           = cur.getMonth();
+    const label       = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const firstDow    = new Date(y, m, 1).getDay();
+
+    html += `<div class="mini-calendar-preview" style="margin-bottom:12px;">
+      <div class="mini-cal-title">${label}</div>
+      <div class="mini-cal-grid">`;
+
+    html += DAY_ABBR.map(d => `<div class="mini-cal-head">${d}</div>`).join('');
+
+    for (let i = 0; i < firstDow; i++) {
+      html += '<div class="mini-cal-day empty"></div>';
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds    = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const entry = dayMap[ds];
+      const cls   = entry?.owner === 'self' ? 'self' : (entry?.owner === 'coparent' ? 'coparent' : '');
+      html += `<div class="mini-cal-day ${cls}" data-date="${ds}" data-owner="${entry?.owner || 'coparent'}"
+                    onclick="toggleReviewDay(this)" style="cursor:pointer;" title="Tap to flip">${day}</div>`;
+    }
+
+    html += '</div></div>';
+    cur.setMonth(cur.getMonth() + 1);
+    cur.setDate(1);
+  }
+
+  html += `<p class="text-muted" style="font-size:12px;margin-top:4px;">
+    <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid var(--r-border);border-radius:2px;margin-right:4px;"></span>Your days &nbsp;
+    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid var(--z-border);border-radius:2px;margin-right:4px;"></span>Co-parent's days — tap any day to flip it.
+  </p>`;
+
+  document.getElementById('review-calendar').innerHTML = html;
+}
+
+function toggleReviewDay(el) {
+  const next = el.dataset.owner === 'self' ? 'coparent' : 'self';
+  el.dataset.owner = next;
+  el.className = 'mini-cal-day ' + next;
+  const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
+  if (idx !== -1) generatedDays[idx].owner = next;
+  else generatedDays.push({ date: el.dataset.date, owner: next, tags: [] });
+}
+
+// ── Save & create account ─────────────────────────────────────────────────────
+async function saveAndFinish() {
+  const name = document.getElementById('owner-name').value.trim();
+  if (!name) { goStep(1); return; }
+
+  // Sync any last-minute edits from the review calendar DOM
+  document.querySelectorAll('#review-calendar .mini-cal-day[data-date]').forEach(el => {
+    const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
+    if (idx !== -1) generatedDays[idx].owner = el.dataset.owner;
+  });
+
+  // Derive a storable pattern for DB reference
+  const patternType = isTwoWeek ? 'alternating_weeks' : 'specific_days';
+  const patternData = isTwoWeek
+    ? {
+        week1_self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean),
+        week2_self_days: week2Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean)
+      }
+    : { self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
+
+  const res = await fetch('/api/users/setup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name,
+      pattern_type: patternType,
+      pattern_data: patternData,
+      anchor_date:  toDateStr(weekStartDate),
+      days:         generatedDays
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || 'Setup failed — please try again');
+    return;
+  }
+
+  const { token } = await res.json();
+  localStorage.setItem('myToken', token);
+  localStorage.setItem('myRole', 'owner');
+  goStep(4);
+  setTimeout(() => { window.location.href = '/calendar?token=' + token; }, 1200);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && currentStep === 1) step1Next();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+const express = require('express');
+const router = express.Router();
+const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const { q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr } = require('../db');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// ── Auth helper ───────────────────────────────────────────────────────────────
+
+function requireToken(req, res) {
+  const token = req.query.token || req.body.token || req.headers['x-access-token'];
+  if (!token) { res.status(401).json({ error: 'Missing token' }); return null; }
+  const user = q.getUserByToken.get(token);
+  if (!user) { res.status(403).json({ error: 'Invalid token' }); return null; }
+  return user;
+}
+
+function requireOwner(req, res) {
+  const user = requireToken(req, res);
+  if (!user) return null;
+  if (user.role !== 'owner') { res.status(403).json({ error: 'Owner access required' }); return null; }
+  return user;
+}
+
+// ── First-time setup ──────────────────────────────────────────────────────────
+
+// POST /api/users/setup — create owner account (only works once)
+router.post('/users/setup', (req, res) => {
+  const existing = q.ownerExists.get();
+  if (existing) return res.status(409).json({ error: 'Owner already set up' });
+
+  const { name, pattern_type, pattern_data, anchor_date, days } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
+
+  const id = uuidv4();
+  const token = uuidv4();
+  q.createUser.run(id, name.trim(), 'owner', token);
+
+  // Save pattern for future reference / regeneration
+  if (pattern_type && pattern_type !== 'none') {
+    q.upsertPattern.run(id, pattern_type, JSON.stringify(pattern_data || {}), anchor_date || null);
+  }
+
+  // For structured patterns, generate 12 months of days as a baseline
+  if (pattern_type && pattern_type !== 'none' && pattern_type !== 'custom') {
+    const start = toDateStr(new Date());
+    const yearOut = new Date();
+    yearOut.setFullYear(yearOut.getFullYear() + 1);
+    const end = toDateStr(yearOut);
+    const fakePattern = { pattern_type, pattern_data: JSON.stringify(pattern_data || {}), anchor_date };
+    const generatedDays = generateDaysFromPattern(fakePattern, start, end);
+    upsertManyDays(id, generatedDays);
+  }
+
+  // Save reviewed/edited days from the wizard (overrides generated days for the covered period)
+  if (days && Array.isArray(days) && days.length > 0) {
+    upsertManyDays(id, days);
+  }
+
+  res.json({ token, message: 'Owner created. Save your personal URL.' });
+});
+
+// ── Pattern & calendar generation ─────────────────────────────────────────────
+
+// POST /api/pattern/generate — preview generated days without saving
+router.post('/pattern/generate', (req, res) => {
+  const { pattern_type, pattern_data, anchor_date } = req.body;
+  if (!pattern_type) return res.status(400).json({ error: 'pattern_type required' });
+
+  const today = new Date();
+  const start = toDateStr(today);
+  const end = toDateStr(new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000)); // 90 days
+
+  const fakePattern = { pattern_type, pattern_data: JSON.stringify(pattern_data || {}), anchor_date };
+  const days = generateDaysFromPattern(fakePattern, start, end);
+
+  res.json({ days, start, end });
+});
+
+// POST /api/users/register — complete partner onboarding
+router.post('/users/register', (req, res) => {
+  const { invite_token, name, pattern_type, pattern_data, anchor_date, days } = req.body;
+
+  if (!invite_token) return res.status(400).json({ error: 'invite_token required' });
+  if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
+
+  const invite = q.getInvite.get(invite_token);
+  if (!invite) return res.status(404).json({ error: 'Invite not found' });
+  if (invite.used_by) return res.status(409).json({ error: 'Invite already used' });
+  if (invite.expires_at && invite.expires_at < new Date().toISOString()) {
+    return res.status(410).json({ error: 'Invite expired' });
+  }
+
+  const userId = uuidv4();
+  const token = uuidv4();
+  q.createUser.run(userId, name.trim(), 'partner', token);
+
+  // Mark invite as used
+  q.claimInvite.run(userId, invite_token);
+
+  // Save pattern if provided
+  if (pattern_type && pattern_type !== 'custom') {
+    q.upsertPattern.run(userId, pattern_type, JSON.stringify(pattern_data || {}), anchor_date || null);
+
+    // Auto-generate days for the next 12 months
+    const start = toDateStr(new Date());
+    const yearOut = new Date();
+    yearOut.setFullYear(yearOut.getFullYear() + 1);
+    const end = toDateStr(yearOut);
+    const fakePattern = { pattern_type, pattern_data: JSON.stringify(pattern_data || {}), anchor_date };
+    const generatedDays = generateDaysFromPattern(fakePattern, start, end);
+    upsertManyDays(userId, generatedDays);
+  }
+
+  // Save manual days if provided (custom mode)
+  if (days && Array.isArray(days) && days.length > 0) {
+    upsertManyDays(userId, days);
+  }
+
+  res.json({ token, userId, message: 'Registered successfully' });
+});
+
+// ── Calendar data ─────────────────────────────────────────────────────────────
+
+// GET /api/calendar/:userId?token= — get calendar days for a user
+// If requester is the user themselves → full data
+// If requester is approved partner viewing owner → owner's days only (no partner layer)
+router.get('/calendar/:userId', (req, res) => {
+  const requester = requireToken(req, res);
+  if (!requester) return;
+
+  const { userId } = req.params;
+  const targetUser = q.getUserById.get(userId);
+  if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+  // Self-access: always allowed
+  if (requester.id === userId) {
+    const days = q.getDaysForUser.all(userId);
+    return res.json({ days: days.map(parseTags), user: { name: targetUser.name, role: targetUser.role } });
+  }
+
+  // Cross-access: partner viewing owner
+  if (requester.role === 'partner' && targetUser.role === 'owner') {
+    const owner = q.getOwner.get();
+    if (!owner || owner.id !== userId) return res.status(403).json({ error: 'Access denied' });
+
+    const conn = q.getApprovedConnection.get(requester.id, userId);
+    if (!conn) return res.status(403).json({ error: 'No approved connection' });
+
+    const live = checkAndRenewConnection(conn);
+    if (live.status !== 'approved') {
+      return res.status(403).json({ error: 'Connection expired', status: live.status });
+    }
+
+    // Return only custody days (owner field = 'self'|'coparent'), no partner layer
+    const days = q.getDaysForUserInRange.all(userId, live.created_at.slice(0, 10), live.approved_until);
+    return res.json({
+      days: days.map(parseTags),
+      approved_until: live.approved_until,
+      user: { name: targetUser.name }
+    });
+  }
+
+  // Owner viewing partner's calendar
+  if (requester.role === 'owner' && targetUser.role === 'partner') {
+    const conn = q.getApprovedConnection.get(userId, requester.id);
+    if (!conn) return res.status(403).json({ error: 'No approved connection' });
+    const live = checkAndRenewConnection(conn);
+    if (live.status !== 'approved') return res.status(403).json({ error: 'Connection expired' });
+
+    const days = q.getDaysForUser.all(userId);
+    return res.json({ days: days.map(parseTags), user: { name: targetUser.name } });
+  }
+
+  res.status(403).json({ error: 'Access denied' });
+});
+
+// POST /api/calendar/save — bulk save days for the calling user
+router.post('/calendar/save', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+
+  const { days } = req.body;
+  if (!Array.isArray(days)) return res.status(400).json({ error: 'days must be an array' });
+
+  upsertManyDays(user.id, days);
+  res.json({ saved: days.length });
+});
+
+// ── Invites ───────────────────────────────────────────────────────────────────
+
+// POST /api/invites/generate — owner generates a partner invite link
+router.post('/invites/generate', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const token = uuidv4();
+  const expiresAt = null; // No expiry by default; can add later
+
+  q.createInvite.run(token, owner.id, expiresAt);
+
+  const BASE_URL = req.app.locals.BASE_URL;
+  res.json({ invite_url: `${BASE_URL}/invite/${token}`, token });
+});
+
+// GET /api/invites/:token — validate an invite token (used by onboarding page)
+router.get('/invites/:token', (req, res) => {
+  const invite = q.getInvite.get(req.params.token);
+  if (!invite) return res.status(404).json({ error: 'Invite not found' });
+  if (invite.used_by) return res.status(409).json({ error: 'Invite already used', used: true });
+
+  const owner = q.getUserById.get(invite.created_by);
+  res.json({ valid: true, owner_name: owner?.name || 'your partner' });
+});
+
+// ── Connections ───────────────────────────────────────────────────────────────
+
+// POST /api/connections/request — partner requests to view owner's calendar
+router.post('/connections/request', (req, res) => {
+  const partner = requireToken(req, res);
+  if (!partner) return;
+  if (partner.role !== 'partner') return res.status(403).json({ error: 'Only partners can request connections' });
+
+  const owner = q.getOwner.get();
+  if (!owner) return res.status(404).json({ error: 'No owner found' });
+
+  // Check if already requested/approved
+  const existing = q.getConnectionByRequester.get(partner.id);
+  if (existing && (existing.status === 'pending' || existing.status === 'approved')) {
+    return res.json({ connection: existing, already_exists: true });
+  }
+
+  const connId = uuidv4();
+  q.createConnection.run(connId, partner.id, owner.id);
+
+  res.json({ connection_id: connId, status: 'pending', message: 'Request sent to owner for approval' });
+});
+
+// GET /api/connections/status?token= — partner polls their connection status
+router.get('/connections/status', (req, res) => {
+  const partner = requireToken(req, res);
+  if (!partner) return;
+
+  const conn = q.getConnectionByRequester.get(partner.id);
+  if (!conn) return res.json({ status: 'none' });
+
+  const live = checkAndRenewConnection(conn);
+  const owner = q.getUserById.get(conn.target_id);
+
+  res.json({
+    status: live.status,
+    approved_until: live.approved_until,
+    auto_renew: Boolean(live.auto_renew),
+    owner_name: owner?.name,
+    connection_id: live.id
+  });
+});
+
+// GET /api/connections/pending?token= — owner sees pending requests
+router.get('/connections/pending', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const pending = q.getPendingConnections.all(owner.id);
+  res.json({ pending });
+});
+
+// GET /api/connections/all?token= — owner sees all connections
+router.get('/connections/all', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const connections = q.getAllConnectionsForOwner.all(owner.id);
+  const live = connections.map(c => checkAndRenewConnection(c));
+  res.json({ connections: live });
+});
+
+// POST /api/connections/approve — owner approves a connection request
+router.post('/connections/approve', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const { connection_id, duration_days, auto_renew } = req.body;
+  if (!connection_id) return res.status(400).json({ error: 'connection_id required' });
+  if (!duration_days || duration_days < 1) return res.status(400).json({ error: 'duration_days required' });
+
+  const conn = q.getConnectionById.get(connection_id);
+  if (!conn) return res.status(404).json({ error: 'Connection not found' });
+  if (conn.target_id !== owner.id) return res.status(403).json({ error: 'Not your connection to approve' });
+
+  q.approveConnection.run(
+    Number(duration_days),
+    Number(duration_days),
+    auto_renew ? 1 : 0,
+    connection_id
+  );
+
+  res.json({ status: 'approved', duration_days, auto_renew: Boolean(auto_renew) });
+});
+
+// POST /api/connections/reject — owner rejects a connection
+router.post('/connections/reject', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const { connection_id } = req.body;
+  const conn = q.getConnectionById.get(connection_id);
+  if (!conn || conn.target_id !== owner.id) return res.status(403).json({ error: 'Not authorized' });
+
+  q.rejectConnection.run(connection_id);
+  res.json({ status: 'rejected' });
+});
+
+// POST /api/connections/auto-renew — owner toggles auto-renew for a connection
+router.post('/connections/auto-renew', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const { connection_id, auto_renew } = req.body;
+  const conn = q.getConnectionById.get(connection_id);
+  if (!conn || conn.target_id !== owner.id) return res.status(403).json({ error: 'Not authorized' });
+
+  q.updateAutoRenew.run(auto_renew ? 1 : 0, connection_id);
+  res.json({ auto_renew: Boolean(auto_renew) });
+});
+
+// ── Import existing HTML backup ───────────────────────────────────────────────
+
+// POST /api/import/html?token= — owner uploads backup HTML, we parse + seed DB
+router.post('/import/html', upload.single('file'), (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  const html = req.file.buffer.toString('utf-8');
+  const days = parseHtmlBackup(html);
+
+  if (days.length === 0) return res.status(400).json({ error: 'No calendar data found in file' });
+
+  upsertManyDays(owner.id, days);
+  res.json({ imported: days.length });
+});
+
+/**
+ * Parse the backup HTML and extract custody day data.
+ * Looks for <td class="r"> or <td class="z"> with a .day-num and .month-title.
+ * Returns [{ date: 'YYYY-MM-DD', owner: 'self'|'coparent', tags: [] }]
+ */
+function parseHtmlBackup(html) {
+  const days = [];
+  const MONTH_MAP = {
+    'January': 1, 'February': 2, 'March': 3, 'April': 4,
+    'May': 5, 'June': 6, 'July': 7, 'August': 8,
+    'September': 9, 'October': 10, 'November': 11, 'December': 12
+  };
+
+  // Split into month blocks
+  const monthBlocks = html.split('<div class="month">');
+  for (const block of monthBlocks.slice(1)) {
+    // Extract month/year from title
+    const titleMatch = block.match(/class="month-title">([^<]+)<\/div>/);
+    if (!titleMatch) continue;
+    const titleText = titleMatch[1].trim();
+    const titleParts = titleText.match(/(\w+)\s+(\d{4})/);
+    if (!titleParts) continue;
+    const monthNum = MONTH_MAP[titleParts[1]];
+    const year = parseInt(titleParts[2]);
+    if (!monthNum || !year) continue;
+
+    // Extract all td.r and td.z cells
+    const cellRegex = /<td\s+class="([^"]*(?:^|\s)(?:r|z)(?:\s|$)[^"]*)"[^>]*>([\s\S]*?)<\/td>/g;
+    let cellMatch;
+    while ((cellMatch = cellRegex.exec(block)) !== null) {
+      const classList = cellMatch[1];
+      const cellContent = cellMatch[2];
+
+      // Determine owner: 'r' class means R has kids (→ self for R = owner)
+      const isR = /(?:^|\s)r(?:\s|$)/.test(classList);
+      const isZ = /(?:^|\s)z(?:\s|$)/.test(classList);
+      if (!isR && !isZ) continue;
+      const owner = isR ? 'self' : 'coparent';
+
+      // Extract day number
+      const dayMatch = cellContent.match(/class="day-num">\s*(\d+)/);
+      if (!dayMatch) continue;
+      const dayNum = parseInt(dayMatch[1]);
+      if (!dayNum) continue;
+
+      // Extract tags
+      const tags = [];
+      const tagRegex = /class="tag">([^<]+)<\/span>/g;
+      let tagMatch;
+      while ((tagMatch = tagRegex.exec(cellContent)) !== null) {
+        tags.push(tagMatch[1].trim());
+      }
+
+      // Build ISO date string
+      const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      days.push({ date: dateStr, owner, tags });
+    }
+  }
+
+  return days;
+}
+
+// GET /api/calendar/owner?token= — partner fetches owner's calendar (shortcut — no userId needed)
+router.get('/calendar/owner', (req, res) => {
+  const partner = requireToken(req, res);
+  if (!partner) return;
+  if (partner.role !== 'partner') return res.status(403).json({ error: 'Partner access only' });
+
+  const owner = q.getOwner.get();
+  if (!owner) return res.status(404).json({ error: 'No owner found' });
+
+  const conn = q.getApprovedConnection.get(partner.id, owner.id);
+  if (!conn) return res.status(403).json({ error: 'No approved connection' });
+
+  const live = checkAndRenewConnection(conn);
+  if (live.status !== 'approved') {
+    return res.status(403).json({ error: 'Connection expired', status: live.status });
+  }
+
+  const days = q.getDaysForUser.all(owner.id);
+  res.json({ days: days.map(parseTags), approved_until: live.approved_until, user: { name: owner.name, id: owner.id } });
+});
+
+// ── Owner info ────────────────────────────────────────────────────────────────
+
+// GET /api/me?token= — get current user info
+router.get('/me', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+  res.json({ id: user.id, name: user.name, role: user.role });
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function parseTags(row) {
+  return { ...row, tags: JSON.parse(row.tags || '[]') };
+}
+
+module.exports = router;

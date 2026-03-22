@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Custody Calendar</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<h1 id="page-title">My Custody Calendar</h1>
+
+<!-- Connection status banner -->
+<div id="connection-banner" class="partner-overlay-banner hidden">
+  <span style="font-size:18px;">📅</span>
+  <div>
+    <strong id="owner-name-banner">Partner</strong>'s custody days are shown as a colored stripe.
+    Access granted until <strong id="access-until">—</strong>.
+    <span id="auto-renew-badge" class="chip" style="background:#e8f5e9;color:#2e7d32;margin-left:4px;" hidden>Auto-renews</span>
+  </div>
+</div>
+
+<!-- Pending request banner -->
+<div id="pending-banner" class="hidden" style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;">
+  <span style="font-size:18px;">⏳</span>
+  <span>Your request to view <strong id="owner-name-pending">your partner</strong>'s calendar is waiting for approval.</span>
+</div>
+
+<!-- Expired banner -->
+<div id="expired-banner" class="hidden" style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;">
+  <span style="font-size:18px;">⚠️</span>
+  <div>
+    Access to <strong id="owner-name-expired">your partner</strong>'s calendar has expired.
+    <button class="btn btn-sm btn-outline" style="margin-left:8px;" onclick="requestReconnect()">Request access again</button>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary">
+  <span class="bold" style="font-size:15px;">My Custody Balance:</span>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--r);"></span>
+    <span class="bold">My days:</span>
+    <span class="summary-count" style="color:#1e8e3e;" id="self-count">—</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--z);"></span>
+    <span class="bold">Co-parent days:</span>
+    <span class="summary-count" style="color:#1967d2;" id="coparent-count">—</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <span class="controls-title">Show:</span>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-self" checked onchange="toggleClass('hide-r',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">My days</span>
+  </div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-coparent" checked onchange="toggleClass('hide-z',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Co-parent days</span>
+  </div>
+
+  <div class="toggle-group" id="toggle-owner-group" style="display:none;">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-owner-days" checked onchange="toggleOwnerOverlay(this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label" id="owner-overlay-label">Partner's days</span>
+  </div>
+
+  <div class="toggle-group" id="toggle-free-frames-group" style="display:none;">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-free-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Both free frames</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-edit" onchange="setEditMode('custody',this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Edit my days</span>
+  </div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-holiday-edit" onchange="setEditMode('holiday',this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Edit Holidays</span>
+  </div>
+
+  <div class="ml-auto flex-gap">
+    <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
+  </div>
+</div>
+
+<!-- Edit mode notices -->
+<div class="edit-notice notice-custody" id="edit-notice">
+  ✏️ <span class="bold">Edit my days:</span> Click any day to switch between me and my co-parent.
+</div>
+<div class="edit-notice notice-holiday" id="holiday-edit-notice">
+  🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags.
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> My days</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent days</div>
+  <div class="legend-item" id="legend-owner" hidden>
+    <span class="legend-swatch" style="background:#e8f0fe;border:2px solid #1a73e8;"></span> Partner's custody day
+  </div>
+  <div class="legend-item" id="legend-both-free" hidden>
+    <span style="color:var(--orange);">■</span> Both free
+  </div>
+  <div class="legend-item"><span class="tag">H</span> Holiday</div>
+  <div class="legend-item"><span class="tag">V</span> Vacation</div>
+</div>
+
+<!-- Calendar -->
+<div class="calendar-container" id="calendar-container">
+  <div style="padding:40px;text-align:center;color:var(--muted);">Loading your calendar…</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
+
+let myUserId = null;
+let myName = 'Me';
+let ownerName = 'Partner';
+let ownerId = null;
+let calendarDays = {};   // my days: date -> { owner, tags }
+let ownerDays = {};      // partner's days: date -> { owner }
+let showOwnerOverlay = true;
+let editMode = null;
+let connStatus = null;
+
+(async function init() {
+  if (!MY_TOKEN) { window.location.href = '/'; return; }
+
+  const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
+  if (!meRes.ok) { window.location.href = '/'; return; }
+  const me = await meRes.json();
+  myName = me.name;
+  myUserId = me.id;
+  document.getElementById('page-title').textContent = `${myName}'s Custody Calendar`;
+
+  await loadMyCalendar();
+  await checkConnection();
+})();
+
+async function loadMyCalendar() {
+  const res = await fetch(`/api/calendar/${myUserId}?token=${MY_TOKEN}`);
+  if (!res.ok) return;
+  const data = await res.json();
+  calendarDays = {};
+  for (const day of data.days) {
+    calendarDays[day.date] = { owner: day.owner, tags: day.tags };
+  }
+  renderCalendar();
+}
+
+async function checkConnection() {
+  const res = await fetch(`/api/connections/status?token=${MY_TOKEN}`);
+  if (!res.ok) return;
+  const conn = await res.json();
+  connStatus = conn;
+
+  document.getElementById('owner-name-pending').textContent = conn.owner_name || 'your partner';
+  document.getElementById('owner-name-expired').textContent = conn.owner_name || 'your partner';
+
+  if (conn.status === 'approved') {
+    await loadOwnerCalendar(conn);
+    document.getElementById('connection-banner').classList.remove('hidden');
+    document.getElementById('owner-name-banner').textContent = conn.owner_name || 'Partner';
+    document.getElementById('access-until').textContent = conn.approved_until
+      ? new Date(conn.approved_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : '—';
+    if (conn.auto_renew) {
+      document.getElementById('auto-renew-badge').hidden = false;
+    }
+    document.getElementById('toggle-owner-group').style.display = 'flex';
+    document.getElementById('toggle-free-frames-group').style.display = 'flex';
+    document.getElementById('owner-overlay-label').textContent = `${conn.owner_name || 'Partner'}'s days`;
+    document.getElementById('legend-owner').hidden = false;
+    document.getElementById('legend-both-free').hidden = false;
+  } else if (conn.status === 'pending') {
+    document.getElementById('pending-banner').classList.remove('hidden');
+  } else if (conn.status === 'expired') {
+    document.getElementById('expired-banner').classList.remove('hidden');
+  }
+}
+
+async function loadOwnerCalendar(conn) {
+  const ownerRes = await fetch(`/api/calendar/owner?token=${MY_TOKEN}`);
+  if (!ownerRes.ok) return;
+  const ownerData = await ownerRes.json();
+
+  ownerDays = {};
+  for (const day of ownerData.days) {
+    ownerDays[day.date] = { owner: day.owner };
+  }
+  ownerName = ownerData.user?.name || 'Partner';
+  renderCalendar();
+}
+
+// ── Calendar render ───────────────────────────────────────────────────────
+function renderCalendar() {
+  const container = document.getElementById('calendar-container');
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const end = new Date(today.getFullYear(), today.getMonth() + 4, 0);
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  let html = '';
+  let cur = new Date(start);
+
+  while (cur <= end) {
+    const y = cur.getFullYear();
+    const m = cur.getMonth();
+    const monthName = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const firstDow = new Date(y, m, 1).getDay();
+
+    html += `<div class="month">
+      <div class="month-title">${monthName}</div>
+      <table class="month-table">
+        <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+        <tbody>`;
+
+    let cellCount = firstDow;
+    if (firstDow > 0) { html += '<tr>'; for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>'; }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      if (cellCount % 7 === 0) html += '<tr>';
+
+      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dayData = calendarDays[dateStr];
+      const oDay = ownerDays[dateStr];
+
+      const owner = dayData?.owner || 'self';
+      const tags = dayData?.tags || [];
+      const isToday = dateStr === todayStr;
+
+      // Both free: it's a coparent day for me AND owner has coparent day too (both without kids)
+      const bothFree = showOwnerOverlay && owner === 'coparent' && oDay && oDay.owner === 'coparent';
+
+      const tdClass = [
+        owner === 'self' ? 'r' : 'z',
+        isToday ? 'today' : '',
+        bothFree ? 'bothfree' : ''
+      ].filter(Boolean).join(' ');
+
+      const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+
+      let ownerStripe = '';
+      if (showOwnerOverlay && oDay) {
+        const stripeColor = oDay.owner === 'self' ? '#1a73e8' : 'transparent';
+        ownerStripe = `<div style="position:absolute;top:0;right:0;width:4px;height:100%;background:${stripeColor};opacity:0.7;"></div>`;
+      }
+
+      html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)" style="position:relative;">
+        <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
+        <div class="label">${owner === 'self' ? '★' : ''} ${tagHtml}</div>
+        ${ownerStripe}
+      </td>`;
+
+      cellCount++;
+      if (cellCount % 7 === 0) html += '</tr>';
+    }
+
+    const rem = 7 - (cellCount % 7);
+    if (rem < 7) { for (let i = 0; i < rem; i++) html += '<td class="empty"></td>'; html += '</tr>'; }
+
+    html += '</tbody></table></div>';
+    cur.setMonth(cur.getMonth() + 1);
+    cur.setDate(1);
+  }
+
+  container.innerHTML = html;
+  calculateStats();
+}
+
+function toggleOwnerOverlay(on) {
+  showOwnerOverlay = on;
+  renderCalendar();
+}
+
+// ── Day click ─────────────────────────────────────────────────────────────
+function handleDayClick(cell) {
+  const date = cell.dataset.date;
+  if (!date || cell.classList.contains('empty')) return;
+
+  if (editMode === 'custody') {
+    const cur = calendarDays[date]?.owner || 'self';
+    calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: cur === 'self' ? 'coparent' : 'self' };
+    renderCalendar();
+  } else if (editMode === 'holiday') {
+    const cur = calendarDays[date] || { owner: 'self', tags: [] };
+    const tags = cur.tags || [];
+    const TAG_CYCLE = ['H', 'V'];
+    const idx = TAG_CYCLE.indexOf(tags[0]);
+    calendarDays[date] = { ...cur, tags: idx < 0 ? ['H'] : (idx < 1 ? [TAG_CYCLE[idx+1]] : []) };
+    renderCalendar();
+  }
+}
+
+// ── Edit modes ────────────────────────────────────────────────────────────
+function setEditMode(mode, on) {
+  if (on) {
+    ['custody','holiday'].forEach(m => {
+      if (m !== mode) {
+        document.getElementById(`toggle-${m === 'custody' ? 'edit' : m+'-edit'}`).checked = false;
+        document.getElementById(`${m === 'custody' ? 'edit' : m+'-edit'}-notice`).classList.remove('active');
+      }
+    });
+    editMode = mode;
+  } else {
+    editMode = null;
+  }
+  const noticeId = mode === 'custody' ? 'edit-notice' : `${mode}-edit-notice`;
+  document.getElementById(noticeId).classList.toggle('active', on);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+function calculateStats() {
+  let self = 0, co = 0;
+  for (const d of Object.values(calendarDays)) {
+    if (d.owner === 'self') self++; else co++;
+  }
+  document.getElementById('self-count').textContent = `${self} days`;
+  document.getElementById('coparent-count').textContent = `${co} days`;
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────
+async function saveCalendar() {
+  const days = Object.entries(calendarDays).map(([date, d]) => ({
+    date, owner: d.owner, tags: d.tags || []
+  }));
+
+  const res = await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days })
+  });
+
+  if (res.ok) showToast('✓ Saved');
+  else alert('Save failed');
+}
+
+// ── Reconnect ─────────────────────────────────────────────────────────────
+async function requestReconnect() {
+  const res = await fetch(`/api/connections/request?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (res.ok) {
+    document.getElementById('expired-banner').classList.add('hidden');
+    document.getElementById('pending-banner').classList.remove('hidden');
+    showToast('✓ Request sent again');
+  }
+}
+
+function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
+
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#202124;color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+</script>
+</body>
+</html>

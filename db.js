@@ -1,0 +1,219 @@
+// Uses Node.js 22+ built-in SQLite — no native compilation needed
+const { DatabaseSync } = require('node:sqlite');
+const path = require('path');
+const fs = require('fs');
+
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const DB_PATH = process.env.DATABASE_PATH || path.join(DATA_DIR, 'calendar.db');
+const db = new DatabaseSync(DB_PATH);
+
+// Performance + safety pragmas
+db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA foreign_keys = ON');
+
+// ── Schema ──────────────────────────────────────────────────────────────────
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('owner','partner')),
+    access_token TEXT UNIQUE NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS calendar_days (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    owner TEXT NOT NULL CHECK(owner IN ('self','coparent')),
+    tags TEXT NOT NULL DEFAULT '[]',
+    UNIQUE(user_id, date),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS connections (
+    id TEXT PRIMARY KEY,
+    requester_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+      CHECK(status IN ('pending','approved','rejected','expired')),
+    duration_days INTEGER,
+    approved_until TEXT,
+    auto_renew INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (requester_id) REFERENCES users(id),
+    FOREIGN KEY (target_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS invites (
+    id TEXT PRIMARY KEY,
+    created_by TEXT NOT NULL,
+    used_by TEXT,
+    expires_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (created_by) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS custody_pattern (
+    user_id TEXT PRIMARY KEY,
+    pattern_type TEXT NOT NULL
+      CHECK(pattern_type IN ('alternating_weeks','specific_days','custom')),
+    pattern_data TEXT NOT NULL DEFAULT '{}',
+    anchor_date TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
+
+// ── Prepared statements ───────────────────────────────────────────────────────
+
+const q = {
+  getUserByToken: db.prepare('SELECT * FROM users WHERE access_token = ?'),
+  getUserById:    db.prepare('SELECT * FROM users WHERE id = ?'),
+  getOwner:       db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
+  createUser:     db.prepare('INSERT INTO users (id, name, role, access_token) VALUES (?, ?, ?, ?)'),
+  ownerExists:    db.prepare("SELECT 1 AS found FROM users WHERE role = 'owner' LIMIT 1"),
+
+  getDaysForUser: db.prepare(
+    'SELECT date, owner, tags FROM calendar_days WHERE user_id = ? ORDER BY date'
+  ),
+  getDaysForUserInRange: db.prepare(
+    'SELECT date, owner, tags FROM calendar_days WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY date'
+  ),
+  upsertDay: db.prepare(`
+    INSERT INTO calendar_days (user_id, date, owner, tags)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(user_id, date) DO UPDATE SET owner = excluded.owner, tags = excluded.tags
+  `),
+  deleteDay: db.prepare('DELETE FROM calendar_days WHERE user_id = ? AND date = ?'),
+
+  getPattern:    db.prepare('SELECT * FROM custody_pattern WHERE user_id = ?'),
+  upsertPattern: db.prepare(`
+    INSERT INTO custody_pattern (user_id, pattern_type, pattern_data, anchor_date)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET
+      pattern_type = excluded.pattern_type,
+      pattern_data = excluded.pattern_data,
+      anchor_date  = excluded.anchor_date
+  `),
+
+  getInvite:    db.prepare('SELECT * FROM invites WHERE id = ?'),
+  createInvite: db.prepare('INSERT INTO invites (id, created_by, expires_at) VALUES (?, ?, ?)'),
+  claimInvite:  db.prepare('UPDATE invites SET used_by = ? WHERE id = ? AND used_by IS NULL'),
+
+  getConnectionByRequester: db.prepare(
+    'SELECT * FROM connections WHERE requester_id = ? ORDER BY created_at DESC LIMIT 1'
+  ),
+  getPendingConnections: db.prepare(`
+    SELECT c.*, u.name as requester_name
+    FROM connections c JOIN users u ON c.requester_id = u.id
+    WHERE c.target_id = ? AND c.status = 'pending'
+  `),
+  getApprovedConnection: db.prepare(`
+    SELECT * FROM connections
+    WHERE requester_id = ? AND target_id = ? AND status = 'approved'
+    LIMIT 1
+  `),
+  createConnection:  db.prepare('INSERT INTO connections (id, requester_id, target_id) VALUES (?, ?, ?)'),
+  approveConnection: db.prepare(`
+    UPDATE connections SET
+      status         = 'approved',
+      duration_days  = ?,
+      approved_until = date('now', '+' || ? || ' days'),
+      auto_renew     = ?
+    WHERE id = ?
+  `),
+  rejectConnection:  db.prepare("UPDATE connections SET status = 'rejected' WHERE id = ?"),
+  updateAutoRenew:   db.prepare('UPDATE connections SET auto_renew = ? WHERE id = ?'),
+  getConnectionById: db.prepare('SELECT * FROM connections WHERE id = ?'),
+  getAllConnectionsForOwner: db.prepare(`
+    SELECT c.*, u.name as requester_name
+    FROM connections c JOIN users u ON c.requester_id = u.id
+    WHERE c.target_id = ?
+    ORDER BY c.created_at DESC
+  `),
+  renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),
+  expireConnection: db.prepare("UPDATE connections SET status = 'expired' WHERE id = ?"),
+};
+
+// ── Pattern generator ─────────────────────────────────────────────────────────
+
+function generateDaysFromPattern(pattern, startDate, endDate) {
+  const days = [];
+  const start = new Date(startDate);
+  const end   = new Date(endDate);
+
+  if (pattern.pattern_type === 'alternating_weeks') {
+    const data   = JSON.parse(pattern.pattern_data);
+    const anchor = new Date(pattern.anchor_date);
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const diffWeeks  = Math.floor((d - anchor) / weekMs);
+      const isSelfWeek = ((diffWeeks % 2) + 2) % 2 === 0;
+      days.push({ date: toDateStr(d), owner: isSelfWeek ? 'self' : 'coparent' });
+    }
+
+  } else if (pattern.pattern_type === 'specific_days') {
+    const data        = JSON.parse(pattern.pattern_data);
+    const selfDayNums = (data.self_days || []).map(dayNameToNum);
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push({
+        date:  toDateStr(d),
+        owner: selfDayNums.includes(d.getDay()) ? 'self' : 'coparent',
+      });
+    }
+  }
+  // 'custom' — days entered manually, no auto-generation
+
+  return days;
+}
+
+function dayNameToNum(name) {
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(name);
+}
+
+function toDateStr(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+// ── Auto-renew check ──────────────────────────────────────────────────────────
+
+function checkAndRenewConnection(conn) {
+  if (conn.status !== 'approved') return conn;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (conn.approved_until && conn.approved_until < today) {
+    if (conn.auto_renew) {
+      const newUntil = new Date();
+      newUntil.setDate(newUntil.getDate() + conn.duration_days);
+      const newUntilStr = newUntil.toISOString().slice(0, 10);
+      q.renewConnection.run(newUntilStr, conn.id);
+      return { ...conn, approved_until: newUntilStr };
+    } else {
+      q.expireConnection.run(conn.id);
+      return { ...conn, status: 'expired' };
+    }
+  }
+  return conn;
+}
+
+// ── Bulk upsert with manual transaction ───────────────────────────────────────
+
+function upsertManyDays(userId, days) {
+  db.exec('BEGIN');
+  try {
+    for (const day of days) {
+      q.upsertDay.run(userId, day.date, day.owner, JSON.stringify(day.tags || []));
+    }
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
+}
+
+module.exports = { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr };

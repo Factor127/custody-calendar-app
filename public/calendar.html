@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Custody Calendar</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<h1 id="page-title">Custody Calendar</h1>
+
+<!-- Custody Summary -->
+<div class="summary">
+  <span class="bold" style="font-size:15px;">Custody Balance:</span>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--r);"></span>
+    <span class="bold" id="owner-name-label">Me:</span>
+    <span class="summary-count" style="color:#1e8e3e;" id="r-count">— days</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--z);"></span>
+    <span class="bold">Co-parent:</span>
+    <span class="summary-count" style="color:#1967d2;" id="z-count">— days</span>
+  </div>
+  <div class="summary-stat" style="margin-left:8px;">
+    <span class="bold">Difference:</span>
+    <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
+  </div>
+</div>
+
+<!-- Connections panel (pending requests badge) -->
+<div id="connections-panel" class="connections-panel hidden">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <span class="bold" style="font-size:14px;">Connections</span>
+    <span class="notif-badge hidden" id="pending-badge">0</span>
+    <button class="btn btn-sm btn-outline ml-auto" onclick="generateInvite()">+ Invite partner</button>
+  </div>
+  <div id="connections-list">
+    <p class="text-muted" style="margin:0;font-size:13px;">Loading…</p>
+  </div>
+</div>
+
+<!-- Edit mode notices -->
+<div class="edit-notice notice-custody" id="edit-notice">
+  ✏️ <span class="bold">Edit Custody:</span> Click any day to switch between you and co-parent.
+</div>
+<div class="edit-notice notice-holiday" id="holiday-edit-notice">
+  🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
+</div>
+<div class="edit-notice notice-partner" id="partner-edit-notice">
+  👥 <span class="bold">Edit Partner:</span> Click any day to toggle partner availability.
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <span class="controls-title">Show:</span>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-r" checked onchange="toggleClass('hide-r',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label" id="toggle-r-label">My days</span>
+  </div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-z" checked onchange="toggleClass('hide-z',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Co-parent days</span>
+  </div>
+
+  <div class="toggle-group" id="toggle-partner-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-partner" checked onchange="toggleClass('hide-partner',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label" id="partner-toggle-label">Partner days</span>
+  </div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Both free frames</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-edit" onchange="setEditMode('custody',this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Edit Custody</span>
+  </div>
+
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-holiday-edit" onchange="setEditMode('holiday',this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Edit Holidays</span>
+  </div>
+
+  <div class="toggle-group" id="toggle-partner-edit-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-partner-edit" onchange="setEditMode('partner',this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Edit Partner</span>
+  </div>
+
+  <div class="ml-auto flex-gap">
+    <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
+    <button class="btn btn-gray" onclick="downloadBackup()">📥 Backup</button>
+    <button class="btn btn-purple" onclick="shareWithCoparent()">📤 Share</button>
+    <button class="btn btn-primary" onclick="exportToPDF()">📄 PDF</button>
+  </div>
+</div>
+
+<!-- Import notice (shown if no calendar data yet) -->
+<div id="import-notice" class="hidden" style="background:#fff3cd;border:1px solid #f0c36d;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+  <strong>No calendar data yet.</strong>
+  Import your existing backup HTML file to get started:
+  <label class="btn btn-sm btn-outline" style="margin-left:10px;cursor:pointer;">
+    📂 Import backup
+    <input type="file" accept=".html" style="display:none;" onchange="importHtml(this)">
+  </label>
+  <span class="text-muted text-sm" style="margin-left:8px;">Or just start editing the calendar manually.</span>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
+  <div class="legend-item" id="legend-partner"><span class="dot partner-self"></span> Partner has kids &nbsp; <span class="dot partner-free"></span> Partner free</div>
+  <div class="legend-item"><span class="tag">H</span> Holiday</div>
+  <div class="legend-item"><span class="tag">V</span> Vacation</div>
+  <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
+</div>
+
+<!-- Calendar container -->
+<div class="calendar-container" id="calendar-container">
+  <div style="padding:40px;text-align:center;color:var(--muted);">Loading calendar…</div>
+</div>
+
+<!-- Approve connection modal -->
+<div class="modal-overlay" id="approve-modal">
+  <div class="modal">
+    <h2>Connection Request</h2>
+    <p><strong id="modal-requester-name">Someone</strong> wants to view your custody schedule.</p>
+
+    <div class="field-group">
+      <label class="field-label">Grant access for:</label>
+      <div class="radio-group" id="duration-radios">
+        <label class="radio-option" onclick="selectDuration(21,this)">
+          <input type="radio" name="duration" value="21"><div><div class="radio-label">3 weeks</div></div>
+        </label>
+        <label class="radio-option selected" onclick="selectDuration(30,this)">
+          <input type="radio" name="duration" value="30" checked><div><div class="radio-label">1 month</div><div class="radio-desc">Recommended</div></div>
+        </label>
+        <label class="radio-option" onclick="selectDuration(90,this)">
+          <input type="radio" name="duration" value="90"><div><div class="radio-label">3 months</div></div>
+        </label>
+        <label class="radio-option" onclick="selectDuration(3650,this)">
+          <input type="radio" name="duration" value="3650"><div><div class="radio-label">Until I revoke it</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="toggle-group" style="margin-top:4px;">
+      <label class="toggle-switch">
+        <input type="checkbox" id="auto-renew-toggle">
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Automatically renew access when this period ends</span>
+    </div>
+    <p class="text-muted" style="font-size:12px;margin:4px 0 0 52px;">You can turn this off at any time.</p>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="rejectRequest()">Decline</button>
+      <button class="btn btn-primary" onclick="approveRequest()">Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invite link modal -->
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal">
+    <h2>Partner Invite Link</h2>
+    <p class="text-muted">Send this link to your partner. They'll set up their profile and can request to view your calendar.</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:12px;word-break:break-all;" id="invite-url-display"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('invite-modal')">Close</button>
+      <button class="btn btn-primary" onclick="copyInviteUrl()">📋 Copy link</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Auth ──────────────────────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
+let myUserId = null;
+let myName = 'Me';
+let partnerConnections = [];
+let pendingConnections = [];
+let calendarDays = {}; // date -> { owner: 'self'|'coparent', tags: [] }
+let partnerDays = {};  // date -> { owner: 'self'|'coparent' }
+let activePartnerUserId = null;
+
+// Edit modes
+let editMode = null; // 'custody' | 'holiday' | 'partner' | null
+let selectedDurationDays = 30;
+let pendingConnectionId = null;
+
+// ── Calendar date range ───────────────────────────────────────────────────
+// Show 15 months: from 2 months ago through 12 months ahead
+function getCalendarRange() {
+  const start = new Date();
+  start.setDate(1);
+  start.setMonth(start.getMonth() - 2);
+
+  const end = new Date();
+  end.setDate(1);
+  end.setMonth(end.getMonth() + 13);
+  end.setDate(0); // last day of +12 months
+
+  return { start, end };
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async function init() {
+  if (!MY_TOKEN) { window.location.href = '/setup'; return; }
+
+  // Get my info
+  const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
+  if (!meRes.ok) { window.location.href = '/setup'; return; }
+  const me = await meRes.json();
+  myName = me.name;
+  myUserId = me.id;
+
+  document.getElementById('page-title').textContent = `Custody Calendar — ${myName}`;
+  document.getElementById('owner-name-label').textContent = `${myName}:`;
+  document.getElementById('toggle-r-label').textContent = `${myName}'s days`;
+
+  // Load my calendar data
+  await loadMyCalendar();
+
+  // Show connections panel
+  document.getElementById('connections-panel').classList.remove('hidden');
+  await loadConnections();
+
+  // Load partner data if any active connection
+  await loadPartnerOverlay();
+})();
+
+// ── Load my calendar ──────────────────────────────────────────────────────
+async function loadMyCalendar() {
+  const res = await fetch(`/api/calendar/${myUserId}?token=${MY_TOKEN}`);
+  if (!res.ok) return;
+  const data = await res.json();
+
+  calendarDays = {};
+  for (const day of data.days) {
+    calendarDays[day.date] = { owner: day.owner, tags: day.tags };
+  }
+
+  const hasDays = data.days.length > 0;
+  document.getElementById('import-notice').classList.toggle('hidden', hasDays);
+
+  renderCalendar();
+}
+
+// ── Load connections ──────────────────────────────────────────────────────
+async function loadConnections() {
+  const res = await fetch(`/api/connections/all?token=${MY_TOKEN}`);
+  if (!res.ok) return;
+  const data = await res.json();
+  partnerConnections = data.connections;
+
+  // Check for pending
+  const pending = partnerConnections.filter(c => c.status === 'pending');
+  pendingConnections = pending;
+
+  const badge = document.getElementById('pending-badge');
+  if (pending.length > 0) {
+    badge.textContent = pending.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  renderConnectionsList();
+}
+
+function renderConnectionsList() {
+  const container = document.getElementById('connections-list');
+  if (partnerConnections.length === 0) {
+    container.innerHTML = '<p class="text-muted" style="margin:0;font-size:13px;">No connections yet. Invite a partner to get started.</p>';
+    return;
+  }
+
+  container.innerHTML = partnerConnections.map(c => {
+    const statusLabel = { pending: '⏳ Pending', approved: '✓ Active', rejected: '✗ Declined', expired: '⚠ Expired' }[c.status] || c.status;
+    const until = c.approved_until ? ` until ${new Date(c.approved_until).toLocaleDateString()}` : '';
+    const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : ' · No auto-renew') : '';
+
+    let actions = '';
+    if (c.status === 'pending') {
+      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.requester_name}')">Review</button>`;
+    } else if (c.status === 'approved') {
+      const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
+      actions = `
+        <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
+        <button class="btn btn-sm btn-danger" onclick="rejectSpecific('${c.id}')">Revoke</button>`;
+    }
+
+    return `<div class="connection-row">
+      <div style="flex:1;">
+        <span class="bold">${c.requester_name}</span>
+        <span class="conn-status ${c.status}">${statusLabel}</span>
+        <span class="text-muted">${until}${autoRenewLabel}</span>
+      </div>
+      <div class="flex-gap">${actions}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Load partner overlay ──────────────────────────────────────────────────
+async function loadPartnerOverlay() {
+  const approved = partnerConnections.find(c => c.status === 'approved');
+  if (!approved) {
+    document.getElementById('toggle-partner-group').classList.add('hidden');
+    document.getElementById('toggle-partner-edit-group').classList.add('hidden');
+    document.getElementById('legend-partner').classList.add('hidden');
+    return;
+  }
+
+  const partnerRes = await fetch(`/api/calendar/${approved.requester_id}?token=${MY_TOKEN}`);
+  if (!partnerRes.ok) return;
+  const pData = await partnerRes.json();
+
+  partnerDays = {};
+  for (const day of pData.days) {
+    partnerDays[day.date] = { owner: day.owner };
+  }
+  activePartnerUserId = approved.requester_id;
+
+  const pName = pData.user?.name || 'Partner';
+  document.getElementById('partner-toggle-label').textContent = `${pName}'s days`;
+
+  renderCalendar();
+}
+
+// ── Render calendar ───────────────────────────────────────────────────────
+function renderCalendar() {
+  const container = document.getElementById('calendar-container');
+  const { start, end } = getCalendarRange();
+  const today = new Date().toISOString().slice(0,10);
+
+  let html = '';
+  let cur = new Date(start);
+
+  while (cur <= end) {
+    const y = cur.getFullYear();
+    const m = cur.getMonth();
+    const monthName = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const firstDow = new Date(y, m, 1).getDay();
+
+    html += `<div class="month">
+      <div class="month-title">${monthName}</div>
+      <table class="month-table">
+        <thead><tr>
+          <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+        </tr></thead>
+        <tbody>`;
+
+    let cellCount = firstDow;
+    if (firstDow > 0) {
+      html += '<tr>';
+      for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>';
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      if (cellCount % 7 === 0) html += '<tr>';
+
+      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dayData = calendarDays[dateStr];
+      const pDay = partnerDays[dateStr];
+
+      const owner = dayData?.owner; // undefined = not yet set → neutral cell
+      const tags = dayData?.tags || [];
+      const isToday = dateStr === today;
+
+      // CSS classes — no color class for unset days
+      const tdClass = [
+        owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
+        isToday ? 'today' : '',
+        // Both free: owner=coparent (Z's day for R) AND partner is free
+        (owner === 'coparent' && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+      ].filter(Boolean).join(' ');
+
+      const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+      const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
+
+      let partnerDotHtml = '';
+      if (pDay) {
+        // partner-self = partner has kids (busy for couple), partner-free = partner free
+        const dotClass = pDay.owner === 'self' ? 'partner-self' : 'partner-free';
+        const dotTitle = pDay.owner === 'self' ? 'Partner has kids' : 'Partner free';
+        partnerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}" title="${dotTitle}"></span></div>`;
+      }
+
+      html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
+        <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
+        <div class="label">${ownerLabel} ${tagHtml}</div>
+        ${partnerDotHtml}
+      </td>`;
+
+      cellCount++;
+      if (cellCount % 7 === 0) html += '</tr>';
+    }
+
+    // Trailing empty cells
+    const remaining = 7 - (cellCount % 7);
+    if (remaining < 7) {
+      for (let i = 0; i < remaining; i++) html += '<td class="empty"></td>';
+      html += '</tr>';
+    }
+
+    html += '</tbody></table></div>';
+
+    cur.setMonth(cur.getMonth() + 1);
+    cur.setDate(1);
+  }
+
+  container.innerHTML = html;
+  calculateCustodyDays();
+}
+
+// ── Click handler ─────────────────────────────────────────────────────────
+function handleDayClick(cell) {
+  const date = cell.dataset.date;
+  if (!date || cell.classList.contains('empty')) return;
+
+  if (editMode === 'custody') {
+    toggleCustody(cell, date);
+  } else if (editMode === 'holiday') {
+    cycleTag(cell, date);
+  } else if (editMode === 'partner') {
+    togglePartnerDot(cell, date);
+  }
+}
+
+function toggleCustody(cell, date) {
+  const current = calendarDays[date]?.owner || 'self';
+  const next = current === 'self' ? 'coparent' : 'self';
+  calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: next };
+  refreshCell(cell, date);
+  calculateCustodyDays();
+}
+
+function cycleTag(cell, date) {
+  const cur = calendarDays[date] || { owner: 'self', tags: [] };
+  const tags = cur.tags || [];
+  const TAG_CYCLE = ['H', 'V'];
+  const idx = TAG_CYCLE.indexOf(tags[0]);
+  const nextTags = idx < 0 ? ['H'] : (idx < TAG_CYCLE.length - 1 ? [TAG_CYCLE[idx+1]] : []);
+  calendarDays[date] = { ...cur, tags: nextTags };
+  refreshCell(cell, date);
+}
+
+function togglePartnerDot(cell, date) {
+  const cur = partnerDays[date] || { owner: 'coparent' };
+  partnerDays[date] = { owner: cur.owner === 'self' ? 'coparent' : 'self' };
+  refreshCell(cell, date);
+}
+
+function refreshCell(cell, date) {
+  const dayData = calendarDays[date];
+  const pDay = partnerDays[date];
+  const owner = dayData?.owner; // undefined = not yet set → neutral cell
+  const tags = dayData?.tags || [];
+  const today = new Date().toISOString().slice(0,10);
+  const isToday = date === today;
+
+  cell.className = [
+    owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
+    isToday ? 'today' : '',
+    (owner === 'coparent' && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+  ].filter(Boolean).join(' ');
+  cell.dataset.date = date;
+
+  const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
+  const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+
+  let partnerDotHtml = '';
+  if (pDay) {
+    const dotClass = pDay.owner === 'self' ? 'partner-self' : 'partner-free';
+    const dotTitle = pDay.owner === 'self' ? 'Partner has kids' : 'Partner free';
+    partnerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}" title="${dotTitle}"></span></div>`;
+  }
+
+  const dayNum = cell.querySelector('.day-num').textContent;
+  cell.innerHTML = `
+    <div class="day-num">${dayNum}</div>
+    <div class="label">${ownerLabel} ${tagHtml}</div>
+    ${partnerDotHtml}
+  `;
+}
+
+// ── Edit mode ─────────────────────────────────────────────────────────────
+function setEditMode(mode, on) {
+  // Turn off other modes
+  if (on) {
+    ['custody','holiday','partner'].forEach(m => {
+      if (m !== mode) {
+        document.getElementById(`toggle-${m === 'custody' ? 'edit' : m+'-edit'}`).checked = false;
+        document.getElementById(`${m === 'custody' ? 'edit' : m+'-edit'}-notice`).classList.remove('active');
+      }
+    });
+    editMode = mode;
+  } else {
+    editMode = null;
+  }
+
+  const noticeId = mode === 'custody' ? 'edit-notice' : `${mode}-edit-notice`;
+  document.getElementById(noticeId).classList.toggle('active', on);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+function calculateCustodyDays() {
+  let self = 0, coparent = 0;
+  for (const [, d] of Object.entries(calendarDays)) {
+    if (d.owner === 'self') self++;
+    else coparent++;
+  }
+  document.getElementById('r-count').textContent = `${self} days`;
+  document.getElementById('z-count').textContent = `${coparent} days`;
+  const diff = Math.abs(self - coparent);
+  const leader = self > coparent ? myName : 'Co-parent';
+  document.getElementById('difference').textContent = self === coparent ? 'Equal' : `${diff} days (${leader} has more)`;
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────
+async function saveCalendar() {
+  const days = Object.entries(calendarDays).map(([date, d]) => ({
+    date, owner: d.owner, tags: d.tags || []
+  }));
+
+  const res = await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days })
+  });
+
+  if (res.ok) {
+    const saved = await res.json();
+    showToast(`✓ Saved ${saved.saved} days`);
+  } else {
+    alert('Save failed — please try again');
+  }
+}
+
+// ── Import HTML backup ────────────────────────────────────────────────────
+async function importHtml(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`/api/import/html?token=${MY_TOKEN}`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    showToast(`✓ Imported ${data.imported} days`);
+    await loadMyCalendar();
+  } else {
+    const err = await res.json();
+    alert(err.error || 'Import failed');
+  }
+}
+
+// ── Invite ────────────────────────────────────────────────────────────────
+async function generateInvite() {
+  const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await res.json();
+  document.getElementById('invite-url-display').textContent = data.invite_url;
+  openModal('invite-modal');
+}
+
+function copyInviteUrl() {
+  const url = document.getElementById('invite-url-display').textContent;
+  navigator.clipboard.writeText(url).then(() => showToast('✓ Link copied!'));
+}
+
+// ── Connection approval ───────────────────────────────────────────────────
+function openApproveModal(connId, name) {
+  pendingConnectionId = connId;
+  document.getElementById('modal-requester-name').textContent = name;
+  openModal('approve-modal');
+}
+
+function selectDuration(days, el) {
+  selectedDurationDays = days;
+  document.querySelectorAll('#duration-radios .radio-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function approveRequest() {
+  if (!pendingConnectionId) return;
+  const autoRenew = document.getElementById('auto-renew-toggle').checked;
+
+  const res = await fetch(`/api/connections/approve?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      connection_id: pendingConnectionId,
+      duration_days: selectedDurationDays,
+      auto_renew: autoRenew
+    })
+  });
+
+  if (res.ok) {
+    closeModal('approve-modal');
+    showToast('✓ Access approved');
+    await loadConnections();
+    await loadPartnerOverlay();
+    renderCalendar();
+  } else {
+    alert('Failed to approve');
+  }
+}
+
+async function rejectRequest() {
+  if (!pendingConnectionId) return;
+  const res = await fetch(`/api/connections/reject?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: pendingConnectionId })
+  });
+  if (res.ok) {
+    closeModal('approve-modal');
+    showToast('Request declined');
+    await loadConnections();
+  }
+}
+
+async function rejectSpecific(connId) {
+  if (!confirm('Revoke this partner\'s access?')) return;
+  const res = await fetch(`/api/connections/reject?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: connId })
+  });
+  if (res.ok) {
+    showToast('Access revoked');
+    await loadConnections();
+    renderCalendar();
+  }
+}
+
+async function toggleAutoRenew(connId, newVal) {
+  const res = await fetch(`/api/connections/auto-renew?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: connId, auto_renew: newVal })
+  });
+  if (res.ok) {
+    showToast(newVal ? '✓ Auto-renew on' : 'Auto-renew off');
+    await loadConnections();
+  }
+}
+
+// ── Share / export ────────────────────────────────────────────────────────
+function downloadBackup() {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `custody_calendar_backup_${new Date().toISOString().slice(0,10)}.html`
+  });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function shareWithCoparent() {
+  // Clone, remove partner info, download
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelectorAll('.partner-dots').forEach(el => el.remove());
+  clone.querySelectorAll('.bothfree').forEach(el => el.classList.remove('bothfree'));
+  clone.querySelectorAll('#toggle-partner-group,#toggle-partner-edit-group,#legend-partner,#partner-edit-notice,#connections-panel').forEach(el => el.remove());
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `custody_calendar_shared_${new Date().toISOString().slice(0,10)}.html`
+  });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showToast('✓ Shared version downloaded (partner info removed)');
+}
+
+function exportToPDF() {
+  const clone = document.querySelector('.calendar-container').cloneNode(true);
+  const opt = {
+    margin: [5,5,5,5],
+    filename: `custody_calendar_${new Date().toISOString().slice(0,10)}.pdf`,
+    html2canvas: { scale: 1.2, useCORS: true },
+    jsPDF: { unit:'mm', format:'a4', orientation:'landscape' }
+  };
+  html2pdf().set(opt).from(clone).save();
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#202124;color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+</script>
+</body>
+</html>
