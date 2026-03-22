@@ -123,6 +123,28 @@ router.post('/users/register', (req, res) => {
 
 // ── Calendar data ─────────────────────────────────────────────────────────────
 
+// GET /api/calendar/owner?token= — partner fetches owner's calendar (shortcut — no userId needed)
+// MUST be declared before /calendar/:userId or Express will treat 'owner' as a userId param
+router.get('/calendar/owner', (req, res) => {
+  const partner = requireToken(req, res);
+  if (!partner) return;
+  if (partner.role !== 'partner') return res.status(403).json({ error: 'Partner access only' });
+
+  const owner = q.getOwner.get();
+  if (!owner) return res.status(404).json({ error: 'No owner found' });
+
+  const conn = q.getApprovedConnection.get(partner.id, owner.id);
+  if (!conn) return res.status(403).json({ error: 'No approved connection' });
+
+  const live = checkAndRenewConnection(conn);
+  if (live.status !== 'approved') {
+    return res.status(403).json({ error: 'Connection expired', status: live.status });
+  }
+
+  const days = q.getDaysForUser.all(owner.id);
+  res.json({ days: days.map(parseTags), approved_until: live.approved_until, user: { name: owner.name, id: owner.id } });
+});
+
 // GET /api/calendar/:userId?token= — get calendar days for a user
 // If requester is the user themselves → full data
 // If requester is approved partner viewing owner → owner's days only (no partner layer)
@@ -404,27 +426,6 @@ function parseHtmlBackup(html) {
 
   return days;
 }
-
-// GET /api/calendar/owner?token= — partner fetches owner's calendar (shortcut — no userId needed)
-router.get('/calendar/owner', (req, res) => {
-  const partner = requireToken(req, res);
-  if (!partner) return;
-  if (partner.role !== 'partner') return res.status(403).json({ error: 'Partner access only' });
-
-  const owner = q.getOwner.get();
-  if (!owner) return res.status(404).json({ error: 'No owner found' });
-
-  const conn = q.getApprovedConnection.get(partner.id, owner.id);
-  if (!conn) return res.status(403).json({ error: 'No approved connection' });
-
-  const live = checkAndRenewConnection(conn);
-  if (live.status !== 'approved') {
-    return res.status(403).json({ error: 'Connection expired', status: live.status });
-  }
-
-  const days = q.getDaysForUser.all(owner.id);
-  res.json({ days: days.map(parseTags), approved_until: live.approved_until, user: { name: owner.name, id: owner.id } });
-});
 
 // ── Owner info ────────────────────────────────────────────────────────────────
 
