@@ -133,14 +133,22 @@
       </div>
     </div>
 
-    <!-- Step 1: Name -->
+    <!-- Step 1: Name + Email -->
     <div class="wizard-step" id="step-1">
       <div class="wizard-title" id="invite-greeting">Hi! You've been invited.</div>
-      <p class="wizard-sub">Let's set up your custody calendar. What's your name?</p>
+      <p class="wizard-sub">Let's set up your custody calendar. A few quick details first.</p>
 
       <div class="field-group">
         <label class="field-label" for="partner-name">Your first name</label>
-        <input id="partner-name" class="field-input" type="text" placeholder="e.g. Maya" autocomplete="off" autofocus>
+        <input id="partner-name" class="field-input" type="text" placeholder="e.g. Maya" autocomplete="given-name" autofocus>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="partner-email">Your email address</label>
+        <input id="partner-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" autocapitalize="none">
+        <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">
+          Used to log back in from any device. We'll never share it.
+        </p>
       </div>
 
       <div class="wizard-nav">
@@ -315,8 +323,11 @@ function goStep(n) {
 }
 
 function step1Next() {
-  if (!document.getElementById('partner-name').value.trim()) {
-    alert('Please enter your name');
+  const name = document.getElementById('partner-name').value.trim();
+  const email = document.getElementById('partner-email').value.trim();
+  if (!name) { alert('Please enter your name'); return; }
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    alert('Please enter a valid email address — you\'ll need it to log back in later.');
     return;
   }
   // Render week picker now that we're moving to step 2
@@ -500,12 +511,15 @@ async function saveAndContinue() {
       }
     : { self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 
+  const email = document.getElementById('partner-email').value.trim().toLowerCase();
+
   const res = await fetch('/api/users/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       invite_token: INVITE_TOKEN,
       name,
+      email,
       pattern_type: patternType,
       pattern_data: patternData,
       anchor_date:  toDateStr(weekStartDate),

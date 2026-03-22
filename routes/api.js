@@ -88,7 +88,7 @@ router.post('/pattern/generate', (req, res) => {
 
 // POST /api/users/register — complete partner onboarding
 router.post('/users/register', (req, res) => {
-  const { invite_token, name, pattern_type, pattern_data, anchor_date, days } = req.body;
+  const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days } = req.body;
 
   if (!invite_token) return res.status(400).json({ error: 'invite_token required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
@@ -100,9 +100,21 @@ router.post('/users/register', (req, res) => {
     return res.status(410).json({ error: 'Invite expired' });
   }
 
+  // If email provided, check it isn't already taken by another account
+  const normalEmail = email ? email.trim().toLowerCase() : null;
+  if (normalEmail) {
+    const existing = q.getUserByEmail.get(normalEmail);
+    if (existing) return res.status(409).json({ error: 'An account with that email already exists. Try logging in instead.' });
+  }
+
   const userId = uuidv4();
   const token = uuidv4();
-  q.createUser.run(userId, name.trim(), 'partner', token);
+  // Save with email if provided (enables magic link login/recovery later)
+  if (normalEmail) {
+    q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail);
+  } else {
+    q.createUser.run(userId, name.trim(), 'partner', token);
+  }
 
   // Mark invite as used
   q.claimInvite.run(userId, invite_token);

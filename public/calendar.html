@@ -218,6 +218,15 @@ let activePartnerUserId = null;
 let editMode = null; // 'custody' | 'holiday' | 'partner' | null
 let selectedDurationDays = 30;
 let pendingConnectionId = null;
+let dirty = false; // true when there are unsaved edits
+
+// Warn before closing/navigating away with unsaved changes
+window.addEventListener('beforeunload', e => {
+  if (dirty) {
+    e.preventDefault();
+    e.returnValue = ''; // required for Chrome
+  }
+});
 
 // ── Calendar date range ───────────────────────────────────────────────────
 // Show 15 months: from 2 months ago through 12 months ahead
@@ -463,6 +472,7 @@ function toggleCustody(cell, date) {
   const current = calendarDays[date]?.owner || 'self';
   const next = current === 'self' ? 'coparent' : 'self';
   calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: next };
+  dirty = true;
   refreshCell(cell, date);
   calculateCustodyDays();
 }
@@ -474,12 +484,14 @@ function cycleTag(cell, date) {
   const idx = TAG_CYCLE.indexOf(tags[0]);
   const nextTags = idx < 0 ? ['H'] : (idx < TAG_CYCLE.length - 1 ? [TAG_CYCLE[idx+1]] : []);
   calendarDays[date] = { ...cur, tags: nextTags };
+  dirty = true;
   refreshCell(cell, date);
 }
 
 function togglePartnerDot(cell, date) {
   const cur = partnerDays[date] || { owner: 'coparent' };
   partnerDays[date] = { owner: cur.owner === 'self' ? 'coparent' : 'self' };
+  dirty = true;
   refreshCell(cell, date);
 }
 
@@ -563,6 +575,7 @@ async function saveCalendar() {
 
   if (res.ok) {
     const saved = await res.json();
+    dirty = false;
     showToast(`✓ Saved ${saved.saved} days`);
   } else {
     alert('Save failed — please try again');

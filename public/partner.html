@@ -150,6 +150,15 @@ let ownerDays = {};      // owner's days: date -> { owner }
 let showOwnerOverlay = true;
 let editMode = null;
 let connStatus = null;
+let dirty = false; // true when there are unsaved edits
+
+// Warn before closing/navigating away with unsaved changes
+window.addEventListener('beforeunload', e => {
+  if (dirty) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 // Local-time date string — avoids UTC off-by-one in UTC+ timezones (Israel = UTC+2)
 function toDateStr(d) {
@@ -324,6 +333,7 @@ function handleDayClick(cell) {
   if (editMode === 'custody') {
     const cur = calendarDays[date]?.owner || 'self';
     calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: cur === 'self' ? 'coparent' : 'self' };
+    dirty = true;
     renderCalendar();
   } else if (editMode === 'holiday') {
     const cur = calendarDays[date] || { owner: 'self', tags: [] };
@@ -331,6 +341,7 @@ function handleDayClick(cell) {
     const TAG_CYCLE = ['H', 'V'];
     const idx = TAG_CYCLE.indexOf(tags[0]);
     calendarDays[date] = { ...cur, tags: idx < 0 ? ['H'] : (idx < 1 ? [TAG_CYCLE[idx+1]] : []) };
+    dirty = true;
     renderCalendar();
   }
 }
@@ -374,7 +385,7 @@ async function saveCalendar() {
     body: JSON.stringify({ days })
   });
 
-  if (res.ok) showToast('✓ Saved');
+  if (res.ok) { dirty = false; showToast('✓ Saved'); }
   else alert('Save failed');
 }
 
