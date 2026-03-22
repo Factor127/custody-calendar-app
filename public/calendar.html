@@ -120,6 +120,7 @@
     <button class="btn btn-gray" onclick="downloadBackup()">📥 Backup</button>
     <button class="btn btn-purple" onclick="shareWithCoparent()">📤 Share</button>
     <button class="btn btn-primary" onclick="exportToPDF()">📄 PDF</button>
+    <button class="btn btn-outline" onclick="openKidsExport()">📅 Month view</button>
   </div>
 </div>
 
@@ -202,6 +203,20 @@
   </div>
 </div>
 
+<!-- Suggestion review modal -->
+<div class="modal-overlay" id="suggestion-modal">
+  <div class="modal" style="max-width:520px;">
+    <h2>Proposed Schedule Change</h2>
+    <p><strong id="suggestion-from-name">Partner</strong> is proposing the following changes:</p>
+    <div id="suggestion-note-display" style="display:none; background:#fff3e0; border:1px solid var(--orange); border-radius:6px; padding:10px 14px; font-size:13px; margin-bottom:12px; color:#e65100;"></div>
+    <div id="suggestion-changes-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; font-size:13px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="rejectSuggestion()">Decline</button>
+      <button class="btn btn-primary" onclick="approveSuggestion()">Apply changes</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Auth ──────────────────────────────────────────────────────────────────
 const params = new URLSearchParams(location.search);
@@ -210,9 +225,11 @@ let myUserId = null;
 let myName = 'Me';
 let partnerConnections = [];
 let pendingConnections = [];
+let pendingSuggestions = [];
 let calendarDays = {}; // date -> { owner: 'self'|'coparent', tags: [] }
 let partnerDays = {};  // date -> { owner: 'self'|'coparent' }
 let activePartnerUserId = null;
+let activeSuggestionId = null;
 
 // Edit modes
 let editMode = null; // 'custody' | 'holiday' | 'partner' | null
@@ -288,18 +305,26 @@ async function loadMyCalendar() {
 
 // ── Load connections ──────────────────────────────────────────────────────
 async function loadConnections() {
-  const res = await fetch(`/api/connections/all?token=${MY_TOKEN}`);
-  if (!res.ok) return;
-  const data = await res.json();
-  partnerConnections = data.connections;
+  const [connRes, suggRes] = await Promise.all([
+    fetch(`/api/connections/all?token=${MY_TOKEN}`),
+    fetch(`/api/suggestions/pending?token=${MY_TOKEN}`)
+  ]);
 
-  // Check for pending
-  const pending = partnerConnections.filter(c => c.status === 'pending');
-  pendingConnections = pending;
+  if (connRes.ok) {
+    const data = await connRes.json();
+    partnerConnections = data.connections;
+    pendingConnections = partnerConnections.filter(c => c.status === 'pending');
+  }
 
+  if (suggRes.ok) {
+    const sData = await suggRes.json();
+    pendingSuggestions = sData.suggestions;
+  }
+
+  const totalBadge = pendingConnections.length + pendingSuggestions.length;
   const badge = document.getElementById('pending-badge');
-  if (pending.length > 0) {
-    badge.textContent = pending.length;
+  if (totalBadge > 0) {
+    badge.textContent = totalBadge;
     badge.classList.remove('hidden');
   } else {
     badge.classList.add('hidden');
@@ -315,7 +340,24 @@ function renderConnectionsList() {
     return;
   }
 
-  container.innerHTML = partnerConnections.map(c => {
+  // Pending suggestions section
+  let suggestHtml = '';
+  if (pendingSuggestions.length > 0) {
+    suggestHtml = pendingSuggestions.map(s => {
+      const count = s.changes.length;
+      return `<div class="connection-row">
+        <div style="flex:1;">
+          <span class="bold">${s.from_name}</span>
+          <span class="conn-status pending">💡 Proposes ${count} day change${count > 1 ? 's' : ''}</span>
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-primary" onclick="openSuggestionModal('${s.id}')">Review</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  container.innerHTML = suggestHtml + partnerConnections.map(c => {
     const statusLabel = { pending: '⏳ Pending', approved: '✓ Active', rejected: '✗ Declined', expired: '⚠ Expired' }[c.status] || c.status;
     const until = c.approved_until ? ` until ${new Date(c.approved_until).toLocaleDateString()}` : '';
     const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : ' · No auto-renew') : '';
@@ -697,6 +739,78 @@ async function toggleAutoRenew(connId, newVal) {
     showToast(newVal ? '✓ Auto-renew on' : 'Auto-renew off');
     await loadConnections();
   }
+}
+
+// ── Suggestions ───────────────────────────────────────────────────────────
+function openSuggestionModal(suggId) {
+  const s = pendingSuggestions.find(x => x.id === suggId);
+  if (!s) return;
+  activeSuggestionId = suggId;
+
+  document.getElementById('suggestion-from-name').textContent = s.from_name;
+
+  const noteEl = document.getElementById('suggestion-note-display');
+  if (s.note) {
+    noteEl.textContent = `"${s.note}"`;
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const ownerLabel = o => o === 'self' ? `<span style="background:var(--z);padding:2px 8px;border-radius:10px;font-weight:600;">Co-parent's day</span>`
+                                       : `<span style="background:var(--r);padding:2px 8px;border-radius:10px;font-weight:600;">My day</span>`;
+
+  // Changes are from partner's perspective: 'self' = partner has kids, 'coparent' = owner has kids
+  // Translate to owner's perspective for display
+  const rows = s.changes.map(c => {
+    const date = new Date(c.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    // current_owner from partner's view → owner's view is flipped
+    const currentOwnerView = c.current_owner === 'self' ? 'coparent' : 'self';
+    const proposedOwnerView = c.proposed_owner === 'self' ? 'coparent' : 'self';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f3f4f6;">
+      <span style="min-width:110px;font-weight:600;">${date}</span>
+      ${ownerLabel(currentOwnerView)} <span style="color:var(--muted);">→</span> ${ownerLabel(proposedOwnerView)}
+    </div>`;
+  }).join('');
+
+  document.getElementById('suggestion-changes-list').innerHTML = rows;
+  openModal('suggestion-modal');
+}
+
+async function approveSuggestion() {
+  if (!activeSuggestionId) return;
+  const res = await fetch(`/api/suggestions/${activeSuggestionId}/approve?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (res.ok) {
+    closeModal('suggestion-modal');
+    showToast('✓ Changes applied');
+    await loadMyCalendar();
+    await loadConnections();
+  } else {
+    alert('Failed to apply changes');
+  }
+}
+
+async function rejectSuggestion() {
+  if (!activeSuggestionId) return;
+  const res = await fetch(`/api/suggestions/${activeSuggestionId}/reject?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (res.ok) {
+    closeModal('suggestion-modal');
+    showToast('Suggestion declined');
+    await loadConnections();
+  } else {
+    alert('Failed to decline');
+  }
+}
+
+// ── Kids month export ─────────────────────────────────────────────────────
+function openKidsExport() {
+  window.open(`/kids-export?token=${MY_TOKEN}`, '_blank');
 }
 
 // ── Share / export ────────────────────────────────────────────────────────

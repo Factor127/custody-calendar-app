@@ -41,6 +41,15 @@ router.get('/invite/:token', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'onboard.html'));
 });
 
+// Kids month export (clean printable single-month view)
+router.get('/kids-export', (req, res) => {
+  const token = req.query.token;
+  if (!token) return res.redirect('/');
+  const user = q.getUserByToken.get(token);
+  if (!user) return res.redirect('/');
+  res.sendFile(path.join(PUBLIC, 'kids-export.html'));
+});
+
 // Partner's calendar view
 router.get('/partner', (req, res) => {
   const token = req.query.token;

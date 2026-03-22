@@ -104,6 +104,14 @@
     <span class="toggle-label">Edit Holidays</span>
   </div>
 
+  <div class="toggle-group" id="toggle-suggest-group" style="display:none;">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-suggest" onchange="toggleSuggestMode(this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Suggest changes</span>
+  </div>
+
   <div class="ml-auto flex-gap">
     <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
   </div>
@@ -115,6 +123,17 @@
 </div>
 <div class="edit-notice notice-holiday" id="holiday-edit-notice">
   🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags.
+</div>
+<div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;">
+  💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your co-parent. Click a day again to un-propose it.
+</div>
+
+<!-- Suggest panel (fixed bottom bar, visible in suggest mode) -->
+<div id="suggest-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid var(--orange); padding:12px 24px; box-shadow:0 -4px 16px rgba(0,0,0,0.12); z-index:100; align-items:center; gap:12px; flex-wrap:wrap;">
+  <span id="suggest-count" style="font-weight:700; font-size:13px; color:var(--orange); white-space:nowrap;">0 days selected</span>
+  <input id="suggest-note" type="text" placeholder="Add a note to your co-parent (optional)" style="flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:180px;">
+  <button class="btn btn-outline" onclick="cancelSuggest()">Cancel</button>
+  <button class="btn btn-primary" onclick="submitSuggestion()">Send suggestion</button>
 </div>
 
 <!-- Legend -->
@@ -151,6 +170,8 @@ let showOwnerOverlay = true;
 let editMode = null;
 let connStatus = null;
 let dirty = false; // true when there are unsaved edits
+let suggestMode = false;
+let suggestedChanges = {}; // date -> proposed_owner (from partner's perspective)
 
 // Warn before closing/navigating away with unsaved changes
 window.addEventListener('beforeunload', e => {
@@ -211,6 +232,7 @@ async function checkConnection() {
     }
     document.getElementById('toggle-owner-group').style.display = 'flex';
     document.getElementById('toggle-free-frames-group').style.display = 'flex';
+    document.getElementById('toggle-suggest-group').style.display = 'flex';
     document.getElementById('owner-overlay-label').textContent = `${conn.owner_name || 'Partner'}'s days`;
     document.getElementById('legend-owner').hidden = false;
     document.getElementById('legend-both-free').hidden = false;
@@ -275,20 +297,25 @@ function renderCalendar() {
       const tags = dayData?.tags || [];
       const isToday = dateStr === todayStr;
 
+      // In suggest mode, show proposed ownership if this date has a pending suggestion
+      const isProposed = suggestMode && suggestedChanges[dateStr] !== undefined;
+      const effectiveOwner = isProposed ? suggestedChanges[dateStr] : owner;
+
       // Both free: I don't have kids AND owner doesn't have kids either (kids elsewhere)
-      const bothFree = showOwnerOverlay && owner === 'coparent' && oDay && oDay.owner === 'coparent';
+      const bothFree = showOwnerOverlay && effectiveOwner === 'coparent' && oDay && oDay.owner === 'coparent';
 
       // Fix: handle undefined owner — no color class for unset days
       const tdClass = [
-        owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
+        effectiveOwner === 'self' ? 'r' : (effectiveOwner === 'coparent' ? 'z' : ''),
         isToday ? 'today' : '',
+        isProposed ? 'proposed' : '',
         bothFree ? 'bothfree' : ''
       ].filter(Boolean).join(' ');
 
       const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
 
       // Fix: show initials instead of stars, matching owner calendar style
-      const cellLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? ownerName[0] : '');
+      const cellLabel = effectiveOwner === 'self' ? myName[0] : (effectiveOwner === 'coparent' ? ownerName[0] : '');
 
       // Owner overlay: dot showing co-parent's schedule (teal = has kids, blue = free)
       // Mirrors how owner's calendar shows partner dots at bottom of each cell
@@ -330,6 +357,22 @@ function handleDayClick(cell) {
   const date = cell.dataset.date;
   if (!date || cell.classList.contains('empty')) return;
 
+  if (suggestMode) {
+    if (suggestedChanges[date] !== undefined) {
+      // Un-propose this day
+      delete suggestedChanges[date];
+    } else {
+      // Propose flipping the ownership for this day
+      const cur = calendarDays[date]?.owner || 'coparent';
+      suggestedChanges[date] = cur === 'self' ? 'coparent' : 'self';
+    }
+    const count = Object.keys(suggestedChanges).length;
+    document.getElementById('suggest-count').textContent =
+      count === 1 ? '1 day selected' : `${count} days selected`;
+    renderCalendar();
+    return;
+  }
+
   if (editMode === 'custody') {
     const cur = calendarDays[date]?.owner || 'self';
     calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: cur === 'self' ? 'coparent' : 'self' };
@@ -355,12 +398,65 @@ function setEditMode(mode, on) {
         document.getElementById(`${m === 'custody' ? 'edit' : m+'-edit'}-notice`).classList.remove('active');
       }
     });
+    // Turn off suggest mode if switching to an edit mode
+    cancelSuggest();
     editMode = mode;
   } else {
     editMode = null;
   }
   const noticeId = mode === 'custody' ? 'edit-notice' : `${mode}-edit-notice`;
   document.getElementById(noticeId).classList.toggle('active', on);
+}
+
+// ── Suggest mode ──────────────────────────────────────────────────────────
+function toggleSuggestMode(on) {
+  if (on) {
+    // Turn off regular edit modes
+    ['custody','holiday'].forEach(m => {
+      document.getElementById(`toggle-${m === 'custody' ? 'edit' : m+'-edit'}`).checked = false;
+      document.getElementById(`${m === 'custody' ? 'edit' : m+'-edit'}-notice`).classList.remove('active');
+    });
+    editMode = null;
+  }
+  suggestMode = on;
+  suggestedChanges = {};
+  document.getElementById('suggest-notice').classList.toggle('active', on);
+  document.getElementById('suggest-panel').style.display = on ? 'flex' : 'none';
+  document.getElementById('suggest-count').textContent = '0 days selected';
+  document.getElementById('suggest-note').value = '';
+  document.body.style.paddingBottom = on ? '80px' : '';
+  renderCalendar();
+}
+
+function cancelSuggest() {
+  document.getElementById('toggle-suggest').checked = false;
+  toggleSuggestMode(false);
+}
+
+async function submitSuggestion() {
+  const count = Object.keys(suggestedChanges).length;
+  if (count === 0) { alert('Select at least one day to propose a change.'); return; }
+
+  const changes = Object.entries(suggestedChanges).map(([date, proposed_owner]) => ({
+    date,
+    current_owner: calendarDays[date]?.owner || 'coparent',
+    proposed_owner
+  }));
+  const note = document.getElementById('suggest-note').value.trim();
+
+  const res = await fetch(`/api/suggestions?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ changes, note: note || null })
+  });
+
+  if (res.ok) {
+    cancelSuggest();
+    showToast(`✓ Suggestion sent (${count} day${count > 1 ? 's' : ''})`);
+  } else {
+    const err = await res.json();
+    alert(err.error || 'Failed to send suggestion');
+  }
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────

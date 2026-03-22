@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
-const { q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr } = require('../db');
+const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr } = require('../db');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -374,6 +374,88 @@ router.post('/connections/auto-renew', (req, res) => {
 
   q.updateAutoRenew.run(auto_renew ? 1 : 0, connection_id);
   res.json({ auto_renew: Boolean(auto_renew) });
+});
+
+// ── Suggestions (co-parent proposes schedule change to owner) ─────────────────
+
+// POST /api/suggestions — partner submits a proposed schedule change
+router.post('/suggestions', (req, res) => {
+  const partner = requireToken(req, res);
+  if (!partner) return;
+  if (partner.role !== 'partner') return res.status(403).json({ error: 'Only partners can submit suggestions' });
+
+  const { changes, note } = req.body;
+  if (!Array.isArray(changes) || changes.length === 0) {
+    return res.status(400).json({ error: 'changes must be a non-empty array' });
+  }
+
+  const conn = q.getConnectionByRequester.get(partner.id);
+  if (!conn || conn.status !== 'approved') {
+    return res.status(403).json({ error: 'No active connection' });
+  }
+
+  const id = uuidv4();
+  q.createSuggestion.run(id, partner.id, conn.target_id, JSON.stringify(changes), note || null);
+  res.json({ id, status: 'pending' });
+});
+
+// GET /api/suggestions/pending — owner sees pending suggestions
+router.get('/suggestions/pending', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const suggestions = q.getPendingSuggestionsForOwner.all(owner.id);
+  res.json({
+    suggestions: suggestions.map(s => ({ ...s, changes: JSON.parse(s.changes) }))
+  });
+});
+
+// POST /api/suggestions/:id/approve — owner approves; changes applied to both calendars
+router.post('/suggestions/:id/approve', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const s = q.getSuggestionById.get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Suggestion not found' });
+  if (s.to_user_id !== owner.id) return res.status(403).json({ error: 'Not your suggestion to approve' });
+  if (s.status !== 'pending') return res.status(409).json({ error: 'Suggestion already handled' });
+
+  const changes = JSON.parse(s.changes);
+
+  // Apply each change: preserve existing tags, only update owner
+  db.exec('BEGIN');
+  try {
+    for (const c of changes) {
+      const existingPartner = q.getDay.get(s.from_user_id, c.date);
+      const existingOwner   = q.getDay.get(owner.id, c.date);
+      // Partner's calendar: apply proposed_owner directly
+      q.upsertDay.run(s.from_user_id, c.date, c.proposed_owner, existingPartner?.tags || '[]');
+      // Owner's calendar: flip perspective (partner 'self' → owner 'coparent' and vice versa)
+      const ownerOwner = c.proposed_owner === 'self' ? 'coparent' : 'self';
+      q.upsertDay.run(owner.id, c.date, ownerOwner, existingOwner?.tags || '[]');
+    }
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
+
+  q.updateSuggestionStatus.run('approved', s.id);
+  res.json({ status: 'approved', applied: changes.length });
+});
+
+// POST /api/suggestions/:id/reject — owner declines suggestion
+router.post('/suggestions/:id/reject', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const s = q.getSuggestionById.get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Suggestion not found' });
+  if (s.to_user_id !== owner.id) return res.status(403).json({ error: 'Not your suggestion' });
+  if (s.status !== 'pending') return res.status(409).json({ error: 'Suggestion already handled' });
+
+  q.updateSuggestionStatus.run('rejected', s.id);
+  res.json({ status: 'rejected' });
 });
 
 // ── Import existing HTML backup ───────────────────────────────────────────────

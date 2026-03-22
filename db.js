@@ -78,6 +78,18 @@ db.exec(`
     used_at TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS suggestions (
+    id TEXT PRIMARY KEY,
+    from_user_id TEXT NOT NULL,
+    to_user_id TEXT NOT NULL,
+    changes TEXT NOT NULL DEFAULT '[]',
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (from_user_id) REFERENCES users(id),
+    FOREIGN KEY (to_user_id) REFERENCES users(id)
+  );
 `);
 
 // ── Prepared statements ───────────────────────────────────────────────────────
@@ -166,6 +178,22 @@ const q = {
   `),
   renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),
   expireConnection: db.prepare("UPDATE connections SET status = 'expired' WHERE id = ?"),
+
+  // Single day lookup (used when preserving tags during suggestion apply)
+  getDay: db.prepare('SELECT * FROM calendar_days WHERE user_id = ? AND date = ?'),
+
+  // Suggestions (co-parent proposes schedule change, owner approves/rejects)
+  createSuggestion: db.prepare(
+    'INSERT INTO suggestions (id, from_user_id, to_user_id, changes, note) VALUES (?, ?, ?, ?, ?)'
+  ),
+  getSuggestionById: db.prepare('SELECT * FROM suggestions WHERE id = ?'),
+  getPendingSuggestionsForOwner: db.prepare(`
+    SELECT s.*, u.name as from_name
+    FROM suggestions s JOIN users u ON s.from_user_id = u.id
+    WHERE s.to_user_id = ? AND s.status = 'pending'
+    ORDER BY s.created_at DESC
+  `),
+  updateSuggestionStatus: db.prepare("UPDATE suggestions SET status = ? WHERE id = ?"),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────

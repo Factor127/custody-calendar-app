@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monthly Schedule</title>
+  <style>
+    :root {
+      --r: #e6f4ea;
+      --r-border: #a8d5b5;
+      --z: #e8f0fe;
+      --z-border: #a8c0f0;
+      --text: #202124;
+      --muted: #5f6368;
+      --border: #dadce0;
+      --blue: #1a73e8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+
+    /* ── Header bar ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: #f8f9fa;
+      gap: 12px;
+    }
+
+    .month-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: white;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .nav-btn:hover { background: #e8eaed; }
+
+    .month-title {
+      font-size: 20px;
+      font-weight: 700;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: filter 0.15s;
+    }
+    .btn:hover { filter: brightness(0.92); }
+    .btn-primary { background: var(--blue); color: white; }
+    .btn-outline { background: white; color: var(--blue); border: 1.5px solid var(--blue); }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); }
+
+    /* ── Calendar ── */
+    .calendar-wrapper {
+      padding: 20px 24px;
+    }
+
+    table.month-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th {
+      padding: 10px 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      background: #f8f9fa;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    td {
+      height: 110px;
+      vertical-align: top;
+      border: 1px solid #eef0f2;
+      padding: 8px;
+      position: relative;
+    }
+
+    td.empty { background: #fafafa; }
+    td.r { background: var(--r); }
+    td.z { background: var(--z); }
+    td.today { outline: 3px solid var(--blue); outline-offset: -3px; }
+
+    .day-num {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    td.today .day-num {
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .day-label {
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    td.r .day-label { color: #1e8e3e; }
+    td.z .day-label { color: #1967d2; }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid #f0c36d;
+      background: #fff3cd;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ── Print styles ── */
+    @media print {
+      .header { position: static; }
+      .header-actions { display: none; }
+      .nav-btn { display: none; }
+      body { padding: 0; }
+      .calendar-wrapper { padding: 10px; }
+      td { height: 90px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="month-nav">
+    <button class="nav-btn" onclick="changeMonth(-1)">&#8592;</button>
+    <div class="month-title" id="month-title">Loading…</div>
+    <button class="nav-btn" onclick="changeMonth(1)">&#8594;</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--r); border-color:var(--r-border);"></div>
+      <span id="legend-me">Me</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--z); border-color:var(--z-border);"></div>
+      <span>Co-parent</span>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <button class="btn btn-outline" onclick="window.print()">🖨 Print</button>
+    <button class="btn btn-primary" onclick="window.close()">✕ Close</button>
+  </div>
+</div>
+
+<div class="calendar-wrapper">
+  <div id="calendar-container">Loading…</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const MY_TOKEN = params.get('token');
+
+let calendarDays = {};
+let myName = 'Me';
+let currentYear, currentMonth;
+
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+(async function init() {
+  if (!MY_TOKEN) {
+    document.getElementById('calendar-container').textContent = 'Missing token — open from your calendar.';
+    return;
+  }
+
+  // Determine starting month from URL param or current month
+  const monthParam = params.get('month'); // YYYY-MM
+  const today = new Date();
+  if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+    const [y, m] = monthParam.split('-').map(Number);
+    currentYear = y;
+    currentMonth = m - 1; // 0-indexed
+  } else {
+    currentYear = today.getFullYear();
+    currentMonth = today.getMonth();
+  }
+
+  // Fetch user info
+  const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
+  if (!meRes.ok) {
+    document.getElementById('calendar-container').textContent = 'Could not load user — check your token.';
+    return;
+  }
+  const me = await meRes.json();
+  myName = me.name;
+  document.getElementById('legend-me').textContent = myName;
+  document.title = `${myName}'s Schedule`;
+
+  // Fetch all calendar days once
+  const calRes = await fetch(`/api/calendar/${me.id}?token=${MY_TOKEN}`);
+  if (calRes.ok) {
+    const data = await calRes.json();
+    for (const day of data.days) {
+      calendarDays[day.date] = { owner: day.owner, tags: day.tags || [] };
+    }
+  }
+
+  renderMonth();
+})();
+
+function changeMonth(delta) {
+  currentMonth += delta;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0)  { currentMonth = 11; currentYear--; }
+  renderMonth();
+}
+
+function renderMonth() {
+  const y = currentYear;
+  const m = currentMonth;
+  const today = toDateStr(new Date());
+
+  const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('month-title').textContent = monthName;
+  document.title = `${myName} — ${monthName}`;
+
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const firstDow = new Date(y, m, 1).getDay();
+
+  let html = `<table class="month-table">
+    <thead><tr>
+      <th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th>
+    </tr></thead>
+    <tbody>`;
+
+  let cellCount = firstDow;
+  if (firstDow > 0) {
+    html += '<tr>';
+    for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>';
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (cellCount % 7 === 0) html += '<tr>';
+
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayData = calendarDays[dateStr];
+    const owner = dayData?.owner;
+    const tags = dayData?.tags || [];
+    const isToday = dateStr === today;
+
+    const tdClass = [
+      owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
+      isToday ? 'today' : ''
+    ].filter(Boolean).join(' ');
+
+    const whoLabel = owner === 'self'
+      ? myName
+      : (owner === 'coparent' ? 'Co-parent' : '');
+
+    const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+
+    html += `<td class="${tdClass}">
+      <div class="day-num">${day}</div>
+      <div class="day-label">${whoLabel}</div>
+      ${tagHtml ? `<div>${tagHtml}</div>` : ''}
+    </td>`;
+
+    cellCount++;
+    if (cellCount % 7 === 0) html += '</tr>';
+  }
+
+  const remaining = 7 - (cellCount % 7);
+  if (remaining < 7) {
+    for (let i = 0; i < remaining; i++) html += '<td class="empty"></td>';
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  document.getElementById('calendar-container').innerHTML = html;
+}
+</script>
+</body>
+</html>
