@@ -5,13 +5,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Custody Calendar — Set Up Your Profile</title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* ── Week picker (same as setup.html) ── */
+    .week-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .week-picker-head {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding-bottom: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    .wp-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      padding: 10px 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.13s, border-color 0.13s, transform 0.1s;
+      min-height: 64px;
+    }
+
+    .wp-cell:active { transform: scale(0.95); }
+
+    .wp-cell .wp-num {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .wp-cell .wp-month {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .wp-cell.self {
+      background: var(--r);
+      border-color: var(--r-border);
+    }
+    .wp-cell.self .wp-num   { color: #1a6e32; }
+    .wp-cell.self .wp-month { color: #2e7d32; }
+
+    .week-section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 16px 0 6px;
+    }
+
+    .expand-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--blue);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .expand-btn:hover {
+      background: #e8f0fe;
+      border-color: var(--blue);
+    }
+
+    .wp-legend {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .wp-legend-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 4px;
+      vertical-align: middle;
+      border: 1px solid var(--border);
+    }
+  </style>
 </head>
 <body>
 <div class="wizard">
 
-  <!-- Progress bar -->
+  <div style="text-align:center;margin-bottom:24px;">
+    <div style="font-size:36px;margin-bottom:6px;">📅</div>
+    <h1 style="margin:0;font-size:22px;">Custody Calendar</h1>
+    <p class="text-muted" style="margin:6px 0 0;">Takes about a minute to set up.</p>
+  </div>
+
   <div class="progress-bar" style="margin-bottom:20px;">
-    <div class="progress-fill" id="progress" style="width:10%"></div>
+    <div class="progress-fill" id="progress" style="width:0%"></div>
   </div>
 
   <div class="wizard-card">
@@ -36,164 +145,69 @@
 
       <div class="wizard-nav">
         <span></span>
-        <button class="btn btn-primary" onclick="goStep(2)">Next →</button>
+        <button class="btn btn-primary" onclick="step1Next()">Next →</button>
       </div>
     </div>
 
-    <!-- Step 2: Has custody arrangement? -->
+    <!-- Step 2: Week picker -->
     <div class="wizard-step" id="step-2">
-      <div class="wizard-title">Do you share custody?</div>
-      <p class="wizard-sub">This helps us build your calendar automatically.</p>
+      <div class="wizard-title">Which days are the kids with you?</div>
+      <p class="wizard-sub">Tap a day to mark it as yours. Tap again to unmark it.</p>
 
-      <div class="radio-group">
-        <label class="radio-option" onclick="selectOption(this,'has-custody','yes')">
-          <input type="radio" name="has-custody" value="yes">
-          <div>
-            <div class="radio-label">Yes, I have a custody arrangement</div>
-            <div class="radio-desc">I share custody with my co-parent on a schedule</div>
-          </div>
-        </label>
-        <label class="radio-option" onclick="selectOption(this,'has-custody','no')">
-          <input type="radio" name="has-custody" value="no">
-          <div>
-            <div class="radio-label">No, I'll enter my availability manually</div>
-            <div class="radio-desc">I'll mark which days I'm free on the calendar</div>
-          </div>
-        </label>
+      <div class="wp-legend">
+        <span><span class="wp-legend-swatch" style="background:var(--r);border-color:var(--r-border);"></span>Your day</span>
+        <span><span class="wp-legend-swatch" style="background:white;"></span>Co-parent's day</span>
       </div>
+
+      <!-- Week 1 -->
+      <div id="week1-section">
+        <div class="week-section-label" id="week1-label"></div>
+        <div class="week-picker-grid" id="week1-heads"></div>
+        <div class="week-picker-grid" id="week1-cells"></div>
+      </div>
+
+      <!-- Week 2 (hidden until expanded) -->
+      <div id="week2-section" class="hidden">
+        <div class="week-section-label" id="week2-label"></div>
+        <div class="week-picker-grid" id="week2-cells"></div>
+      </div>
+
+      <button class="expand-btn" id="expand-btn" onclick="expandToTwoWeeks()">
+        ↕ Two-week custody pattern? Press here to expand
+      </button>
 
       <div class="wizard-nav">
         <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
-        <button class="btn btn-primary" onclick="step2Next()">Next →</button>
+        <button class="btn btn-primary" onclick="step2Next()">Looks right →</button>
       </div>
     </div>
 
-    <!-- Step 3: Pattern type -->
+    <!-- Step 3: Review -->
     <div class="wizard-step" id="step-3">
-      <div class="wizard-title">How does your custody work?</div>
-      <p class="wizard-sub">Pick the option that best describes your arrangement.</p>
-
-      <div class="radio-group">
-        <label class="radio-option" onclick="selectOption(this,'pattern-type','alternating_weeks')">
-          <input type="radio" name="pattern-type" value="alternating_weeks">
-          <div>
-            <div class="radio-label">Alternating weeks</div>
-            <div class="radio-desc">We swap every week — one week with me, next with co-parent</div>
-          </div>
-        </label>
-        <label class="radio-option" onclick="selectOption(this,'pattern-type','specific_days')">
-          <input type="radio" name="pattern-type" value="specific_days">
-          <div>
-            <div class="radio-label">Specific days each week</div>
-            <div class="radio-desc">I always have the kids on the same days every week</div>
-          </div>
-        </label>
-        <label class="radio-option" onclick="selectOption(this,'pattern-type','custom')">
-          <input type="radio" name="pattern-type" value="custom">
-          <div>
-            <div class="radio-label">I'll enter it manually</div>
-            <div class="radio-desc">Our schedule is irregular — I'll fill in the calendar myself</div>
-          </div>
-        </label>
-      </div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(2)">← Back</button>
-        <button class="btn btn-primary" onclick="step3Next()">Next →</button>
-      </div>
-    </div>
-
-    <!-- Step 4a: Alternating weeks config -->
-    <div class="wizard-step" id="step-4a">
-      <div class="wizard-title">Set up your alternating weeks</div>
-      <p class="wizard-sub">Tell us when your week starts and when a recent "my week" began.</p>
-
-      <div class="field-group">
-        <label class="field-label">Which day does the week switch?</label>
-        <select id="week-switch-day" class="field-input">
-          <option value="Sunday">Sunday</option>
-          <option value="Monday">Monday</option>
-          <option value="Tuesday">Tuesday</option>
-          <option value="Wednesday">Wednesday</option>
-          <option value="Thursday">Thursday</option>
-          <option value="Friday">Friday</option>
-          <option value="Saturday">Saturday</option>
-        </select>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label" for="anchor-date">A recent date when YOUR week started</label>
-        <input id="anchor-date" class="field-input" type="date">
-        <p class="text-muted" style="margin-top:6px;font-size:12px;">
-          Pick any past date that was the start of a week when you had the kids.
-        </p>
-      </div>
-
-      <div id="preview-4a"></div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(3)">← Back</button>
-        <button class="btn btn-outline btn-sm" onclick="previewAlt()">Preview</button>
-        <button class="btn btn-primary" onclick="step4aNext()">Looks right →</button>
-      </div>
-    </div>
-
-    <!-- Step 4b: Specific days config -->
-    <div class="wizard-step" id="step-4b">
-      <div class="wizard-title">Which days are your days?</div>
-      <p class="wizard-sub">Select the days of the week when you have the kids.</p>
-
-      <div class="day-checkboxes" id="day-checkboxes">
-        <!-- Generated by JS -->
-      </div>
-
-      <div id="preview-4b" style="margin-top:16px;"></div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(3)">← Back</button>
-        <button class="btn btn-outline btn-sm" onclick="previewSpecific()">Preview</button>
-        <button class="btn btn-primary" onclick="step4bNext()">Looks right →</button>
-      </div>
-    </div>
-
-    <!-- Step 4c: Manual (custom) -->
-    <div class="wizard-step" id="step-4c">
-      <div class="wizard-title">Enter your days manually</div>
-      <p class="wizard-sub">Click any day to mark it as yours (green) or your co-parent's (blue). You can always adjust later.</p>
-
-      <div id="manual-calendar"></div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(3)">← Back</button>
-        <button class="btn btn-primary" onclick="goStep(5)">Continue →</button>
-      </div>
-    </div>
-
-    <!-- Step 5: Review -->
-    <div class="wizard-step" id="step-5">
-      <div class="wizard-title">Your calendar preview</div>
-      <p class="wizard-sub">Here's the next 3 months based on your pattern. Click any day to adjust.</p>
+      <div class="wizard-title">Review your calendar</div>
+      <p class="wizard-sub">Here's the next 3 months based on your pattern. Tap any day to flip it.</p>
 
       <div id="review-calendar"></div>
 
       <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStepBack5()">← Back</button>
+        <button class="btn btn-outline btn-sm" onclick="goStep(2)">← Back</button>
         <button class="btn btn-primary" onclick="saveAndContinue()">Save my calendar →</button>
       </div>
     </div>
 
-    <!-- Step 6: Connect to partner's calendar -->
-    <div class="wizard-step" id="step-6">
+    <!-- Step 4: Connect to partner's calendar -->
+    <div class="wizard-step" id="step-4">
       <div class="success-icon">✓</div>
       <div class="wizard-title" style="text-align:center;">Your calendar is saved!</div>
       <p class="wizard-sub" style="text-align:center;">
-        Would you like to request access to view <strong id="owner-name-display">your partner</strong>'s custody schedule?
+        Would you like to request access to view
+        <strong id="owner-name-display">your partner</strong>'s custody schedule?
         This helps you plan together.
       </p>
 
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
         <button class="btn btn-primary" style="justify-content:center;" onclick="requestConnection()">
-          Request access to their calendar
+          Yes, request access to their calendar
         </button>
         <button class="btn btn-outline" style="justify-content:center;" onclick="skipToCalendar()">
           Skip for now — just show my calendar
@@ -201,62 +215,69 @@
       </div>
     </div>
 
-    <!-- Step 7: Waiting for approval -->
-    <div class="wizard-step" id="step-7">
+    <!-- Step 5: Waiting for approval -->
+    <div class="wizard-step" id="step-5">
       <div class="pending-state">
         <div class="pending-icon">⏳</div>
         <div class="wizard-title">Request sent!</div>
         <p class="wizard-sub">
-          <strong id="owner-name-pending">Your partner</strong> will review your request and approve access.
-          You'll see their calendar appear here once approved.
+          <strong id="owner-name-pending">Your partner</strong> will review your request
+          and approve access. You'll see their calendar once approved.
         </p>
         <p class="text-muted" style="font-size:12px;margin-top:8px;">
           Bookmark this page — it's your personal calendar link.
         </p>
-        <button class="btn btn-primary mt-12" onclick="goToPartnerCalendar()" style="margin:20px auto 0;display:block;">
+        <button class="btn btn-primary mt-12" onclick="goToPartnerCalendar()"
+                style="margin:20px auto 0;display:block;">
           Open my calendar →
         </button>
       </div>
     </div>
 
-  </div><!-- .wizard-card -->
-</div><!-- .wizard -->
+  </div>
+</div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
+const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const FULL_DAYS  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
 const INVITE_TOKEN = window.location.pathname.split('/invite/')[1];
-let ownerName = 'your partner';
-let myToken = null;
-let myUserId = null;
-let generatedDays = []; // from preview
-let manualDays = {};    // for custom mode: date -> 'self'|'coparent'
-let patternType = null;
+let ownerName  = 'your partner';
+let myToken    = null;
+let myUserId   = null;
 let currentStep = 0;
-let prevStep4 = null;
 
-const STEPS = 8;
+// Week picker state
+let isTwoWeek     = false;
+let weekStartDate = null;
+let week1Selected = [false,false,false,false,false,false,false];
+let week2Selected = [false,false,false,false,false,false,false];
+let generatedDays = [];
 
-// ── Init ───────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
-  // Set default anchor date to last Sunday
-  const lastSunday = new Date();
-  lastSunday.setDate(lastSunday.getDate() - lastSunday.getDay());
-  document.getElementById('anchor-date').value = lastSunday.toISOString().slice(0,10);
-
-  buildDayCheckboxes();
+  weekStartDate = getNextFullWeekStart();
   await validateInvite();
 })();
 
+function getNextFullWeekStart() {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const dow = t.getDay();
+  if (dow === 0) return t;
+  const next = new Date(t);
+  next.setDate(t.getDate() + (7 - dow));
+  return next;
+}
+
+// ── Invite validation ─────────────────────────────────────────────────────────
 async function validateInvite() {
   try {
     const res = await fetch(`/api/invites/${INVITE_TOKEN}`);
     if (res.status === 409) {
-      // Already used — check if we have a token in localStorage
       const saved = localStorage.getItem('myToken');
-      if (saved) {
-        window.location.href = `/partner?token=${saved}`;
-        return;
-      }
+      if (saved) { window.location.href = `/partner?token=${saved}`; return; }
       document.getElementById('step-0').innerHTML = `
         <div style="text-align:center;padding:20px 0;">
           <div style="font-size:32px;margin-bottom:12px;">🔒</div>
@@ -282,331 +303,231 @@ async function validateInvite() {
   }
 }
 
-// ── Navigation ─────────────────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────────────────────────
 function goStep(n) {
   document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
   document.getElementById(`step-${n}`).classList.add('active');
   currentStep = n;
-  document.getElementById('progress').style.width = `${Math.round((n / (STEPS - 1)) * 100)}%`;
+  // Steps 1-5 fill the bar; step 0 stays at 0
+  document.getElementById('progress').style.width =
+    n === 0 ? '0%' : Math.round((n / 5) * 100) + '%';
+  window.scrollTo(0, 0);
+}
+
+function step1Next() {
+  if (!document.getElementById('partner-name').value.trim()) {
+    alert('Please enter your name');
+    return;
+  }
+  // Render week picker now that we're moving to step 2
+  renderWeekHeads();
+  renderWeekCells(1);
+  goStep(2);
 }
 
 function step2Next() {
-  const val = document.querySelector('[name="has-custody"]:checked')?.value;
-  if (!val) { alert('Please select an option'); return; }
-  if (val === 'no') {
-    patternType = 'custom';
-    prevStep4 = '4c';
-    buildManualCalendar();
-    goStep('4c');
-  } else {
-    goStep(3);
-  }
+  buildGeneratedDays();
+  renderReviewCalendar();
+  goStep(3);
 }
 
-function step3Next() {
-  patternType = document.querySelector('[name="pattern-type"]:checked')?.value;
-  if (!patternType) { alert('Please select an option'); return; }
-  if (patternType === 'alternating_weeks') { prevStep4 = '4a'; goStep('4a'); }
-  else if (patternType === 'specific_days') { prevStep4 = '4b'; goStep('4b'); }
-  else { prevStep4 = '4c'; buildManualCalendar(); goStep('4c'); }
+// ── Week picker ───────────────────────────────────────────────────────────────
+function weekDateAt(weekNum, idx) {
+  const d = new Date(weekStartDate);
+  d.setDate(d.getDate() + (weekNum - 1) * 7 + idx);
+  return d;
 }
 
-function goStepBack5() {
-  goStep(prevStep4 || 3);
+function renderWeekHeads() {
+  document.getElementById('week1-heads').innerHTML =
+    DAY_ABBR.map(d => `<div class="week-picker-head">${d}</div>`).join('');
 }
 
-function selectOption(el, name, value) {
-  document.querySelectorAll(`[name="${name}"]`).forEach(r => {
-    r.closest('.radio-option')?.classList.remove('selected');
+function renderWeekCells(weekNum) {
+  const selected = weekNum === 1 ? week1Selected : week2Selected;
+  const cells = DAY_ABBR.map((_, idx) => {
+    const d = weekDateAt(weekNum, idx);
+    const isSelf = selected[idx];
+    return `<div class="wp-cell ${isSelf ? 'self' : ''}"
+                 onclick="toggleWpDay(${weekNum},${idx},this)">
+              <div class="wp-num">${d.getDate()}</div>
+              <div class="wp-month">${MONTH_ABBR[d.getMonth()]}</div>
+            </div>`;
   });
-  el.classList.add('selected');
-  el.querySelector('input').checked = true;
+  document.getElementById(`week${weekNum}-cells`).innerHTML = cells.join('');
+
+  const start = weekDateAt(weekNum, 0);
+  const end   = weekDateAt(weekNum, 6);
+  const label = isTwoWeek
+    ? `Week ${weekNum} · ${MONTH_ABBR[start.getMonth()]} ${start.getDate()} – ${MONTH_ABBR[end.getMonth()]} ${end.getDate()}`
+    : `Week of ${MONTH_ABBR[start.getMonth()]} ${start.getDate()} – ${MONTH_ABBR[end.getMonth()]} ${end.getDate()}`;
+  document.getElementById(`week${weekNum}-label`).textContent = label;
 }
 
-// ── Preview helpers ────────────────────────────────────────────────────────
-async function previewAlt() {
-  const anchorDate = document.getElementById('anchor-date').value;
-  if (!anchorDate) { alert('Please pick an anchor date'); return; }
-
-  const res = await fetch('/api/pattern/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      pattern_type: 'alternating_weeks',
-      pattern_data: { week_start_day: document.getElementById('week-switch-day').value },
-      anchor_date: anchorDate
-    })
-  });
-  const data = await res.json();
-  generatedDays = data.days;
-  renderMiniPreview('preview-4a', data.days);
+function toggleWpDay(weekNum, idx, el) {
+  const sel = weekNum === 1 ? week1Selected : week2Selected;
+  sel[idx] = !sel[idx];
+  el.className = `wp-cell ${sel[idx] ? 'self' : ''}`;
 }
 
-async function previewSpecific() {
-  const selfDays = getCheckedDays();
-  if (selfDays.length === 0) { alert('Please select at least one day'); return; }
+function expandToTwoWeeks() {
+  isTwoWeek = true;
+  document.getElementById('expand-btn').classList.add('hidden');
+  document.getElementById('week2-section').classList.remove('hidden');
 
-  const res = await fetch('/api/pattern/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      pattern_type: 'specific_days',
-      pattern_data: { self_days: selfDays }
-    })
-  });
-  const data = await res.json();
-  generatedDays = data.days;
-  renderMiniPreview('preview-4b', data.days);
+  const s1 = weekDateAt(1, 0), e1 = weekDateAt(1, 6);
+  document.getElementById('week1-label').textContent =
+    `Week 1 · ${MONTH_ABBR[s1.getMonth()]} ${s1.getDate()} – ${MONTH_ABBR[e1.getMonth()]} ${e1.getDate()}`;
+
+  renderWeekCells(2);
 }
 
-async function step4aNext() {
-  await previewAlt();
-  if (generatedDays.length === 0) return;
-  renderReviewCalendar(generatedDays);
-  goStep(5);
-}
+// ── Generate 12-month days ────────────────────────────────────────────────────
+function buildGeneratedDays() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-async function step4bNext() {
-  await previewSpecific();
-  if (generatedDays.length === 0) return;
-  renderReviewCalendar(generatedDays);
-  goStep(5);
-}
+  const yearOut = new Date(today);
+  yearOut.setFullYear(yearOut.getFullYear() + 1);
 
-// ── Mini preview calendar ──────────────────────────────────────────────────
-function renderMiniPreview(containerId, days) {
-  const container = document.getElementById(containerId);
-  if (!days || days.length === 0) { container.innerHTML = ''; return; }
+  // Use noon for DST-safe week offset calculation
+  const anchorNoon = new Date(
+    weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate(), 12
+  );
 
-  // Show first 4 weeks
-  const preview = days.slice(0, 28);
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const firstDate = new Date(preview[0].date + 'T12:00:00');
-  const startDow = firstDate.getDay(); // 0=Sun
+  const days = [];
 
-  let html = `
-    <div class="mini-calendar-preview">
-      <div class="mini-cal-title">Next 4 weeks preview</div>
-      <div class="mini-cal-grid">
-        ${dayNames.map(d => `<div class="mini-cal-head">${d}</div>`).join('')}`;
+  for (let d = new Date(today); d <= yearOut; d.setDate(d.getDate() + 1)) {
+    const dow    = d.getDay();
+    const dNoon  = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    const daysDiff   = Math.round((dNoon - anchorNoon) / (24 * 60 * 60 * 1000));
+    const weekOffset = Math.floor(daysDiff / 7);
 
-  // Padding
-  for (let i = 0; i < startDow; i++) html += `<div class="mini-cal-day empty"></div>`;
+    let isSelf;
+    if (!isTwoWeek) {
+      isSelf = week1Selected[dow];
+    } else {
+      isSelf = ((weekOffset % 2) + 2) % 2 === 0
+        ? week1Selected[dow]
+        : week2Selected[dow];
+    }
 
-  for (const day of preview) {
-    const d = new Date(day.date + 'T12:00:00');
-    html += `<div class="mini-cal-day ${day.owner}">${d.getDate()}</div>`;
+    days.push({ date: toDateStr(d), owner: isSelf ? 'self' : 'coparent', tags: [] });
   }
 
-  html += '</div></div>';
-  html += `<p class="text-muted" style="font-size:12px;margin-top:8px;">
-    <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid #a8d5b5;border-radius:2px;margin-right:4px;"></span>Your days
-    &nbsp;&nbsp;
-    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid #a8c0f0;border-radius:2px;margin-right:4px;"></span>Co-parent's days
-  </p>`;
-
-  container.innerHTML = html;
+  generatedDays = days;
 }
 
-// ── Review calendar (editable, 3 months) ──────────────────────────────────
-function renderReviewCalendar(days) {
-  const container = document.getElementById('review-calendar');
-  if (!days || days.length === 0) { container.innerHTML = '<p>No days generated.</p>'; return; }
+// Local-time date string — avoids UTC offset shifting date back in UTC+ timezones
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
-  // Group by month
-  const months = {};
-  for (const day of days) {
-    const [y, m] = day.date.split('-');
-    const key = `${y}-${m}`;
-    if (!months[key]) months[key] = [];
-    months[key].push(day);
-  }
+// ── 3-month review calendar ───────────────────────────────────────────────────
+function renderReviewCalendar() {
+  const dayMap = {};
+  for (const d of generatedDays) dayMap[d.date] = d;
 
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  const end   = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+
   let html = '';
+  let cur  = new Date(start);
 
-  for (const [key, mDays] of Object.entries(months)) {
-    const [y, m] = key.split('-');
-    const monthName = new Date(`${y}-${m}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const firstDow = new Date(`${y}-${m}-01`).getDay();
+  while (cur <= end) {
+    const y           = cur.getFullYear();
+    const m           = cur.getMonth();
+    const label       = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const firstDow    = new Date(y, m, 1).getDay();
 
     html += `<div class="mini-calendar-preview" style="margin-bottom:12px;">
-      <div class="mini-cal-title">${monthName}</div>
-      <div class="mini-cal-grid">
-        ${dayNames.map(d => `<div class="mini-cal-head">${d}</div>`).join('')}`;
+      <div class="mini-cal-title">${label}</div>
+      <div class="mini-cal-grid">`;
 
-    for (let i = 0; i < firstDow; i++) html += `<div class="mini-cal-day empty"></div>`;
+    html += DAY_ABBR.map(d => `<div class="mini-cal-head">${d}</div>`).join('');
 
-    for (const day of mDays) {
-      const d = new Date(day.date + 'T12:00:00');
-      html += `<div class="mini-cal-day ${day.owner}"
-        data-date="${day.date}"
-        data-owner="${day.owner}"
-        onclick="toggleReviewDay(this)"
-        title="Click to toggle"
-        style="cursor:pointer;">${d.getDate()}</div>`;
+    for (let i = 0; i < firstDow; i++) html += '<div class="mini-cal-day empty"></div>';
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds    = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const entry = dayMap[ds];
+      const cls   = entry?.owner === 'self' ? 'self' : (entry?.owner === 'coparent' ? 'coparent' : '');
+      html += `<div class="mini-cal-day ${cls}" data-date="${ds}" data-owner="${entry?.owner || 'coparent'}"
+                    onclick="toggleReviewDay(this)" style="cursor:pointer;" title="Tap to flip">${day}</div>`;
     }
 
     html += '</div></div>';
+    cur.setMonth(cur.getMonth() + 1);
+    cur.setDate(1);
   }
 
-  container.innerHTML = html;
-  container.innerHTML += `<p class="text-muted" style="font-size:12px;">
-    <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid #a8d5b5;border-radius:2px;margin-right:4px;"></span>Your days
-    &nbsp;&nbsp;
-    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid #a8c0f0;border-radius:2px;margin-right:4px;"></span>Co-parent's days
-    &nbsp;&nbsp; Click any day to toggle.
+  html += `<p class="text-muted" style="font-size:12px;margin-top:4px;">
+    <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid var(--r-border);border-radius:2px;margin-right:4px;"></span>Your days &nbsp;
+    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid var(--z-border);border-radius:2px;margin-right:4px;"></span>Co-parent's days — tap any day to flip it.
   </p>`;
+
+  document.getElementById('review-calendar').innerHTML = html;
 }
 
 function toggleReviewDay(el) {
-  const current = el.dataset.owner;
-  const next = current === 'self' ? 'coparent' : 'self';
+  const next = el.dataset.owner === 'self' ? 'coparent' : 'self';
   el.dataset.owner = next;
-  el.className = `mini-cal-day ${next}`;
-  // Update generatedDays array
-  const date = el.dataset.date;
-  const idx = generatedDays.findIndex(d => d.date === date);
+  el.className = 'mini-cal-day ' + next;
+  const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
   if (idx !== -1) generatedDays[idx].owner = next;
-  else generatedDays.push({ date, owner: next });
+  else generatedDays.push({ date: el.dataset.date, owner: next, tags: [] });
 }
 
-// ── Manual calendar ────────────────────────────────────────────────────────
-function buildManualCalendar() {
-  const container = document.getElementById('manual-calendar');
-  const today = new Date();
-  let html = '';
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-  for (let mo = 0; mo < 3; mo++) {
-    const y = today.getFullYear() + Math.floor((today.getMonth() + mo) / 12);
-    const m = (today.getMonth() + mo) % 12;
-    const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const firstDow = new Date(y, m, 1).getDay();
-
-    html += `<div class="mini-calendar-preview" style="margin-bottom:12px;">
-      <div class="mini-cal-title">${monthName}</div>
-      <div class="mini-cal-grid">
-        ${dayNames.map(d => `<div class="mini-cal-head">${d}</div>`).join('')}`;
-
-    for (let i = 0; i < firstDow; i++) html += `<div class="mini-cal-day empty"></div>`;
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      html += `<div class="mini-cal-day"
-        data-date="${dateStr}"
-        onclick="toggleManualDay(this)"
-        style="cursor:pointer;color:var(--muted);">${day}</div>`;
-    }
-
-    html += '</div></div>';
-  }
-
-  html += `<p class="text-muted" style="font-size:12px;">
-    Click a day to mark it as yours. Click again to mark as co-parent's. Click once more to clear.
-  </p>`;
-  container.innerHTML = html;
-}
-
-function toggleManualDay(el) {
-  const date = el.dataset.date;
-  const states = [null, 'self', 'coparent'];
-  const current = manualDays[date] || null;
-  const idx = states.indexOf(current);
-  const next = states[(idx + 1) % states.length];
-  if (next === null) {
-    delete manualDays[date];
-    el.className = 'mini-cal-day';
-    el.style.color = 'var(--muted)';
-  } else {
-    manualDays[date] = next;
-    el.className = `mini-cal-day ${next}`;
-    el.style.color = '';
-  }
-}
-
-// ── Day checkboxes (specific days) ────────────────────────────────────────
-function buildDayCheckboxes() {
-  const container = document.getElementById('day-checkboxes');
-  const days = [
-    { abbr: 'Sun', full: 'Sunday' },
-    { abbr: 'Mon', full: 'Monday' },
-    { abbr: 'Tue', full: 'Tuesday' },
-    { abbr: 'Wed', full: 'Wednesday' },
-    { abbr: 'Thu', full: 'Thursday' },
-    { abbr: 'Fri', full: 'Friday' },
-    { abbr: 'Sat', full: 'Saturday' },
-  ];
-  container.innerHTML = days.map(d => `
-    <label class="day-check">
-      <input type="checkbox" value="${d.full}">
-      <div class="day-pill">${d.abbr}</div>
-      <span class="day-pill-label">${d.abbr}</span>
-    </label>
-  `).join('');
-}
-
-function getCheckedDays() {
-  return Array.from(document.querySelectorAll('#day-checkboxes input:checked')).map(c => c.value);
-}
-
-// ── Save ───────────────────────────────────────────────────────────────────
+// ── Save & register ───────────────────────────────────────────────────────────
 async function saveAndContinue() {
   const name = document.getElementById('partner-name').value.trim();
   if (!name) { alert('Name missing'); goStep(1); return; }
 
-  // Collect days from review calendar (may have been manually toggled)
-  const reviewCells = document.querySelectorAll('#review-calendar .mini-cal-day[data-date]');
-  const days = generatedDays.length > 0 ? generatedDays : [];
+  // Sync any last-minute DOM edits from the review calendar
+  document.querySelectorAll('#review-calendar .mini-cal-day[data-date]').forEach(el => {
+    const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
+    if (idx !== -1) generatedDays[idx].owner = el.dataset.owner;
+  });
 
-  // Merge manual days if custom
-  if (patternType === 'custom') {
-    for (const [date, owner] of Object.entries(manualDays)) {
-      days.push({ date, owner, tags: [] });
-    }
-  }
-
-  let patternData = {};
-  let anchorDate = null;
-
-  if (patternType === 'alternating_weeks') {
-    patternData = { week_start_day: document.getElementById('week-switch-day').value };
-    anchorDate = document.getElementById('anchor-date').value;
-  } else if (patternType === 'specific_days') {
-    patternData = { self_days: getCheckedDays() };
-  }
-
-  const body = {
-    invite_token: INVITE_TOKEN,
-    name,
-    pattern_type: patternType,
-    pattern_data: patternData,
-    anchor_date: anchorDate,
-    days
-  };
+  const patternType = isTwoWeek ? 'alternating_weeks' : 'specific_days';
+  const patternData = isTwoWeek
+    ? {
+        week1_self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean),
+        week2_self_days: week2Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean)
+      }
+    : { self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 
   const res = await fetch('/api/users/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      invite_token: INVITE_TOKEN,
+      name,
+      pattern_type: patternType,
+      pattern_data: patternData,
+      anchor_date:  toDateStr(weekStartDate),
+      days:         generatedDays
+    })
   });
 
   if (!res.ok) {
-    const err = await res.json();
-    alert(err.error || 'Registration failed');
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || 'Registration failed — please try again');
     return;
   }
 
   const data = await res.json();
-  myToken = data.token;
+  myToken  = data.token;
   myUserId = data.userId;
   localStorage.setItem('myToken', myToken);
   localStorage.setItem('myRole', 'partner');
-
-  goStep(6);
+  goStep(4);
 }
 
+// ── Connection request ────────────────────────────────────────────────────────
 async function requestConnection() {
   if (!myToken) return;
   const res = await fetch(`/api/connections/request?token=${myToken}`, {
@@ -614,20 +535,19 @@ async function requestConnection() {
     headers: { 'Content-Type': 'application/json' }
   });
   if (res.ok) {
-    goStep(7);
+    goStep(5);
   } else {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     alert(err.error || 'Could not send request');
   }
 }
 
-function skipToCalendar() {
-  window.location.href = `/partner?token=${myToken}`;
-}
+function skipToCalendar()     { window.location.href = `/partner?token=${myToken}`; }
+function goToPartnerCalendar(){ window.location.href = `/partner?token=${myToken}`; }
 
-function goToPartnerCalendar() {
-  window.location.href = `/partner?token=${myToken}`;
-}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && currentStep === 1) step1Next();
+});
 </script>
 </body>
 </html>
