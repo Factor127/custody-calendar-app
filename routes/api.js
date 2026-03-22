@@ -100,21 +100,17 @@ router.post('/users/register', (req, res) => {
     return res.status(410).json({ error: 'Invite expired' });
   }
 
-  // If email provided, check it isn't already taken by another account
-  const normalEmail = email ? email.trim().toLowerCase() : null;
-  if (normalEmail) {
-    const existing = q.getUserByEmail.get(normalEmail);
-    if (existing) return res.status(409).json({ error: 'An account with that email already exists. Try logging in instead.' });
+  // Email is required — it's the recovery mechanism for the partner account
+  if (!email || !email.trim().includes('@')) {
+    return res.status(400).json({ error: 'Email address is required to create your account.' });
   }
+  const normalEmail = email.trim().toLowerCase();
+  const existing = q.getUserByEmail.get(normalEmail);
+  if (existing) return res.status(409).json({ error: 'An account with that email already exists. Try logging in instead.' });
 
   const userId = uuidv4();
   const token = uuidv4();
-  // Save with email if provided (enables magic link login/recovery later)
-  if (normalEmail) {
-    q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail);
-  } else {
-    q.createUser.run(userId, name.trim(), 'partner', token);
-  }
+  q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail);
 
   // Mark invite as used
   q.claimInvite.run(userId, invite_token);
