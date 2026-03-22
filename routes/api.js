@@ -105,12 +105,14 @@ router.post('/users/register', (req, res) => {
     return res.status(400).json({ error: 'Email address is required to create your account.' });
   }
   const normalEmail = email.trim().toLowerCase();
+  const normalMobile = req.body.mobile ? req.body.mobile.trim() : null;
   const existing = q.getUserByEmail.get(normalEmail);
   if (existing) return res.status(409).json({ error: 'An account with that email already exists. Try logging in instead.' });
 
   const userId = uuidv4();
   const token = uuidv4();
   q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail);
+  if (normalMobile) q.updateUserMobile.run(normalMobile, userId);
 
   // Mark invite as used
   q.claimInvite.run(userId, invite_token);
@@ -132,6 +134,17 @@ router.post('/users/register', (req, res) => {
   // Save manual days if provided (custom mode)
   if (days && Array.isArray(days) && days.length > 0) {
     upsertManyDays(userId, days);
+  }
+
+  // Mirror mode: generate partner days as inverse of owner's calendar
+  if (req.body.is_mirror) {
+    const ownerDays = q.getDaysForUser.all(invite.created_by);
+    const mirroredDays = ownerDays.map(d => ({
+      date: d.date,
+      owner: d.owner === 'self' ? 'coparent' : 'self',
+      tags: []
+    }));
+    upsertManyDays(userId, mirroredDays);
   }
 
   res.json({ token, userId, message: 'Registered successfully' });
@@ -540,7 +553,20 @@ function parseHtmlBackup(html) {
 router.get('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  res.json({ id: user.id, name: user.name, role: user.role });
+  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null });
+});
+
+// PUT /api/me — update profile (name, mobile)
+router.put('/me', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+  const { name, mobile } = req.body;
+  if (name && name.trim()) {
+    q.updateUserProfile.run(name.trim(), mobile ? mobile.trim() : null, user.id);
+  } else if (mobile !== undefined) {
+    q.updateUserMobile.run(mobile ? mobile.trim() : null, user.id);
+  }
+  res.json({ ok: true });
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

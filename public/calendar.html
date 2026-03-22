@@ -159,8 +159,8 @@
     <div class="field-group">
       <label class="field-label">Grant access for:</label>
       <div class="radio-group" id="duration-radios">
-        <label class="radio-option" onclick="selectDuration(21,this)">
-          <input type="radio" name="duration" value="21"><div><div class="radio-label">3 weeks</div></div>
+        <label class="radio-option" onclick="selectDuration(14,this)">
+          <input type="radio" name="duration" value="14"><div><div class="radio-label">2 weeks</div></div>
         </label>
         <label class="radio-option selected" onclick="selectDuration(30,this)">
           <input type="radio" name="duration" value="30" checked><div><div class="radio-label">1 month</div><div class="radio-desc">Recommended</div></div>
@@ -194,7 +194,7 @@
 <div class="modal-overlay" id="invite-modal">
   <div class="modal">
     <h2>Partner Invite Link</h2>
-    <p class="text-muted">Send this link to your partner. They'll set up their profile and can request to view your calendar.</p>
+    <p class="text-muted">Send this link to your co-parent. They set up their custody schedule in under a minute, and you'll both see when you each have the kids — and when you're both free.</p>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:12px;word-break:break-all;" id="invite-url-display"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('invite-modal')">Close</button>
@@ -407,6 +407,8 @@ async function loadPartnerOverlay() {
     document.getElementById('toggle-partner-group').classList.add('hidden');
     document.getElementById('toggle-partner-edit-group').classList.add('hidden');
     document.getElementById('legend-partner').classList.add('hidden');
+    document.getElementById('toggle-frames').closest('.toggle-group').classList.add('hidden');
+    document.querySelector('.legend-item[style*="orange"]').classList.add('hidden');
     return;
   }
 
@@ -672,7 +674,7 @@ async function generateInvite() {
   });
   const data = await res.json();
   document.getElementById('invite-url-display').textContent = data.invite_url;
-  const waText = encodeURIComponent(`Hi! I'd like to share our custody calendar with you. Click this link to set up your side: ${data.invite_url}`);
+  const waText = encodeURIComponent(`Hi! I'm using Spontany to manage our custody schedule — it makes planning much easier. Click here to set up your side (takes 1 minute): ${data.invite_url}`);
   document.getElementById('whatsapp-btn').href = `https://wa.me/?text=${waText}`;
   openModal('invite-modal');
 }

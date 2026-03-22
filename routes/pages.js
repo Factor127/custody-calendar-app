@@ -32,6 +32,15 @@ router.get('/calendar', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'calendar.html'));
 });
 
+// Profile management
+router.get('/profile', (req, res) => {
+  const token = req.query.token;
+  if (!token) return res.redirect('/login');
+  const user = q.getUserByToken.get(token);
+  if (!user) return res.redirect('/login');
+  res.sendFile(path.join(PUBLIC, 'profile.html'));
+});
+
 // Partner onboarding
 router.get('/invite/:token', (req, res) => {
   const invite = q.getInvite.get(req.params.token);

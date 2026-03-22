@@ -15,6 +15,7 @@ db.exec('PRAGMA foreign_keys = ON');
 
 // ── Safe migrations (run on every startup, idempotent) ───────────────────────
 try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN mobile TEXT'); } catch(e) { /* already exists */ }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
 
 // ── Schema ──────────────────────────────────────────────────────────────────
@@ -105,6 +106,8 @@ const q = {
   createUserWithEmail: db.prepare('INSERT INTO users (id, name, role, access_token, email) VALUES (?, ?, ?, ?, ?)'),
   updateUserToken:     db.prepare('UPDATE users SET access_token = ? WHERE id = ?'),
   updateUserEmail:     db.prepare('UPDATE users SET email = ? WHERE id = ?'),
+  updateUserMobile:    db.prepare('UPDATE users SET mobile = ? WHERE id = ?'),
+  updateUserProfile:   db.prepare('UPDATE users SET name = ?, mobile = ? WHERE id = ?'),
 
   getDaysForUser: db.prepare(
     'SELECT date, owner, tags FROM calendar_days WHERE user_id = ? ORDER BY date'

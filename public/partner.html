@@ -10,6 +10,31 @@
 
 <h1 id="page-title">My Custody Calendar</h1>
 
+<!-- "When am I seeing you next" — top segment -->
+<div id="next-time-section" style="margin-bottom:20px;">
+  <!-- Connected state: shows next free match -->
+  <div id="next-time-connected" class="hidden" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border-radius:14px;padding:20px 24px;color:white;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:0.08;">💫</div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;opacity:0.7;text-transform:uppercase;margin-bottom:6px;">Next time I see you</div>
+    <div id="next-time-date" style="font-size:28px;font-weight:800;margin-bottom:4px;">—</div>
+    <div id="next-time-detail" style="font-size:13px;opacity:0.75;">Looking ahead…</div>
+  </div>
+
+  <!-- No connection: grayed with CTA -->
+  <div id="next-time-locked" style="position:relative;border-radius:14px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#e0e0e0 0%,#c8c8c8 100%);padding:20px 24px;filter:blur(1px);pointer-events:none;">
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#888;text-transform:uppercase;margin-bottom:6px;">Next time I see you</div>
+      <div style="font-size:28px;font-weight:800;color:#aaa;margin-bottom:4px;">Mar 18</div>
+      <div style="font-size:13px;color:#aaa;">3 days away</div>
+    </div>
+    <div id="next-time-cta" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.75);backdrop-filter:blur(2px);gap:10px;opacity:0;transition:opacity 0.2s;"
+         onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">
+      <div style="font-size:14px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
+      <button class="btn btn-primary btn-sm" onclick="showInviteFromPartner()">Invite my partner</button>
+    </div>
+  </div>
+</div>
+
 <!-- Connection status banner -->
 <div id="connection-banner" class="partner-overlay-banner hidden">
   <span style="font-size:18px;">📅</span>
@@ -151,6 +176,13 @@
   <div class="legend-item"><span class="tag">V</span> Vacation</div>
 </div>
 
+<!-- Month navigation -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
+  <span id="month-label" style="font-weight:700;font-size:16px;"></span>
+  <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
+</div>
+
 <!-- Calendar -->
 <div class="calendar-container" id="calendar-container">
   <div style="padding:40px;text-align:center;color:var(--muted);">Loading your calendar…</div>
@@ -172,6 +204,8 @@ let connStatus = null;
 let dirty = false; // true when there are unsaved edits
 let suggestMode = false;
 let suggestedChanges = {}; // date -> proposed_owner (from partner's perspective)
+let currentViewYear = null;
+let currentViewMonth = null;
 
 // Warn before closing/navigating away with unsaved changes
 window.addEventListener('beforeunload', e => {
@@ -241,6 +275,7 @@ async function checkConnection() {
   } else if (conn.status === 'expired') {
     document.getElementById('expired-banner').classList.remove('hidden');
   }
+  updateNextTime();
 }
 
 async function loadOwnerCalendar(conn) {
@@ -254,95 +289,91 @@ async function loadOwnerCalendar(conn) {
   }
   ownerName = ownerData.user?.name || 'Partner';
   renderCalendar();
+  updateNextTime();
+}
+
+// ── Month navigation ──────────────────────────────────────────────────────
+function prevMonth() {
+  currentViewMonth--;
+  if (currentViewMonth < 0) { currentViewMonth = 11; currentViewYear--; }
+  renderCalendar();
+}
+
+function nextMonth() {
+  currentViewMonth++;
+  if (currentViewMonth > 11) { currentViewMonth = 0; currentViewYear++; }
+  renderCalendar();
 }
 
 // ── Calendar render ───────────────────────────────────────────────────────
 function renderCalendar() {
   const container = document.getElementById('calendar-container');
   const today = new Date();
-  // Fix: start at current month, not previous month
-  const start = new Date(today.getFullYear(), today.getMonth(), 1);
-  const end = new Date(today.getFullYear(), today.getMonth() + 5, 0);
-  // Fix: use local date — toISOString() is UTC and shifts date back in UTC+ timezones
+  if (currentViewYear === null) { currentViewYear = today.getFullYear(); currentViewMonth = today.getMonth(); }
   const todayStr = toDateStr(today);
 
-  let html = '';
-  let cur = new Date(start);
+  const y = currentViewYear;
+  const m = currentViewMonth;
+  const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('month-label').textContent = monthName;
 
-  while (cur <= end) {
-    const y = cur.getFullYear();
-    const m = cur.getMonth();
-    const monthName = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const firstDow = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const firstDow = new Date(y, m, 1).getDay();
 
-    html += `<div class="month">
-      <div class="month-title">${monthName}</div>
-      <table class="month-table">
-        <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
-        <tbody>`;
+  let html = `<div class="month">
+    <table class="month-table">
+      <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+      <tbody>`;
 
-    let cellCount = firstDow;
-    if (firstDow > 0) { html += '<tr>'; for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>'; }
+  let cellCount = firstDow;
+  if (firstDow > 0) { html += '<tr>'; for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>'; }
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      if (cellCount % 7 === 0) html += '<tr>';
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (cellCount % 7 === 0) html += '<tr>';
 
-      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const dayData = calendarDays[dateStr];
-      const oDay = ownerDays[dateStr];
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayData = calendarDays[dateStr];
+    const oDay = ownerDays[dateStr];
 
-      // Fix: don't default to 'self' — leave undefined so unset days render neutral (white)
-      const owner = dayData?.owner;
-      const tags = dayData?.tags || [];
-      const isToday = dateStr === todayStr;
+    const owner = dayData?.owner;
+    const tags = dayData?.tags || [];
+    const isToday = dateStr === todayStr;
 
-      // In suggest mode, show proposed ownership if this date has a pending suggestion
-      const isProposed = suggestMode && suggestedChanges[dateStr] !== undefined;
-      const effectiveOwner = isProposed ? suggestedChanges[dateStr] : owner;
+    const isProposed = suggestMode && suggestedChanges[dateStr] !== undefined;
+    const effectiveOwner = isProposed ? suggestedChanges[dateStr] : owner;
 
-      // Both free: I don't have kids AND owner doesn't have kids either (kids elsewhere)
-      const bothFree = showOwnerOverlay && effectiveOwner === 'coparent' && oDay && oDay.owner === 'coparent';
+    const bothFree = showOwnerOverlay && effectiveOwner === 'coparent' && oDay && oDay.owner === 'coparent';
 
-      // Fix: handle undefined owner — no color class for unset days
-      const tdClass = [
-        effectiveOwner === 'self' ? 'r' : (effectiveOwner === 'coparent' ? 'z' : ''),
-        isToday ? 'today' : '',
-        isProposed ? 'proposed' : '',
-        bothFree ? 'bothfree' : ''
-      ].filter(Boolean).join(' ');
+    const tdClass = [
+      effectiveOwner === 'self' ? 'r' : (effectiveOwner === 'coparent' ? 'z' : ''),
+      isToday ? 'today' : '',
+      isProposed ? 'proposed' : '',
+      bothFree ? 'bothfree' : ''
+    ].filter(Boolean).join(' ');
 
-      const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+    const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+    const cellLabel = effectiveOwner === 'self' ? myName[0] : (effectiveOwner === 'coparent' ? ownerName[0] : '');
 
-      // Fix: show initials instead of stars, matching owner calendar style
-      const cellLabel = effectiveOwner === 'self' ? myName[0] : (effectiveOwner === 'coparent' ? ownerName[0] : '');
-
-      // Owner overlay: dot showing co-parent's schedule (teal = has kids, blue = free)
-      // Mirrors how owner's calendar shows partner dots at bottom of each cell
-      let ownerDotHtml = '';
-      if (showOwnerOverlay && oDay) {
-        const dotClass = oDay.owner === 'self' ? 'partner-self' : 'partner-free';
-        ownerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}"></span></div>`;
-      }
-
-      html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
-        <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
-        <div class="label">${cellLabel} ${tagHtml}</div>
-        ${ownerDotHtml}
-      </td>`;
-
-      cellCount++;
-      if (cellCount % 7 === 0) html += '</tr>';
+    let ownerDotHtml = '';
+    if (showOwnerOverlay && oDay) {
+      const dotClass = oDay.owner === 'self' ? 'partner-self' : 'partner-free';
+      ownerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}"></span></div>`;
     }
 
-    const rem = 7 - (cellCount % 7);
-    if (rem < 7) { for (let i = 0; i < rem; i++) html += '<td class="empty"></td>'; html += '</tr>'; }
+    html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
+      <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
+      <div class="label">${cellLabel} ${tagHtml}</div>
+      ${ownerDotHtml}
+    </td>`;
 
-    html += '</tbody></table></div>';
-    cur.setMonth(cur.getMonth() + 1);
-    cur.setDate(1);
+    cellCount++;
+    if (cellCount % 7 === 0) html += '</tr>';
   }
 
+  const rem = 7 - (cellCount % 7);
+  if (rem < 7) { for (let i = 0; i < rem; i++) html += '<td class="empty"></td>'; html += '</tr>'; }
+
+  html += '</tbody></table></div>';
   container.innerHTML = html;
   calculateStats();
 }
@@ -499,6 +530,55 @@ async function requestReconnect() {
 }
 
 function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
+
+// ── Next time banner ──────────────────────────────────────────────────────
+function updateNextTime() {
+  const connectedEl = document.getElementById('next-time-connected');
+  const lockedEl = document.getElementById('next-time-locked');
+
+  if (connStatus?.status !== 'approved') {
+    connectedEl.classList.add('hidden');
+    lockedEl.style.display = 'block';
+    return;
+  }
+
+  lockedEl.style.display = 'none';
+  connectedEl.classList.remove('hidden');
+
+  // Find next day where both are free (both have 'coparent' = kids with other parent)
+  const today = new Date();
+  const todayStr = toDateStr(today);
+  let found = null;
+
+  // Look 90 days ahead
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const ds = toDateStr(d);
+    if (ds < todayStr) continue;
+    const myDay = calendarDays[ds];
+    const ownerDay = ownerDays[ds];
+    if (myDay?.owner === 'coparent' && ownerDay?.owner === 'coparent') {
+      found = { date: d, ds };
+      break;
+    }
+  }
+
+  if (found) {
+    const daysAway = Math.round((found.date - today) / (24*60*60*1000));
+    const dateLabel = found.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('next-time-date').textContent = dateLabel;
+    document.getElementById('next-time-detail').textContent =
+      daysAway === 0 ? 'Today 🎉' : daysAway === 1 ? 'Tomorrow ✨' : `${daysAway} days away`;
+  } else {
+    document.getElementById('next-time-date').textContent = 'No match found';
+    document.getElementById('next-time-detail').textContent = 'No overlap in the next 90 days';
+  }
+}
+
+function showInviteFromPartner() {
+  alert('Share this page URL with someone you\'d like to plan time with. They\'ll need their own custody calendar on Spontany.');
+}
 
 let toastTimer;
 function showToast(msg) {

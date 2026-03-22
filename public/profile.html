@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Profile — Spontany</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<h1>My Profile</h1>
+
+<div style="max-width:480px;margin:0 auto;">
+
+  <div class="wizard-card" style="padding:24px;">
+    <h2 style="margin:0 0 20px;font-size:18px;">Account Details</h2>
+
+    <div class="field-group">
+      <label class="field-label" for="profile-name">Your name</label>
+      <input id="profile-name" class="field-input" type="text" placeholder="Your first name">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Email address</label>
+      <div id="profile-email" style="padding:10px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--muted);">Loading…</div>
+      <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Email cannot be changed here. Contact support if needed.</p>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="profile-mobile">WhatsApp number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+      <input id="profile-mobile" class="field-input" type="tel" placeholder="+972 50 000 0000" autocomplete="tel">
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-outline" onclick="goBack()">← Back</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;text-align:center;">
+    <a id="calendar-link" href="#" style="font-size:13px;color:var(--blue);">← Back to my calendar</a>
+  </div>
+
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
+let userRole = null;
+
+if (!MY_TOKEN) { window.location.href = '/login'; }
+
+(async function init() {
+  const res = await fetch(`/api/me?token=${MY_TOKEN}`);
+  if (!res.ok) { window.location.href = '/login'; return; }
+  const user = await res.json();
+
+  userRole = user.role;
+  document.getElementById('profile-name').value = user.name || '';
+  document.getElementById('profile-email').textContent = user.email || 'No email on file';
+  document.getElementById('profile-mobile').value = user.mobile || '';
+
+  const calUrl = user.role === 'owner' ? `/calendar?token=${MY_TOKEN}` : `/partner?token=${MY_TOKEN}`;
+  document.getElementById('calendar-link').href = calUrl;
+})();
+
+async function saveProfile() {
+  const name = document.getElementById('profile-name').value.trim();
+  const mobile = document.getElementById('profile-mobile').value.trim();
+
+  if (!name) { alert('Name cannot be empty'); return; }
+
+  const res = await fetch(`/api/me?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mobile: mobile || null })
+  });
+
+  if (res.ok) {
+    showToast('✓ Profile saved');
+  } else {
+    alert('Save failed — please try again');
+  }
+}
+
+function goBack() {
+  const calUrl = userRole === 'owner' ? `/calendar?token=${MY_TOKEN}` : `/partner?token=${MY_TOKEN}`;
+  window.location.href = calUrl;
+}
+
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#202124;color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+</script>
+</body>
+</html>

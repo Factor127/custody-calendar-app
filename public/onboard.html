@@ -151,9 +151,35 @@
         </p>
       </div>
 
+      <div class="field-group">
+        <label class="field-label" for="partner-mobile">Your WhatsApp number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+        <input id="partner-mobile" class="field-input" type="tel" placeholder="+972 50 000 0000" autocomplete="tel">
+        <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Makes it easy for your co-parent to reach you.</p>
+      </div>
+
       <div class="wizard-nav">
         <span></span>
         <button class="btn btn-primary" onclick="step1Next()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step mirror: Is schedule a mirror image? -->
+    <div class="wizard-step" id="step-mirror">
+      <div class="wizard-title" id="mirror-question">Is your custody schedule a mirror image of <strong id="mirror-owner-name">your partner</strong>'s?</div>
+      <p class="wizard-sub">For example, if they have the kids Mon–Wed, you have them Thu–Sun.</p>
+
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+        <button class="btn btn-primary" style="justify-content:center;" onclick="chooseMirror(true)">
+          Yes — it's the opposite of theirs
+        </button>
+        <button class="btn btn-outline" style="justify-content:center;" onclick="chooseMirror(false)">
+          No — let me set my own schedule
+        </button>
+      </div>
+
+      <div class="wizard-nav" style="margin-top:16px;">
+        <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+        <span></span>
       </div>
     </div>
 
@@ -208,14 +234,13 @@
       <div class="success-icon">✓</div>
       <div class="wizard-title" style="text-align:center;">Your calendar is saved!</div>
       <p class="wizard-sub" style="text-align:center;">
-        Would you like to request access to view
-        <strong id="owner-name-display">your partner</strong>'s custody schedule?
-        This helps you plan together.
+        Want to see when you and <strong id="owner-name-display">your partner</strong> both have free time?
+        Request access to compare schedules.
       </p>
 
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
         <button class="btn btn-primary" style="justify-content:center;" onclick="requestConnection()">
-          Yes, request access to their calendar
+          Yes — show me our matching free days
         </button>
         <button class="btn btn-outline" style="justify-content:center;" onclick="skipToCalendar()">
           Skip for now — just show my calendar
@@ -258,6 +283,7 @@ let currentStep = 0;
 
 // Week picker state
 let isTwoWeek     = false;
+let isMirror      = false;
 let weekStartDate = null;
 let week1Selected = [false,false,false,false,false,false,false];
 let week2Selected = [false,false,false,false,false,false,false];
@@ -314,11 +340,12 @@ async function validateInvite() {
 // ── Navigation ────────────────────────────────────────────────────────────────
 function goStep(n) {
   document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
-  document.getElementById(`step-${n}`).classList.add('active');
+  const stepEl = typeof n === 'string' ? document.getElementById(`step-${n}`) : document.getElementById(`step-${n}`);
+  if (stepEl) stepEl.classList.add('active');
   currentStep = n;
-  // Steps 1-5 fill the bar; step 0 stays at 0
-  document.getElementById('progress').style.width =
-    n === 0 ? '0%' : Math.round((n / 5) * 100) + '%';
+  // Progress bar
+  const progressMap = { 0: 0, 'mirror': 30, 1: 20, 2: 45, 3: 65, 4: 85, 5: 100 };
+  document.getElementById('progress').style.width = (progressMap[n] ?? 50) + '%';
   window.scrollTo(0, 0);
 }
 
@@ -330,10 +357,20 @@ function step1Next() {
     alert('Please enter a valid email address — you\'ll need it to log back in later.');
     return;
   }
-  // Render week picker now that we're moving to step 2
-  renderWeekHeads();
-  renderWeekCells(1);
-  goStep(2);
+  // Update mirror question with owner's name
+  document.getElementById('mirror-owner-name').textContent = ownerName;
+  goStep('mirror');
+}
+
+async function chooseMirror(yes) {
+  isMirror = yes;
+  if (yes) {
+    await saveAndContinue();
+  } else {
+    renderWeekHeads();
+    renderWeekCells(1);
+    goStep(2);
+  }
 }
 
 function step2Next() {
@@ -520,10 +557,12 @@ async function saveAndContinue() {
       invite_token: INVITE_TOKEN,
       name,
       email,
-      pattern_type: patternType,
-      pattern_data: patternData,
-      anchor_date:  toDateStr(weekStartDate),
-      days:         generatedDays
+      mobile: document.getElementById('partner-mobile').value.trim() || null,
+      pattern_type: isMirror ? null : patternType,
+      pattern_data: isMirror ? null : patternData,
+      anchor_date:  isMirror ? null : toDateStr(weekStartDate),
+      days:         isMirror ? [] : generatedDays,
+      is_mirror:    isMirror
     })
   });
 
