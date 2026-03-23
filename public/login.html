@@ -84,8 +84,24 @@
 
     <!-- ── Login form ── -->
     <div id="form-state">
-      <div class="field-group" style="margin-bottom:16px;">
-        <label class="field-label" for="email-input">Your email address</label>
+
+      <!-- Google SSO — primary option -->
+      <a href="/auth/google" class="btn btn-outline"
+         style="width:100%;justify-content:center;padding:12px;font-size:15px;gap:10px;text-decoration:none;margin-bottom:4px;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+             width="20" height="20" alt="" style="flex-shrink:0;">
+        Continue with Google
+      </a>
+
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
+        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+        <span style="color:var(--muted);font-size:12px;">or sign in with email</span>
+        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+      </div>
+
+      <!-- Email magic link -->
+      <div class="field-group" style="margin-bottom:12px;">
+        <label class="field-label" for="email-input">Email address</label>
         <input
           type="email"
           id="email-input"
@@ -96,30 +112,13 @@
         >
       </div>
 
-      <!-- Google SSO -->
-      <a href="/auth/google" class="btn btn-outline"
-         style="width:100%;justify-content:center;padding:12px;font-size:15px;gap:10px;text-decoration:none;margin-bottom:12px;">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-             width="20" height="20" alt="" style="flex-shrink:0;">
-        Continue with Google
-      </a>
-
-      <div style="display:flex;align-items:center;gap:10px;margin:4px 0 16px;">
-        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
-        <span style="color:var(--muted);font-size:12px;">or</span>
-        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
-      </div>
-
       <button id="send-btn" class="btn btn-primary"
               style="width:100%;justify-content:center;padding:13px;font-size:15px;"
               onclick="requestLink()">
-        Send me a magic link →
+        Send me a login link →
       </button>
 
-      <p class="hint">
-        No password needed.<br>
-        We'll email you a secure one-click link.
-      </p>
+      <p class="hint">No password needed — we'll email you a one-click link.</p>
 
       <div class="error-box" id="error-box"></div>
     </div>

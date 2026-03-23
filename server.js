@@ -19,8 +19,9 @@ const apiRouter   = require('./routes/api');
 const adminRouter = require('./routes/admin');
 const pagesRouter = require('./routes/pages');
 
-app.use('/api', authRouter);   // auth first (magic link endpoints)
-app.use('/api', adminRouter);  // admin before regular API
+app.use('/api', authRouter);   // magic link endpoints at /api/auth/...
+app.use('/', authRouter);      // Google OAuth at /auth/google, /auth/google/callback
+app.use('/api', adminRouter);
 app.use('/api', apiRouter);
 app.use('/', pagesRouter);
 
@@ -29,7 +30,7 @@ app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public'
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
-  res.status(404).send('<h2>Page not found</h2><a href="/login">Go home</a>');
+  res.status(404).send('<h2>Page not found</h2><a href="/">Go home</a>');
 });
 
 app.listen(PORT, () => {
