@@ -5,32 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>My Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* ── Day strip ──────────────────────────────────────────────────────── */
+    .strip-wrap    { display:flex; align-items:center; gap:6px; }
+    .strip-nav     { flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); background:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.13s; }
+    .strip-nav:hover:not(:disabled) { background:#f0f4ff; }
+    .strip-nav:disabled { opacity:0.3; cursor:default; }
+    #day-strip     { flex:1; display:flex; gap:5px; overflow:hidden; }
+    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; border-radius:10px; border:1.5px solid var(--border); background:white; position:relative; }
+    .day-card.match { background:#fff3e0; border-color:var(--orange); }
+    .day-card.strip-today { border-color:var(--blue); }
+    .day-card .dc-name { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+    .day-card .dc-num  { font-size:19px; font-weight:800; line-height:1.1; color:var(--text); }
+    .day-card.match .dc-num { color:#e65100; }
+    .day-card .dc-dot  { font-size:11px; margin-top:3px; min-height:14px; }
+    .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
+    .next-time-label  { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+    .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
+  </style>
 </head>
 <body>
 
 <h1 id="page-title">My Custody Calendar</h1>
 
-<!-- "When am I seeing you next" — top segment -->
+<!-- "Next time I see you" — scrolling day strip -->
 <div id="next-time-section" style="margin-bottom:20px;">
-  <!-- Connected state: shows next free match -->
-  <div id="next-time-connected" class="hidden" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border-radius:14px;padding:20px 24px;color:white;position:relative;overflow:hidden;">
-    <div style="position:absolute;top:-20px;right:-20px;font-size:80px;opacity:0.08;">💫</div>
-    <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;opacity:0.7;text-transform:uppercase;margin-bottom:6px;">Next time I see you</div>
-    <div id="next-time-date" style="font-size:28px;font-weight:800;margin-bottom:4px;">—</div>
-    <div id="next-time-detail" style="font-size:13px;opacity:0.75;">Looking ahead…</div>
+  <div class="next-time-label">Next time I see you</div>
+  <div class="next-time-headline" id="next-time-headline">—</div>
+
+  <!-- Connected: scrolling strip -->
+  <div id="next-time-connected" class="hidden">
+    <div class="strip-wrap">
+      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
+      <div id="day-strip"></div>
+      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
+    </div>
+    <div class="strip-range" id="strip-range"></div>
   </div>
 
-  <!-- No connection: grayed with CTA -->
-  <div id="next-time-locked" style="position:relative;border-radius:14px;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#e0e0e0 0%,#c8c8c8 100%);padding:20px 24px;filter:blur(1px);pointer-events:none;">
-      <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#888;text-transform:uppercase;margin-bottom:6px;">Next time I see you</div>
-      <div style="font-size:28px;font-weight:800;color:#aaa;margin-bottom:4px;">Mar 18</div>
-      <div style="font-size:13px;color:#aaa;">3 days away</div>
-    </div>
-    <div id="next-time-cta" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.75);backdrop-filter:blur(2px);gap:10px;opacity:0;transition:opacity 0.2s;"
-         onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">
-      <div style="font-size:14px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
-      <button class="btn btn-primary btn-sm" onclick="showInviteFromPartner()">Invite my partner</button>
+  <!-- Locked: blurred placeholder + CTA -->
+  <div id="next-time-locked">
+    <div style="position:relative;border-radius:10px;overflow:hidden;">
+      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
+        <div class="day-card" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div><div class="dc-dot"></div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div><div class="dc-dot">❤️</div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div><div class="dc-dot"></div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div><div class="dc-dot">❤️</div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div><div class="dc-dot"></div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div><div class="dc-dot">🟢</div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div><div class="dc-dot"></div></div>
+      </div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
+        <button class="btn btn-primary btn-sm" onclick="showInviteFromPartner()">Invite my partner</button>
+      </div>
     </div>
   </div>
 </div>
@@ -206,6 +234,7 @@ let suggestMode = false;
 let suggestedChanges = {}; // date -> proposed_owner (from partner's perspective)
 let currentViewYear = null;
 let currentViewMonth = null;
+let stripOffset = 0; // days ahead from today shown at left edge of strip
 
 // Warn before closing/navigating away with unsaved changes
 window.addEventListener('beforeunload', e => {
@@ -531,34 +560,32 @@ async function requestReconnect() {
 
 function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
 
-// ── Next time banner ──────────────────────────────────────────────────────
+// ── Next time / day strip ─────────────────────────────────────────────────
+const STRIP_DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
 function updateNextTime() {
   const connectedEl = document.getElementById('next-time-connected');
-  const lockedEl = document.getElementById('next-time-locked');
+  const lockedEl    = document.getElementById('next-time-locked');
 
   if (connStatus?.status !== 'approved') {
     connectedEl.classList.add('hidden');
     lockedEl.style.display = 'block';
+    document.getElementById('next-time-headline').textContent = '—';
     return;
   }
 
   lockedEl.style.display = 'none';
   connectedEl.classList.remove('hidden');
 
-  // Find next day where both are free (both have 'coparent' = kids with other parent)
+  // Find next match (both free) within 90 days — used for headline
   const today = new Date();
-  const todayStr = toDateStr(today);
+  today.setHours(0, 0, 0, 0);
   let found = null;
-
-  // Look 90 days ahead
   for (let i = 0; i < 90; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const ds = toDateStr(d);
-    if (ds < todayStr) continue;
-    const myDay = calendarDays[ds];
-    const ownerDay = ownerDays[ds];
-    if (myDay?.owner === 'coparent' && ownerDay?.owner === 'coparent') {
+    if (calendarDays[ds]?.owner === 'coparent' && ownerDays[ds]?.owner === 'coparent') {
       found = { date: d, ds };
       break;
     }
@@ -566,18 +593,84 @@ function updateNextTime() {
 
   if (found) {
     const daysAway = Math.round((found.date - today) / (24*60*60*1000));
-    const dateLabel = found.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('next-time-date').textContent = dateLabel;
-    document.getElementById('next-time-detail').textContent =
-      daysAway === 0 ? 'Today 🎉' : daysAway === 1 ? 'Tomorrow ✨' : `${daysAway} days away`;
+    const label = found.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const suffix = daysAway === 0 ? ' · Today 🎉' : daysAway === 1 ? ' · Tomorrow ✨' : ` · ${daysAway} days away`;
+    document.getElementById('next-time-headline').textContent = label + suffix;
   } else {
-    document.getElementById('next-time-date').textContent = 'No match found';
-    document.getElementById('next-time-detail').textContent = 'No overlap in the next 90 days';
+    document.getElementById('next-time-headline').textContent = 'No overlap in the next 90 days';
   }
+
+  renderStrip();
 }
 
+function scrollStrip(delta) {
+  stripOffset = Math.max(0, Math.min(83, stripOffset + delta));
+  renderStrip();
+}
+
+function renderStrip() {
+  const strip = document.getElementById('day-strip');
+  if (!strip) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = toDateStr(today);
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + stripOffset + i);
+    const ds = toDateStr(d);
+
+    const myFree   = calendarDays[ds]?.owner === 'coparent';
+    const theyFree = ownerDays[ds]?.owner === 'coparent';
+    const isMatch  = myFree && theyFree;
+    const isToday  = ds === todayStr;
+
+    let dot = '';
+    if (isMatch)       dot = '❤️';
+    else if (myFree)   dot = '🟢';
+    else if (theyFree) dot = '💙';
+
+    const cls = ['day-card', isMatch ? 'match' : '', isToday ? 'strip-today' : ''].filter(Boolean).join(' ');
+
+    html += `<div class="${cls}">
+      <div class="dc-name">${STRIP_DAY_ABBR[d.getDay()]}</div>
+      <div class="dc-num">${d.getDate()}</div>
+      <div class="dc-dot">${dot}</div>
+    </div>`;
+  }
+  strip.innerHTML = html;
+
+  // Nav button states
+  const prev = document.getElementById('strip-prev');
+  const next = document.getElementById('strip-next');
+  if (prev) prev.disabled = stripOffset === 0;
+  if (next) next.disabled = stripOffset >= 83;
+
+  // Range label
+  const s = new Date(today); s.setDate(today.getDate() + stripOffset);
+  const e = new Date(today); e.setDate(today.getDate() + stripOffset + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const rangeEl = document.getElementById('strip-range');
+  if (rangeEl) rangeEl.textContent = `${fmt(s)} – ${fmt(e)}`;
+}
+
+// Touch swipe support for the strip
+(function() {
+  let tx0 = 0;
+  document.addEventListener('touchstart', e => {
+    if (e.target.closest('#day-strip')) tx0 = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (!e.target.closest('#day-strip') && !e.target.closest('.strip-nav')) return;
+    const dx = e.changedTouches[0].clientX - tx0;
+    if (Math.abs(dx) > 40) scrollStrip(dx < 0 ? 7 : -7);
+  }, { passive: true });
+})();
+
 function showInviteFromPartner() {
-  alert('Share this page URL with someone you\'d like to plan time with. They\'ll need their own custody calendar on Spontany.');
+  alert('To compare free time with a partner, they\'ll need their own Spontany account. Share the app with them: ' + window.location.origin);
 }
 
 let toastTimer;
