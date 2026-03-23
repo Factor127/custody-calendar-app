@@ -6,10 +6,32 @@
   <title>Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .page-header h1 { margin:0; font-size:20px; }
+    .profile-circle {
+      position:relative; width:38px; height:38px; border-radius:50%;
+      background:var(--blue); color:white; display:flex; align-items:center;
+      justify-content:center; font-weight:800; font-size:15px; text-decoration:none;
+      flex-shrink:0; cursor:pointer; user-select:none;
+    }
+    .profile-circle:hover { opacity:0.88; }
+    .notif-dot {
+      position:absolute; top:1px; right:1px; width:10px; height:10px;
+      border-radius:50%; background:#e53935; border:2px solid white;
+    }
+    .notif-dot.hidden { display:none; }
+  </style>
 </head>
 <body>
 
-<h1 id="page-title">Custody Calendar</h1>
+<div class="page-header">
+  <h1 id="page-title">Custody Calendar</h1>
+  <a id="profile-btn" href="#" class="profile-circle" title="My profile">
+    <span id="profile-initial">?</span>
+    <span id="notif-dot" class="notif-dot hidden"></span>
+  </a>
+</div>
 
 <!-- Custody Summary -->
 <div class="summary">
@@ -53,25 +75,42 @@
   👥 <span class="bold">Edit Partner:</span> Click any day to toggle partner availability.
 </div>
 
-<!-- Controls -->
-<div class="controls">
+<!-- Import notice (shown if no calendar data yet) -->
+<div id="import-notice" class="hidden" style="background:#fff3cd;border:1px solid #f0c36d;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+  <strong>No calendar data yet.</strong>
+  Import your existing backup HTML file to get started:
+  <label class="btn btn-sm btn-outline" style="margin-left:10px;cursor:pointer;">
+    📂 Import backup
+    <input type="file" accept=".html" style="display:none;" onchange="importHtml(this)">
+  </label>
+  <span class="text-muted text-sm" style="margin-left:8px;">Or just start editing the calendar manually.</span>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
+  <div class="legend-item" id="legend-partner"><span class="dot partner-self"></span> Partner has kids &nbsp; <span class="dot partner-free"></span> Partner free</div>
+  <div class="legend-item"><span class="tag">H</span> Holiday</div>
+  <div class="legend-item"><span class="tag">V</span> Vacation</div>
+  <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
+</div>
+
+<!-- Month navigation -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
+  <span id="month-label" style="font-weight:700;font-size:16px;"></span>
+  <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
+</div>
+
+<!-- Calendar container -->
+<div class="calendar-container" id="calendar-container">
+  <div style="padding:40px;text-align:center;color:var(--muted);">Loading calendar…</div>
+</div>
+
+<!-- Controls — below calendar -->
+<div class="controls" style="margin-top:14px;">
   <span class="controls-title">Show:</span>
-
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-r" checked onchange="toggleClass('hide-r',!this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label" id="toggle-r-label">My days</span>
-  </div>
-
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-z" checked onchange="toggleClass('hide-z',!this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Co-parent days</span>
-  </div>
 
   <div class="toggle-group" id="toggle-partner-group">
     <label class="toggle-switch">
@@ -120,34 +159,7 @@
     <button class="btn btn-gray" onclick="downloadBackup()">📥 Backup</button>
     <button class="btn btn-purple" onclick="shareWithCoparent()">📤 Share</button>
     <button class="btn btn-primary" onclick="exportToPDF()">📄 PDF</button>
-    <button class="btn btn-outline" onclick="openKidsExport()">📅 Month view</button>
   </div>
-</div>
-
-<!-- Import notice (shown if no calendar data yet) -->
-<div id="import-notice" class="hidden" style="background:#fff3cd;border:1px solid #f0c36d;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
-  <strong>No calendar data yet.</strong>
-  Import your existing backup HTML file to get started:
-  <label class="btn btn-sm btn-outline" style="margin-left:10px;cursor:pointer;">
-    📂 Import backup
-    <input type="file" accept=".html" style="display:none;" onchange="importHtml(this)">
-  </label>
-  <span class="text-muted text-sm" style="margin-left:8px;">Or just start editing the calendar manually.</span>
-</div>
-
-<!-- Legend -->
-<div class="legend">
-  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
-  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
-  <div class="legend-item" id="legend-partner"><span class="dot partner-self"></span> Partner has kids &nbsp; <span class="dot partner-free"></span> Partner free</div>
-  <div class="legend-item"><span class="tag">H</span> Holiday</div>
-  <div class="legend-item"><span class="tag">V</span> Vacation</div>
-  <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
-</div>
-
-<!-- Calendar container -->
-<div class="calendar-container" id="calendar-container">
-  <div style="padding:40px;text-align:center;color:var(--muted);">Loading calendar…</div>
 </div>
 
 <!-- Approve connection modal -->
@@ -265,7 +277,9 @@ let activeSuggestionId = null;
 let editMode = null; // 'custody' | 'holiday' | 'partner' | null
 let selectedDurationDays = 30;
 let pendingConnectionId = null;
-let dirty = false; // true when there are unsaved edits
+let dirty = false;
+let currentViewYear = null;
+let currentViewMonth = null;
 
 // Warn before closing/navigating away with unsaved changes
 window.addEventListener('beforeunload', e => {
@@ -275,19 +289,17 @@ window.addEventListener('beforeunload', e => {
   }
 });
 
-// ── Calendar date range ───────────────────────────────────────────────────
-// Show 15 months: from 2 months ago through 12 months ahead
-function getCalendarRange() {
-  const start = new Date();
-  start.setDate(1);
-  start.setMonth(start.getMonth() - 2);
+// ── Month navigation ──────────────────────────────────────────────────────
+function prevMonth() {
+  currentViewMonth--;
+  if (currentViewMonth < 0) { currentViewMonth = 11; currentViewYear--; }
+  renderCalendar();
+}
 
-  const end = new Date();
-  end.setDate(1);
-  end.setMonth(end.getMonth() + 13);
-  end.setDate(0); // last day of +12 months
-
-  return { start, end };
+function nextMonth() {
+  currentViewMonth++;
+  if (currentViewMonth > 11) { currentViewMonth = 0; currentViewYear++; }
+  renderCalendar();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
@@ -303,7 +315,10 @@ function getCalendarRange() {
 
   document.getElementById('page-title').textContent = `Custody Calendar — ${myName}`;
   document.getElementById('owner-name-label').textContent = `${myName}:`;
-  document.getElementById('toggle-r-label').textContent = `${myName}'s days`;
+
+  // Profile circle
+  document.getElementById('profile-initial').textContent = (myName || '?')[0].toUpperCase();
+  document.getElementById('profile-btn').href = `/profile?token=${MY_TOKEN}`;
 
   // Load my calendar data
   await loadMyCalendar();
@@ -353,6 +368,8 @@ async function loadConnections() {
 
   const totalBadge = pendingConnections.length + pendingSuggestions.length;
   const badge = document.getElementById('pending-badge');
+  // Profile circle notification dot
+  document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
   if (totalBadge > 0) {
     badge.textContent = totalBadge;
     badge.classList.remove('hidden');
@@ -458,89 +475,67 @@ async function loadPartnerOverlay() {
   renderCalendar();
 }
 
-// ── Render calendar ───────────────────────────────────────────────────────
+// ── Render calendar (single month) ────────────────────────────────────────
 function renderCalendar() {
   const container = document.getElementById('calendar-container');
-  const { start, end } = getCalendarRange();
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date();
+  if (currentViewYear === null) { currentViewYear = today.getFullYear(); currentViewMonth = today.getMonth(); }
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-  let html = '';
-  let cur = new Date(start);
+  const y = currentViewYear;
+  const m = currentViewMonth;
+  const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('month-label').textContent = monthName;
 
-  while (cur <= end) {
-    const y = cur.getFullYear();
-    const m = cur.getMonth();
-    const monthName = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const firstDow = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const firstDow = new Date(y, m, 1).getDay();
 
-    html += `<div class="month">
-      <div class="month-title">${monthName}</div>
-      <table class="month-table">
-        <thead><tr>
-          <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
-        </tr></thead>
-        <tbody>`;
+  let html = `<div class="month"><table class="month-table">
+    <thead><tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+    <tbody>`;
 
-    let cellCount = firstDow;
-    if (firstDow > 0) {
-      html += '<tr>';
-      for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>';
+  let cellCount = firstDow;
+  if (firstDow > 0) { html += '<tr>'; for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>'; }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (cellCount % 7 === 0) html += '<tr>';
+
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayData = calendarDays[dateStr];
+    const pDay = partnerDays[dateStr];
+    const owner = dayData?.owner;
+    const tags = dayData?.tags || [];
+    const isToday = dateStr === todayStr;
+
+    const tdClass = [
+      owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
+      isToday ? 'today' : '',
+      (owner === 'coparent' && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+    ].filter(Boolean).join(' ');
+
+    const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+    const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
+
+    let partnerDotHtml = '';
+    if (pDay) {
+      const dotClass = pDay.owner === 'self' ? 'partner-self' : 'partner-free';
+      partnerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}"></span></div>`;
     }
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      if (cellCount % 7 === 0) html += '<tr>';
+    html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
+      <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
+      <div class="label">${ownerLabel} ${tagHtml}</div>
+      ${partnerDotHtml}
+    </td>`;
 
-      const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const dayData = calendarDays[dateStr];
-      const pDay = partnerDays[dateStr];
-
-      const owner = dayData?.owner; // undefined = not yet set → neutral cell
-      const tags = dayData?.tags || [];
-      const isToday = dateStr === today;
-
-      // CSS classes — no color class for unset days
-      const tdClass = [
-        owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
-        isToday ? 'today' : '',
-        // Both free: owner=coparent (Z's day for R) AND partner is free
-        (owner === 'coparent' && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
-      ].filter(Boolean).join(' ');
-
-      const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
-      const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
-
-      let partnerDotHtml = '';
-      if (pDay) {
-        // partner-self = partner has kids (busy for couple), partner-free = partner free
-        const dotClass = pDay.owner === 'self' ? 'partner-self' : 'partner-free';
-        const dotTitle = pDay.owner === 'self' ? 'Partner has kids' : 'Partner free';
-        partnerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}" title="${dotTitle}"></span></div>`;
-      }
-
-      html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
-        <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
-        <div class="label">${ownerLabel} ${tagHtml}</div>
-        ${partnerDotHtml}
-      </td>`;
-
-      cellCount++;
-      if (cellCount % 7 === 0) html += '</tr>';
-    }
-
-    // Trailing empty cells
-    const remaining = 7 - (cellCount % 7);
-    if (remaining < 7) {
-      for (let i = 0; i < remaining; i++) html += '<td class="empty"></td>';
-      html += '</tr>';
-    }
-
-    html += '</tbody></table></div>';
-
-    cur.setMonth(cur.getMonth() + 1);
-    cur.setDate(1);
+    cellCount++;
+    if (cellCount % 7 === 0) html += '</tr>';
   }
 
+  const remaining = 7 - (cellCount % 7);
+  if (remaining < 7) { for (let i = 0; i < remaining; i++) html += '<td class="empty"></td>'; html += '</tr>'; }
+
+  html += '</tbody></table></div>';
   container.innerHTML = html;
   calculateCustodyDays();
 }
