@@ -26,7 +26,13 @@ router.get('/admin/users', (req, res) => {
       (SELECT COUNT(*) FROM calendar_days WHERE user_id = u.id) AS day_count,
       (SELECT status FROM connections
        WHERE (requester_id = u.id OR target_id = u.id)
-       ORDER BY created_at DESC LIMIT 1) AS conn_status
+       ORDER BY created_at DESC LIMIT 1) AS conn_status,
+      COALESCE(
+        (SELECT c.relationship_type FROM connections c
+         WHERE c.requester_id = u.id ORDER BY c.created_at DESC LIMIT 1),
+        (SELECT i.relationship_type FROM invites i
+         WHERE i.used_by = u.id ORDER BY i.created_at DESC LIMIT 1)
+      ) AS relationship_type
     FROM users u
     ORDER BY u.created_at DESC
   `).all();

@@ -147,6 +147,16 @@ router.post('/users/register', (req, res) => {
     upsertManyDays(userId, mirroredDays);
   }
 
+  // Auto-create a pending connection request to the invite creator (owner)
+  // so the owner sees the new person in their connections panel immediately.
+  const existingConn = q.getConnectionByRequester.get(userId);
+  if (!existingConn) {
+    const connId = uuidv4();
+    q.createConnection.run(connId, userId, invite.created_by);
+    // Stamp the relationship_type from the invite directly onto the connection
+    q.updateConnectionRole.run(invite.relationship_type || 'coparent', connId);
+  }
+
   res.json({ token, userId, message: 'Registered successfully' });
 });
 

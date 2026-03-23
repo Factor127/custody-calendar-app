@@ -109,7 +109,12 @@ async function load() {
     return `<tr>
       <td><strong>${esc(u.name)}</strong></td>
       <td class="muted">${esc(u.email || '—')}</td>
-      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td>
+        <span class="badge badge-${u.role}">${u.role}</span>
+        ${u.role === 'partner' && u.relationship_type
+          ? `<span class="badge" style="margin-left:4px;background:${u.relationship_type === 'partner' ? '#fce4ec' : '#e8f0fe'};color:${u.relationship_type === 'partner' ? '#c2185b' : '#1967d2'};">${u.relationship_type === 'partner' ? '❤️ partner' : '👨‍👩‍👧 co-parent'}</span>`
+          : ''}
+      </td>
       <td><span class="badge badge-${connBadge}">${connLabel}</span></td>
       <td class="muted">${u.day_count}</td>
       <td class="muted">${joined}</td>
