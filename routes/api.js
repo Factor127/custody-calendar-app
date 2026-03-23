@@ -447,61 +447,70 @@ router.put('/connections/:id/role', (req, res) => {
 
 // ── Suggestions (co-parent proposes schedule change to owner) ─────────────────
 
-// POST /api/suggestions — partner submits a proposed schedule change
+// POST /api/suggestions — any connected user submits a proposed schedule change to the other
 router.post('/suggestions', (req, res) => {
-  const partner = requireToken(req, res);
-  if (!partner) return;
-  if (partner.role !== 'partner') return res.status(403).json({ error: 'Only partners can submit suggestions' });
+  const me = requireToken(req, res);
+  if (!me) return;
 
   const { changes, note } = req.body;
   if (!Array.isArray(changes) || changes.length === 0) {
     return res.status(400).json({ error: 'changes must be a non-empty array' });
   }
 
-  const conn = q.getConnectionByRequester.get(partner.id);
+  // Find the approved connection — works for both partner (as requester) and owner (as target)
+  let conn = q.getConnectionByRequester.get(me.id);
+  if (!conn || conn.status !== 'approved') {
+    // Owner role: look for any approved connection where they are the target
+    conn = db.prepare(
+      "SELECT * FROM connections WHERE target_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 1"
+    ).get(me.id);
+  }
   if (!conn || conn.status !== 'approved') {
     return res.status(403).json({ error: 'No active connection' });
   }
 
+  // Send to the other party
+  const toUserId = conn.requester_id === me.id ? conn.target_id : conn.requester_id;
+
   const id = uuidv4();
-  q.createSuggestion.run(id, partner.id, conn.target_id, JSON.stringify(changes), note || null);
+  q.createSuggestion.run(id, me.id, toUserId, JSON.stringify(changes), note || null);
   res.json({ id, status: 'pending' });
 });
 
-// GET /api/suggestions/pending — owner sees pending suggestions
+// GET /api/suggestions/pending — any authenticated user sees suggestions sent to them
 router.get('/suggestions/pending', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const me = requireToken(req, res);
+  if (!me) return;
 
-  const suggestions = q.getPendingSuggestionsForOwner.all(owner.id);
+  const suggestions = q.getPendingSuggestionsForOwner.all(me.id);
   res.json({
     suggestions: suggestions.map(s => ({ ...s, changes: JSON.parse(s.changes) }))
   });
 });
 
-// POST /api/suggestions/:id/approve — owner approves; changes applied to both calendars
+// POST /api/suggestions/:id/approve — recipient approves; changes applied to both calendars
 router.post('/suggestions/:id/approve', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const me = requireToken(req, res);
+  if (!me) return;
 
   const s = q.getSuggestionById.get(req.params.id);
   if (!s) return res.status(404).json({ error: 'Suggestion not found' });
-  if (s.to_user_id !== owner.id) return res.status(403).json({ error: 'Not your suggestion to approve' });
+  if (s.to_user_id !== me.id) return res.status(403).json({ error: 'Not your suggestion to approve' });
   if (s.status !== 'pending') return res.status(409).json({ error: 'Suggestion already handled' });
 
   const changes = JSON.parse(s.changes);
 
-  // Apply each change: preserve existing tags, only update owner
+  // Apply each change — proposed_owner is always from the sender's (from_user_id) perspective
   db.exec('BEGIN');
   try {
     for (const c of changes) {
-      const existingPartner = q.getDay.get(s.from_user_id, c.date);
-      const existingOwner   = q.getDay.get(owner.id, c.date);
-      // Partner's calendar: apply proposed_owner directly
-      q.upsertDay.run(s.from_user_id, c.date, c.proposed_owner, existingPartner?.tags || '[]');
-      // Owner's calendar: flip perspective (partner 'self' → owner 'coparent' and vice versa)
-      const ownerOwner = c.proposed_owner === 'self' ? 'coparent' : 'self';
-      q.upsertDay.run(owner.id, c.date, ownerOwner, existingOwner?.tags || '[]');
+      const existingFrom = q.getDay.get(s.from_user_id, c.date);
+      const existingTo   = q.getDay.get(me.id, c.date);
+      // Sender's calendar: apply proposed_owner as-is
+      q.upsertDay.run(s.from_user_id, c.date, c.proposed_owner, existingFrom?.tags || '[]');
+      // Recipient's calendar: flip perspective
+      const toOwner = c.proposed_owner === 'self' ? 'coparent' : 'self';
+      q.upsertDay.run(me.id, c.date, toOwner, existingTo?.tags || '[]');
     }
     db.exec('COMMIT');
   } catch (e) {
@@ -513,14 +522,14 @@ router.post('/suggestions/:id/approve', (req, res) => {
   res.json({ status: 'approved', applied: changes.length });
 });
 
-// POST /api/suggestions/:id/reject — owner declines suggestion
+// POST /api/suggestions/:id/reject — recipient declines suggestion
 router.post('/suggestions/:id/reject', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const me = requireToken(req, res);
+  if (!me) return;
 
   const s = q.getSuggestionById.get(req.params.id);
   if (!s) return res.status(404).json({ error: 'Suggestion not found' });
-  if (s.to_user_id !== owner.id) return res.status(403).json({ error: 'Not your suggestion' });
+  if (s.to_user_id !== me.id) return res.status(403).json({ error: 'Not your suggestion' });
   if (s.status !== 'pending') return res.status(409).json({ error: 'Suggestion already handled' });
 
   q.updateSuggestionStatus.run('rejected', s.id);

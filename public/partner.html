@@ -38,6 +38,34 @@
     .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
     .next-time-label  { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
+
+    /* ── Suggestion side panel ─────────────────────────────────────────── */
+    #suggestion-panel {
+      position:fixed; top:50%; right:-360px; transform:translateY(-50%);
+      width:320px; max-height:80vh; background:white;
+      border:1.5px solid var(--border); border-radius:16px 0 0 16px;
+      box-shadow:-4px 0 24px rgba(0,0,0,0.12);
+      display:flex; flex-direction:column;
+      transition:right 0.28s cubic-bezier(0.4,0,0.2,1);
+      z-index:800; overflow:hidden;
+    }
+    #suggestion-panel.open { right:0; }
+    .sugg-panel-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px 10px; border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .sugg-panel-header h3 { margin:0; font-size:14px; font-weight:800; }
+    .sugg-later-btn {
+      font-size:11px; font-weight:700; color:var(--muted); background:none;
+      border:none; cursor:pointer; padding:2px 6px; border-radius:4px;
+    }
+    .sugg-later-btn:hover { background:#f3f4f6; color:var(--text); }
+    .sugg-panel-body { flex:1; overflow-y:auto; padding:12px 16px; }
+    .sugg-panel-footer {
+      display:flex; gap:8px; padding:12px 16px;
+      border-top:1px solid var(--border); flex-shrink:0;
+    }
+    .sugg-panel-footer .btn { flex:1; }
   </style>
 </head>
 <body>
@@ -242,6 +270,23 @@
   </div>
 </div>
 
+<!-- Incoming suggestion review panel (slides in from right) -->
+<div id="suggestion-panel">
+  <div class="sugg-panel-header">
+    <h3>📋 Proposed changes</h3>
+    <button class="sugg-later-btn" onclick="closeSuggestionPanel()">Later ✕</button>
+  </div>
+  <div class="sugg-panel-body">
+    <p style="margin:0 0 10px;font-size:13px;color:var(--muted);"><strong id="suggestion-from-name" style="color:var(--text);"></strong> is proposing:</p>
+    <div id="suggestion-note-display" style="display:none; background:#fff3e0; border:1px solid var(--orange); border-radius:6px; padding:8px 12px; font-size:12px; margin-bottom:10px; color:#e65100;"></div>
+    <div id="suggestion-changes-list" style="font-size:13px;"></div>
+  </div>
+  <div class="sugg-panel-footer">
+    <button class="btn btn-outline btn-sm" onclick="rejectSuggestion()">Decline</button>
+    <button class="btn btn-primary btn-sm" onclick="approveSuggestion()">Apply changes</button>
+  </div>
+</div>
+
 <script>
 const params = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
@@ -258,6 +303,8 @@ let connStatus = null;
 let dirty = false; // true when there are unsaved edits
 let suggestMode = false;
 let suggestedChanges = {}; // date -> proposed_owner (from partner's perspective)
+let pendingSuggestions = [];
+let activeSuggestionId = null;
 let currentViewYear = null;
 let currentViewMonth = null;
 let stripOffset = 0; // days ahead from today shown at left edge of strip
@@ -301,16 +348,81 @@ function toDateStr(d) {
 })();
 
 async function checkNotifications() {
-  // Show dot if there are pending suggestions from owner
   try {
     const res = await fetch(`/api/suggestions/pending?token=${MY_TOKEN}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.suggestions && data.suggestions.length > 0) {
+      pendingSuggestions = data.suggestions || [];
+      if (pendingSuggestions.length > 0) {
         document.getElementById('notif-dot').classList.remove('hidden');
+        // Auto-open the first pending suggestion
+        openSuggestionPanel(pendingSuggestions[0].id);
       }
     }
   } catch(e) { /* ignore */ }
+}
+
+function openSuggestionPanel(suggId) {
+  const s = pendingSuggestions.find(x => x.id === suggId);
+  if (!s) return;
+  activeSuggestionId = suggId;
+
+  document.getElementById('suggestion-from-name').textContent = s.from_name;
+
+  const noteEl = document.getElementById('suggestion-note-display');
+  if (s.note) {
+    noteEl.textContent = `"${s.note}"`;
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+
+  const rows = s.changes.map(c => {
+    const d = new Date(c.date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    const from = c.current_owner === 'self' ? 'You' : s.from_name;
+    const to   = c.proposed_owner === 'self' ? 'You' : s.from_name;
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <strong>${label}</strong><br>
+      <span style="color:var(--muted);">${from} → ${to}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('suggestion-changes-list').innerHTML = rows;
+
+  document.getElementById('suggestion-panel').classList.add('open');
+}
+
+function closeSuggestionPanel() {
+  document.getElementById('suggestion-panel').classList.remove('open');
+  activeSuggestionId = null;
+}
+
+async function approveSuggestion() {
+  const res = await fetch(`/api/suggestions/${activeSuggestionId}/approve?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }
+  });
+  if (res.ok) {
+    closeSuggestionPanel();
+    document.getElementById('notif-dot').classList.add('hidden');
+    showToast('✓ Changes applied');
+    await loadMyCalendar();
+    await loadOwnerOverlay();
+  } else {
+    showToast('Failed to apply changes');
+  }
+}
+
+async function rejectSuggestion() {
+  const res = await fetch(`/api/suggestions/${activeSuggestionId}/reject?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }
+  });
+  if (res.ok) {
+    closeSuggestionPanel();
+    document.getElementById('notif-dot').classList.add('hidden');
+    showToast('Suggestion declined');
+  } else {
+    showToast('Failed to decline');
+  }
 }
 
 async function loadMyCalendar() {

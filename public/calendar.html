@@ -40,6 +40,8 @@
     .next-time-label   { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
 
+    td.suggest-proposed { outline: 2.5px dashed var(--orange) !important; background: #fff8e1 !important; }
+
     /* ── Suggestion side panel ─────────────────────────────────────────── */
     #suggestion-panel {
       position:fixed; top:50%; right:-360px; transform:translateY(-50%);
@@ -117,6 +119,9 @@
 </div>
 
 <!-- Edit mode notices -->
+<div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;display:none;">
+  💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your partner. Click again to un-propose.
+</div>
 <div class="edit-notice notice-custody" id="edit-notice">
   ✏️ <span class="bold">Edit Custody:</span> Click any day to switch between you and co-parent.
 </div>
@@ -193,6 +198,14 @@
       <span class="slider"></span>
     </label>
     <span class="toggle-label">Edit Holidays</span>
+  </div>
+
+  <div class="toggle-group" id="toggle-suggest-group" style="display:none;">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-suggest" onchange="toggleSuggestMode(this.checked)">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">Suggest changes</span>
   </div>
 
   <div class="ml-auto flex-gap">
@@ -337,6 +350,14 @@
   </div>
 </div>
 
+<!-- Suggest bottom bar (fixed, visible in suggest mode) -->
+<div id="suggest-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid var(--orange); padding:12px 24px; box-shadow:0 -4px 16px rgba(0,0,0,0.12); z-index:100; align-items:center; gap:12px; flex-wrap:wrap;">
+  <span id="suggest-count" style="font-weight:700; font-size:13px; color:var(--orange); white-space:nowrap;">0 days selected</span>
+  <input id="suggest-note" type="text" placeholder="Add a note to your partner (optional)" style="flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:180px;">
+  <button class="btn btn-outline" onclick="cancelSuggest()">Cancel</button>
+  <button class="btn btn-primary" onclick="submitSuggestion()">Send suggestion</button>
+</div>
+
 <script>
 // ── Auth ──────────────────────────────────────────────────────────────────
 const params = new URLSearchParams(location.search);
@@ -346,6 +367,8 @@ let myName = 'Me';
 let partnerConnections = [];
 let pendingConnections = [];
 let pendingSuggestions = [];
+let suggestMode = false;
+let suggestedChanges = {};
 let calendarDays = {}; // date -> { owner: 'self'|'coparent', tags: [] }
 let partnerDays = {};  // date -> { owner: 'self'|'coparent' }
 let activePartnerUserId = null;
@@ -647,6 +670,9 @@ async function loadPartnerOverlay() {
   }
   activePartnerUserId = approved.requester_id;
 
+  // Show suggest toggle now that there's an active connection
+  document.getElementById('toggle-suggest-group').style.display = 'flex';
+
   const pName = pData.user?.name || 'Partner';
   activePartnerName = pName;
   document.getElementById('next-time-label').textContent = `Next time both you & ${pName} are free`;
@@ -718,7 +744,9 @@ function handleDayClick(cell) {
   const date = cell.dataset.date;
   if (!date || cell.classList.contains('empty')) return;
 
-  if (editMode === 'custody') {
+  if (suggestMode) {
+    toggleSuggestDay(cell, date);
+  } else if (editMode === 'custody') {
     toggleCustody(cell, date);
   } else if (editMode === 'holiday') {
     cycleTag(cell, date);
@@ -796,6 +824,73 @@ function setEditMode(mode, on) {
 
   const noticeId = mode === 'custody' ? 'edit-notice' : `${mode}-edit-notice`;
   document.getElementById(noticeId).classList.toggle('active', on);
+}
+
+// ── Suggest mode ──────────────────────────────────────────────────────────
+function toggleSuggestMode(on) {
+  if (on) {
+    // Turn off any active edit modes
+    ['custody','holiday'].forEach(m => {
+      const toggleId = m === 'custody' ? 'toggle-edit' : 'toggle-holiday-edit';
+      const el = document.getElementById(toggleId);
+      if (el) el.checked = false;
+      const noticeId = m === 'custody' ? 'edit-notice' : `${m}-edit-notice`;
+      document.getElementById(noticeId)?.classList.remove('active');
+    });
+    editMode = null;
+  }
+  suggestMode = on;
+  suggestedChanges = {};
+  document.getElementById('suggest-notice').style.display = on ? 'block' : 'none';
+  document.getElementById('suggest-panel').style.display = on ? 'flex' : 'none';
+  document.getElementById('suggest-count').textContent = '0 days selected';
+  document.getElementById('suggest-note').value = '';
+  document.body.style.paddingBottom = on ? '80px' : '';
+  renderCalendar();
+}
+
+function cancelSuggest() {
+  document.getElementById('toggle-suggest').checked = false;
+  toggleSuggestMode(false);
+}
+
+function toggleSuggestDay(cell, date) {
+  if (suggestedChanges[date] !== undefined) {
+    delete suggestedChanges[date];
+    cell.classList.remove('suggest-proposed');
+  } else {
+    const cur = calendarDays[date]?.owner || 'coparent';
+    suggestedChanges[date] = cur === 'self' ? 'coparent' : 'self';
+    cell.classList.add('suggest-proposed');
+  }
+  const count = Object.keys(suggestedChanges).length;
+  document.getElementById('suggest-count').textContent = `${count} day${count !== 1 ? 's' : ''} selected`;
+}
+
+async function submitSuggestion() {
+  const count = Object.keys(suggestedChanges).length;
+  if (count === 0) { showToast('Select at least one day to propose'); return; }
+
+  const changes = Object.entries(suggestedChanges).map(([date, proposed_owner]) => ({
+    date,
+    current_owner: calendarDays[date]?.owner || 'coparent',
+    proposed_owner
+  }));
+  const note = document.getElementById('suggest-note').value.trim();
+
+  const res = await fetch(`/api/suggestions?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ changes, note: note || null })
+  });
+
+  if (res.ok) {
+    cancelSuggest();
+    showToast(`✓ Suggestion sent (${count} day${count > 1 ? 's' : ''})`);
+  } else {
+    const err = await res.json().catch(() => ({}));
+    showToast(err.error || 'Failed to send suggestion');
+  }
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────
