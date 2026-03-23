@@ -36,4 +36,9 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`\n✓ Spontany running at ${BASE_URL}`);
   console.log(`  → New users: ${BASE_URL}/login\n`);
+  console.log('ENV CHECK:',
+    'GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? '✓ set' : '✗ MISSING',
+    '| GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '✓ set' : '✗ MISSING',
+    '| BASE_URL:', process.env.BASE_URL || '(using default)'
+  );
 });
