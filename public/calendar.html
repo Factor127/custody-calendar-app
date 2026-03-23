@@ -718,30 +718,46 @@ function selectInviteType(type) {
 }
 
 async function generateInvite() {
-  document.getElementById('invite-generate-btn').textContent = 'Generating…';
-  document.getElementById('invite-generate-btn').disabled = true;
+  const btn = document.getElementById('invite-generate-btn');
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
 
-  const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ relationship_type: _inviteType })
-  });
-  const data = await res.json();
+  try {
+    const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relationship_type: _inviteType })
+    });
 
-  document.getElementById('invite-url-display').textContent = data.invite_url;
+    const data = await res.json();
 
-  const isPartner = _inviteType === 'partner';
-  const waText = encodeURIComponent(isPartner
-    ? `Hi! I'm using Spontany to manage my custody schedule — it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
-    : `Hi! I'm using Spontany to manage our custody schedule — makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`
-  );
-  document.getElementById('whatsapp-btn').href = `https://wa.me/?text=${waText}`;
-  document.getElementById('invite-link-desc').textContent = isPartner
-    ? 'Send this to your partner. They\'ll set up their custody calendar and you\'ll see your matching free days.'
-    : 'Send this to your co-parent. They\'ll set up their custody schedule in under a minute.';
+    if (!res.ok || !data.invite_url) {
+      alert(data.error || 'Failed to generate invite link — please try again.');
+      btn.textContent = 'Generate link →';
+      btn.disabled = false;
+      return;
+    }
 
-  document.getElementById('invite-type-picker').style.display = 'none';
-  document.getElementById('invite-link-section').style.display = 'block';
+    const isPartner = _inviteType === 'partner';
+    document.getElementById('invite-url-display').textContent = data.invite_url;
+
+    const waText = encodeURIComponent(isPartner
+      ? `Hi! I'm using Spontany to manage my custody schedule — it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
+      : `Hi! I'm using Spontany to manage our custody schedule — makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`
+    );
+    document.getElementById('whatsapp-btn').href = `https://wa.me/?text=${waText}`;
+    document.getElementById('invite-link-desc').textContent = isPartner
+      ? 'Send this to your partner. They\'ll set up their custody calendar and you\'ll see your matching free days.'
+      : 'Send this to your co-parent. They\'ll set up their custody schedule in under a minute.';
+
+    document.getElementById('invite-type-picker').style.display = 'none';
+    document.getElementById('invite-link-section').style.display = 'block';
+
+  } catch (err) {
+    alert('Network error — please check your connection and try again.');
+    btn.textContent = 'Generate link →';
+    btn.disabled = false;
+  }
 }
 
 function resetInviteModal() {

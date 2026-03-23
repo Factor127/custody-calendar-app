@@ -43,6 +43,10 @@ router.get('/profile', (req, res) => {
 
 // Partner onboarding
 router.get('/invite/:token', (req, res) => {
+  // Guard against literal "undefined" being passed as a token
+  if (!req.params.token || req.params.token === 'undefined') {
+    return res.status(404).send('<h2>This invite link is invalid.</h2><p>Ask your partner to generate a new one.</p>');
+  }
   const invite = q.getInvite.get(req.params.token);
   if (!invite) {
     return res.status(404).send('<h2>This invite link is invalid or has expired.</h2><p>Ask your partner to generate a new one.</p>');
