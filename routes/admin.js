@@ -24,20 +24,33 @@ router.get('/admin/users', (req, res) => {
     SELECT
       u.id, u.name, u.email, u.role, u.created_at,
       (SELECT COUNT(*) FROM calendar_days WHERE user_id = u.id) AS day_count,
-      (SELECT status FROM connections
-       WHERE (requester_id = u.id OR target_id = u.id)
-       ORDER BY created_at DESC LIMIT 1) AS conn_status,
-      COALESCE(
-        (SELECT c.relationship_type FROM connections c
-         WHERE c.requester_id = u.id ORDER BY c.created_at DESC LIMIT 1),
-        (SELECT i.relationship_type FROM invites i
-         WHERE i.used_by = u.id ORDER BY i.created_at DESC LIMIT 1)
-      ) AS relationship_type
+      c.id         AS conn_id,
+      c.status     AS conn_status,
+      c.relationship_type AS relationship_type
     FROM users u
+    LEFT JOIN connections c ON c.requester_id = u.id
     ORDER BY u.created_at DESC
   `).all();
 
   res.json({ users });
+});
+
+// PUT /api/admin/connections/:id/role — admin changes a connection's relationship label
+router.put('/admin/connections/:id/role', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const { relationship_type } = req.body;
+  if (!['coparent', 'partner'].includes(relationship_type)) {
+    return res.status(400).json({ error: 'relationship_type must be coparent or partner' });
+  }
+
+  const conn = db.prepare('SELECT * FROM connections WHERE id = ?').get(req.params.id);
+  if (!conn) return res.status(404).json({ error: 'Connection not found' });
+
+  db.prepare('UPDATE connections SET relationship_type = ? WHERE id = ?')
+    .run(relationship_type, req.params.id);
+
+  res.json({ relationship_type });
 });
 
 // DELETE /api/admin/users/:id — delete user + all their data (cascade)

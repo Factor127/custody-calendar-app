@@ -106,21 +106,46 @@ async function load() {
                     : u.conn_status === 'pending'  ? 'pending'
                     : 'none';
     const connLabel = u.conn_status || 'none';
+
+    // Role column: owners show "owner"; partners show their relationship type with toggle button
+    let roleCell;
+    if (u.role === 'owner') {
+      roleCell = `<span class="badge badge-owner">owner</span>`;
+    } else if (u.conn_id) {
+      const rel = u.relationship_type || 'coparent';
+      const isPartner = rel === 'partner';
+      const bg    = isPartner ? '#fce4ec' : '#e8f0fe';
+      const color = isPartner ? '#c2185b' : '#1967d2';
+      const label = isPartner ? '❤️ partner' : '👨‍👩‍👧 co-parent';
+      const next  = isPartner ? 'coparent' : 'partner';
+      roleCell = `<button onclick="setRole('${u.conn_id}','${next}')"
+        title="Click to switch to ${next}" style="background:${bg};color:${color};border:none;
+        padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">${label}</button>`;
+    } else {
+      roleCell = `<span class="badge badge-partner">partner (no connection)</span>`;
+    }
+
     return `<tr>
       <td><strong>${esc(u.name)}</strong></td>
       <td class="muted">${esc(u.email || '—')}</td>
-      <td>
-        <span class="badge badge-${u.role}">${u.role}</span>
-        ${u.role === 'partner' && u.relationship_type
-          ? `<span class="badge" style="margin-left:4px;background:${u.relationship_type === 'partner' ? '#fce4ec' : '#e8f0fe'};color:${u.relationship_type === 'partner' ? '#c2185b' : '#1967d2'};">${u.relationship_type === 'partner' ? '❤️ partner' : '👨‍👩‍👧 co-parent'}</span>`
-          : ''}
-      </td>
+      <td>${roleCell}</td>
       <td><span class="badge badge-${connBadge}">${connLabel}</span></td>
       <td class="muted">${u.day_count}</td>
       <td class="muted">${joined}</td>
       <td><button class="btn-delete" onclick="deleteUser('${u.id}','${esc(u.name)}')">Delete</button></td>
     </tr>`;
   }).join('');
+}
+
+async function setRole(connId, newRole) {
+  const label = newRole === 'partner' ? '❤️ partner' : '👨‍👩‍👧 co-parent';
+  const res = await fetch(`/api/admin/connections/${connId}/role?token=${ADMIN_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relationship_type: newRole })
+  });
+  if (res.ok) { await loadUsers(); }
+  else { alert('Failed to update role'); }
 }
 
 async function deleteUser(id, name) {
