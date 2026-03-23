@@ -54,6 +54,14 @@
       line-height: 1.5;
     }
 
+    #loading-state { display:none; text-align:center; padding:20px 0; }
+    .spinner {
+      width:32px; height:32px; border:3px solid var(--border);
+      border-top-color:var(--blue); border-radius:50%;
+      animation:spin 0.7s linear infinite; margin:0 auto 14px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
     @media (max-width: 460px) {
       .login-card { padding: 32px 24px 28px; }
       .app-name   { font-size: 24px; }
@@ -67,6 +75,12 @@
     <div class="app-logo">📅</div>
     <h1 class="app-name">Spontany</h1>
     <p class="app-tag">Shared custody calendar for co-parents</p>
+
+    <!-- ── Auto-login spinner ── -->
+    <div id="loading-state">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);font-size:14px;margin:0;">Signing you in…</p>
+    </div>
 
     <!-- ── Login form ── -->
     <div id="form-state">
@@ -183,11 +197,39 @@ function hideError() {
   document.getElementById('error-box').style.display = 'none';
 }
 
-// Enter key submits
-document.addEventListener('DOMContentLoaded', () => {
+// ── Auto-login: check for saved token on page load ────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('email-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') requestLink();
   });
+
+  const saved = localStorage.getItem('myToken');
+  if (!saved) return; // no saved session — show form normally
+
+  // Show spinner while we verify
+  document.getElementById('form-state').style.display = 'none';
+  document.getElementById('loading-state').style.display = 'block';
+
+  try {
+    const res = await fetch(`/api/me?token=${saved}`);
+    if (res.ok) {
+      const user = await res.json();
+      // Valid token — redirect to the right calendar
+      window.location.replace(
+        user.role === 'owner'
+          ? `/calendar?token=${saved}`
+          : `/partner?token=${saved}`
+      );
+      return;
+    }
+  } catch(e) { /* network error — fall through */ }
+
+  // Token invalid/expired — clear it and show the form
+  localStorage.removeItem('myToken');
+  localStorage.removeItem('myRole');
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('form-state').style.display = 'block';
+  document.getElementById('email-input').focus();
 });
 </script>
 </body>

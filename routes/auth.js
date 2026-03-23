@@ -97,7 +97,7 @@ router.get('/auth/verify/:token', (req, res) => {
         <div style="font-size:48px;margin-bottom:16px;">⏰</div>
         <h2>This link has expired or already been used</h2>
         <p style="color:#5f6368;">Magic links are single-use and expire after 24 hours.</p>
-        <a href="/login" class="btn btn-primary" style="display:inline-flex;margin-top:8px;">
+        <a href="/" class="btn btn-primary" style="display:inline-flex;margin-top:8px;">
           Request a new link →
         </a>
       </body></html>

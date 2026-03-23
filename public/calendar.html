@@ -478,10 +478,14 @@ function nextMonth() {
 
   // Get my info
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
-  if (!meRes.ok) { window.location.href = '/setup'; return; }
+  if (!meRes.ok) { window.location.href = '/'; return; }
   const me = await meRes.json();
   myName = me.name;
   myUserId = me.id;
+
+  // Persist token so visiting / auto-logs in next time
+  localStorage.setItem('myToken', MY_TOKEN);
+  localStorage.setItem('myRole', 'owner');
 
   document.getElementById('page-title').textContent = `Custody Calendar — ${myName}`;
   document.getElementById('owner-name-label').textContent = `${myName}:`;

@@ -24,8 +24,8 @@ app.use('/api', adminRouter);  // admin before regular API
 app.use('/api', apiRouter);
 app.use('/', pagesRouter);
 
-// ── Root: redirect to login ───────────────────────────────────────────────────
-app.get('/', (req, res) => res.redirect('/login'));
+// ── Root: serve login/home page directly ──────────────────────────────────────
+app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'login.html')));
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

@@ -11,9 +11,9 @@ router.get('/admin', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
-// Login page
+// Login page (served at root; /login kept as alias)
 router.get('/login', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'login.html'));
+  res.redirect('/');
 });
 
 // First-time setup page

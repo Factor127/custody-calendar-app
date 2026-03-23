@@ -283,6 +283,11 @@ function toDateStr(d) {
   const me = await meRes.json();
   myName = me.name;
   myUserId = me.id;
+
+  // Persist token so visiting / auto-logs in next time
+  localStorage.setItem('myToken', MY_TOKEN);
+  localStorage.setItem('myRole', 'partner');
+
   document.getElementById('page-title').textContent = `${myName}'s Custody Calendar`;
 
   // Profile circle
