@@ -21,6 +21,22 @@
       border-radius:50%; background:#e53935; border:2px solid white;
     }
     .notif-dot.hidden { display:none; }
+    /* ── Day strip (same as partner.html) ───────────────────────────────── */
+    .strip-wrap    { display:flex; align-items:center; gap:6px; }
+    .strip-nav     { flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); background:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .strip-nav:hover:not(:disabled) { background:#f0f4ff; }
+    .strip-nav:disabled { opacity:0.3; cursor:default; }
+    #day-strip     { flex:1; display:flex; gap:5px; overflow:hidden; }
+    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; border-radius:10px; border:1.5px solid var(--border); background:white; }
+    .day-card.match { background:#fff3e0; border-color:var(--orange); }
+    .day-card.strip-today { border-color:var(--blue); }
+    .day-card .dc-name { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+    .day-card .dc-num  { font-size:19px; font-weight:800; line-height:1.1; color:var(--text); }
+    .day-card.match .dc-num { color:#e65100; }
+    .day-card .dc-dot  { font-size:11px; margin-top:3px; min-height:14px; }
+    .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
+    .next-time-label   { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+    .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
   </style>
 </head>
 <body>
@@ -31,6 +47,41 @@
     <span id="profile-initial">?</span>
     <span id="notif-dot" class="notif-dot hidden"></span>
   </a>
+</div>
+
+<!-- "Next time I see you" — scrolling day strip -->
+<div id="next-time-section" style="margin-bottom:20px;">
+  <div class="next-time-label">Next time I see you</div>
+  <div class="next-time-headline" id="next-time-headline">—</div>
+
+  <!-- Connected: scrolling strip -->
+  <div id="next-time-connected" class="hidden">
+    <div class="strip-wrap">
+      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
+      <div id="day-strip"></div>
+      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
+    </div>
+    <div class="strip-range" id="strip-range"></div>
+  </div>
+
+  <!-- Locked: blurred placeholder + CTA -->
+  <div id="next-time-locked">
+    <div style="position:relative;border-radius:10px;overflow:hidden;">
+      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
+        <div class="day-card" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div><div class="dc-dot"></div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div><div class="dc-dot">❤️</div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div><div class="dc-dot"></div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div><div class="dc-dot">❤️</div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div><div class="dc-dot"></div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div><div class="dc-dot">🟢</div></div>
+        <div class="day-card" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div><div class="dc-dot"></div></div>
+      </div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
+        <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">Invite my partner</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Custody Summary -->
@@ -49,18 +100,6 @@
   <div class="summary-stat" style="margin-left:8px;">
     <span class="bold">Difference:</span>
     <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
-  </div>
-</div>
-
-<!-- Connections panel (pending requests badge) -->
-<div id="connections-panel" class="connections-panel hidden">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-    <span class="bold" style="font-size:14px;">Connections</span>
-    <span class="notif-badge hidden" id="pending-badge">0</span>
-    <button class="btn btn-sm btn-outline ml-auto" onclick="openInviteModal()">+ Invite</button>
-  </div>
-  <div id="connections-list">
-    <p class="text-muted" style="margin:0;font-size:13px;">Loading…</p>
   </div>
 </div>
 
@@ -159,6 +198,18 @@
     <button class="btn btn-gray" onclick="downloadBackup()">📥 Backup</button>
     <button class="btn btn-purple" onclick="shareWithCoparent()">📤 Share</button>
     <button class="btn btn-primary" onclick="exportToPDF()">📄 PDF</button>
+  </div>
+</div>
+
+<!-- Connections panel — bottom of page -->
+<div id="connections-panel" class="connections-panel hidden" style="margin-top:16px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <span class="bold" style="font-size:14px;">Connections</span>
+    <span class="notif-badge hidden" id="pending-badge">0</span>
+    <button class="btn btn-sm btn-outline ml-auto" onclick="openInviteModal()">+ Invite</button>
+  </div>
+  <div id="connections-list">
+    <p class="text-muted" style="margin:0;font-size:13px;">Loading…</p>
   </div>
 </div>
 
@@ -280,6 +331,100 @@ let pendingConnectionId = null;
 let dirty = false;
 let currentViewYear = null;
 let currentViewMonth = null;
+let stripOffset = 0; // days ahead from today shown at left edge
+
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function scrollStrip(delta) {
+  const today = new Date();
+  stripOffset = Math.max(0, stripOffset + delta);
+  renderStrip();
+  const prev = document.getElementById('strip-prev');
+  if (prev) prev.disabled = stripOffset === 0;
+}
+
+function updateNextTime() {
+  const hasPartner = !!activePartnerUserId;
+  document.getElementById('next-time-connected').classList.toggle('hidden', !hasPartner);
+  document.getElementById('next-time-locked').style.display = hasPartner ? 'none' : 'block';
+  if (!hasPartner) {
+    document.getElementById('next-time-headline').textContent = '—';
+    return;
+  }
+  renderStrip();
+}
+
+function renderStrip() {
+  const strip = document.getElementById('day-strip');
+  const rangeEl = document.getElementById('strip-range');
+  if (!strip) return;
+
+  const today = new Date();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + stripOffset + i);
+    days.push(d);
+  }
+
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let firstMatch = null;
+  let html = '';
+
+  days.forEach((d, i) => {
+    const ds = toDateStr(d);
+    const myDay = calendarDays[ds];
+    const pDay  = partnerDays[ds];
+
+    // Owner free = kids with co-parent; Partner free = their kids with their co-parent
+    const ownerFree   = myDay?.owner === 'coparent';
+    const partnerFree = pDay?.owner  === 'coparent';
+    const isMatch = ownerFree && partnerFree;
+    const isToday = (stripOffset + i === 0);
+
+    if (isMatch && firstMatch === null) firstMatch = d;
+
+    const dot = isMatch ? '❤️' : (ownerFree ? '🟢' : (partnerFree ? '💙' : ''));
+    html += `<div class="day-card${isMatch?' match':''}${isToday?' strip-today':''}">
+      <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
+      <div class="dc-num">${d.getDate()}</div>
+      <div class="dc-dot">${dot}</div>
+    </div>`;
+  });
+
+  strip.innerHTML = html;
+
+  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  rangeEl.textContent = `${fmt(days[0])} – ${fmt(days[6])}`;
+
+  // Headline
+  if (firstMatch) {
+    const diffDays = Math.round((firstMatch - today) / 86400000);
+    const label = diffDays === 0 ? 'Today 🎉'
+                : diffDays === 1 ? 'Tomorrow'
+                : `${diffDays} days away`;
+    const dn = firstMatch.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    document.getElementById('next-time-headline').textContent = `${dn} · ${label}`;
+  } else {
+    // Look ahead up to 90 days for the next match
+    let found = null;
+    for (let i = stripOffset + 7; i < 90; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      const ds = toDateStr(d);
+      if (calendarDays[ds]?.owner === 'coparent' && partnerDays[ds]?.owner === 'coparent') { found = d; break; }
+    }
+    if (found) {
+      const fmt2 = found.toLocaleDateString('en-US',{month:'long',day:'numeric'});
+      document.getElementById('next-time-headline').textContent = `No overlap in this window — next on ${fmt2}`;
+    } else {
+      document.getElementById('next-time-headline').textContent = 'No overlap in the next 90 days';
+    }
+  }
+  const prev = document.getElementById('strip-prev');
+  if (prev) prev.disabled = stripOffset === 0;
+}
 
 // Warn before closing/navigating away with unsaved changes
 window.addEventListener('beforeunload', e => {
@@ -327,8 +472,9 @@ function nextMonth() {
   document.getElementById('connections-panel').classList.remove('hidden');
   await loadConnections();
 
-  // Load partner data if any active connection
+  // Load partner data if any active connection, then update strip
   await loadPartnerOverlay();
+  updateNextTime();
 })();
 
 // ── Load my calendar ──────────────────────────────────────────────────────
