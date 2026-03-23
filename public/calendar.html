@@ -37,6 +37,36 @@
     .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
     .next-time-label   { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
+
+    /* ── Suggestion side panel ─────────────────────────────────────────── */
+    #suggestion-panel {
+      position:fixed; top:50%; right:-360px; transform:translateY(-50%);
+      width:320px; max-height:80vh; background:white;
+      border:1.5px solid var(--border); border-radius:16px 0 0 16px;
+      box-shadow:-4px 0 24px rgba(0,0,0,0.12);
+      display:flex; flex-direction:column;
+      transition:right 0.28s cubic-bezier(0.4,0,0.2,1);
+      z-index:800; overflow:hidden;
+    }
+    #suggestion-panel.open { right:0; }
+    .sugg-panel-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px 10px; border-bottom:1px solid var(--border);
+      flex-shrink:0;
+    }
+    .sugg-panel-header h3 { margin:0; font-size:14px; font-weight:800; }
+    .sugg-later-btn {
+      font-size:11px; font-weight:700; color:var(--muted); background:none;
+      border:none; cursor:pointer; padding:2px 6px; border-radius:4px;
+    }
+    .sugg-later-btn:hover { background:#f3f4f6; color:var(--text); }
+    .sugg-panel-body { flex:1; overflow-y:auto; padding:12px 16px; }
+    .sugg-panel-footer {
+      display:flex; gap:8px; padding:12px 16px;
+      border-top:1px solid var(--border); flex-shrink:0;
+    }
+    .sugg-panel-footer .btn { flex:1; }
+    .sugg-highlight { border-left:3px solid var(--blue); background:#f0f4ff; border-radius:0 6px 6px 0; padding:2px 0; }
   </style>
 </head>
 <body>
@@ -288,17 +318,20 @@
   </div>
 </div>
 
-<!-- Suggestion review modal -->
-<div class="modal-overlay" id="suggestion-modal">
-  <div class="modal" style="max-width:520px;">
-    <h2>Proposed Schedule Change</h2>
-    <p><strong id="suggestion-from-name">Partner</strong> is proposing the following changes:</p>
-    <div id="suggestion-note-display" style="display:none; background:#fff3e0; border:1px solid var(--orange); border-radius:6px; padding:10px 14px; font-size:13px; margin-bottom:12px; color:#e65100;"></div>
-    <div id="suggestion-changes-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; font-size:13px;"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="rejectSuggestion()">Decline</button>
-      <button class="btn btn-primary" onclick="approveSuggestion()">Apply changes</button>
-    </div>
+<!-- Suggestion side panel -->
+<div id="suggestion-panel">
+  <div class="sugg-panel-header">
+    <h3>📅 Proposed Change</h3>
+    <button class="sugg-later-btn" onclick="closeSuggestionPanel()">Later ✕</button>
+  </div>
+  <div class="sugg-panel-body">
+    <p style="margin:0 0 10px;font-size:13px;color:var(--muted);"><strong id="suggestion-from-name" style="color:var(--text);"></strong> is proposing:</p>
+    <div id="suggestion-note-display" style="display:none; background:#fff3e0; border:1px solid var(--orange); border-radius:6px; padding:8px 12px; font-size:12px; margin-bottom:10px; color:#e65100;"></div>
+    <div id="suggestion-changes-list" style="font-size:13px;"></div>
+  </div>
+  <div class="sugg-panel-footer">
+    <button class="btn btn-outline btn-sm" onclick="rejectSuggestion()">Decline</button>
+    <button class="btn btn-primary btn-sm" onclick="approveSuggestion()">Apply changes</button>
   </div>
 </div>
 
@@ -1035,24 +1068,39 @@ function openSuggestionModal(suggId) {
     noteEl.style.display = 'none';
   }
 
-  const ownerLabel = o => o === 'self' ? `<span style="background:var(--z);padding:2px 8px;border-radius:10px;font-weight:600;">Co-parent's day</span>`
-                                       : `<span style="background:var(--r);padding:2px 8px;border-radius:10px;font-weight:600;">My day</span>`;
+  const ownerLabel = o => o === 'self'
+    ? `<span style="background:var(--r);padding:2px 7px;border-radius:10px;font-weight:600;font-size:11px;">My day</span>`
+    : `<span style="background:var(--z);padding:2px 7px;border-radius:10px;font-weight:600;font-size:11px;">Co-parent</span>`;
 
-  // Changes are from partner's perspective: 'self' = partner has kids, 'coparent' = owner has kids
-  // Translate to owner's perspective for display
+  // Changes are from partner's perspective: translate to owner's view (flip self/coparent)
   const rows = s.changes.map(c => {
-    const date = new Date(c.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-    // current_owner from partner's view → owner's view is flipped
-    const currentOwnerView = c.current_owner === 'self' ? 'coparent' : 'self';
+    const d = new Date(c.date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    const currentOwnerView  = c.current_owner  === 'self' ? 'coparent' : 'self';
     const proposedOwnerView = c.proposed_owner === 'self' ? 'coparent' : 'self';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f3f4f6;">
-      <span style="min-width:110px;font-weight:600;">${date}</span>
-      ${ownerLabel(currentOwnerView)} <span style="color:var(--muted);">→</span> ${ownerLabel(proposedOwnerView)}
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6;">
+      <span style="min-width:90px;font-weight:600;font-size:12px;">${dateStr}</span>
+      ${ownerLabel(currentOwnerView)}<span style="color:var(--muted);font-size:11px;">→</span>${ownerLabel(proposedOwnerView)}
     </div>`;
   }).join('');
 
   document.getElementById('suggestion-changes-list').innerHTML = rows;
-  openModal('suggestion-modal');
+
+  // Navigate calendar to the month of the first suggested day
+  if (s.changes.length > 0) {
+    const firstDate = new Date(s.changes[0].date + 'T12:00:00');
+    currentViewYear  = firstDate.getFullYear();
+    currentViewMonth = firstDate.getMonth();
+    renderCalendar();
+  }
+
+  // Open the side panel
+  document.getElementById('suggestion-panel').classList.add('open');
+}
+
+function closeSuggestionPanel() {
+  document.getElementById('suggestion-panel').classList.remove('open');
+  activeSuggestionId = null;
 }
 
 async function approveSuggestion() {
@@ -1062,12 +1110,12 @@ async function approveSuggestion() {
     headers: { 'Content-Type': 'application/json' }
   });
   if (res.ok) {
-    closeModal('suggestion-modal');
+    closeSuggestionPanel();
     showToast('✓ Changes applied');
     await loadMyCalendar();
     await loadConnections();
   } else {
-    alert('Failed to apply changes');
+    showToast('Failed to apply changes');
   }
 }
 
@@ -1078,11 +1126,11 @@ async function rejectSuggestion() {
     headers: { 'Content-Type': 'application/json' }
   });
   if (res.ok) {
-    closeModal('suggestion-modal');
+    closeSuggestionPanel();
     showToast('Suggestion declined');
     await loadConnections();
   } else {
-    alert('Failed to decline');
+    showToast('Failed to decline');
   }
 }
 
