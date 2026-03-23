@@ -237,10 +237,23 @@ function generateDaysFromPattern(pattern, startDate, endDate) {
     const anchor = new Date(pattern.anchor_date);
     const weekMs = 7 * 24 * 60 * 60 * 1000;
 
+    // New format: week_a_days / week_b_days (per-day selection per alternating week)
+    // Old compat: first_week = 'self'|'coparent' (whole-week toggle)
+    const ALL_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const hasPerDay = Array.isArray(data.week_a_days);
+    const weekADays = hasPerDay ? data.week_a_days
+      : (data.first_week === 'self' ? ALL_DAYS : []);
+    const weekBDays = hasPerDay ? data.week_b_days
+      : (data.first_week === 'coparent' ? ALL_DAYS : []);
+
+    const weekANums = weekADays.map(dayNameToNum);
+    const weekBNums = weekBDays.map(dayNameToNum);
+
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const diffWeeks  = Math.floor((d - anchor) / weekMs);
-      const isSelfWeek = ((diffWeeks % 2) + 2) % 2 === 0;
-      days.push({ date: toDateStr(d), owner: isSelfWeek ? 'self' : 'coparent' });
+      const diffWeeks = Math.floor((d - anchor) / weekMs);
+      const isWeekA   = ((diffWeeks % 2) + 2) % 2 === 0;
+      const dayNums   = isWeekA ? weekANums : weekBNums;
+      days.push({ date: toDateStr(d), owner: dayNums.includes(d.getDay()) ? 'self' : 'coparent' });
     }
 
   } else if (pattern.pattern_type === 'specific_days') {
