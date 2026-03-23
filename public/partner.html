@@ -15,6 +15,7 @@
     .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; border-radius:10px; border:1.5px solid var(--border); background:white; position:relative; }
     .day-card.match { background:#fff3e0; border-color:var(--orange); }
     .day-card.strip-today { border-color:var(--blue); }
+    .day-card.strip-locked { opacity:0.35; background:#f5f5f5; border-color:#e0e0e0; pointer-events:none; }
     .day-card .dc-name { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
     .day-card .dc-num  { font-size:19px; font-weight:800; line-height:1.1; color:var(--text); }
     .day-card.match .dc-num { color:#e65100; }
@@ -563,6 +564,14 @@ function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
 // ── Next time / day strip ─────────────────────────────────────────────────
 const STRIP_DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
+// Returns how many days remain in the approved window (used to cap strip + search)
+function approvedWindowDays() {
+  if (!connStatus?.approved_until) return 90;
+  const until = new Date(connStatus.approved_until + 'T23:59:59');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.max(1, Math.ceil((until - today) / (24 * 60 * 60 * 1000)));
+}
+
 function updateNextTime() {
   const connectedEl = document.getElementById('next-time-connected');
   const lockedEl    = document.getElementById('next-time-locked');
@@ -577,11 +586,11 @@ function updateNextTime() {
   lockedEl.style.display = 'none';
   connectedEl.classList.remove('hidden');
 
-  // Find next match (both free) within 90 days — used for headline
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Search for next match only within the approved window
+  const windowDays = approvedWindowDays();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   let found = null;
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < windowDays; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const ds = toDateStr(d);
@@ -597,14 +606,19 @@ function updateNextTime() {
     const suffix = daysAway === 0 ? ' · Today 🎉' : daysAway === 1 ? ' · Tomorrow ✨' : ` · ${daysAway} days away`;
     document.getElementById('next-time-headline').textContent = label + suffix;
   } else {
-    document.getElementById('next-time-headline').textContent = 'No overlap in the next 90 days';
+    const until = connStatus.approved_until
+      ? new Date(connStatus.approved_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+      : '';
+    document.getElementById('next-time-headline').textContent =
+      until ? `No overlap before ${until}` : 'No overlap in your approved window';
   }
 
   renderStrip();
 }
 
 function scrollStrip(delta) {
-  stripOffset = Math.max(0, Math.min(83, stripOffset + delta));
+  const maxOffset = Math.max(0, approvedWindowDays() - 7);
+  stripOffset = Math.max(0, Math.min(maxOffset, stripOffset + delta));
   renderStrip();
 }
 
@@ -612,27 +626,38 @@ function renderStrip() {
   const strip = document.getElementById('day-strip');
   if (!strip) return;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayStr = toDateStr(today);
+  const windowDays = approvedWindowDays();
+  const maxOffset  = Math.max(0, windowDays - 7);
+
+  // Cap offset in case window shrank since last scroll
+  if (stripOffset > maxOffset) stripOffset = maxOffset;
 
   let html = '';
   for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + stripOffset + i);
     const ds = toDateStr(d);
+    const dayIndex = stripOffset + i; // 0-based from today
 
-    const myFree   = calendarDays[ds]?.owner === 'coparent';
-    const theyFree = ownerDays[ds]?.owner === 'coparent';
+    const beyondWindow = dayIndex >= windowDays;
+    const myFree   = !beyondWindow && calendarDays[ds]?.owner === 'coparent';
+    const theyFree = !beyondWindow && ownerDays[ds]?.owner === 'coparent';
     const isMatch  = myFree && theyFree;
     const isToday  = ds === todayStr;
 
     let dot = '';
-    if (isMatch)       dot = '❤️';
+    if (beyondWindow)  dot = '🔒';
+    else if (isMatch)  dot = '❤️';
     else if (myFree)   dot = '🟢';
     else if (theyFree) dot = '💙';
 
-    const cls = ['day-card', isMatch ? 'match' : '', isToday ? 'strip-today' : ''].filter(Boolean).join(' ');
+    const cls = ['day-card',
+      isMatch ? 'match' : '',
+      isToday ? 'strip-today' : '',
+      beyondWindow ? 'strip-locked' : ''
+    ].filter(Boolean).join(' ');
 
     html += `<div class="${cls}">
       <div class="dc-name">${STRIP_DAY_ABBR[d.getDay()]}</div>
@@ -642,11 +667,11 @@ function renderStrip() {
   }
   strip.innerHTML = html;
 
-  // Nav button states
+  // Nav button states — cap "next" at the approved window
   const prev = document.getElementById('strip-prev');
   const next = document.getElementById('strip-next');
   if (prev) prev.disabled = stripOffset === 0;
-  if (next) next.disabled = stripOffset >= 83;
+  if (next) next.disabled = stripOffset >= maxOffset;
 
   // Range label
   const s = new Date(today); s.setDate(today.getDate() + stripOffset);
