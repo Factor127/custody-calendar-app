@@ -27,9 +27,11 @@
     .strip-nav:hover:not(:disabled) { background:#f0f4ff; }
     .strip-nav:disabled { opacity:0.3; cursor:default; }
     #day-strip     { flex:1; display:flex; gap:5px; overflow:hidden; }
-    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; border-radius:10px; border:1.5px solid var(--border); background:white; }
+    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; border-radius:10px; border:1.5px solid var(--border); background:white; transition:opacity .15s; }
     .day-card.match { background:#fff3e0; border-color:var(--orange); }
+    .day-card.dim   { opacity:.38; transform:scale(0.88); border-color:transparent; background:transparent; }
     .day-card.strip-today { border-color:var(--blue); }
+    .day-card.strip-today.dim { border-color:var(--blue); background:white; }
     .day-card .dc-name { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
     .day-card .dc-num  { font-size:19px; font-weight:800; line-height:1.1; color:var(--text); }
     .day-card.match .dc-num { color:#e65100; }
@@ -98,13 +100,13 @@
   <div id="next-time-locked">
     <div style="position:relative;border-radius:10px;overflow:hidden;">
       <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
-        <div class="day-card" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div><div class="dc-dot"></div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div><div class="dc-dot">❤️</div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div><div class="dc-dot"></div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div><div class="dc-dot">❤️</div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div><div class="dc-dot"></div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div><div class="dc-dot">🟢</div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div><div class="dc-dot"></div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div><div class="dc-dot"></div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div><div class="dc-dot"></div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div><div class="dc-dot"></div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div><div class="dc-dot"></div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div><div class="dc-dot">🟢</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div><div class="dc-dot"></div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div><div class="dc-dot"></div></div>
       </div>
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
         <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
@@ -412,8 +414,9 @@ function renderStrip() {
 
     if (isMatch && firstMatch === null) firstMatch = d;
 
-    const dot = isMatch ? '❤️' : (ownerFree ? '🟢' : (partnerFree ? '💙' : ''));
-    html += `<div class="day-card${isMatch?' match':''}${isToday?' strip-today':''}">
+    const dot = ownerFree && !isMatch ? '🟢' : '';
+    const classes = ['day-card', isMatch ? 'match' : 'dim', isToday ? 'strip-today' : ''].filter(Boolean).join(' ');
+    html += `<div class="${classes}">
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
       <div class="dc-dot">${dot}</div>
