@@ -6,6 +6,21 @@
   <title>My Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
+    /* ── Page header ────────────────────────────────────────────────────── */
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .page-header h1 { margin:0; font-size:20px; }
+    .profile-circle {
+      position:relative; width:38px; height:38px; border-radius:50%;
+      background:var(--blue); color:white; display:flex; align-items:center;
+      justify-content:center; font-weight:800; font-size:15px; text-decoration:none;
+      flex-shrink:0; cursor:pointer; user-select:none;
+    }
+    .profile-circle:hover { opacity:0.88; }
+    .notif-dot {
+      position:absolute; top:1px; right:1px; width:10px; height:10px;
+      border-radius:50%; background:#e53935; border:2px solid white;
+    }
+    .notif-dot.hidden { display:none; }
     /* ── Day strip ──────────────────────────────────────────────────────── */
     .strip-wrap    { display:flex; align-items:center; gap:6px; }
     .strip-nav     { flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); background:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.13s; }
@@ -27,7 +42,13 @@
 </head>
 <body>
 
-<h1 id="page-title">My Custody Calendar</h1>
+<div class="page-header">
+  <h1 id="page-title">My Custody Calendar</h1>
+  <a id="profile-btn" href="#" class="profile-circle" title="My profile">
+    <span id="profile-initial">?</span>
+    <span id="notif-dot" class="notif-dot hidden"></span>
+  </a>
+</div>
 
 <!-- "Next time I see you" — scrolling day strip -->
 <div id="next-time-section" style="margin-bottom:20px;">
@@ -104,25 +125,55 @@
   </div>
 </div>
 
-<!-- Controls -->
-<div class="controls">
+<!-- Edit mode notices -->
+<div class="edit-notice notice-custody" id="edit-notice">
+  ✏️ <span class="bold">Edit my days:</span> Click any day to switch between me and my co-parent.
+</div>
+<div class="edit-notice notice-holiday" id="holiday-edit-notice">
+  🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags.
+</div>
+<div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;">
+  💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your co-parent. Click a day again to un-propose it.
+</div>
+
+<!-- Suggest panel (fixed bottom bar, visible in suggest mode) -->
+<div id="suggest-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid var(--orange); padding:12px 24px; box-shadow:0 -4px 16px rgba(0,0,0,0.12); z-index:100; align-items:center; gap:12px; flex-wrap:wrap;">
+  <span id="suggest-count" style="font-weight:700; font-size:13px; color:var(--orange); white-space:nowrap;">0 days selected</span>
+  <input id="suggest-note" type="text" placeholder="Add a note to your co-parent (optional)" style="flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:180px;">
+  <button class="btn btn-outline" onclick="cancelSuggest()">Cancel</button>
+  <button class="btn btn-primary" onclick="submitSuggestion()">Send suggestion</button>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> My days</div>
+  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent days</div>
+  <div class="legend-item" id="legend-owner" hidden>
+    <span class="dot partner-self" style="display:inline-block;"></span> Co-parent has kids
+    &nbsp;&nbsp;<span class="dot partner-free" style="display:inline-block;"></span> Co-parent free
+  </div>
+  <div class="legend-item" id="legend-both-free" hidden>
+    <span style="color:var(--orange);">■</span> Both free
+  </div>
+  <div class="legend-item"><span class="tag">H</span> Holiday</div>
+  <div class="legend-item"><span class="tag">V</span> Vacation</div>
+</div>
+
+<!-- Month navigation -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
+  <span id="month-label" style="font-weight:700;font-size:16px;"></span>
+  <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
+</div>
+
+<!-- Calendar -->
+<div class="calendar-container" id="calendar-container">
+  <div style="padding:40px;text-align:center;color:var(--muted);">Loading your calendar…</div>
+</div>
+
+<!-- Controls — below calendar -->
+<div class="controls" style="margin-top:14px;">
   <span class="controls-title">Show:</span>
-
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-self" checked onchange="toggleClass('hide-r',!this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">My days</span>
-  </div>
-
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-coparent" checked onchange="toggleClass('hide-z',!this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Co-parent days</span>
-  </div>
 
   <div class="toggle-group" id="toggle-owner-group" style="display:none;">
     <label class="toggle-switch">
@@ -171,52 +222,6 @@
   </div>
 </div>
 
-<!-- Edit mode notices -->
-<div class="edit-notice notice-custody" id="edit-notice">
-  ✏️ <span class="bold">Edit my days:</span> Click any day to switch between me and my co-parent.
-</div>
-<div class="edit-notice notice-holiday" id="holiday-edit-notice">
-  🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags.
-</div>
-<div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;">
-  💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your co-parent. Click a day again to un-propose it.
-</div>
-
-<!-- Suggest panel (fixed bottom bar, visible in suggest mode) -->
-<div id="suggest-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid var(--orange); padding:12px 24px; box-shadow:0 -4px 16px rgba(0,0,0,0.12); z-index:100; align-items:center; gap:12px; flex-wrap:wrap;">
-  <span id="suggest-count" style="font-weight:700; font-size:13px; color:var(--orange); white-space:nowrap;">0 days selected</span>
-  <input id="suggest-note" type="text" placeholder="Add a note to your co-parent (optional)" style="flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:180px;">
-  <button class="btn btn-outline" onclick="cancelSuggest()">Cancel</button>
-  <button class="btn btn-primary" onclick="submitSuggestion()">Send suggestion</button>
-</div>
-
-<!-- Legend -->
-<div class="legend">
-  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> My days</div>
-  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent days</div>
-  <div class="legend-item" id="legend-owner" hidden>
-    <span class="dot partner-self" style="display:inline-block;"></span> Co-parent has kids
-    &nbsp;&nbsp;<span class="dot partner-free" style="display:inline-block;"></span> Co-parent free
-  </div>
-  <div class="legend-item" id="legend-both-free" hidden>
-    <span style="color:var(--orange);">■</span> Both free
-  </div>
-  <div class="legend-item"><span class="tag">H</span> Holiday</div>
-  <div class="legend-item"><span class="tag">V</span> Vacation</div>
-</div>
-
-<!-- Month navigation -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-  <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
-  <span id="month-label" style="font-weight:700;font-size:16px;"></span>
-  <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
-</div>
-
-<!-- Calendar -->
-<div class="calendar-container" id="calendar-container">
-  <div style="padding:40px;text-align:center;color:var(--muted);">Loading your calendar…</div>
-</div>
-
 <script>
 const params = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
@@ -260,9 +265,28 @@ function toDateStr(d) {
   myUserId = me.id;
   document.getElementById('page-title').textContent = `${myName}'s Custody Calendar`;
 
+  // Profile circle
+  const initial = (myName || '?')[0].toUpperCase();
+  document.getElementById('profile-initial').textContent = initial;
+  document.getElementById('profile-btn').href = `/profile?token=${MY_TOKEN}`;
+
   await loadMyCalendar();
   await checkConnection();
+  await checkNotifications();
 })();
+
+async function checkNotifications() {
+  // Show dot if there are pending suggestions from owner
+  try {
+    const res = await fetch(`/api/suggestions/pending?token=${MY_TOKEN}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        document.getElementById('notif-dot').classList.remove('hidden');
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
 
 async function loadMyCalendar() {
   const res = await fetch(`/api/calendar/${myUserId}?token=${MY_TOKEN}`);
