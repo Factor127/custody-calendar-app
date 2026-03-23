@@ -320,8 +320,6 @@ async function validateInvite() {
     const data = await res.json();
     ownerName = data.owner_name || 'your partner';
     document.getElementById('invite-greeting').textContent = `Hi! ${ownerName} has invited you.`;
-    document.getElementById('owner-name-display').textContent = ownerName;
-    document.getElementById('owner-name-pending').textContent = ownerName;
     goStep(1);
   } catch(err) {
     console.error('[onboard] validateInvite error:', err);
