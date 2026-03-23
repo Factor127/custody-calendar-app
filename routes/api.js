@@ -397,6 +397,23 @@ router.post('/connections/auto-renew', (req, res) => {
   res.json({ auto_renew: Boolean(auto_renew) });
 });
 
+// PUT /api/connections/:id/role — owner changes the relationship type label
+router.put('/connections/:id/role', (req, res) => {
+  const owner = requireOwner(req, res);
+  if (!owner) return;
+
+  const { relationship_type } = req.body;
+  if (!['coparent', 'partner'].includes(relationship_type)) {
+    return res.status(400).json({ error: 'relationship_type must be coparent or partner' });
+  }
+
+  const conn = q.getConnectionById.get(req.params.id);
+  if (!conn || conn.target_id !== owner.id) return res.status(403).json({ error: 'Not authorized' });
+
+  q.updateConnectionRole.run(relationship_type, req.params.id);
+  res.json({ relationship_type });
+});
+
 // ── Suggestions (co-parent proposes schedule change to owner) ─────────────────
 
 // POST /api/suggestions — partner submits a proposed schedule change

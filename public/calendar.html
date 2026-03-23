@@ -414,9 +414,10 @@ function renderConnectionsList() {
         <button class="btn btn-sm btn-danger" onclick="rejectSpecific('${c.id}')">Revoke</button>`;
     }
 
-    const relBadge = c.relationship_type === 'partner'
-      ? `<span class="badge" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;">Partner</span>`
-      : `<span class="badge" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;">Co-parent</span>`;
+    const isPartner = c.relationship_type === 'partner';
+    const relBadge = isPartner
+      ? `<button class="badge" title="Click to change to Co-parent" onclick="toggleConnectionRole('${c.id}','coparent')" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">❤️ Partner</button>`
+      : `<button class="badge" title="Click to change to Partner" onclick="toggleConnectionRole('${c.id}','partner')" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👨‍👩‍👧 Co-parent</button>`;
 
     return `<div class="connection-row">
       <div style="flex:1;">
@@ -850,6 +851,22 @@ async function toggleAutoRenew(connId, newVal) {
   if (res.ok) {
     showToast(newVal ? '✓ Auto-renew on' : 'Auto-renew off');
     await loadConnections();
+  }
+}
+
+async function toggleConnectionRole(connId, newRole) {
+  const label = newRole === 'partner' ? 'Partner ❤️' : 'Co-parent 👨‍👩‍👧';
+  if (!confirm(`Change this person's role to ${label}?`)) return;
+  const res = await fetch(`/api/connections/${connId}/role?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relationship_type: newRole })
+  });
+  if (res.ok) {
+    showToast(`✓ Role updated to ${label}`);
+    await loadConnections();
+  } else {
+    showToast('Failed to update role');
   }
 }
 

@@ -17,6 +17,23 @@ db.exec('PRAGMA foreign_keys = ON');
 try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN mobile TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
+try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
+// Backfill connections.relationship_type from the invite that was used to join
+try {
+  db.exec(`
+    UPDATE connections SET relationship_type = (
+      SELECT COALESCE(i.relationship_type, 'coparent')
+      FROM invites i
+      WHERE i.used_by = connections.requester_id
+        AND i.created_by = connections.target_id
+      LIMIT 1
+    ) WHERE EXISTS (
+      SELECT 1 FROM invites i
+      WHERE i.used_by = connections.requester_id
+        AND i.created_by = connections.target_id
+    )
+  `);
+} catch(e) { /* ignore if column not ready */ }
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* table may not exist yet on first run */ }
 
 // ── Schema ──────────────────────────────────────────────────────────────────
@@ -179,14 +196,13 @@ const q = {
   updateAutoRenew:   db.prepare('UPDATE connections SET auto_renew = ? WHERE id = ?'),
   getConnectionById: db.prepare('SELECT * FROM connections WHERE id = ?'),
   getAllConnectionsForOwner: db.prepare(`
-    SELECT c.*, u.name as requester_name,
-           COALESCE(i.relationship_type, 'coparent') as relationship_type
+    SELECT c.*, u.name as requester_name
     FROM connections c
     JOIN users u ON c.requester_id = u.id
-    LEFT JOIN invites i ON i.used_by = c.requester_id AND i.created_by = c.target_id
     WHERE c.target_id = ?
     ORDER BY c.created_at DESC
   `),
+  updateConnectionRole: db.prepare(`UPDATE connections SET relationship_type = ? WHERE id = ?`),
   renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),
   expireConnection: db.prepare("UPDATE connections SET status = 'expired' WHERE id = ?"),
 
