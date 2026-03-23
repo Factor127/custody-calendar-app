@@ -29,7 +29,7 @@ function requireOwner(req, res) {
 // Multi-tenant: any email can set up their own account (no single-owner constraint).
 // Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
-  const { magic, name, pattern_type, pattern_data, anchor_date, days } = req.body;
+  const { magic, name, pattern_type, pattern_data, anchor_date, days, google_id } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
   if (!magic) return res.status(400).json({ error: 'Email verification required. Please use the link sent to your email.' });
 
@@ -44,6 +44,9 @@ router.post('/users/setup', (req, res) => {
   const id = uuidv4();
   const token = uuidv4();
   q.createUserWithEmail.run(id, name.trim(), 'owner', token, link.email);
+
+  // Link Google ID if the user came via Google SSO
+  if (google_id) q.updateGoogleId.run(google_id, id);
 
   // Save pattern for future reference / regeneration
   if (pattern_type && pattern_type !== 'none') {

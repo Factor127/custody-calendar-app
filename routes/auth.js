@@ -3,6 +3,16 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { q } = require('../db');
 
+// ── Google OAuth helpers ──────────────────────────────────────────────────────
+const GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USER_URL  = 'https://www.googleapis.com/oauth2/v3/userinfo';
+
+function googleRedirectUri(req) {
+  const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  return `${base}/auth/google/callback`;
+}
+
 // Lazy-load Resend so the app still starts if the package isn't installed yet
 let resend = null;
 function getResend() {
@@ -123,6 +133,93 @@ router.get('/auth/verify/:token', (req, res) => {
       ? `/calendar?token=${newToken}`
       : `/partner?token=${newToken}`
   );
+});
+
+// ── GET /auth/google ──────────────────────────────────────────────────────────
+// Redirect user to Google's consent screen
+router.get('/auth/google', (req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return res.status(500).send('Google login is not configured.');
+
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  googleRedirectUri(req),
+    response_type: 'code',
+    scope:         'openid email profile',
+    prompt:        'select_account',   // always show account picker
+  });
+
+  res.redirect(`${GOOGLE_AUTH_URL}?${params}`);
+});
+
+// ── GET /auth/google/callback ─────────────────────────────────────────────────
+// Google redirects here with ?code=... after the user approves
+router.get('/auth/google/callback', async (req, res) => {
+  const { code, error } = req.query;
+  if (error || !code) return res.redirect('/?error=google_denied');
+
+  try {
+    // 1. Exchange code for tokens
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id:     process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri:  googleRedirectUri(req),
+        grant_type:    'authorization_code',
+      }),
+    });
+    const tokens = await tokenRes.json();
+    if (!tokens.access_token) throw new Error('No access token from Google');
+
+    // 2. Get user profile
+    const userRes = await fetch(GOOGLE_USER_URL, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    const gUser = await userRes.json();
+    const googleId = gUser.sub;
+    const email    = (gUser.email || '').toLowerCase();
+    const name     = gUser.name || gUser.given_name || 'User';
+
+    if (!email) throw new Error('No email returned from Google');
+
+    // 3. Find or create user
+    let user = q.getUserByGoogleId.get(googleId)     // returning Google user
+            || q.getUserByEmail.get(email);           // previously magic-linked
+
+    if (user) {
+      // Link Google ID if not already stored
+      if (!user.google_id) q.updateGoogleId.run(googleId, user.id);
+
+      // Issue a fresh session token
+      const newToken = uuidv4();
+      q.updateUserToken.run(newToken, user.id);
+
+      return res.redirect(
+        user.role === 'owner'
+          ? `/calendar?token=${newToken}`
+          : `/partner?token=${newToken}`
+      );
+    }
+
+    // 4. Brand-new user — send to setup with google context pre-filled
+    //    We store a one-time magic link so setup can claim it
+    const linkToken  = uuidv4();
+    const expiresAt  = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min
+    q.createMagicLink.run(linkToken, email, null, expiresAt);
+
+    // Pre-store google_id so it gets linked when they complete setup
+    // We pass it as a URL param; setup route will include it in POST /api/users/setup
+    return res.redirect(
+      `/setup?magic=${linkToken}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&google_id=${encodeURIComponent(googleId)}`
+    );
+
+  } catch(err) {
+    console.error('Google OAuth error:', err.message);
+    res.redirect('/?error=google_failed');
+  }
 });
 
 module.exports = router;

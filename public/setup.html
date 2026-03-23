@@ -236,13 +236,23 @@ const DAY_ABBR  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const FULL_DAYS  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-// Read email verification token from URL (set by /api/auth/verify after magic link click)
-const _urlParams    = new URLSearchParams(location.search);
-const MAGIC_TOKEN   = _urlParams.get('magic');
+// Read params from URL (magic link or Google SSO callback)
+const _urlParams     = new URLSearchParams(location.search);
+const MAGIC_TOKEN    = _urlParams.get('magic');
 const VERIFIED_EMAIL = _urlParams.get('email') || '';
+const GOOGLE_NAME    = _urlParams.get('name')  || '';
+const GOOGLE_ID      = _urlParams.get('google_id') || '';
 
-// Guard: if no magic token, this page was reached directly — send to login
-if (!MAGIC_TOKEN) { window.location.replace('/login'); }
+// Guard: if no magic token, this page was reached directly — send to home
+if (!MAGIC_TOKEN) { window.location.replace('/'); }
+
+// Pre-fill name if coming via Google (user can still change it)
+if (GOOGLE_NAME) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const nameEl = document.getElementById('owner-name');
+    if (nameEl && !nameEl.value) nameEl.value = GOOGLE_NAME;
+  });
+}
 
 let currentStep    = 1;
 let isTwoWeek      = false;
@@ -483,8 +493,9 @@ async function saveAndFinish() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      magic:        MAGIC_TOKEN,   // proves email ownership via magic link flow
+      magic:        MAGIC_TOKEN,
       name,
+      google_id:    GOOGLE_ID || undefined,
       pattern_type: patternType,
       pattern_data: patternData,
       anchor_date:  toDateStr(weekStartDate),

@@ -17,6 +17,7 @@ db.exec('PRAGMA foreign_keys = ON');
 try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN mobile TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN coparent_name TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
@@ -123,6 +124,8 @@ const q = {
   getUserByToken:      db.prepare('SELECT * FROM users WHERE access_token = ?'),
   getUserById:         db.prepare('SELECT * FROM users WHERE id = ?'),
   getUserByEmail:      db.prepare('SELECT * FROM users WHERE email = ?'),
+  getUserByGoogleId:   db.prepare('SELECT * FROM users WHERE google_id = ?'),
+  updateGoogleId:      db.prepare('UPDATE users SET google_id = ? WHERE id = ?'),
   // Legacy single-tenant helpers (kept for backward compat)
   getOwner:            db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
   ownerExists:         db.prepare("SELECT 1 AS found FROM users WHERE role = 'owner' LIMIT 1"),
