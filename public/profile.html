@@ -76,7 +76,8 @@
       <input id="profile-coparent-name" class="field-input" type="text" placeholder="e.g. Zoe">
     </div>
 
-    <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <button class="btn btn-outline" onclick="signOut()" style="color:#c62828;border-color:#ef9a9a;">Sign out</button>
       <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
     </div>
   </div>
@@ -350,6 +351,12 @@ async function saveProfile() {
 function goBack() {
   const calUrl = userRole === 'owner' ? `/calendar?token=${MY_TOKEN}` : `/partner?token=${MY_TOKEN}`;
   window.location.href = calUrl;
+}
+
+function signOut() {
+  localStorage.removeItem('myToken');
+  localStorage.removeItem('myRole');
+  window.location.replace('/');
 }
 
 let toastTimer;

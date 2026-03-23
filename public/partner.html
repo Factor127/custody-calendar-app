@@ -160,10 +160,6 @@
 <div class="legend">
   <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> My days</div>
   <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent days</div>
-  <div class="legend-item" id="legend-owner" hidden>
-    <span class="dot partner-self" style="display:inline-block;"></span> Co-parent has kids
-    &nbsp;&nbsp;<span class="dot partner-free" style="display:inline-block;"></span> Co-parent free
-  </div>
   <div class="legend-item" id="legend-both-free" hidden>
     <span style="color:var(--orange);">■</span> Both free
   </div>
@@ -460,7 +456,6 @@ async function checkConnection() {
     document.getElementById('toggle-free-frames-group').style.display = 'flex';
     document.getElementById('toggle-suggest-group').style.display = 'flex';
     document.getElementById('owner-overlay-label').textContent = `${conn.owner_name || 'Partner'}'s days`;
-    document.getElementById('legend-owner').hidden = false;
     document.getElementById('legend-both-free').hidden = false;
   } else if (conn.status === 'pending') {
     document.getElementById('pending-banner').classList.remove('hidden');
@@ -553,16 +548,9 @@ function renderCalendar() {
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
     const cellLabel = effectiveOwner === 'self' ? myName[0] : (effectiveOwner === 'coparent' ? myCoparentInitial : '');
 
-    let ownerDotHtml = '';
-    if (showOwnerOverlay && oDay) {
-      const dotClass = oDay.owner === 'self' ? 'partner-self' : 'partner-free';
-      ownerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}"></span></div>`;
-    }
-
     html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
-      <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
+      <div class="day-num">${day}</div>
       <div class="label">${cellLabel} ${tagHtml}</div>
-      ${ownerDotHtml}
     </td>`;
 
     cellCount++;
