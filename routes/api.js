@@ -246,18 +246,19 @@ router.post('/calendar/save', (req, res) => {
 
 // ── Invites ───────────────────────────────────────────────────────────────────
 
-// POST /api/invites/generate — owner generates a partner invite link
+// POST /api/invites/generate — owner generates an invite link
 router.post('/invites/generate', (req, res) => {
   const owner = requireOwner(req, res);
   if (!owner) return;
 
   const token = uuidv4();
-  const expiresAt = null; // No expiry by default; can add later
+  const expiresAt = null;
+  const relType = (req.body.relationship_type === 'partner') ? 'partner' : 'coparent';
 
-  q.createInvite.run(token, owner.id, expiresAt);
+  q.createInvite.run(token, owner.id, expiresAt, relType);
 
   const BASE_URL = req.app.locals.BASE_URL;
-  res.json({ invite_url: `${BASE_URL}/invite/${token}`, token });
+  res.json({ invite_url: `${BASE_URL}/invite/${token}`, token, relationship_type: relType });
 });
 
 // GET /api/invites/:token — validate an invite token (used by onboarding page)

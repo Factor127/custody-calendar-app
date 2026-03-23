@@ -16,6 +16,7 @@ db.exec('PRAGMA foreign_keys = ON');
 // ── Safe migrations (run on every startup, idempotent) ───────────────────────
 try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN mobile TEXT'); } catch(e) { /* already exists */ }
+try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
 
 // ── Schema ──────────────────────────────────────────────────────────────────
@@ -134,7 +135,7 @@ const q = {
 
   getInvite:         db.prepare('SELECT * FROM invites WHERE id = ?'),
   getInviteByUsedBy: db.prepare('SELECT * FROM invites WHERE used_by = ? LIMIT 1'),
-  createInvite:      db.prepare('INSERT INTO invites (id, created_by, expires_at) VALUES (?, ?, ?)'),
+  createInvite:      db.prepare('INSERT INTO invites (id, created_by, expires_at, relationship_type) VALUES (?, ?, ?, ?)'),
   claimInvite:       db.prepare('UPDATE invites SET used_by = ? WHERE id = ? AND used_by IS NULL'),
 
   // Magic links (email auth)
@@ -174,8 +175,11 @@ const q = {
   updateAutoRenew:   db.prepare('UPDATE connections SET auto_renew = ? WHERE id = ?'),
   getConnectionById: db.prepare('SELECT * FROM connections WHERE id = ?'),
   getAllConnectionsForOwner: db.prepare(`
-    SELECT c.*, u.name as requester_name
-    FROM connections c JOIN users u ON c.requester_id = u.id
+    SELECT c.*, u.name as requester_name,
+           COALESCE(i.relationship_type, 'coparent') as relationship_type
+    FROM connections c
+    JOIN users u ON c.requester_id = u.id
+    LEFT JOIN invites i ON i.used_by = c.requester_id AND i.created_by = c.target_id
     WHERE c.target_id = ?
     ORDER BY c.created_at DESC
   `),

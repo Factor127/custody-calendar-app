@@ -35,7 +35,7 @@
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
     <span class="bold" style="font-size:14px;">Connections</span>
     <span class="notif-badge hidden" id="pending-badge">0</span>
-    <button class="btn btn-sm btn-outline ml-auto" onclick="generateInvite()">+ Invite partner</button>
+    <button class="btn btn-sm btn-outline ml-auto" onclick="openInviteModal()">+ Invite</button>
   </div>
   <div id="connections-list">
     <p class="text-muted" style="margin:0;font-size:13px;">Loading…</p>
@@ -193,17 +193,42 @@
 <!-- Invite link modal -->
 <div class="modal-overlay" id="invite-modal">
   <div class="modal">
-    <h2>Partner Invite Link</h2>
-    <p class="text-muted">Send this link to your co-parent. They set up their custody schedule in under a minute, and you'll both see when you each have the kids — and when you're both free.</p>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:12px;word-break:break-all;" id="invite-url-display"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('invite-modal')">Close</button>
-      <button class="btn btn-primary" onclick="copyInviteUrl()">📋 Copy link</button>
-      <a id="whatsapp-btn" href="#" target="_blank" rel="noopener"
-         style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        WhatsApp
-      </a>
+    <h2>Generate Invite Link</h2>
+
+    <!-- Step 1: who are you inviting? -->
+    <div id="invite-type-picker">
+      <p class="text-muted" style="margin-bottom:14px;">Who are you inviting?</p>
+      <div style="display:flex;gap:10px;margin-bottom:8px;">
+        <button id="invite-btn-coparent" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="selectInviteType('coparent')">
+          👨‍👩‍👧 Co-parent
+        </button>
+        <button id="invite-btn-partner" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="selectInviteType('partner')">
+          ❤️ My partner
+        </button>
+      </div>
+      <p id="invite-type-desc" class="text-muted" style="font-size:12px;margin:0 0 16px;">
+        They'll set up their custody schedule and you'll both see when the kids are with each of you.
+      </p>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <button class="btn btn-outline" onclick="closeModal('invite-modal')">Cancel</button>
+        <button class="btn btn-primary" id="invite-generate-btn" onclick="generateInvite()">Generate link →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: the link (shown after generating) -->
+    <div id="invite-link-section" style="display:none;">
+      <p id="invite-link-desc" class="text-muted" style="margin-bottom:10px;font-size:13px;"></p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:12px;" id="invite-url-display"></div>
+      <div class="modal-actions" style="flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="closeModal('invite-modal')">Close</button>
+        <button class="btn btn-primary" onclick="copyInviteUrl()">📋 Copy link</button>
+        <a id="whatsapp-btn" href="#" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="resetInviteModal()">← Invite someone else</button>
     </div>
   </div>
 </div>
@@ -347,7 +372,7 @@ function renderConnectionsList() {
     container.innerHTML = `
       <p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Invite your co-parent so they can share their schedule with you.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-primary btn-sm" onclick="generateInvite()">📲 Invite co-parent</button>
+        <button class="btn btn-primary btn-sm" onclick="openInviteModal()">📲 Invite</button>
         <a href="https://wa.me/?text=${friendMsg}" target="_blank" rel="noopener"
            style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -389,9 +414,13 @@ function renderConnectionsList() {
         <button class="btn btn-sm btn-danger" onclick="rejectSpecific('${c.id}')">Revoke</button>`;
     }
 
+    const relBadge = c.relationship_type === 'partner'
+      ? `<span class="badge" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;">Partner</span>`
+      : `<span class="badge" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;">Co-parent</span>`;
+
     return `<div class="connection-row">
       <div style="flex:1;">
-        <span class="bold">${c.requester_name}</span>
+        <span class="bold">${c.requester_name}</span>${relBadge}
         <span class="conn-status ${c.status}">${statusLabel}</span>
         <span class="text-muted">${until}${autoRenewLabel}</span>
       </div>
@@ -667,16 +696,62 @@ async function importHtml(input) {
 }
 
 // ── Invite ────────────────────────────────────────────────────────────────
+let _inviteType = 'coparent'; // selected in the modal
+
+function openInviteModal() {
+  resetInviteModal();
+  openModal('invite-modal');
+}
+
+function selectInviteType(type) {
+  _inviteType = type;
+  const isPartner = type === 'partner';
+  document.getElementById('invite-btn-coparent').className = isPartner ? 'btn btn-outline' : 'btn btn-primary';
+  document.getElementById('invite-btn-coparent').style.flex = '1';
+  document.getElementById('invite-btn-coparent').style.justifyContent = 'center';
+  document.getElementById('invite-btn-partner').className = isPartner ? 'btn btn-primary' : 'btn btn-outline';
+  document.getElementById('invite-btn-partner').style.flex = '1';
+  document.getElementById('invite-btn-partner').style.justifyContent = 'center';
+  document.getElementById('invite-type-desc').textContent = isPartner
+    ? 'They set up their own custody calendar and you\'ll both see when you\'re both free — your "next time I see you" view.'
+    : 'They\'ll set up their custody schedule and you\'ll both see when the kids are with each of you.';
+}
+
 async function generateInvite() {
+  document.getElementById('invite-generate-btn').textContent = 'Generating…';
+  document.getElementById('invite-generate-btn').disabled = true;
+
   const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relationship_type: _inviteType })
   });
   const data = await res.json();
+
   document.getElementById('invite-url-display').textContent = data.invite_url;
-  const waText = encodeURIComponent(`Hi! I'm using Spontany to manage our custody schedule — it makes planning much easier. Click here to set up your side (takes 1 minute): ${data.invite_url}`);
+
+  const isPartner = _inviteType === 'partner';
+  const waText = encodeURIComponent(isPartner
+    ? `Hi! I'm using Spontany to manage my custody schedule — it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
+    : `Hi! I'm using Spontany to manage our custody schedule — makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`
+  );
   document.getElementById('whatsapp-btn').href = `https://wa.me/?text=${waText}`;
-  openModal('invite-modal');
+  document.getElementById('invite-link-desc').textContent = isPartner
+    ? 'Send this to your partner. They\'ll set up their custody calendar and you\'ll see your matching free days.'
+    : 'Send this to your co-parent. They\'ll set up their custody schedule in under a minute.';
+
+  document.getElementById('invite-type-picker').style.display = 'none';
+  document.getElementById('invite-link-section').style.display = 'block';
+}
+
+function resetInviteModal() {
+  _inviteType = 'coparent';
+  selectInviteType('coparent');
+  document.getElementById('invite-type-picker').style.display = 'block';
+  document.getElementById('invite-link-section').style.display = 'none';
+  document.getElementById('invite-generate-btn').textContent = 'Generate link →';
+  document.getElementById('invite-generate-btn').disabled = false;
+  document.getElementById('invite-url-display').textContent = '';
 }
 
 function copyInviteUrl() {
