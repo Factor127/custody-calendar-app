@@ -330,6 +330,13 @@ function prevMonth() {
 }
 
 function nextMonth() {
+  // Don't navigate past the approved window
+  if (connStatus?.approved_until) {
+    const untilDate = new Date(connStatus.approved_until + 'T00:00:00');
+    const nextY = currentViewMonth === 11 ? currentViewYear + 1 : currentViewYear;
+    const nextM = currentViewMonth === 11 ? 0 : currentViewMonth + 1;
+    if (nextY > untilDate.getFullYear() || (nextY === untilDate.getFullYear() && nextM > untilDate.getMonth())) return;
+  }
   currentViewMonth++;
   if (currentViewMonth > 11) { currentViewMonth = 0; currentViewYear++; }
   renderCalendar();
@@ -363,7 +370,9 @@ function renderCalendar() {
 
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const dayData = calendarDays[dateStr];
-    const oDay = ownerDays[dateStr];
+    // Only show owner overlay within the approved window
+    const withinWindow = !connStatus?.approved_until || dateStr <= connStatus.approved_until;
+    const oDay = withinWindow ? ownerDays[dateStr] : undefined;
 
     const owner = dayData?.owner;
     const tags = dayData?.tags || [];
