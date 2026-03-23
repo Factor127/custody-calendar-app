@@ -229,42 +229,29 @@
       </div>
     </div>
 
-    <!-- Step 4: Connect to partner's calendar -->
-    <div class="wizard-step" id="step-4">
+    <!-- Step done: co-parent onboarding complete -->
+    <div class="wizard-step" id="step-done">
       <div class="success-icon">✓</div>
-      <div class="wizard-title" style="text-align:center;">Your calendar is saved!</div>
+      <div class="wizard-title" style="text-align:center;">You're all set!</div>
       <p class="wizard-sub" style="text-align:center;">
-        Want to see when you and <strong id="owner-name-display">your partner</strong> both have free time?
-        Request access to compare schedules.
+        Your custody calendar is saved. You can view and edit it any time from your personal link.
       </p>
 
-      <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
-        <button class="btn btn-primary" style="justify-content:center;" onclick="requestConnection()">
-          Yes — show me our matching free days
-        </button>
-        <button class="btn btn-outline" style="justify-content:center;" onclick="skipToCalendar()">
-          Skip for now — just show my calendar
-        </button>
+      <div style="background:#f8f9fa;border-radius:10px;padding:16px;margin:16px 0;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;">Know a co-parent who'd find this useful?</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">
+          Spontany makes custody scheduling easier — less back and forth, better visibility.
+        </p>
+        <a id="done-whatsapp-share" href="#" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Share with a friend
+        </a>
       </div>
-    </div>
 
-    <!-- Step 5: Waiting for approval -->
-    <div class="wizard-step" id="step-5">
-      <div class="pending-state">
-        <div class="pending-icon">⏳</div>
-        <div class="wizard-title">Request sent!</div>
-        <p class="wizard-sub">
-          <strong id="owner-name-pending">Your partner</strong> will review your request
-          and approve access. You'll see their calendar once approved.
-        </p>
-        <p class="text-muted" style="font-size:12px;margin-top:8px;">
-          Bookmark this page — it's your personal calendar link.
-        </p>
-        <button class="btn btn-primary mt-12" onclick="goToPartnerCalendar()"
-                style="margin:20px auto 0;display:block;">
-          Open my calendar →
-        </button>
-      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="goToPartnerCalendar()">
+        Open my calendar →
+      </button>
     </div>
 
   </div>
@@ -344,7 +331,7 @@ function goStep(n) {
   if (stepEl) stepEl.classList.add('active');
   currentStep = n;
   // Progress bar
-  const progressMap = { 0: 0, 'mirror': 30, 1: 20, 2: 45, 3: 65, 4: 85, 5: 100 };
+  const progressMap = { 0: 0, 1: 20, 'mirror': 35, 2: 55, 3: 75, 'done': 100 };
   document.getElementById('progress').style.width = (progressMap[n] ?? 50) + '%';
   window.scrollTo(0, 0);
 }
@@ -577,26 +564,17 @@ async function saveAndContinue() {
   myUserId = data.userId;
   localStorage.setItem('myToken', myToken);
   localStorage.setItem('myRole', 'partner');
-  goStep(4);
+
+  // Set WhatsApp friend-share link now that we have the app origin
+  const shareMsg = encodeURIComponent(
+    `I just set up my custody calendar on Spontany — makes co-parenting scheduling so much easier. Check it out: ${window.location.origin}`
+  );
+  document.getElementById('done-whatsapp-share').href = `https://wa.me/?text=${shareMsg}`;
+
+  goStep('done');
 }
 
-// ── Connection request ────────────────────────────────────────────────────────
-async function requestConnection() {
-  if (!myToken) return;
-  const res = await fetch(`/api/connections/request?token=${myToken}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' }
-  });
-  if (res.ok) {
-    goStep(5);
-  } else {
-    const err = await res.json().catch(() => ({}));
-    alert(err.error || 'Could not send request');
-  }
-}
-
-function skipToCalendar()     { window.location.href = `/partner?token=${myToken}`; }
-function goToPartnerCalendar(){ window.location.href = `/partner?token=${myToken}`; }
+function goToPartnerCalendar() { window.location.href = `/partner?token=${myToken}`; }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && currentStep === 1) step1Next();
