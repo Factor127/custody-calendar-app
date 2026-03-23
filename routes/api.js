@@ -614,4 +614,43 @@ function parseTags(row) {
   return { ...row, tags: JSON.parse(row.tags || '[]') };
 }
 
+// ── Custody Pattern ───────────────────────────────────────────────────────────
+
+// GET /api/pattern — return current custody pattern for the logged-in user
+router.get('/pattern', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+  const pattern = q.getPattern.get(user.id);
+  res.json({ pattern: pattern || null });
+});
+
+// PUT /api/pattern — save pattern and regenerate calendar days
+router.put('/pattern', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+
+  const { pattern_type, pattern_data, anchor_date } = req.body;
+  const VALID_TYPES = ['alternating_weeks', 'specific_days', 'custom'];
+  if (!VALID_TYPES.includes(pattern_type)) {
+    return res.status(400).json({ error: 'Invalid pattern_type' });
+  }
+
+  const dataStr = typeof pattern_data === 'string' ? pattern_data : JSON.stringify(pattern_data || {});
+  q.upsertPattern.run(user.id, pattern_type, dataStr, anchor_date || null);
+
+  // Regenerate calendar days only for auto-generate types
+  if (pattern_type !== 'custom') {
+    const start = new Date();
+    start.setFullYear(start.getFullYear() - 1); // 1 year back
+    const end = new Date();
+    end.setFullYear(end.getFullYear() + 2);     // 2 years ahead
+
+    const pattern = { pattern_type, pattern_data: dataStr, anchor_date: anchor_date || null };
+    const days = generateDaysFromPattern(pattern, toDateStr(start), toDateStr(end));
+    upsertManyDays(user.id, days);
+  }
+
+  res.json({ ok: true });
+});
+
 module.exports = router;
