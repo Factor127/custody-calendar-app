@@ -363,6 +363,7 @@ const params = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 let myUserId = null;
 let myName = 'Me';
+let myCoparentInitial = 'C'; // default; overridden from /api/me
 let partnerConnections = [];
 let pendingConnections = [];
 let pendingSuggestions = [];
@@ -510,6 +511,7 @@ function nextMonth() {
   const me = await meRes.json();
   myName = me.name;
   myUserId = me.id;
+  if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
 
   // Persist token so visiting / auto-logs in next time
   localStorage.setItem('myToken', MY_TOKEN);
@@ -721,7 +723,7 @@ function renderCalendar() {
     ].filter(Boolean).join(' ');
 
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
-    const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
+    const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? myCoparentInitial : '');
 
     html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
       <div class="day-num">${day}</div>
@@ -798,7 +800,7 @@ function refreshCell(cell, date) {
   ].filter(Boolean).join(' ');
   cell.dataset.date = date;
 
-  const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
+  const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? myCoparentInitial : '');
   const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
 
   const dayNum = cell.querySelector('.day-num').textContent;

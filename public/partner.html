@@ -292,6 +292,7 @@ const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 
 let myUserId = null;
 let myName = 'Me';
+let myCoparentInitial = 'C'; // my own co-parent's initial, loaded from /api/me
 let ownerName = 'Partner';
 let ownerId = null;
 let calendarDays = {};   // my days: date -> { owner, tags }
@@ -329,6 +330,7 @@ function toDateStr(d) {
   const me = await meRes.json();
   myName = me.name;
   myUserId = me.id;
+  if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
 
   // Persist token so visiting / auto-logs in next time
   localStorage.setItem('myToken', MY_TOKEN);
@@ -549,7 +551,7 @@ function renderCalendar() {
     ].filter(Boolean).join(' ');
 
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
-    const cellLabel = effectiveOwner === 'self' ? myName[0] : (effectiveOwner === 'coparent' ? ownerName[0] : '');
+    const cellLabel = effectiveOwner === 'self' ? myName[0] : (effectiveOwner === 'coparent' ? myCoparentInitial : '');
 
     let ownerDotHtml = '';
     if (showOwnerOverlay && oDay) {
