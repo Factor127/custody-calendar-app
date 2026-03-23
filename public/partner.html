@@ -106,22 +106,7 @@
   <span style="font-size:18px;">⚠️</span>
   <div>
     Access to <strong id="owner-name-expired">your partner</strong>'s calendar has expired.
-    <button class="btn btn-sm btn-outline" style="margin-left:8px;" onclick="requestReconnect()">Request access again</button>
-  </div>
-</div>
-
-<!-- Summary -->
-<div class="summary">
-  <span class="bold" style="font-size:15px;">My Custody Balance:</span>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--r);"></span>
-    <span class="bold">My days:</span>
-    <span class="summary-count" style="color:#1e8e3e;" id="self-count">—</span>
-  </div>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--z);"></span>
-    <span class="bold">Co-parent days:</span>
-    <span class="summary-count" style="color:#1967d2;" id="coparent-count">—</span>
+    <button class="btn btn-sm btn-outline" style="margin-left:8px;" onclick="openDurationModal()">Request access again</button>
   </div>
 </div>
 
@@ -219,6 +204,41 @@
 
   <div class="ml-auto flex-gap">
     <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
+  </div>
+</div>
+
+<!-- Custody Balance — below controls -->
+<div class="summary" style="margin-top:14px;">
+  <span class="bold" style="font-size:15px;">My Custody Balance:</span>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--r);"></span>
+    <span class="bold">My days:</span>
+    <span class="summary-count" style="color:#1e8e3e;" id="self-count">—</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--z);"></span>
+    <span class="bold">Co-parent days:</span>
+    <span class="summary-count" style="color:#1967d2;" id="coparent-count">—</span>
+  </div>
+</div>
+
+<!-- Duration request modal (for expired / no-connection states) -->
+<div id="duration-request-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:white;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+    <strong style="font-size:16px;">How long do you want to share?</strong>
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 16px;">
+      <span id="duration-modal-owner">Your partner</span> will approve the request — let them know your preference.
+    </p>
+    <div style="display:grid;gap:8px;margin-bottom:20px;" id="duration-options">
+      <label class="radio-option" onclick="selectReqDuration(14,this)"><input type="radio" name="req-dur" value="14"><div><div class="radio-label">2 weeks</div></div></label>
+      <label class="radio-option selected" onclick="selectReqDuration(30,this)"><input type="radio" name="req-dur" value="30" checked><div><div class="radio-label">1 month</div><div class="radio-desc">Recommended</div></div></label>
+      <label class="radio-option" onclick="selectReqDuration(90,this)"><input type="radio" name="req-dur" value="90"><div><div class="radio-label">3 months</div></div></label>
+      <label class="radio-option" onclick="selectReqDuration(3650,this)"><input type="radio" name="req-dur" value="3650"><div><div class="radio-label">Ongoing (until they revoke)</div></div></label>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeDurationModal()">Cancel</button>
+      <button class="btn btn-primary" id="duration-send-btn" onclick="sendAccessRequest()">Send request</button>
+    </div>
   </div>
 </div>
 
@@ -729,6 +749,64 @@ function renderStrip() {
 
 function showInviteFromPartner() {
   openPartnerInviteModal();
+}
+
+// ── Access request with duration ──────────────────────────────────────────
+let _reqDuration = 30;
+
+function openDurationModal() {
+  document.getElementById('duration-modal-owner').textContent = connStatus?.owner_name || 'your partner';
+  _reqDuration = 30;
+  // Reset to default selected
+  document.querySelectorAll('#duration-options .radio-option').forEach(o => o.classList.remove('selected'));
+  const def = document.querySelector('#duration-options [value="30"]')?.closest('.radio-option');
+  if (def) def.classList.add('selected');
+  document.getElementById('duration-request-modal').style.display = 'flex';
+}
+
+function closeDurationModal() {
+  document.getElementById('duration-request-modal').style.display = 'none';
+}
+
+function selectReqDuration(days, el) {
+  _reqDuration = days;
+  document.querySelectorAll('#duration-options .radio-option').forEach(o => o.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+}
+
+async function sendAccessRequest() {
+  const btn = document.getElementById('duration-send-btn');
+  btn.textContent = 'Sending…'; btn.disabled = true;
+
+  try {
+    let res;
+    // If expired, re-request on existing connection; otherwise create new
+    if (connStatus?.status === 'expired' && connStatus?.connection_id) {
+      res = await fetch(`/api/connections/${connStatus.connection_id}/rerequest?token=${MY_TOKEN}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ desired_duration_days: _reqDuration })
+      });
+    } else {
+      res = await fetch(`/api/connections/request?token=${MY_TOKEN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ desired_duration_days: _reqDuration })
+      });
+    }
+    if (res.ok) {
+      closeDurationModal();
+      showToast('✓ Request sent — waiting for approval');
+      document.getElementById('expired-banner').classList.add('hidden');
+      document.getElementById('pending-banner').classList.remove('hidden');
+      connStatus = { ...connStatus, status: 'pending' };
+    } else {
+      showToast('Failed to send request — please try again');
+    }
+  } catch(e) {
+    showToast('Network error — please try again');
+  }
+  btn.textContent = 'Send request'; btn.disabled = false;
 }
 
 // ── Partner invite modal ──────────────────────────────────────────────────────

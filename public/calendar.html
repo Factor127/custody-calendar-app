@@ -84,34 +84,12 @@
   </div>
 </div>
 
-<!-- Custody Summary -->
-<div class="summary">
-  <span class="bold" style="font-size:15px;">Custody Balance:</span>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--r);"></span>
-    <span class="bold" id="owner-name-label">Me:</span>
-    <span class="summary-count" style="color:#1e8e3e;" id="r-count">— days</span>
-  </div>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--z);"></span>
-    <span class="bold">Co-parent:</span>
-    <span class="summary-count" style="color:#1967d2;" id="z-count">— days</span>
-  </div>
-  <div class="summary-stat" style="margin-left:8px;">
-    <span class="bold">Difference:</span>
-    <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
-  </div>
-</div>
-
 <!-- Edit mode notices -->
 <div class="edit-notice notice-custody" id="edit-notice">
   ✏️ <span class="bold">Edit Custody:</span> Click any day to switch between you and co-parent.
 </div>
 <div class="edit-notice notice-holiday" id="holiday-edit-notice">
   🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
-</div>
-<div class="edit-notice notice-partner" id="partner-edit-notice">
-  👥 <span class="bold">Edit Partner:</span> Click any day to toggle partner availability.
 </div>
 
 <!-- Import notice (shown if no calendar data yet) -->
@@ -185,19 +163,30 @@
     <span class="toggle-label">Edit Holidays</span>
   </div>
 
-  <div class="toggle-group" id="toggle-partner-edit-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-partner-edit" onchange="setEditMode('partner',this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Edit Partner</span>
-  </div>
-
   <div class="ml-auto flex-gap">
     <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
     <button class="btn btn-gray" onclick="downloadBackup()">📥 Backup</button>
     <button class="btn btn-purple" onclick="shareWithCoparent()">📤 Share</button>
     <button class="btn btn-primary" onclick="exportToPDF()">📄 PDF</button>
+  </div>
+</div>
+
+<!-- Custody Balance — below controls -->
+<div class="summary" style="margin-top:14px;">
+  <span class="bold" style="font-size:15px;">Custody Balance:</span>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--r);"></span>
+    <span class="bold" id="owner-name-label">Me:</span>
+    <span class="summary-count" style="color:#1e8e3e;" id="r-count">— days</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--z);"></span>
+    <span class="bold">Co-parent:</span>
+    <span class="summary-count" style="color:#1967d2;" id="z-count">— days</span>
+  </div>
+  <div class="summary-stat" style="margin-left:8px;">
+    <span class="bold">Difference:</span>
+    <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
   </div>
 </div>
 
@@ -218,6 +207,9 @@
   <div class="modal">
     <h2>Connection Request</h2>
     <p><strong id="modal-requester-name">Someone</strong> wants to view your custody schedule.</p>
+    <p id="modal-requested-duration" class="text-muted" style="font-size:12px;margin:-8px 0 8px;display:none;">
+      They'd like access for <strong id="modal-duration-label">—</strong>.
+    </p>
 
     <div class="field-group">
       <label class="field-label">Grant access for:</label>
@@ -569,7 +561,7 @@ function renderConnectionsList() {
 
     let actions = '';
     if (c.status === 'pending') {
-      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.requester_name}')">Review</button>`;
+      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.requester_name}',${c.desired_duration_days||0})">Review</button>`;
     } else if (c.status === 'approved') {
       const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
       actions = `
@@ -598,7 +590,6 @@ async function loadPartnerOverlay() {
   const approved = partnerConnections.find(c => c.status === 'approved');
   if (!approved) {
     document.getElementById('toggle-partner-group').classList.add('hidden');
-    document.getElementById('toggle-partner-edit-group').classList.add('hidden');
     document.getElementById('legend-partner').classList.add('hidden');
     document.getElementById('toggle-frames').closest('.toggle-group').classList.add('hidden');
     document.querySelector('.legend-item[style*="orange"]').classList.add('hidden');
@@ -918,9 +909,26 @@ function copyInviteUrl() {
 }
 
 // ── Connection approval ───────────────────────────────────────────────────
-function openApproveModal(connId, name) {
+function openApproveModal(connId, name, desiredDays) {
   pendingConnectionId = connId;
   document.getElementById('modal-requester-name').textContent = name;
+
+  // Show partner's requested duration if provided
+  const durationNote = document.getElementById('modal-requested-duration');
+  if (desiredDays) {
+    const label = desiredDays >= 3650 ? 'ongoing (until revoked)'
+                : desiredDays >= 90   ? `${Math.round(desiredDays/30)} months`
+                : desiredDays >= 14   ? `${Math.round(desiredDays/7)} weeks`
+                : `${desiredDays} days`;
+    document.getElementById('modal-duration-label').textContent = label;
+    durationNote.style.display = 'block';
+    // Pre-select the closest matching radio
+    const closest = [14, 30, 90, 3650].reduce((a, b) => Math.abs(b - desiredDays) < Math.abs(a - desiredDays) ? b : a);
+    selectDuration(closest, document.querySelector(`#duration-radios [value="${closest}"]`)?.closest('.radio-option'));
+  } else {
+    durationNote.style.display = 'none';
+  }
+
   openModal('approve-modal');
 }
 

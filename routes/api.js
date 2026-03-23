@@ -316,6 +316,9 @@ router.post('/connections/request', (req, res) => {
   const connId = uuidv4();
   q.createConnection.run(connId, partner.id, owner.id);
 
+  const desiredDays = parseInt(req.body.desired_duration_days, 10) || null;
+  if (desiredDays) q.updateDesiredDuration.run(desiredDays, connId);
+
   res.json({ connection_id: connId, status: 'pending', message: 'Request sent to owner for approval' });
 });
 
@@ -335,7 +338,8 @@ router.get('/connections/status', (req, res) => {
     approved_until: live.approved_until,
     auto_renew: Boolean(live.auto_renew),
     owner_name: owner?.name,
-    connection_id: live.id
+    connection_id: live.id,
+    desired_duration_days: live.desired_duration_days || null
   });
 });
 
@@ -405,6 +409,23 @@ router.post('/connections/auto-renew', (req, res) => {
 
   q.updateAutoRenew.run(auto_renew ? 1 : 0, connection_id);
   res.json({ auto_renew: Boolean(auto_renew) });
+});
+
+// PUT /api/connections/:id/rerequest — partner re-requests access with a preferred duration
+router.put('/connections/:id/rerequest', (req, res) => {
+  const partner = requireToken(req, res);
+  if (!partner) return;
+
+  const conn = q.getConnectionById.get(req.params.id);
+  if (!conn || conn.requester_id !== partner.id) return res.status(403).json({ error: 'Not authorized' });
+  if (conn.status !== 'expired' && conn.status !== 'rejected') {
+    return res.status(400).json({ error: 'Connection is not expired or rejected' });
+  }
+
+  const desiredDays = parseInt(req.body.desired_duration_days, 10) || 30;
+  // Reset to pending and store the desired duration
+  db.prepare("UPDATE connections SET status = 'pending', desired_duration_days = ? WHERE id = ?").run(desiredDays, conn.id);
+  res.json({ ok: true, status: 'pending' });
 });
 
 // PUT /api/connections/:id/role — owner changes the relationship type label

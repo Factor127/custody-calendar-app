@@ -86,8 +86,7 @@
     <!-- Pattern type tabs -->
     <div class="pattern-type-tabs">
       <button class="pattern-tab" id="tab-specific" onclick="switchTab('specific_days')">Fixed days each week</button>
-      <button class="pattern-tab" id="tab-alternating" onclick="switchTab('alternating_weeks')">Alternating weeks</button>
-      <button class="pattern-tab" id="tab-custom" onclick="switchTab('custom')">Manual only</button>
+      <button class="pattern-tab" id="tab-alternating" onclick="switchTab('alternating_weeks')">Bi-weekly (every other week)</button>
     </div>
 
     <!-- specific_days: day picker -->
@@ -115,13 +114,6 @@
         <label class="field-label" style="font-size:12px;">Reference Monday (anchor date):</label>
         <input id="anchor-date" type="date" class="field-input" style="max-width:200px;">
       </div>
-    </div>
-
-    <!-- custom: no auto-generation -->
-    <div id="panel-custom" class="hidden">
-      <p style="font-size:13px;color:var(--muted);margin:0;">
-        Your calendar is managed manually — days are edited directly on the calendar. No automatic pattern is applied.
-      </p>
     </div>
 
     <div style="display:flex;justify-content:flex-end;margin-top:16px;" id="schedule-save-row">
@@ -192,13 +184,15 @@ async function loadSchedule() {
 }
 
 function switchTab(type) {
+  // Treat 'custom' as 'specific_days' if it somehow appears
+  if (type === 'custom') type = 'specific_days';
   currentPatternType = type;
-  ['specific_days', 'alternating_weeks', 'custom'].forEach(t => {
+  ['specific_days', 'alternating_weeks'].forEach(t => {
     document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== type);
-    document.getElementById(`tab-${t === 'specific_days' ? 'specific' : t === 'alternating_weeks' ? 'alternating' : 'custom'}`)
-      .classList.toggle('active', t === type);
+    const tabId = t === 'specific_days' ? 'tab-specific' : 'tab-alternating';
+    document.getElementById(tabId).classList.toggle('active', t === type);
   });
-  document.getElementById('schedule-save-row').style.display = type === 'custom' ? 'none' : 'flex';
+  document.getElementById('schedule-save-row').style.display = 'flex';
 }
 
 function toggleDay(btn) {

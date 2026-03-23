@@ -18,6 +18,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* alread
 try { db.exec('ALTER TABLE users ADD COLUMN mobile TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
+try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
 // Backfill connections.relationship_type from the invite that was used to join
 try {
   db.exec(`
@@ -202,7 +203,8 @@ const q = {
     WHERE c.target_id = ?
     ORDER BY c.created_at DESC
   `),
-  updateConnectionRole: db.prepare(`UPDATE connections SET relationship_type = ? WHERE id = ?`),
+  updateConnectionRole:            db.prepare(`UPDATE connections SET relationship_type = ? WHERE id = ?`),
+  updateDesiredDuration:           db.prepare(`UPDATE connections SET desired_duration_days = ? WHERE id = ?`),
   renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),
   expireConnection: db.prepare("UPDATE connections SET status = 'expired' WHERE id = ?"),
 
