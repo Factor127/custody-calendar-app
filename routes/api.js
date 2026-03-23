@@ -246,16 +246,19 @@ router.post('/calendar/save', (req, res) => {
 
 // ── Invites ───────────────────────────────────────────────────────────────────
 
-// POST /api/invites/generate — owner generates an invite link
+// POST /api/invites/generate — any authenticated user generates an invite link
+// Owners can invite co-parents or partners; partners can invite their own partner.
 router.post('/invites/generate', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const user = requireToken(req, res);
+  if (!user) return;
+
+  // Partners may only generate partner-type invites
+  const relType = (user.role === 'partner' || req.body.relationship_type === 'partner')
+    ? 'partner'
+    : 'coparent';
 
   const token = uuidv4();
-  const expiresAt = null;
-  const relType = (req.body.relationship_type === 'partner') ? 'partner' : 'coparent';
-
-  q.createInvite.run(token, owner.id, expiresAt, relType);
+  q.createInvite.run(token, user.id, null, relType);
 
   const BASE_URL = req.app.locals.BASE_URL;
   res.json({ invite_url: `${BASE_URL}/invite/${token}`, token, relationship_type: relType });
