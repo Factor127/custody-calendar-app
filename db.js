@@ -17,7 +17,7 @@ db.exec('PRAGMA foreign_keys = ON');
 try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN mobile TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
-db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* table may not exist yet on first run */ }
 
 // ── Schema ──────────────────────────────────────────────────────────────────
 
@@ -59,6 +59,7 @@ db.exec(`
     created_by TEXT NOT NULL,
     used_by TEXT,
     expires_at TEXT,
+    relationship_type TEXT NOT NULL DEFAULT 'coparent',
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (created_by) REFERENCES users(id)
   );
@@ -93,6 +94,9 @@ db.exec(`
     FOREIGN KEY (to_user_id) REFERENCES users(id)
   );
 `);
+
+// Ensure email index exists on the (possibly just-created) users table
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* ignore */ }
 
 // ── Prepared statements ───────────────────────────────────────────────────────
 

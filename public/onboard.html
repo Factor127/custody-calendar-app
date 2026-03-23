@@ -294,8 +294,14 @@ function getNextFullWeekStart() {
 
 // ── Invite validation ─────────────────────────────────────────────────────────
 async function validateInvite() {
+  console.log('[onboard] INVITE_TOKEN:', INVITE_TOKEN);
+  if (!INVITE_TOKEN || INVITE_TOKEN === 'undefined') {
+    showInviteError('Missing invite token — the link may be broken.');
+    return;
+  }
   try {
     const res = await fetch(`/api/invites/${INVITE_TOKEN}`);
+    console.log('[onboard] /api/invites status:', res.status);
     if (res.status === 409) {
       const saved = localStorage.getItem('myToken');
       if (saved) { window.location.href = `/partner?token=${saved}`; return; }
@@ -307,21 +313,30 @@ async function validateInvite() {
         </div>`;
       return;
     }
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`HTTP ${res.status}: ${body.error || 'unknown'}`);
+    }
     const data = await res.json();
     ownerName = data.owner_name || 'your partner';
     document.getElementById('invite-greeting').textContent = `Hi! ${ownerName} has invited you.`;
     document.getElementById('owner-name-display').textContent = ownerName;
     document.getElementById('owner-name-pending').textContent = ownerName;
     goStep(1);
-  } catch {
-    document.getElementById('step-0').innerHTML = `
-      <div style="text-align:center;padding:20px 0;">
-        <div style="font-size:32px;margin-bottom:12px;">❌</div>
-        <h2>Invalid invite link</h2>
-        <p class="text-muted">This link may have expired. Ask your partner for a new one.</p>
-      </div>`;
+  } catch(err) {
+    console.error('[onboard] validateInvite error:', err);
+    showInviteError(`Could not validate this invite link. (${err.message})`);
   }
+}
+
+function showInviteError(msg) {
+  document.getElementById('step-0').innerHTML = `
+    <div style="text-align:center;padding:20px 0;">
+      <div style="font-size:32px;margin-bottom:12px;">❌</div>
+      <h2>Invalid invite link</h2>
+      <p class="text-muted">${msg}</p>
+      <p class="text-muted" style="margin-top:8px;font-size:12px;">Ask your partner to generate a new invite link.</p>
+    </div>`;
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────

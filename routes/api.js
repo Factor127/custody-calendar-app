@@ -263,11 +263,19 @@ router.post('/invites/generate', (req, res) => {
 
 // GET /api/invites/:token — validate an invite token (used by onboarding page)
 router.get('/invites/:token', (req, res) => {
-  const invite = q.getInvite.get(req.params.token);
-  if (!invite) return res.status(404).json({ error: 'Invite not found' });
-  if (invite.used_by) return res.status(409).json({ error: 'Invite already used', used: true });
-
+  const token = req.params.token;
+  console.log(`[invite-validate] token="${token}"`);
+  const invite = q.getInvite.get(token);
+  if (!invite) {
+    console.log(`[invite-validate] NOT FOUND for token="${token}"`);
+    return res.status(404).json({ error: 'Invite not found' });
+  }
+  if (invite.used_by) {
+    console.log(`[invite-validate] ALREADY USED by "${invite.used_by}" for token="${token}"`);
+    return res.status(409).json({ error: 'Invite already used', used: true });
+  }
   const owner = q.getUserById.get(invite.created_by);
+  console.log(`[invite-validate] OK — owner="${owner?.name}", relType="${invite.relationship_type}"`);
   res.json({ valid: true, owner_name: owner?.name || 'your partner' });
 });
 
