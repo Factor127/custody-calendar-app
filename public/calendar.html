@@ -139,7 +139,7 @@
 <div class="legend">
   <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
   <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
-  <div class="legend-item" id="legend-partner"><span class="dot partner-self"></span> Partner has kids &nbsp; <span class="dot partner-free"></span> Partner free</div>
+  <div class="legend-item hidden" id="legend-partner"></div>
   <div class="legend-item"><span class="tag">H</span> Holiday</div>
   <div class="legend-item"><span class="tag">V</span> Vacation</div>
   <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
@@ -696,16 +696,9 @@ function renderCalendar() {
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
     const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
 
-    let partnerDotHtml = '';
-    if (pDay) {
-      const dotClass = pDay.owner === 'self' ? 'partner-self' : 'partner-free';
-      partnerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}"></span></div>`;
-    }
-
     html += `<td class="${tdClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
-      <div class="day-num">${day}${isToday ? ' ●' : ''}</div>
+      <div class="day-num">${day}</div>
       <div class="label">${ownerLabel} ${tagHtml}</div>
-      ${partnerDotHtml}
     </td>`;
 
     cellCount++;
@@ -779,18 +772,10 @@ function refreshCell(cell, date) {
   const ownerLabel = owner === 'self' ? myName[0] : (owner === 'coparent' ? 'Z' : '');
   const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
 
-  let partnerDotHtml = '';
-  if (pDay) {
-    const dotClass = pDay.owner === 'self' ? 'partner-self' : 'partner-free';
-    const dotTitle = pDay.owner === 'self' ? 'Partner has kids' : 'Partner free';
-    partnerDotHtml = `<div class="partner-dots"><span class="dot ${dotClass}" title="${dotTitle}"></span></div>`;
-  }
-
   const dayNum = cell.querySelector('.day-num').textContent;
   cell.innerHTML = `
     <div class="day-num">${dayNum}</div>
     <div class="label">${ownerLabel} ${tagHtml}</div>
-    ${partnerDotHtml}
   `;
 }
 
