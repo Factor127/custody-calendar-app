@@ -81,7 +81,7 @@
 
 <!-- "Next time I see you" — scrolling day strip -->
 <div id="next-time-section" style="margin-bottom:20px;">
-  <div class="next-time-label">Next time I see you</div>
+  <div class="next-time-label" id="next-time-label">Next time both you & your partner are free</div>
   <div class="next-time-headline" id="next-time-headline">—</div>
 
   <!-- Connected: scrolling strip -->
@@ -347,6 +347,7 @@ let pendingSuggestions = [];
 let calendarDays = {}; // date -> { owner: 'self'|'coparent', tags: [] }
 let partnerDays = {};  // date -> { owner: 'self'|'coparent' }
 let activePartnerUserId = null;
+let activePartnerName = 'Partner';
 let activeSuggestionId = null;
 
 // Edit modes
@@ -644,6 +645,8 @@ async function loadPartnerOverlay() {
   activePartnerUserId = approved.requester_id;
 
   const pName = pData.user?.name || 'Partner';
+  activePartnerName = pName;
+  document.getElementById('next-time-label').textContent = `Next time both you & ${pName} are free`;
   document.getElementById('partner-toggle-label').textContent = `${pName}'s days`;
 
   renderCalendar();
