@@ -34,7 +34,6 @@
     .day-card .dc-name { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
     .day-card .dc-num  { font-size:19px; font-weight:800; line-height:1.1; color:var(--text); }
     .day-card.match .dc-num { color:#e65100; }
-    .day-card .dc-dot  { font-size:11px; margin-top:3px; min-height:14px; }
     .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
     .next-time-label  { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
@@ -97,13 +96,13 @@
   <div id="next-time-locked">
     <div style="position:relative;border-radius:10px;overflow:hidden;">
       <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
-        <div class="day-card" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div><div class="dc-dot"></div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div><div class="dc-dot">❤️</div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div><div class="dc-dot"></div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div><div class="dc-dot">❤️</div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div><div class="dc-dot"></div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div><div class="dc-dot">🟢</div></div>
-        <div class="day-card" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div><div class="dc-dot"></div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div></div>
       </div>
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
         <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
@@ -491,13 +490,11 @@ function prevMonth() {
 }
 
 function nextMonth() {
-  // Don't navigate past the approved window
-  if (connStatus?.approved_until) {
-    const untilDate = new Date(connStatus.approved_until + 'T00:00:00');
-    const nextY = currentViewMonth === 11 ? currentViewYear + 1 : currentViewYear;
-    const nextM = currentViewMonth === 11 ? 0 : currentViewMonth + 1;
-    if (nextY > untilDate.getFullYear() || (nextY === untilDate.getFullYear() && nextM > untilDate.getMonth())) return;
-  }
+  // Cap at 1 year ahead regardless of connection window
+  const maxDate = new Date(); maxDate.setFullYear(maxDate.getFullYear() + 1);
+  const nextY = currentViewMonth === 11 ? currentViewYear + 1 : currentViewYear;
+  const nextM = currentViewMonth === 11 ? 0 : currentViewMonth + 1;
+  if (nextY > maxDate.getFullYear() || (nextY === maxDate.getFullYear() && nextM > maxDate.getMonth())) return;
   currentViewMonth++;
   if (currentViewMonth > 11) { currentViewMonth = 0; currentViewYear++; }
   renderCalendar();
@@ -817,14 +814,8 @@ function renderStrip() {
     const isMatch  = myFree && theyFree;
     const isToday  = ds === todayStr;
 
-    let dot = '';
-    if (beyondWindow)  dot = '🔒';
-    else if (isMatch)  dot = '❤️';
-    else if (myFree)   dot = '🟢';
-    else if (theyFree) dot = '💙';
-
     const cls = ['day-card',
-      isMatch ? 'match' : '',
+      isMatch ? 'match' : (beyondWindow || !isMatch ? 'dim' : ''),
       isToday ? 'strip-today' : '',
       beyondWindow ? 'strip-locked' : ''
     ].filter(Boolean).join(' ');
@@ -832,7 +823,6 @@ function renderStrip() {
     html += `<div class="${cls}">
       <div class="dc-name">${STRIP_DAY_ABBR[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
-      <div class="dc-dot">${dot}</div>
     </div>`;
   }
   strip.innerHTML = html;
