@@ -200,28 +200,6 @@
   </label>
 </div>
 
-<!-- Controls — below calendar -->
-<div class="controls" style="margin-top:14px;">
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-holiday-edit" onchange="setEditMode('holiday',this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Edit Holidays</span>
-  </div>
-
-  <div class="toggle-group" id="toggle-suggest-group" style="display:none;">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-suggest" onchange="toggleSuggestMode(this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Suggest changes</span>
-  </div>
-
-  <div class="ml-auto flex-gap">
-    <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
-  </div>
-</div>
 
 <!-- Custody Balance — below controls -->
 <div class="summary" style="margin-top:14px;">
@@ -364,7 +342,6 @@ let ownerDays = {};      // owner's days: date -> { owner }
 let showOwnerOverlay = true;
 let editMode = null;
 let connStatus = null;
-let dirty = false; // true when there are unsaved edits
 let suggestMode = false;
 let suggestedChanges = {}; // date -> proposed_owner (from partner's perspective)
 let pendingSuggestions = [];
@@ -373,13 +350,6 @@ let currentViewYear = null;
 let currentViewMonth = null;
 let stripOffset = 0; // days ahead from today shown at left edge of strip
 
-// Warn before closing/navigating away with unsaved changes
-window.addEventListener('beforeunload', e => {
-  if (dirty) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-});
 
 // Local-time date string — avoids UTC off-by-one in UTC+ timezones (Israel = UTC+2)
 function toDateStr(d) {
@@ -668,16 +638,16 @@ function handleDayClick(cell) {
   if (editMode === 'custody') {
     const cur = calendarDays[date]?.owner || 'self';
     calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: cur === 'self' ? 'coparent' : 'self' };
-    dirty = true;
     renderCalendar();
+    autoSaveDay(date);
   } else if (editMode === 'holiday') {
     const cur = calendarDays[date] || { owner: 'self', tags: [] };
     const tags = cur.tags || [];
     const TAG_CYCLE = ['H', 'V'];
     const idx = TAG_CYCLE.indexOf(tags[0]);
     calendarDays[date] = { ...cur, tags: idx < 0 ? ['H'] : (idx < 1 ? [TAG_CYCLE[idx+1]] : []) };
-    dirty = true;
     renderCalendar();
+    autoSaveDay(date);
   }
 }
 
@@ -763,20 +733,17 @@ function calculateStats() {
   document.getElementById('coparent-count').textContent = `${co} days`;
 }
 
-// ── Save ──────────────────────────────────────────────────────────────────
-async function saveCalendar() {
-  const days = Object.entries(calendarDays).map(([date, d]) => ({
-    date, owner: d.owner, tags: d.tags || []
-  }));
-
-  const res = await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ days })
-  });
-
-  if (res.ok) { dirty = false; showToast('✓ Saved'); }
-  else alert('Save failed');
+// ── Autosave — fires immediately on every change ───────────────────────────
+async function autoSaveDay(date) {
+  const d = calendarDays[date];
+  if (!d) return;
+  try {
+    await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: [{ date, owner: d.owner, tags: d.tags || [] }] })
+    });
+  } catch(e) { /* silent */ }
 }
 
 // ── Reconnect ─────────────────────────────────────────────────────────────

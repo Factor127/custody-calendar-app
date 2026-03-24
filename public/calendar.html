@@ -213,28 +213,6 @@
   </div>
 </div>
 
-<!-- Controls — below balance -->
-<div class="controls" style="margin-top:14px;">
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-holiday-edit" onchange="setEditMode('holiday',this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Edit Holidays</span>
-  </div>
-
-  <div class="toggle-group" id="toggle-suggest-group" style="display:none;">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-suggest" onchange="toggleSuggestMode(this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Suggest changes</span>
-  </div>
-
-  <div class="ml-auto flex-gap">
-    <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
-  </div>
-</div>
 
 </div><!-- /.cal-section -->
 
@@ -475,7 +453,6 @@ let activeSuggestionId = null;
 let editMode = null; // 'custody' | 'holiday' | 'partner' | null
 let selectedDurationDays = 30;
 let pendingConnectionId = null;
-let dirty = false;
 let currentViewYear = null;
 let currentViewMonth = null;
 let stripOffset = 0; // days ahead from today shown at left edge
@@ -572,13 +549,6 @@ function renderStrip() {
   if (prev) prev.disabled = stripOffset === 0;
 }
 
-// Warn before closing/navigating away with unsaved changes
-window.addEventListener('beforeunload', e => {
-  if (dirty) {
-    e.preventDefault();
-    e.returnValue = ''; // required for Chrome
-  }
-});
 
 // ── Month navigation ──────────────────────────────────────────────────────
 function prevMonth() {
@@ -861,9 +831,9 @@ function toggleCustody(cell, date) {
   const current = calendarDays[date]?.owner || 'self';
   const next = current === 'self' ? 'coparent' : 'self';
   calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: next };
-  dirty = true;
   refreshCell(cell, date);
   calculateCustodyDays();
+  autoSaveDay(date);
 }
 
 function cycleTag(cell, date) {
@@ -873,14 +843,13 @@ function cycleTag(cell, date) {
   const idx = TAG_CYCLE.indexOf(tags[0]);
   const nextTags = idx < 0 ? ['H'] : (idx < TAG_CYCLE.length - 1 ? [TAG_CYCLE[idx+1]] : []);
   calendarDays[date] = { ...cur, tags: nextTags };
-  dirty = true;
   refreshCell(cell, date);
+  autoSaveDay(date);
 }
 
 function togglePartnerDot(cell, date) {
   const cur = partnerDays[date] || { owner: 'coparent' };
   partnerDays[date] = { owner: cur.owner === 'self' ? 'coparent' : 'self' };
-  dirty = true;
   refreshCell(cell, date);
 }
 
@@ -1008,25 +977,17 @@ function calculateCustodyDays() {
   document.getElementById('difference').textContent = self === coparent ? 'Equal' : `${diff} days (${leader} has more)`;
 }
 
-// ── Save ──────────────────────────────────────────────────────────────────
-async function saveCalendar() {
-  const days = Object.entries(calendarDays).map(([date, d]) => ({
-    date, owner: d.owner, tags: d.tags || []
-  }));
-
-  const res = await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ days })
-  });
-
-  if (res.ok) {
-    const saved = await res.json();
-    dirty = false;
-    showToast(`✓ Saved ${saved.saved} days`);
-  } else {
-    alert('Save failed — please try again');
-  }
+// ── Autosave — fires immediately on every change ───────────────────────────
+async function autoSaveDay(date) {
+  const d = calendarDays[date];
+  if (!d) return;
+  try {
+    await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: [{ date, owner: d.owner, tags: d.tags || [] }] })
+    });
+  } catch(e) { /* silent — user never has to think about saving */ }
 }
 
 // ── Import HTML backup ────────────────────────────────────────────────────
