@@ -244,6 +244,18 @@ const q = {
     WHERE c.target_id = ?
     ORDER BY c.created_at DESC
   `),
+  // Returns all connections for ANY user (both sides), with the other party's name and ID
+  getAllConnectionsForUser: db.prepare(`
+    SELECT c.*,
+      CASE WHEN c.requester_id = ? THEN u_t.name ELSE u_r.name END as other_name,
+      CASE WHEN c.requester_id = ? THEN c.target_id ELSE c.requester_id END as other_user_id,
+      CASE WHEN c.target_id = ? THEN 1 ELSE 0 END as i_am_target
+    FROM connections c
+    JOIN users u_r ON c.requester_id = u_r.id
+    JOIN users u_t ON c.target_id = u_t.id
+    WHERE c.requester_id = ? OR c.target_id = ?
+    ORDER BY c.created_at DESC
+  `),
   updateConnectionRole:            db.prepare(`UPDATE connections SET relationship_type = ? WHERE id = ?`),
   updateDesiredDuration:           db.prepare(`UPDATE connections SET desired_duration_days = ? WHERE id = ?`),
   renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),

@@ -23,12 +23,12 @@ router.get('/setup', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'setup.html'));
 });
 
-// R's main calendar
+// Unified calendar — works for all authenticated users
 router.get('/calendar', (req, res) => {
   const token = req.query.token;
   if (!token) return res.redirect('/');
   const user = q.getUserByToken.get(token);
-  if (!user || user.role !== 'owner') return res.redirect('/');
+  if (!user) return res.redirect('/');
   res.sendFile(path.join(PUBLIC, 'calendar.html'));
 });
 
@@ -54,7 +54,7 @@ router.get('/invite/:token', (req, res) => {
   if (invite.used_by) {
     // If already registered, redirect to partner's calendar
     const partner = q.getUserById.get(invite.used_by);
-    if (partner) return res.redirect(`/partner?token=${partner.access_token}`);
+    if (partner) return res.redirect(`/calendar?token=${partner.access_token}`);
     return res.status(410).send('<h2>This invite has already been used.</h2>');
   }
   res.sendFile(path.join(PUBLIC, 'onboard.html'));
@@ -69,13 +69,11 @@ router.get('/kids-export', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'kids-export.html'));
 });
 
-// Partner's calendar view
+// Legacy partner route — redirect to unified calendar
 router.get('/partner', (req, res) => {
   const token = req.query.token;
   if (!token) return res.redirect('/');
-  const user = q.getUserByToken.get(token);
-  if (!user || user.role !== 'partner') return res.redirect('/');
-  res.sendFile(path.join(PUBLIC, 'partner.html'));
+  return res.redirect(token ? `/calendar?token=${token}` : '/');
 });
 
 router.get('/privacy', (req, res) => {

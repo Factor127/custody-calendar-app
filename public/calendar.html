@@ -543,6 +543,9 @@
 <div id="activity-modal">
   <div class="act-modal-box">
     <strong style="font-size:17px;">✨ Suggest an Activity</strong>
+    <div id="act-match-note" style="display:none;background:#fff3e0;border-radius:6px;padding:8px 12px;font-size:12px;color:#e65100;margin-bottom:4px;">
+      ⚠️ One of you may have the kids this day — still fine to plan something!
+    </div>
     <p style="font-size:13px;color:var(--muted);margin:8px 0 16px;">
       Suggest something to do together on your free day(s)!
     </p>
@@ -605,46 +608,58 @@ const params = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 let myUserId = null;
 let myName = 'Me';
-let myCoparentInitial = 'C'; // default; overridden from /api/me
-let myCoparentPhone = null;  // co-parent's WhatsApp number (stored on own profile)
-let partnerConnections = [];
+let myCoparentInitial = 'C';
+let myCoparentPhone = null;
+let partnerMobile = null;
+
+// Connections — unified (both sides)
+let allConnections = [];
+let partnerConn = null;    // approved PARTNER-type connection
+let coparentConn = null;   // approved COPARENT-type connection
 let pendingConnections = [];
 let pendingSuggestions = [];
+
+// Calendar data
+let calendarDays = {};        // my days: date -> {owner, tags}
+let partnerDays = {};         // partner's free days: date -> {owner}
+let partnerWindowUntil = null;// partner connection's approved_until (for overlay cap)
+
+// Partner info (derived from partnerConn)
+let partnerUserId = null;
+let partnerName = 'Partner';
+let activePartnerName = 'Partner'; // alias used in calendar render
+
+// Edit/suggest
+let editMode = null;
 let suggestMode = false;
 let suggestedChanges = {};
-let calendarDays = {}; // date -> { owner: 'self'|'coparent', tags: [] }
-let partnerDays = {};  // date -> { owner: 'self'|'coparent' }
-let activePartnerUserId = null;
-let activePartnerName = 'Partner';
+let suggestReason = '';
 let activeSuggestionId = null;
-
-// Edit modes
-let editMode = null; // 'custody' | 'holiday' | 'partner' | null
 let selectedDurationDays = 30;
 let pendingConnectionId = null;
 let currentViewYear = null;
 let currentViewMonth = null;
-let stripOffset = 0; // days ahead from today shown at left edge
-let myActivities = [];       // all activities involving me
-let activitiesByDate = {};   // date -> activity (accepted only)
-let activityModalDates = []; // dates being composed in the activity modal
-let partnerUserId = null;    // partner's user ID (for activity creation)
-let partnerMobile = null;    // partner's mobile number (for WhatsApp)
+let stripOffset = 0;
+
+// Activities
+let myActivities = [];
+let activitiesByDate = {};
+let activityModalDates = [];
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function scrollStrip(delta) {
-  const today = new Date();
-  stripOffset = Math.max(0, stripOffset + delta);
+  const maxOffset = 365 - 7; // navigate up to 1 year ahead
+  stripOffset = Math.max(0, Math.min(maxOffset, stripOffset + delta));
   renderStrip();
   const prev = document.getElementById('strip-prev');
   if (prev) prev.disabled = stripOffset === 0;
 }
 
 function updateNextTime() {
-  const hasPartner = !!activePartnerUserId;
+  const hasPartner = !!partnerConn;
   document.getElementById('next-time-connected').classList.toggle('hidden', !hasPartner);
   document.getElementById('next-time-locked').style.display = hasPartner ? 'none' : 'block';
   if (!hasPartner) {
@@ -652,78 +667,77 @@ function updateNextTime() {
     return;
   }
   renderStrip();
+  // Headline: find next matching free day within 90 days
+  const today = new Date(); today.setHours(0,0,0,0);
+  let found = null;
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const ds = toDateStr(d);
+    const withinWindow = !partnerWindowUntil || ds <= partnerWindowUntil;
+    if (calendarDays[ds]?.owner === 'coparent' && withinWindow && partnerDays[ds]?.owner === 'coparent') { found = d; break; }
+  }
+  if (found) {
+    const daysAway = Math.round((found - today) / 86400000);
+    const label = daysAway === 0 ? 'Today 🎉' : daysAway === 1 ? 'Tomorrow ✨' : `${daysAway} days away`;
+    const dn = found.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+    document.getElementById('next-time-headline').textContent = `${dn} · ${label}`;
+  } else {
+    document.getElementById('next-time-headline').textContent = 'No overlap in the next 90 days';
+  }
 }
+
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 function renderStrip() {
   const strip = document.getElementById('day-strip');
   const rangeEl = document.getElementById('strip-range');
   if (!strip) return;
 
-  const today = new Date();
-  const days = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+
+  let html = '';
+
   for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + stripOffset + i);
-    days.push(d);
-  }
-
-  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  let firstMatch = null;
-  let html = '';
-
-  days.forEach((d, i) => {
     const ds = toDateStr(d);
-    const myDay = calendarDays[ds];
-    const pDay  = partnerDays[ds];
 
-    // Owner free = kids with co-parent; Partner free = their kids with their co-parent
-    const ownerFree   = myDay?.owner === 'coparent';
-    const partnerFree = pDay?.owner  === 'coparent';
-    const isMatch = ownerFree && partnerFree;
-    const isToday = (stripOffset + i === 0);
+    // Only show match highlight within partner's approved window
+    const withinWindow = !partnerWindowUntil || ds <= partnerWindowUntil;
+    const myFree     = calendarDays[ds]?.owner === 'coparent';
+    const partFree   = withinWindow && (partnerDays[ds]?.owner === 'coparent');
+    const isMatch    = myFree && partFree;
+    const isToday    = ds === todayStr;
+    const actOnDay   = activitiesByDate[ds];
 
-    if (isMatch && firstMatch === null) firstMatch = d;
+    const cls = ['day-card',
+      isMatch ? 'match' : 'dim',
+      isToday ? 'strip-today' : '',
+      actOnDay ? 'act-glow' : ''
+    ].filter(Boolean).join(' ');
 
-    const actOnDay = activitiesByDate[ds];
-    const hasAcceptedAct = !!actOnDay;
-    const classes = ['day-card', isMatch ? 'match' : 'dim', isToday ? 'strip-today' : '', hasAcceptedAct ? 'act-glow' : ''].filter(Boolean).join(' ');
-    const actTitle = hasAcceptedAct ? `<div class="dc-act" style="font-size:8px;font-weight:700;color:#e65100;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px;" title="${actOnDay.title}">${actOnDay.title}</div>` : '';
-    const clickHandler = isMatch ? `onclick="openActivityModal('${ds}')"` : '';
-    html += `<div class="${classes}" ${clickHandler} style="${isMatch ? 'cursor:pointer;' : ''}">
+    const actTitle = actOnDay
+      ? `<div style="font-size:8px;font-weight:700;color:#e65100;margin-top:2px;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px;">${actOnDay.title}</div>`
+      : '';
+
+    // ALL days are clickable if a partner is connected
+    const clickAttr = partnerConn ? `onclick="openActivityModal('${ds}')" style="cursor:pointer;"` : '';
+
+    html += `<div class="${cls}" ${clickAttr}>
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
       ${actTitle}
     </div>`;
-  });
+  }
 
   strip.innerHTML = html;
 
-  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  rangeEl.textContent = `${fmt(days[0])} – ${fmt(days[6])}`;
+  const s = new Date(today); s.setDate(today.getDate() + stripOffset);
+  const e = new Date(today); e.setDate(today.getDate() + stripOffset + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  if (rangeEl) rangeEl.textContent = `${fmt(s)} – ${fmt(e)}`;
 
-  // Headline
-  if (firstMatch) {
-    const diffDays = Math.round((firstMatch - today) / 86400000);
-    const label = diffDays === 0 ? 'Today 🎉'
-                : diffDays === 1 ? 'Tomorrow'
-                : `${diffDays} days away`;
-    const dn = firstMatch.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-    document.getElementById('next-time-headline').textContent = `${dn} · ${label}`;
-  } else {
-    // Look ahead up to 90 days for the next match
-    let found = null;
-    for (let i = stripOffset + 7; i < 90; i++) {
-      const d = new Date(today); d.setDate(today.getDate() + i);
-      const ds = toDateStr(d);
-      if (calendarDays[ds]?.owner === 'coparent' && partnerDays[ds]?.owner === 'coparent') { found = d; break; }
-    }
-    if (found) {
-      const fmt2 = found.toLocaleDateString('en-US',{month:'long',day:'numeric'});
-      document.getElementById('next-time-headline').textContent = `No overlap in this window — next on ${fmt2}`;
-    } else {
-      document.getElementById('next-time-headline').textContent = 'No overlap in the next 90 days';
-    }
-  }
   const prev = document.getElementById('strip-prev');
   if (prev) prev.disabled = stripOffset === 0;
 }
@@ -748,53 +762,55 @@ function nextMonth() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (async function init() {
-  if (!MY_TOKEN) { window.location.href = '/setup'; return; }
+  if (!MY_TOKEN) { window.location.href = '/'; return; }
 
-  // Get my info
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
   if (!meRes.ok) { window.location.href = '/'; return; }
   const me = await meRes.json();
-  myName = me.name;
-  myUserId = me.id;
+
+  myName    = me.name;
+  myUserId  = me.id;
   if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
   myCoparentPhone = me.coparent_phone || null;
-  partnerMobile = me.partner_phone || null;  // pre-load so WhatsApp works without extra fetch
+  partnerMobile   = me.partner_phone  || null;
 
-  // Persist token so visiting / auto-logs in next time
   localStorage.setItem('myToken', MY_TOKEN);
-  localStorage.setItem('myRole', 'owner');
 
-  document.getElementById('owner-name-label').textContent = `${myName}:`;
-
-  // Profile circle
   document.getElementById('profile-initial').textContent = (myName || '?')[0].toUpperCase();
   document.getElementById('profile-btn').href = `/profile?token=${MY_TOKEN}`;
+  document.getElementById('owner-name-label').textContent = `${myName}:`;
 
-  // Load my calendar data
   await loadMyCalendar();
 
-  // Show connections panel
+  // Show connections panel for all users
   document.getElementById('connections-panel').classList.remove('hidden');
   await loadConnections();
 
-  // Load partner data if any active connection, then update strip
-  await loadPartnerOverlay();
+  // Derive key connections from allConnections
+  partnerConn  = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner') || null;
+  coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
 
-  // Update next-free-title with PARTNER name (not co-parent)
-  const approved = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner');
-  if (approved) document.getElementById('next-free-title').textContent = 'Next Free Time With ' + approved.requester_name;
+  // Update UI labels based on connections
+  if (partnerConn) {
+    document.getElementById('next-free-title').textContent = 'Next Free Time With ' + partnerConn.other_name;
+    document.getElementById('next-time-label').textContent = `Next time both you & ${partnerConn.other_name} are free`;
+  }
+
+  // Load partner overlay if connected
+  if (partnerConn) await loadPartnerOverlay();
 
   updateNextTime();
-
-  // Load activities
   await loadActivities();
 
-  // Auto-open notif panel if URL says so
+  // Check for pending suggestions (notifications dot)
+  const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
+  const totalBadge = pendingConnections.length + pendingSuggestions.length + pendingActs.length;
+  document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
+
   if (new URLSearchParams(location.search).get('notifications') === 'open') {
     document.getElementById('notif-panel').classList.add('open');
   }
 
-  // Dismiss splash after a short hold
   setTimeout(() => {
     const splash = document.getElementById('splash');
     splash.classList.add('fade-out');
@@ -825,24 +841,21 @@ async function loadConnections() {
 
   if (connRes.ok) {
     const data = await connRes.json();
-    partnerConnections = data.connections;
-    pendingConnections = partnerConnections.filter(c => c.status === 'pending');
+    allConnections = data.connections || [];
+    pendingConnections = allConnections.filter(c => c.i_am_target && c.status === 'pending');
   }
 
   if (suggRes.ok) {
     const sData = await suggRes.json();
-    pendingSuggestions = sData.suggestions;
+    pendingSuggestions = sData.suggestions || [];
   }
 
   const totalBadge = pendingConnections.length + pendingSuggestions.length;
   const badge = document.getElementById('pending-badge');
-  // Profile circle notification dot
   document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
-  if (totalBadge > 0) {
+  if (badge) {
     badge.textContent = totalBadge;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
+    badge.classList.toggle('hidden', totalBadge === 0);
   }
 
   renderConnectionsList();
@@ -850,12 +863,14 @@ async function loadConnections() {
 
 function renderConnectionsList() {
   const container = document.getElementById('connections-list');
-  if (partnerConnections.length === 0) {
+  if (!container) return;
+
+  if (allConnections.length === 0 && pendingSuggestions.length === 0) {
     const friendMsg = encodeURIComponent(
       `I've been using Spontany to organize custody scheduling — it really helps with co-parenting. It's free: ${window.location.origin}`
     );
     container.innerHTML = `
-      <p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Invite your co-parent so they can share their schedule with you.</p>
+      <p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Invite your co-parent or partner to get started.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-primary btn-sm" onclick="openInviteModal()">📲 Invite</button>
         <a href="https://wa.me/?text=${friendMsg}" target="_blank" rel="noopener"
@@ -867,7 +882,6 @@ function renderConnectionsList() {
     return;
   }
 
-  // Pending suggestions section
   let suggestHtml = '';
   if (pendingSuggestions.length > 0) {
     suggestHtml = pendingSuggestions.map(s => {
@@ -884,29 +898,29 @@ function renderConnectionsList() {
     }).join('');
   }
 
-  container.innerHTML = suggestHtml + partnerConnections.map(c => {
+  container.innerHTML = suggestHtml + allConnections.map(c => {
     const statusLabel = { pending: '⏳ Pending', approved: '✓ Active', rejected: '✗ Declined', expired: '⚠ Expired' }[c.status] || c.status;
     const until = c.approved_until ? ` until ${new Date(c.approved_until).toLocaleDateString()}` : '';
-    const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : ' · No auto-renew') : '';
-
-    let actions = '';
-    if (c.status === 'pending') {
-      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.requester_name}',${c.desired_duration_days||0})">Review</button>`;
-    } else if (c.status === 'approved') {
-      const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
-      actions = `
-        <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
-        <button class="btn btn-sm btn-danger" onclick="rejectSpecific('${c.id}')">Revoke</button>`;
-    }
+    const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : '') : '';
 
     const isPartner = c.relationship_type === 'partner';
     const relBadge = isPartner
       ? `<button class="badge" title="Click to change to Co-parent" onclick="toggleConnectionRole('${c.id}','coparent')" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">❤️ Partner</button>`
       : `<button class="badge" title="Click to change to Partner" onclick="toggleConnectionRole('${c.id}','partner')" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👨‍👩‍👧 Co-parent</button>`;
 
+    let actions = '';
+    if (c.i_am_target && c.status === 'pending') {
+      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.other_name}',${c.desired_duration_days||0})">Review</button>`;
+    } else if (c.status === 'approved') {
+      const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
+      actions = `
+        <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
+        <button class="btn btn-sm btn-danger" onclick="revokeConnection('${c.id}')">Disconnect</button>`;
+    }
+
     return `<div class="connection-row">
       <div style="flex:1;">
-        <span class="bold">${c.requester_name}</span>${relBadge}
+        <span class="bold">${c.other_name}</span>${relBadge}
         <span class="conn-status ${c.status}">${statusLabel}</span>
         <span class="text-muted">${until}${autoRenewLabel}</span>
       </div>
@@ -917,14 +931,16 @@ function renderConnectionsList() {
 
 // ── Load partner overlay ──────────────────────────────────────────────────
 async function loadPartnerOverlay() {
-  // Only use PARTNER-type connection for overlay/strip — co-parent connections are for calendar display only
-  const approved = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner');
-  if (!approved) {
-    document.querySelector('.legend-item[style*="orange"]').classList.add('hidden');
+  if (!partnerConn) {
+    const legendItem = document.querySelector('.legend-item[style*="orange"]');
+    if (legendItem) legendItem.classList.add('hidden');
     return;
   }
 
-  const partnerRes = await fetch(`/api/calendar/${approved.requester_id}?token=${MY_TOKEN}`);
+  partnerWindowUntil = partnerConn.approved_until || null;
+  const pId = partnerConn.other_user_id;
+
+  const partnerRes = await fetch(`/api/calendar/${pId}?token=${MY_TOKEN}`);
   if (!partnerRes.ok) return;
   const pData = await partnerRes.json();
 
@@ -932,18 +948,22 @@ async function loadPartnerOverlay() {
   for (const day of pData.days) {
     partnerDays[day.date] = { owner: day.owner };
   }
-  activePartnerUserId = approved.requester_id;
-  partnerUserId = approved.requester_id;
-  // Fetch partner mobile for activity WhatsApp
-  try {
-    const pmRes = await fetch(`/api/activities/partner-mobile?token=${MY_TOKEN}`);
-    if (pmRes.ok) { const pm = await pmRes.json(); partnerMobile = pm.mobile || null; }
-  } catch(e) {}
+  partnerUserId = pId;
+  partnerName = pData.user?.name || partnerConn.other_name || 'Partner';
+  activePartnerName = partnerName;
 
-  const pName = pData.user?.name || 'Partner';
-  activePartnerName = pName;
-  document.getElementById('next-time-label').textContent = `Next time both you & ${pName} are free`;
-  document.getElementById('partner-toggle-label').textContent = `${pName}'s days`;
+  // Fetch partner mobile for activity WhatsApp (own profile takes priority)
+  if (!partnerMobile) {
+    try {
+      const pmRes = await fetch(`/api/activities/partner-mobile?token=${MY_TOKEN}`);
+      if (pmRes.ok) { const pm = await pmRes.json(); partnerMobile = pm.mobile || null; }
+    } catch(e) {}
+  }
+
+  document.getElementById('next-free-title').textContent = `Next Free Time With ${partnerName}`;
+  document.getElementById('next-time-label').textContent  = `Next time both you & ${partnerName} are free`;
+  const ptl = document.getElementById('partner-toggle-label');
+  if (ptl) ptl.textContent = `${partnerName}'s days`;
 
   renderCalendar();
 }
@@ -980,10 +1000,11 @@ function renderCalendar() {
     const tags = dayData?.tags || [];
     const isToday = dateStr === todayStr;
 
+    const withinWin = !partnerWindowUntil || dateStr <= partnerWindowUntil;
     const tdClass = [
       owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
       isToday ? 'today' : '',
-      (owner === 'coparent' && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+      (owner === 'coparent' && withinWin && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
     ].filter(Boolean).join(' ');
 
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
@@ -1061,10 +1082,11 @@ function refreshCell(cell, date) {
   const today = new Date().toISOString().slice(0,10);
   const isToday = date === today;
 
+  const withinWinR = !partnerWindowUntil || date <= partnerWindowUntil;
   cell.className = [
     owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
     isToday ? 'today' : '',
-    (owner === 'coparent' && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+    (owner === 'coparent' && withinWinR && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
   ].filter(Boolean).join(' ');
   cell.dataset.date = date;
 
@@ -1340,7 +1362,9 @@ async function approveRequest() {
     closeModal('approve-modal');
     showToast('✓ Access approved');
     await loadConnections();
-    await loadPartnerOverlay();
+    partnerConn  = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner') || null;
+    coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
+    if (partnerConn) await loadPartnerOverlay();
     renderCalendar();
   } else {
     alert('Failed to approve');
@@ -1373,6 +1397,25 @@ async function rejectSpecific(connId) {
     await loadConnections();
     renderCalendar();
   }
+}
+
+async function revokeConnection(connId) {
+  if (!confirm('Disconnect from this person? They will no longer see your calendar.')) return;
+  const res = await fetch(`/api/connections/reject?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: connId })
+  });
+  if (res.ok) {
+    showToast('Disconnected');
+    await loadConnections();
+    partnerConn  = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner') || null;
+    coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
+    partnerDays = {};
+    partnerUserId = null;
+    renderCalendar();
+    updateNextTime();
+  } else { showToast('Failed to disconnect'); }
 }
 
 async function toggleAutoRenew(connId, newVal) {
@@ -1509,13 +1552,16 @@ function startHolidayEdit() {
 }
 
 // ── Suggest changes flow ──────────────────────────────────────────────
-let suggestReason = '';
 
 function openSuggestFlow() {
   document.getElementById('edit-dropdown').style.display = 'none';
+  if (!coparentConn) {
+    showToast('No co-parent connected — invite them first');
+    setTimeout(() => { openInviteModal(); selectInviteType('coparent'); }, 500);
+    return;
+  }
   document.getElementById('suggest-reason-text').value = '';
-  const modal = document.getElementById('suggest-reason-modal');
-  modal.style.display = 'flex';
+  document.getElementById('suggest-reason-modal').style.display = 'flex';
 }
 
 function closeSuggestReason() {
@@ -1672,11 +1718,21 @@ function closeNotifPanel() {
 
 // ── Activity modal ─────────────────────────────────────────────────────────
 function openActivityModal(dateStr) {
-  if (!partnerUserId) { showToast('Connect with a partner first'); return; }
+  if (!partnerConn) { showToast('Connect with a partner first'); return; }
   activityModalDates = dateStr ? [dateStr] : [toDateStr(new Date())];
   document.getElementById('act-title').value = '';
   document.getElementById('act-link').value = '';
   renderActivityDates();
+
+  // Note if the day isn't a free match for both
+  const matchNote = document.getElementById('act-match-note');
+  if (matchNote && dateStr) {
+    const withinWindow = !partnerWindowUntil || dateStr <= partnerWindowUntil;
+    const myFree   = calendarDays[dateStr]?.owner === 'coparent';
+    const partFree = withinWindow && partnerDays[dateStr]?.owner === 'coparent';
+    matchNote.style.display = (myFree && partFree) ? 'none' : 'block';
+  }
+
   document.getElementById('activity-modal').style.display = 'flex';
 }
 
@@ -1716,7 +1772,7 @@ async function submitActivity() {
   const res = await fetch(`/api/activities?token=${MY_TOKEN}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, link, dates, to_user_id: partnerUserId })
+    body: JSON.stringify({ title, link, dates, to_user_id: partnerConn.other_user_id })
   });
 
   if (res.ok) {

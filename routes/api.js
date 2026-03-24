@@ -214,43 +214,30 @@ router.get('/calendar/:userId', (req, res) => {
   // Self-access: always allowed
   if (requester.id === userId) {
     const days = q.getDaysForUser.all(userId);
-    return res.json({ days: days.map(parseTags), user: { name: targetUser.name, role: targetUser.role } });
+    return res.json({ days: days.map(parseTags), user: { name: targetUser.name, id: targetUser.id, role: targetUser.role } });
   }
 
-  // Cross-access: partner viewing owner
-  if (requester.role === 'partner' && targetUser.role === 'owner') {
-    const owner = q.getOwner.get();
-    if (!owner || owner.id !== userId) return res.status(403).json({ error: 'Access denied' });
+  // Cross-access: check for any approved connection between the two users (symmetric)
+  const conn = db.prepare(`
+    SELECT * FROM connections
+    WHERE status = 'approved'
+    AND ((requester_id = ? AND target_id = ?) OR (requester_id = ? AND target_id = ?))
+    LIMIT 1
+  `).get(requester.id, userId, userId, requester.id);
 
-    const conn = q.getApprovedConnection.get(requester.id, userId);
-    if (!conn) return res.status(403).json({ error: 'No approved connection' });
+  if (!conn) return res.status(403).json({ error: 'No approved connection' });
 
-    const live = checkAndRenewConnection(conn);
-    if (live.status !== 'approved') {
-      return res.status(403).json({ error: 'Connection expired', status: live.status });
-    }
-
-    // Return only custody days (owner field = 'self'|'coparent'), no partner layer
-    const days = q.getDaysForUserInRange.all(userId, live.created_at.slice(0, 10), live.approved_until);
-    return res.json({
-      days: days.map(parseTags),
-      approved_until: live.approved_until,
-      user: { name: targetUser.name }
-    });
+  const live = checkAndRenewConnection(conn);
+  if (live.status !== 'approved') {
+    return res.status(403).json({ error: 'Connection expired', status: live.status });
   }
 
-  // Owner viewing partner's calendar
-  if (requester.role === 'owner' && targetUser.role === 'partner') {
-    const conn = q.getApprovedConnection.get(userId, requester.id);
-    if (!conn) return res.status(403).json({ error: 'No approved connection' });
-    const live = checkAndRenewConnection(conn);
-    if (live.status !== 'approved') return res.status(403).json({ error: 'Connection expired' });
-
-    const days = q.getDaysForUser.all(userId);
-    return res.json({ days: days.map(parseTags), user: { name: targetUser.name } });
-  }
-
-  res.status(403).json({ error: 'Access denied' });
+  const days = q.getDaysForUser.all(userId);
+  return res.json({
+    days: days.map(parseTags),
+    approved_until: live.approved_until,
+    user: { name: targetUser.name, id: targetUser.id }
+  });
 });
 
 // POST /api/calendar/save — bulk save days for the calling user
@@ -363,20 +350,19 @@ router.get('/connections/pending', (req, res) => {
   res.json({ pending });
 });
 
-// GET /api/connections/all?token= — owner sees all connections
+// GET /api/connections/all?token= — any authenticated user sees all their connections (both sides)
 router.get('/connections/all', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
-
-  const connections = q.getAllConnectionsForOwner.all(owner.id);
+  const user = requireToken(req, res);
+  if (!user) return;
+  const connections = q.getAllConnectionsForUser.all(user.id, user.id, user.id, user.id, user.id);
   const live = connections.map(c => checkAndRenewConnection(c));
   res.json({ connections: live });
 });
 
-// POST /api/connections/approve — owner approves a connection request
+// POST /api/connections/approve — the targeted user approves a connection request
 router.post('/connections/approve', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const user = requireToken(req, res);
+  if (!user) return;
 
   const { connection_id, duration_days, auto_renew } = req.body;
   if (!connection_id) return res.status(400).json({ error: 'connection_id required' });
@@ -384,7 +370,7 @@ router.post('/connections/approve', (req, res) => {
 
   const conn = q.getConnectionById.get(connection_id);
   if (!conn) return res.status(404).json({ error: 'Connection not found' });
-  if (conn.target_id !== owner.id) return res.status(403).json({ error: 'Not your connection to approve' });
+  if (conn.target_id !== user.id) return res.status(403).json({ error: 'Not your connection to approve' });
 
   q.approveConnection.run(
     Number(duration_days),
@@ -396,23 +382,25 @@ router.post('/connections/approve', (req, res) => {
   res.json({ status: 'approved', duration_days, auto_renew: Boolean(auto_renew) });
 });
 
-// POST /api/connections/reject — owner rejects a connection
+// POST /api/connections/reject — either party can disconnect
 router.post('/connections/reject', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const user = requireToken(req, res);
+  if (!user) return;
 
   const { connection_id } = req.body;
   const conn = q.getConnectionById.get(connection_id);
-  if (!conn || conn.target_id !== owner.id) return res.status(403).json({ error: 'Not authorized' });
-
+  if (!conn || (conn.target_id !== user.id && conn.requester_id !== user.id)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
   q.rejectConnection.run(connection_id);
   res.json({ status: 'rejected' });
 });
 
-// POST /api/connections/auto-renew — owner toggles auto-renew for a connection
+// POST /api/connections/auto-renew — connection target toggles auto-renew
 router.post('/connections/auto-renew', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const user = requireToken(req, res);
+  if (!user) return;
+  const owner = user; // keep variable name for downstream compat
 
   const { connection_id, auto_renew } = req.body;
   const conn = q.getConnectionById.get(connection_id);
