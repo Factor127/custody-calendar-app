@@ -41,6 +41,15 @@ router.get('/profile', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'profile.html'));
 });
 
+// Connections management page
+router.get('/connections', (req, res) => {
+  const token = req.query.token;
+  if (!token) return res.redirect('/');
+  const user = q.getUserByToken.get(token);
+  if (!user) return res.redirect('/');
+  res.sendFile(path.join(PUBLIC, 'connections.html'));
+});
+
 // Partner onboarding
 router.get('/invite/:token', (req, res) => {
   // Guard against literal "undefined" being passed as a token

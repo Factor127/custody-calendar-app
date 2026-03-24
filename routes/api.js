@@ -7,7 +7,7 @@ const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays,
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
-const { sendCalendarInvite } = require('../utils/email');
+const { sendCalendarInvite, sendEmail } = require('../utils/email');
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
@@ -923,6 +923,40 @@ router.get('/calendar.ics', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="spontany-${safeName}.ics"`);
   res.setHeader('Cache-Control', 'no-cache');
   res.send(icsContent);
+});
+
+// POST /api/calendar/notify-change — save changed days and notify co-parent by email
+router.post('/calendar/notify-change', async (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const { connection_id, changes } = req.body;
+  if (!Array.isArray(changes) || changes.length === 0) {
+    return res.status(400).json({ error: 'changes required' });
+  }
+
+  const conn = q.getConnectionById.get(connection_id);
+  if (!conn || (conn.requester_id !== me.id && conn.target_id !== me.id)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+
+  const otherId = conn.requester_id === me.id ? conn.target_id : conn.requester_id;
+  const other = q.getUserById.get(otherId);
+
+  if (other?.email) {
+    const changeLines = changes.map(c => {
+      const label = c.new_owner === 'self' ? me.name : (other.name || 'Co-parent');
+      return `  ${c.date}: now with ${label}`;
+    }).join('\n');
+
+    sendEmail({
+      to: other.email,
+      subject: `📅 ${me.name} updated the custody schedule`,
+      bodyText: `Hi ${other.name || 'there'},\n\n${me.name} made the following changes to the custody schedule:\n\n${changeLines}\n\nLog in to Spontany to see the updated calendar.\n\nThe Spontany team`,
+    });
+  }
+
+  res.json({ ok: true, notified: !!other?.email });
 });
 
 module.exports = router;

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connections — Spontany</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .profile-circle {
+      position:relative; width:38px; height:38px; border-radius:50%;
+      background:var(--blue); color:white; display:flex; align-items:center;
+      justify-content:center; font-weight:800; font-size:15px; text-decoration:none;
+      flex-shrink:0; cursor:pointer; user-select:none;
+    }
+    .profile-circle:hover { opacity:0.88; }
+    .app-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 0 8px; margin-bottom:4px; border-bottom:1px solid var(--border);
+    }
+    .app-header-brand { font-size:20px; font-weight:900; color:var(--text); letter-spacing:-0.01em; }
+    .page-heading { font-size:20px; font-weight:800; color:var(--text); margin:20px 0 4px; }
+    .page-sub { font-size:13px; color:var(--muted); margin:0 0 20px; }
+    .connection-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
+    .connection-row:last-child { border-bottom:none; }
+    .flex-gap { display:flex;gap:6px;flex-wrap:wrap; }
+    .conn-status { font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:5px; }
+    .conn-status.approved { background:#e8f5e9;color:#2e7d32; }
+    .conn-status.pending  { background:#fff3e0;color:#e65100; }
+    .conn-status.rejected { background:#fce4ec;color:#c62828; }
+    .conn-status.expired  { background:#f5f5f5;color:#757575; }
+    .text-muted { font-size:12px;color:var(--muted); }
+    .bold { font-weight:700; }
+    .badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:#e53935;color:white;font-size:10px;font-weight:800;padding:0 4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="app-header">
+    <a id="calendar-btn" href="#" style="font-size:13px;color:var(--blue);text-decoration:none;font-weight:600;">← Calendar</a>
+    <div class="app-header-brand">Connections</div>
+    <a id="profile-btn" href="#" class="profile-circle" title="My profile">
+      <span id="profile-initial">?</span>
+    </a>
+  </div>
+
+  <div class="cal-section" style="max-width:680px;margin:0 auto;">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 16px;">
+      <div>
+        <div class="page-heading" style="margin:0;">Your Connections</div>
+        <div class="page-sub" style="margin:4px 0 0;">Manage co-parents and partners</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openInviteModal()">+ Invite</button>
+    </div>
+
+    <div id="connections-list">
+      <p class="text-muted">Loading…</p>
+    </div>
+
+    <!-- iCal subscribe -->
+    <div style="margin-top:24px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 6px;">📆 Subscribe to your custody calendar</p>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Paste this URL into Apple Calendar, Google Calendar, or Outlook to get a live feed of your custody days.</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="ical-url" readonly style="flex:1;min-width:0;font-size:11px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--text);font-family:monospace;">
+        <button class="btn btn-sm btn-outline" onclick="copyIcalUrl()">Copy URL</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Approve connection modal -->
+<div class="modal-overlay" id="approve-modal">
+  <div class="modal">
+    <h2 id="approve-title">Review connection request</h2>
+    <p id="approve-desc" class="text-muted" style="margin-bottom:16px;"></p>
+    <div class="field-group">
+      <label class="field-label">Share my calendar for:</label>
+      <div class="radio-group" id="duration-radios">
+        <label class="radio-option" onclick="selectDuration(14,this)">
+          <input type="radio" name="duration" value="14"><div><div class="radio-label">2 weeks</div></div>
+        </label>
+        <label class="radio-option selected" onclick="selectDuration(30,this)">
+          <input type="radio" name="duration" value="30" checked><div><div class="radio-label">1 month</div><div class="radio-desc">Recommended</div></div>
+        </label>
+        <label class="radio-option" onclick="selectDuration(90,this)">
+          <input type="radio" name="duration" value="90"><div><div class="radio-label">3 months</div></div>
+        </label>
+        <label class="radio-option" onclick="selectDuration(3650,this)">
+          <input type="radio" name="duration" value="3650"><div><div class="radio-label">Until I revoke it</div></div>
+        </label>
+      </div>
+    </div>
+    <div class="toggle-group" style="margin-top:4px;">
+      <label class="toggle-switch">
+        <input type="checkbox" id="auto-renew-toggle">
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Automatically renew access when this period ends</span>
+    </div>
+    <p class="text-muted" style="font-size:12px;margin:4px 0 0 52px;">You can turn this off at any time.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="rejectRequest()">Decline</button>
+      <button class="btn btn-primary" onclick="approveRequest()">Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- My share window modal -->
+<div class="modal-overlay" id="my-share-modal">
+  <div class="modal">
+    <h2>My calendar share window</h2>
+    <p class="text-muted" style="margin-bottom:16px;">How long do you want to share your calendar with this person?</p>
+    <div class="field-group">
+      <label class="field-label">Share my calendar for:</label>
+      <div class="radio-group" id="my-share-radios">
+        <label class="radio-option" data-days="14" onclick="selectMyShare(14,this)">
+          <input type="radio" name="myshare" value="14"><div><div class="radio-label">2 weeks</div></div>
+        </label>
+        <label class="radio-option selected" data-days="30" onclick="selectMyShare(30,this)">
+          <input type="radio" name="myshare" value="30" checked><div><div class="radio-label">1 month</div><div class="radio-desc">Recommended</div></div>
+        </label>
+        <label class="radio-option" data-days="90" onclick="selectMyShare(90,this)">
+          <input type="radio" name="myshare" value="90"><div><div class="radio-label">3 months</div></div>
+        </label>
+        <label class="radio-option" data-days="3650" onclick="selectMyShare(3650,this)">
+          <input type="radio" name="myshare" value="3650"><div><div class="radio-label">Until I revoke it</div></div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('my-share-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitMyShare()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invite modal -->
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal">
+    <h2>Generate Invite Link</h2>
+    <p class="text-muted" style="margin-bottom:14px;">Who are you inviting?</p>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <button id="invite-btn-coparent" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="selectInviteType('coparent')">👨‍👩‍👧 Co-parent</button>
+      <button id="invite-btn-partner"  class="btn btn-outline" style="flex:1;justify-content:center;" onclick="selectInviteType('partner')">❤️ My partner</button>
+    </div>
+    <div id="invite-link-section" style="display:none;">
+      <label class="field-label">Share this link:</label>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <input id="invite-link-input" readonly style="flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-family:monospace;">
+        <button class="btn btn-primary btn-sm" onclick="copyInviteLink()">Copy</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('invite-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const params   = new URLSearchParams(location.search);
+const MY_TOKEN = params.get('token');
+if (!MY_TOKEN) location.replace('/');
+
+let allConnections    = [];
+let pendingConnections = [];
+let pendingSuggestions = [];
+let pendingConnectionId = null;
+let selectedDurationDays = 30;
+let myShareConnId = null;
+let myShareDays   = 30;
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#202124;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => { t.style.opacity = '0'; }, 2800);
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('open');
+}
+
+// ── Load connections ───────────────────────────────────────────────────────
+async function loadConnections() {
+  const res = await fetch(`/api/connections/all?token=${MY_TOKEN}`);
+  if (res.ok) {
+    const data = await res.json();
+    allConnections     = data.connections || [];
+    pendingConnections = allConnections.filter(c => c.i_am_target && c.status === 'pending');
+  }
+  renderConnectionsList();
+}
+
+function renderConnectionsList() {
+  const container = document.getElementById('connections-list');
+  if (!container) return;
+
+  if (allConnections.length === 0) {
+    container.innerHTML = `<p class="text-muted" style="margin:0 0 12px;">No connections yet. Invite your co-parent or partner to get started.</p>`;
+    return;
+  }
+
+  container.innerHTML = allConnections.map(c => {
+    const statusLabel = { pending:'⏳ Pending', approved:'✓ Active', rejected:'✗ Declined', expired:'⚠ Expired' }[c.status] || c.status;
+    const theirUntil  = c.their_share_until || c.approved_until;
+    const myUntil     = c.my_share_until    || c.approved_until;
+    const untilParts  = [];
+    if (theirUntil) untilParts.push(`their calendar until ${new Date(theirUntil).toLocaleDateString()}`);
+    if (myUntil)    untilParts.push(`yours until ${new Date(myUntil).toLocaleDateString()}`);
+    const until         = untilParts.length ? ' · ' + untilParts.join(' · ') : '';
+    const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : '') : '';
+
+    const isPartner = c.relationship_type === 'partner';
+    const relBadge  = isPartner
+      ? `<button class="badge" onclick="toggleConnectionRole('${c.id}','coparent')" title="Click to change to Co-parent" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">❤️ Partner</button>`
+      : `<button class="badge" onclick="toggleConnectionRole('${c.id}','partner')" title="Click to change to Partner" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👨‍👩‍👧 Co-parent</button>`;
+
+    let actions = '';
+    if (c.i_am_target && c.status === 'pending') {
+      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.other_name}',${c.desired_duration_days||0})">Review</button>`;
+    } else if (c.status === 'approved') {
+      const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
+      actions = `
+        <button class="btn btn-sm btn-outline" onclick="openMyShareModal('${c.id}')">My share</button>
+        <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
+        <button class="btn btn-sm btn-danger"  onclick="revokeConnection('${c.id}')">Disconnect</button>`;
+    } else if (c.status === 'rejected' || c.status === 'expired') {
+      actions = `<button class="btn btn-sm btn-outline" onclick="revokeConnection('${c.id}')">Remove</button>`;
+    }
+
+    return `<div class="connection-row">
+      <div style="flex:1;">
+        <span class="bold">${c.other_name}</span>${relBadge}
+        <span class="conn-status ${c.status}">${statusLabel}</span>
+        <div class="text-muted" style="margin-top:2px;">${until}${autoRenewLabel}</div>
+      </div>
+      <div class="flex-gap">${actions}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Approve modal ──────────────────────────────────────────────────────────
+function openApproveModal(connId, name, desiredDays) {
+  pendingConnectionId  = connId;
+  selectedDurationDays = desiredDays || 30;
+  document.getElementById('approve-title').textContent = `${name} wants to connect`;
+  document.getElementById('approve-desc').textContent  = `Choose how long to share your calendar with ${name}.`;
+  document.querySelectorAll('#duration-radios .radio-option').forEach(o => {
+    const val = parseInt(o.querySelector('input').value);
+    o.classList.toggle('selected', val === selectedDurationDays);
+  });
+  document.getElementById('auto-renew-toggle').checked = false;
+  document.getElementById('approve-modal').classList.add('open');
+}
+
+function selectDuration(days, el) {
+  selectedDurationDays = days;
+  document.querySelectorAll('#duration-radios .radio-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function approveRequest() {
+  if (!pendingConnectionId) return;
+  const autoRenew = document.getElementById('auto-renew-toggle').checked;
+  const res = await fetch(`/api/connections/approve?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: pendingConnectionId, duration_days: selectedDurationDays, auto_renew: autoRenew })
+  });
+  if (res.ok) {
+    closeModal('approve-modal');
+    showToast('✓ Connection approved');
+    await loadConnections();
+  } else { showToast('Failed to approve'); }
+}
+
+async function rejectRequest() {
+  if (!pendingConnectionId) return;
+  const res = await fetch(`/api/connections/reject?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: pendingConnectionId })
+  });
+  if (res.ok) { closeModal('approve-modal'); showToast('Request declined'); await loadConnections(); }
+}
+
+async function revokeConnection(connId) {
+  if (!confirm('Disconnect from this person?')) return;
+  const res = await fetch(`/api/connections/reject?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: connId })
+  });
+  if (res.ok) { showToast('Disconnected'); await loadConnections(); }
+  else showToast('Failed to disconnect');
+}
+
+async function toggleAutoRenew(connId, newVal) {
+  const res = await fetch(`/api/connections/auto-renew?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connection_id: connId, auto_renew: newVal })
+  });
+  if (res.ok) { showToast(newVal ? '✓ Auto-renew on' : 'Auto-renew off'); await loadConnections(); }
+}
+
+async function toggleConnectionRole(connId, newRole) {
+  const label = newRole === 'partner' ? 'Partner ❤️' : 'Co-parent 👨‍👩‍👧';
+  if (!confirm(`Change this person's role to ${label}?`)) return;
+  const res = await fetch(`/api/connections/${connId}/role?token=${MY_TOKEN}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relationship_type: newRole })
+  });
+  if (res.ok) { showToast(`✓ Role updated to ${label}`); await loadConnections(); }
+  else showToast('Failed to update role');
+}
+
+// ── My share modal ─────────────────────────────────────────────────────────
+function openMyShareModal(connId) {
+  myShareConnId = connId;
+  myShareDays   = 30;
+  document.querySelectorAll('#my-share-radios .radio-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.days === '30');
+  });
+  document.getElementById('my-share-modal').classList.add('open');
+}
+
+function selectMyShare(days, el) {
+  myShareDays = days;
+  document.querySelectorAll('#my-share-radios .radio-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitMyShare() {
+  if (!myShareConnId) return;
+  const res = await fetch(`/api/connections/${myShareConnId}/my-share?token=${MY_TOKEN}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ duration_days: myShareDays })
+  });
+  if (res.ok) { closeModal('my-share-modal'); showToast('✓ Share window updated'); await loadConnections(); }
+  else showToast('Failed to update');
+}
+
+// ── Invite modal ───────────────────────────────────────────────────────────
+let selectedInviteType = 'coparent';
+
+function openInviteModal() {
+  selectedInviteType = 'coparent';
+  document.getElementById('invite-link-section').style.display = 'none';
+  document.getElementById('invite-link-input').value = '';
+  document.getElementById('invite-btn-coparent').className = 'btn btn-primary';
+  document.getElementById('invite-btn-partner').className  = 'btn btn-outline';
+  document.getElementById('invite-modal').classList.add('open');
+}
+
+async function selectInviteType(type) {
+  selectedInviteType = type;
+  document.getElementById('invite-btn-coparent').className = type === 'coparent' ? 'btn btn-primary' : 'btn btn-outline';
+  document.getElementById('invite-btn-partner').className  = type === 'partner'  ? 'btn btn-primary' : 'btn btn-outline';
+
+  const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relationship_type: type })
+  });
+  if (res.ok) {
+    const data = await res.json();
+    document.getElementById('invite-link-input').value = data.invite_url;
+    document.getElementById('invite-link-section').style.display = 'block';
+  } else { showToast('Failed to generate invite link'); }
+}
+
+async function copyInviteLink() {
+  const url = document.getElementById('invite-link-input').value;
+  try { await navigator.clipboard.writeText(url); showToast('✓ Link copied'); }
+  catch { prompt('Copy this link:', url); }
+}
+
+// ── iCal ───────────────────────────────────────────────────────────────────
+async function copyIcalUrl() {
+  const url = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
+  try { await navigator.clipboard.writeText(url); showToast('✓ Calendar URL copied — paste into Apple/Google Calendar'); }
+  catch { prompt('Copy this URL:', url); }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
+  if (!meRes.ok) { location.replace('/'); return; }
+  const me = await meRes.json();
+
+  document.getElementById('profile-initial').textContent = (me.name || '?')[0].toUpperCase();
+  document.getElementById('profile-btn').href   = `/profile?token=${MY_TOKEN}`;
+  document.getElementById('calendar-btn').href  = `/calendar?token=${MY_TOKEN}`;
+  document.getElementById('ical-url').value     = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
+
+  await loadConnections();
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+init();
+</script>
+</body>
+</html>

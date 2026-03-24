@@ -232,10 +232,16 @@
 <div class="app-header">
   <div class="app-header-logo">📅</div>
   <div class="app-header-brand">Spontany</div>
-  <a id="profile-btn" href="#" class="profile-circle" title="My profile">
-    <span id="profile-initial">?</span>
-    <span id="notif-dot" class="notif-dot hidden"></span>
-  </a>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <a id="connections-btn" href="#" class="profile-circle" title="Connections"
+       style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:17px;">
+      👥
+      <span id="notif-dot" class="notif-dot hidden"></span>
+    </a>
+    <a id="profile-btn" href="#" class="profile-circle" title="My profile">
+      <span id="profile-initial">?</span>
+    </a>
+  </div>
 </div>
 <div class="app-title-strip">Your Custody Calendar</div>
 
@@ -244,6 +250,13 @@
 <!-- Edit mode notices -->
 <div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;display:none;">
   💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your partner. Click again to un-propose.
+</div>
+<div class="edit-notice" id="change-notice" style="background:#e8f5e9;border:1px solid #66bb6a;color:#2e7d32;display:none;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+  <span>📅 <span class="bold">Change days:</span> Click any day to switch it between yours and co-parent's.</span>
+  <div style="display:flex;gap:6px;">
+    <button class="btn btn-sm btn-outline" onclick="cancelChangeDays()" style="color:#2e7d32;border-color:#66bb6a;">Cancel</button>
+    <button class="btn btn-sm btn-primary" onclick="saveChangeDays()" style="background:#43a047;border-color:#43a047;">Save &amp; Notify Co-parent</button>
+  </div>
 </div>
 <div class="edit-notice notice-holiday" id="holiday-edit-notice">
   🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
@@ -269,7 +282,8 @@
         style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
       <div id="edit-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.13);z-index:200;min-width:190px;overflow:hidden;">
         <button onclick="startHolidayEdit()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">🏖️ Edit Holidays</button>
-        <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">💡 Suggest Changes</button>
+        <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">💡 Suggest Changes</button>
+        <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">📅 Change days</button>
       </div>
     </div>
   </div>
@@ -354,28 +368,6 @@
 
 </div><!-- /.cal-section (next-time) -->
 
-<div class="cal-section">
-
-<!-- Connections panel -->
-<div id="connections-panel" class="connections-panel hidden" style="margin-top:16px;">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-    <span class="bold" style="font-size:14px;">Connections</span>
-    <span class="notif-badge hidden" id="pending-badge">0</span>
-    <button class="btn btn-sm btn-outline ml-auto" onclick="openInviteModal()">+ Invite</button>
-  </div>
-  <div id="connections-list">
-    <p class="text-muted" style="margin:0;font-size:13px;">Loading…</p>
-  </div>
-  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-    <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">📆 Subscribe to your custody calendar in Apple Calendar, Google Calendar, or Outlook:</p>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <input id="ical-url" readonly style="flex:1;min-width:0;font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:monospace;" placeholder="Loading...">
-      <button class="btn btn-sm btn-outline" onclick="copyIcalUrl()" style="white-space:nowrap;">Copy URL</button>
-    </div>
-  </div>
-</div>
-
-</div><!-- /.cal-section (connections) -->
 
 <!-- Notification / Activity side panel -->
 <div id="notif-panel">
@@ -638,6 +630,9 @@ let activePartnerName = 'Partner'; // alias used in calendar render
 
 // Edit/suggest
 let editMode = null;
+let changeDaysMode = false;
+let changedDays    = {}; // date → new owner
+let origOwners     = {}; // date → owner before change (for notification payload)
 let suggestMode = false;
 let suggestedChanges = {};
 let suggestReason = '';
@@ -790,7 +785,7 @@ function nextMonth() {
   await loadMyCalendar();
 
   // Show connections panel for all users
-  document.getElementById('connections-panel').classList.remove('hidden');
+  document.getElementById('connections-btn').href = `/connections?token=${MY_TOKEN}`;
   await loadConnections();
 
   initIcalUrl();
@@ -1056,6 +1051,17 @@ function handleDayClick(cell) {
   const date = cell.dataset.date;
   if (!date || cell.classList.contains('empty')) return;
 
+  if (changeDaysMode) {
+    if (!origOwners[date]) origOwners[date] = calendarDays[date]?.owner || 'coparent';
+    const cur = calendarDays[date]?.owner || 'coparent';
+    const next = cur === 'self' ? 'coparent' : 'self';
+    changedDays[date] = next;
+    calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: next };
+    refreshCell(cell, date);
+    calculateCustodyDays();
+    return;
+  }
+
   if (suggestMode) {
     toggleSuggestDay(cell, date);
   } else if (editMode === 'holiday') {
@@ -1157,6 +1163,60 @@ function toggleSuggestMode(on) {
 
 function cancelSuggest() {
   toggleSuggestMode(false);
+}
+
+function startChangeDays() {
+  if (!coparentConn) { showToast('Connect with your co-parent first to use this feature'); return; }
+  document.getElementById('edit-dropdown').style.display = 'none';
+  changeDaysMode = true;
+  changedDays    = {};
+  origOwners     = {};
+  document.getElementById('change-notice').style.display = 'flex';
+}
+
+function cancelChangeDays() {
+  // Revert any visual changes
+  for (const [date, origOwner] of Object.entries(origOwners)) {
+    calendarDays[date] = { ...(calendarDays[date] || { tags: [] }), owner: origOwner };
+  }
+  changeDaysMode = false;
+  changedDays    = {};
+  origOwners     = {};
+  document.getElementById('change-notice').style.display = 'none';
+  renderCalendar();
+}
+
+async function saveChangeDays() {
+  const count = Object.keys(changedDays).length;
+  if (count === 0) { cancelChangeDays(); return; }
+
+  // Save days to DB
+  const daysToSave = Object.entries(changedDays).map(([date, owner]) => ({
+    date, owner, tags: calendarDays[date]?.tags || []
+  }));
+  const saveRes = await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days: daysToSave })
+  });
+  if (!saveRes.ok) { showToast('Failed to save changes'); return; }
+
+  // Notify co-parent
+  if (coparentConn) {
+    const changes = Object.entries(changedDays).map(([date, new_owner]) => ({
+      date, old_owner: origOwners[date] || 'coparent', new_owner
+    }));
+    await fetch(`/api/calendar/notify-change?token=${MY_TOKEN}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connection_id: coparentConn.id, changes })
+    });
+  }
+
+  showToast(`✓ ${count} day${count !== 1 ? 's' : ''} updated & co-parent notified`);
+  changeDaysMode = false;
+  changedDays    = {};
+  origOwners     = {};
+  document.getElementById('change-notice').style.display = 'none';
+  renderCalendar();
 }
 
 function toggleSuggestDay(cell, date) {
