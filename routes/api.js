@@ -232,10 +232,16 @@ router.get('/calendar/:userId', (req, res) => {
     return res.status(403).json({ error: 'Connection expired', status: live.status });
   }
 
+  // Direction-aware share window: requester sees target's calendar until target_share_until
+  const iAmRequester = live.requester_id === requester.id;
+  const effectiveUntil = iAmRequester
+    ? (live.target_share_until || live.approved_until)
+    : (live.requester_share_until || live.approved_until);
+
   const days = q.getDaysForUser.all(userId);
   return res.json({
     days: days.map(parseTags),
-    approved_until: live.approved_until,
+    approved_until: effectiveUntil,
     user: { name: targetUser.name, id: targetUser.id }
   });
 });
@@ -355,7 +361,19 @@ router.get('/connections/all', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
   const connections = q.getAllConnectionsForUser.all(user.id, user.id, user.id, user.id, user.id);
-  const live = connections.map(c => checkAndRenewConnection(c));
+  const live = connections.map(c => {
+    const renewed = checkAndRenewConnection(c);
+    const iAmRequester = renewed.requester_id === user.id;
+    // their_share_until = how long THEY share their calendar with ME
+    // my_share_until    = how long I share MY calendar with THEM
+    const their_share_until = iAmRequester
+      ? (renewed.target_share_until || renewed.approved_until)
+      : (renewed.requester_share_until || renewed.approved_until);
+    const my_share_until = iAmRequester
+      ? (renewed.requester_share_until || renewed.approved_until)
+      : (renewed.target_share_until || renewed.approved_until);
+    return { ...renewed, their_share_until, my_share_until };
+  });
   res.json({ connections: live });
 });
 
@@ -373,6 +391,7 @@ router.post('/connections/approve', (req, res) => {
   if (conn.target_id !== user.id) return res.status(403).json({ error: 'Not your connection to approve' });
 
   q.approveConnection.run(
+    Number(duration_days),
     Number(duration_days),
     Number(duration_days),
     auto_renew ? 1 : 0,
@@ -410,6 +429,34 @@ router.post('/connections/auto-renew', (req, res) => {
   res.json({ auto_renew: Boolean(auto_renew) });
 });
 
+// PUT /api/connections/:id/my-share — either party updates how long they share THEIR calendar
+router.put('/connections/:id/my-share', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+
+  const { duration_days } = req.body;
+  const days = Number(duration_days);
+  if (!days || days < 1) return res.status(400).json({ error: 'duration_days required' });
+
+  const conn = q.getConnectionById.get(req.params.id);
+  if (!conn || (conn.requester_id !== user.id && conn.target_id !== user.id)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+
+  const newUntil = new Date();
+  newUntil.setDate(newUntil.getDate() + days);
+  const newUntilStr = newUntil.toISOString().slice(0, 10);
+
+  if (conn.requester_id === user.id) {
+    q.setRequesterShare.run(newUntilStr, days, conn.id);
+  } else {
+    // Target updating their own share — also update approved_until for backward compat
+    q.setTargetShare.run(newUntilStr, days, newUntilStr, conn.id);
+  }
+
+  res.json({ ok: true, my_share_until: newUntilStr });
+});
+
 // GET /api/connections/:id/coparent-mobile — get co-parent's mobile for WhatsApp
 router.get('/connections/:id/coparent-mobile', (req, res) => {
   const user = requireToken(req, res);
@@ -443,8 +490,8 @@ router.put('/connections/:id/rerequest', (req, res) => {
 
 // PUT /api/connections/:id/role — owner changes the relationship type label
 router.put('/connections/:id/role', (req, res) => {
-  const owner = requireOwner(req, res);
-  if (!owner) return;
+  const user = requireToken(req, res);
+  if (!user) return;
 
   const { relationship_type } = req.body;
   if (!['coparent', 'partner'].includes(relationship_type)) {
@@ -452,7 +499,9 @@ router.put('/connections/:id/role', (req, res) => {
   }
 
   const conn = q.getConnectionById.get(req.params.id);
-  if (!conn || conn.target_id !== owner.id) return res.status(403).json({ error: 'Not authorized' });
+  if (!conn || (conn.requester_id !== user.id && conn.target_id !== user.id)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
 
   q.updateConnectionRole.run(relationship_type, req.params.id);
   res.json({ relationship_type });

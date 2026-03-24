@@ -397,7 +397,7 @@
     </p>
 
     <div class="field-group">
-      <label class="field-label">Grant access for:</label>
+      <label class="field-label">Share my calendar for:</label>
       <div class="radio-group" id="duration-radios">
         <label class="radio-option" onclick="selectDuration(14,this)">
           <input type="radio" name="duration" value="14"><div><div class="radio-label">2 weeks</div></div>
@@ -900,7 +900,12 @@ function renderConnectionsList() {
 
   container.innerHTML = suggestHtml + allConnections.map(c => {
     const statusLabel = { pending: '⏳ Pending', approved: '✓ Active', rejected: '✗ Declined', expired: '⚠ Expired' }[c.status] || c.status;
-    const until = c.approved_until ? ` until ${new Date(c.approved_until).toLocaleDateString()}` : '';
+    const theirUntil  = c.their_share_until || c.approved_until;
+    const myUntil     = c.my_share_until    || c.approved_until;
+    const untilParts  = [];
+    if (theirUntil) untilParts.push(`their calendar until ${new Date(theirUntil).toLocaleDateString()}`);
+    if (myUntil)    untilParts.push(`yours until ${new Date(myUntil).toLocaleDateString()}`);
+    const until = untilParts.length ? ' · ' + untilParts.join(' · ') : '';
     const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : '') : '';
 
     const isPartner = c.relationship_type === 'partner';
@@ -914,6 +919,7 @@ function renderConnectionsList() {
     } else if (c.status === 'approved') {
       const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
       actions = `
+        <button class="btn btn-sm btn-outline" onclick="openMyShareModal('${c.id}')">My share</button>
         <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
         <button class="btn btn-sm btn-danger" onclick="revokeConnection('${c.id}')">Disconnect</button>`;
     }
@@ -937,7 +943,7 @@ async function loadPartnerOverlay() {
     return;
   }
 
-  partnerWindowUntil = partnerConn.approved_until || null;
+  partnerWindowUntil = partnerConn.their_share_until || partnerConn.approved_until || null;
   const pId = partnerConn.other_user_id;
 
   const partnerRes = await fetch(`/api/calendar/${pId}?token=${MY_TOKEN}`);
@@ -1430,6 +1436,44 @@ async function toggleAutoRenew(connId, newVal) {
   }
 }
 
+let myShareConnId = null;
+let myShareDays = 30;
+
+function openMyShareModal(connId) {
+  myShareConnId = connId;
+  myShareDays = 30;
+  document.querySelectorAll('#my-share-radios .radio-option').forEach(o => {
+    o.classList.toggle('selected', o.dataset.days === '30');
+  });
+  document.getElementById('my-share-modal').classList.add('open');
+}
+
+function selectMyShare(days, el) {
+  myShareDays = days;
+  document.querySelectorAll('#my-share-radios .radio-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitMyShare() {
+  if (!myShareConnId) return;
+  const res = await fetch(`/api/connections/${myShareConnId}/my-share?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ duration_days: myShareDays })
+  });
+  if (res.ok) {
+    closeModal('my-share-modal');
+    showToast('✓ Share window updated');
+    await loadConnections();
+    partnerConn  = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner') || null;
+    coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
+    if (partnerConn) await loadPartnerOverlay();
+    renderCalendar();
+  } else {
+    showToast('Failed to update');
+  }
+}
+
 async function toggleConnectionRole(connId, newRole) {
   const label = newRole === 'partner' ? 'Partner ❤️' : 'Co-parent 👨‍👩‍👧';
   if (!confirm(`Change this person's role to ${label}?`)) return;
@@ -1912,5 +1956,34 @@ function showToast(msg) {
   toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
 }
 </script>
+
+<!-- My share window modal -->
+<div class="modal-overlay" id="my-share-modal">
+  <div class="modal">
+    <h2>My calendar share window</h2>
+    <p class="text-muted" style="margin-bottom:16px;">How long do you want to share your calendar with this person?</p>
+    <div class="field-group">
+      <label class="field-label">Share my calendar for:</label>
+      <div class="radio-group" id="my-share-radios">
+        <label class="radio-option" data-days="14" onclick="selectMyShare(14,this)">
+          <input type="radio" name="myshare" value="14"><div><div class="radio-label">2 weeks</div></div>
+        </label>
+        <label class="radio-option selected" data-days="30" onclick="selectMyShare(30,this)">
+          <input type="radio" name="myshare" value="30" checked><div><div class="radio-label">1 month</div><div class="radio-desc">Recommended</div></div>
+        </label>
+        <label class="radio-option" data-days="90" onclick="selectMyShare(90,this)">
+          <input type="radio" name="myshare" value="90"><div><div class="radio-label">3 months</div></div>
+        </label>
+        <label class="radio-option" data-days="3650" onclick="selectMyShare(3650,this)">
+          <input type="radio" name="myshare" value="3650"><div><div class="radio-label">Until I revoke it</div></div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('my-share-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitMyShare()">Update</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

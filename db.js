@@ -23,6 +23,9 @@ try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch(e) { /* al
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE connections ADD COLUMN requester_share_until TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE connections ADD COLUMN target_share_until TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE connections ADD COLUMN requester_duration_days INTEGER'); } catch(e) { /* already exists */ }
 // Backfill connections.relationship_type from the invite that was used to join
 try {
   db.exec(`
@@ -228,10 +231,11 @@ const q = {
   createConnection:  db.prepare('INSERT INTO connections (id, requester_id, target_id) VALUES (?, ?, ?)'),
   approveConnection: db.prepare(`
     UPDATE connections SET
-      status         = 'approved',
-      duration_days  = ?,
-      approved_until = date('now', '+' || ? || ' days'),
-      auto_renew     = ?
+      status             = 'approved',
+      duration_days      = ?,
+      approved_until     = date('now', '+' || ? || ' days'),
+      target_share_until = date('now', '+' || ? || ' days'),
+      auto_renew         = ?
     WHERE id = ?
   `),
   rejectConnection:  db.prepare("UPDATE connections SET status = 'rejected' WHERE id = ?"),
@@ -260,6 +264,8 @@ const q = {
   updateDesiredDuration:           db.prepare(`UPDATE connections SET desired_duration_days = ? WHERE id = ?`),
   renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),
   expireConnection: db.prepare("UPDATE connections SET status = 'expired' WHERE id = ?"),
+  setRequesterShare: db.prepare('UPDATE connections SET requester_share_until = ?, requester_duration_days = ? WHERE id = ?'),
+  setTargetShare:    db.prepare('UPDATE connections SET target_share_until = ?, duration_days = ?, approved_until = ? WHERE id = ?'),
 
   // Single day lookup (used when preserving tags during suggestion apply)
   getDay: db.prepare('SELECT * FROM calendar_days WHERE user_id = ? AND date = ?'),
@@ -361,13 +367,16 @@ function checkAndRenewConnection(conn) {
   if (conn.status !== 'approved') return conn;
 
   const today = new Date().toISOString().slice(0, 10);
-  if (conn.approved_until && conn.approved_until < today) {
+  // Use target_share_until if set (Phase 2), else fall back to approved_until
+  const effectiveUntil = conn.target_share_until || conn.approved_until;
+  if (effectiveUntil && effectiveUntil < today) {
     if (conn.auto_renew) {
       const newUntil = new Date();
       newUntil.setDate(newUntil.getDate() + conn.duration_days);
       const newUntilStr = newUntil.toISOString().slice(0, 10);
       q.renewConnection.run(newUntilStr, conn.id);
-      return { ...conn, approved_until: newUntilStr };
+      db.prepare('UPDATE connections SET target_share_until = ? WHERE id = ?').run(newUntilStr, conn.id);
+      return { ...conn, approved_until: newUntilStr, target_share_until: newUntilStr };
     } else {
       q.expireConnection.run(conn.id);
       return { ...conn, status: 'expired' };
