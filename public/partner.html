@@ -86,6 +86,11 @@
     .next-time-label  { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
 
+    .cal-show-bar { display:flex; gap:16px; flex-wrap:wrap; padding:8px 12px; background:#f8f9fa; border-radius:0 0 10px 10px; border:1px solid var(--border); border-top:none; margin-bottom:14px; }
+    .cal-show-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
+    .cal-show-item input { cursor:pointer; }
+    #edit-dropdown button:hover { background:#f8f9fa; }
+
     /* ── Suggestion side panel ─────────────────────────────────────────── */
     #suggestion-panel {
       position:fixed; top:50%; right:-360px; transform:translateY(-50%);
@@ -136,9 +141,6 @@
 <div class="cal-section">
 
 <!-- Edit mode notices -->
-<div class="edit-notice notice-custody" id="edit-notice">
-  ✏️ <span class="bold">Edit my days:</span> Click any day to switch between me and my co-parent.
-</div>
 <div class="edit-notice notice-holiday" id="holiday-edit-notice">
   🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags.
 </div>
@@ -165,48 +167,41 @@
   <div class="legend-item"><span class="tag">V</span> Vacation</div>
 </div>
 
-<!-- Month navigation -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+<!-- Month navigation + edit menu -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;padding-bottom:8px;">
   <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
   <span id="month-label" style="font-weight:700;font-size:16px;"></span>
-  <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
+    <div style="position:relative;" id="edit-menu-wrap">
+      <button class="btn btn-sm" onclick="toggleEditMenu()" title="Edit options"
+        style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
+      <div id="edit-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.13);z-index:200;min-width:190px;overflow:hidden;">
+        <button onclick="startHolidayEdit()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">🏖️ Edit Holidays</button>
+        <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">💡 Suggest Changes</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Calendar -->
 <div class="calendar-container" id="calendar-container">
   <div style="padding:40px;text-align:center;color:var(--muted);">Loading your calendar…</div>
 </div>
+<!-- Show options bar — inside calendar section -->
+<div class="cal-show-bar">
+  <label class="cal-show-item">
+    <input type="checkbox" id="toggle-partner" checked onchange="toggleOwnerOverlay(this.checked)">
+    <span>Partner days</span>
+  </label>
+  <label class="cal-show-item">
+    <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
+    <span>Both free frames</span>
+  </label>
+</div>
 
 <!-- Controls — below calendar -->
 <div class="controls" style="margin-top:14px;">
-  <span class="controls-title">Show:</span>
-
-  <div class="toggle-group" id="toggle-owner-group" style="display:none;">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-owner-days" checked onchange="toggleOwnerOverlay(this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label" id="owner-overlay-label">Partner's days</span>
-  </div>
-
-  <div class="toggle-group" id="toggle-free-frames-group" style="display:none;">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-free-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Both free frames</span>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="toggle-group">
-    <label class="toggle-switch">
-      <input type="checkbox" id="toggle-edit" onchange="setEditMode('custody',this.checked)">
-      <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Edit my days</span>
-  </div>
-
   <div class="toggle-group">
     <label class="toggle-switch">
       <input type="checkbox" id="toggle-holiday-edit" onchange="setEditMode('holiday',this.checked)">
@@ -532,10 +527,7 @@ async function checkConnection() {
     if (conn.auto_renew) {
       document.getElementById('auto-renew-badge').hidden = false;
     }
-    document.getElementById('toggle-owner-group').style.display = 'flex';
-    document.getElementById('toggle-free-frames-group').style.display = 'flex';
     document.getElementById('toggle-suggest-group').style.display = 'flex';
-    document.getElementById('owner-overlay-label').textContent = `${conn.owner_name || 'Partner'}'s days`;
     document.getElementById('legend-both-free').hidden = false;
   } else if (conn.status === 'pending') {
     document.getElementById('pending-banner').classList.remove('hidden');
@@ -690,10 +682,10 @@ function handleDayClick(cell) {
 // ── Edit modes ────────────────────────────────────────────────────────────
 function setEditMode(mode, on) {
   if (on) {
-    ['custody','holiday'].forEach(m => {
+    ['holiday'].forEach(m => {
       if (m !== mode) {
-        document.getElementById(`toggle-${m === 'custody' ? 'edit' : m+'-edit'}`).checked = false;
-        document.getElementById(`${m === 'custody' ? 'edit' : m+'-edit'}-notice`).classList.remove('active');
+        document.getElementById(`toggle-${m}-edit`).checked = false;
+        document.getElementById(`${m}-edit-notice`).classList.remove('active');
       }
     });
     // Turn off suggest mode if switching to an edit mode
@@ -702,7 +694,7 @@ function setEditMode(mode, on) {
   } else {
     editMode = null;
   }
-  const noticeId = mode === 'custody' ? 'edit-notice' : `${mode}-edit-notice`;
+  const noticeId = `${mode}-edit-notice`;
   document.getElementById(noticeId).classList.toggle('active', on);
 }
 
@@ -710,9 +702,10 @@ function setEditMode(mode, on) {
 function toggleSuggestMode(on) {
   if (on) {
     // Turn off regular edit modes
-    ['custody','holiday'].forEach(m => {
-      document.getElementById(`toggle-${m === 'custody' ? 'edit' : m+'-edit'}`).checked = false;
-      document.getElementById(`${m === 'custody' ? 'edit' : m+'-edit'}-notice`).classList.remove('active');
+    ['holiday'].forEach(m => {
+      const el = document.getElementById(`toggle-${m}-edit`);
+      if (el) el.checked = false;
+      document.getElementById(`${m}-edit-notice`)?.classList.remove('active');
     });
     editMode = null;
   }
@@ -740,17 +733,17 @@ async function submitSuggestion() {
     current_owner: calendarDays[date]?.owner || 'coparent',
     proposed_owner
   }));
-  const note = document.getElementById('suggest-note').value.trim();
 
   const res = await fetch(`/api/suggestions?token=${MY_TOKEN}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ changes, note: note || null })
+    body: JSON.stringify({ changes, note: document.getElementById('suggest-note')?.value.trim() || suggestReason })
   });
 
   if (res.ok) {
     cancelSuggest();
     showToast(`✓ Suggestion sent (${count} day${count > 1 ? 's' : ''})`);
+    showWhatsappModal();
   } else {
     const err = await res.json();
     alert(err.error || 'Failed to send suggestion');
@@ -797,6 +790,85 @@ async function requestReconnect() {
 }
 
 function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
+
+// ── Edit menu (pencil dropdown) ────────────────────────────────────────
+function toggleEditMenu() {
+  const dd = document.getElementById('edit-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!document.getElementById('edit-menu-wrap')?.contains(e.target)) {
+    const dd = document.getElementById('edit-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
+
+function startHolidayEdit() {
+  document.getElementById('edit-dropdown').style.display = 'none';
+  // activate holiday edit mode
+  const cb = document.getElementById('toggle-holiday-edit');
+  if (cb) { cb.checked = true; setEditMode('holiday', true); }
+}
+
+// ── Suggest changes flow ──────────────────────────────────────────────
+let suggestReason = '';
+
+function openSuggestFlow() {
+  document.getElementById('edit-dropdown').style.display = 'none';
+  document.getElementById('suggest-reason-text').value = '';
+  const modal = document.getElementById('suggest-reason-modal');
+  modal.style.display = 'flex';
+}
+
+function closeSuggestReason() {
+  document.getElementById('suggest-reason-modal').style.display = 'none';
+}
+
+function startSuggestFromReason() {
+  suggestReason = document.getElementById('suggest-reason-text').value.trim();
+  closeSuggestReason();
+  // Enter suggest mode
+  const cb = document.getElementById('toggle-suggest');
+  if (cb) { cb.checked = true; toggleSuggestMode(true); }
+}
+
+function closeWhatsappModal() {
+  document.getElementById('whatsapp-modal').style.display = 'none';
+}
+
+async function showWhatsappModal() {
+  const modal = document.getElementById('whatsapp-modal');
+  const linkEl = document.getElementById('whatsapp-link');
+  const noMobileEl = document.getElementById('whatsapp-no-mobile');
+
+  modal.style.display = 'flex';
+  linkEl.style.display = 'none';
+  noMobileEl.style.display = 'none';
+
+  // Try to get co-parent's mobile from active connection
+  try {
+    // Find active connection ID
+    const connId = connStatus?.connection_id || (typeof partnerConnections !== 'undefined' && partnerConnections.find(c => c.status === 'approved')?.id);
+    if (!connId) { noMobileEl.style.display = 'block'; return; }
+
+    const res = await fetch(`/api/connections/${connId}/coparent-mobile?token=${MY_TOKEN}`);
+    if (!res.ok) { noMobileEl.style.display = 'block'; return; }
+    const { mobile } = await res.json();
+    if (!mobile) { noMobileEl.style.display = 'block'; return; }
+
+    // Build WhatsApp message
+    const baseMsg = `Hi! I've proposed some schedule changes on Spontany.`;
+    const reasonPart = suggestReason ? ` Reason: "${suggestReason}"` : '';
+    const linkPart = ` Review here: ${window.location.origin}/`;
+    const fullMsg = encodeURIComponent(baseMsg + reasonPart + linkPart);
+    const phone = mobile.replace(/\D/g, '');
+    linkEl.href = `https://wa.me/${phone}?text=${fullMsg}`;
+    linkEl.style.display = 'inline-flex';
+  } catch(e) {
+    noMobileEl.style.display = 'block';
+  }
+}
 
 // ── Next time / day strip ─────────────────────────────────────────────────
 const STRIP_DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1050,6 +1122,42 @@ function showToast(msg) {
   toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
 }
 </script>
+
+<!-- Suggest reason modal -->
+<div id="suggest-reason-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:white;border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+    <strong style="font-size:17px;">💡 Suggest Schedule Changes</strong>
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 6px;">
+      Select the days you want to change on the calendar, then send the suggestion to your co-parent for approval.
+    </p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">Want to explain why? (optional — your co-parent will see this)</p>
+    <textarea id="suggest-reason-text" placeholder="e.g. I have a work trip that week and need to swap days…" style="width:100%;height:90px;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeSuggestReason()">Cancel</button>
+      <button class="btn btn-primary" onclick="startSuggestFromReason()">Continue → select days</button>
+    </div>
+  </div>
+</div>
+
+<!-- WhatsApp notification modal (shown after suggestion submitted) -->
+<div id="whatsapp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:white;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
+    <strong style="font-size:17px;">✓ Suggestion sent!</strong>
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 16px;">
+      Your co-parent has been notified on their dashboard.<br>Want to also send them a WhatsApp message?
+    </p>
+    <div id="whatsapp-no-mobile" style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+      Your co-parent hasn't added their phone number yet. Ask them to add it in their Profile.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-outline" onclick="closeWhatsappModal()">Done</button>
+      <a id="whatsapp-link" href="#" target="_blank" class="btn btn-primary" onclick="closeWhatsappModal()"
+        style="background:#25D366;border-color:#25D366;color:white;text-decoration:none;display:none;">
+        📱 Send WhatsApp
+      </a>
+    </div>
+  </div>
+</div>
 
 <!-- ── Partner invite modal ──────────────────────────────────────────────── -->
 <div id="partner-invite-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:16px;">

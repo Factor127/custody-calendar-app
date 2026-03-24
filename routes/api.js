@@ -414,6 +414,20 @@ router.post('/connections/auto-renew', (req, res) => {
   res.json({ auto_renew: Boolean(auto_renew) });
 });
 
+// GET /api/connections/:id/coparent-mobile — get co-parent's mobile for WhatsApp
+router.get('/connections/:id/coparent-mobile', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+  const conn = q.getConnectionById.get(req.params.id);
+  if (!conn) return res.status(404).json({ error: 'Not found' });
+  if (conn.requester_id !== user.id && conn.target_id !== user.id) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+  const otherId = conn.requester_id === user.id ? conn.target_id : conn.requester_id;
+  const other = db.prepare('SELECT mobile FROM users WHERE id = ?').get(otherId);
+  res.json({ mobile: other?.mobile || null });
+});
+
 // PUT /api/connections/:id/rerequest — partner re-requests access with a preferred duration
 router.put('/connections/:id/rerequest', (req, res) => {
   const partner = requireToken(req, res);
