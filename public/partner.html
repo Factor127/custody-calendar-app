@@ -6,6 +6,32 @@
   <title>My Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
+    /* ── Splash screen ───────────────────────────────────────────────────── */
+    #splash {
+      position:fixed; inset:0; z-index:9999;
+      background:#1a1a2e;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:16px;
+      transition:opacity 0.7s ease;
+    }
+    #splash.fade-out { opacity:0; pointer-events:none; }
+    .splash-logo { font-size:52px; animation:splash-pop 0.5s ease; }
+    .splash-name {
+      font-size:32px; font-weight:900; color:white;
+      letter-spacing:-0.02em; animation:splash-pop 0.5s ease 0.1s both;
+    }
+    .splash-tag {
+      font-size:16px; color:rgba(255,255,255,0.65);
+      text-align:center; max-width:280px; line-height:1.5;
+      animation:splash-pop 0.5s ease 0.2s both;
+      font-style:italic;
+    }
+    @keyframes splash-pop {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
     /* ── Page header ────────────────────────────────────────────────────── */
     .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
     .page-header h1 { margin:0; font-size:20px; }
@@ -68,6 +94,12 @@
   </style>
 </head>
 <body>
+<!-- ── Splash screen ── -->
+<div id="splash">
+  <div class="splash-logo">📅</div>
+  <div class="splash-name">Spontany</div>
+  <div class="splash-tag">Finds your moments—<br>before they slip away.</div>
+</div>
 
 <div class="page-header">
   <h1 id="page-title">My Custody Calendar</h1>
@@ -342,6 +374,13 @@ function toDateStr(d) {
   await loadMyCalendar();
   await checkConnection();
   await checkNotifications();
+
+  // Dismiss splash after a short hold
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    splash.classList.add('fade-out');
+    setTimeout(() => splash.remove(), 700);
+  }, 1800);
 })();
 
 async function checkNotifications() {
