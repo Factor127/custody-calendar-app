@@ -758,6 +758,7 @@ function nextMonth() {
   myUserId = me.id;
   if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
   myCoparentPhone = me.coparent_phone || null;
+  partnerMobile = me.partner_phone || null;  // pre-load so WhatsApp works without extra fetch
 
   // Persist token so visiting / auto-logs in next time
   localStorage.setItem('myToken', MY_TOKEN);

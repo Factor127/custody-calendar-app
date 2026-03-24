@@ -647,14 +647,14 @@ function parseHtmlBackup(html) {
 router.get('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null });
+  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null });
 });
 
 // PUT /api/me — update profile (name, mobile, coparent_name)
 router.put('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  const { name, mobile, coparent_name, coparent_phone } = req.body;
+  const { name, mobile, coparent_name, coparent_phone, partner_phone } = req.body;
   if (name && name.trim()) {
     q.updateUserProfile.run(name.trim(), mobile ? mobile.trim() : null, user.id);
   } else if (mobile !== undefined) {
@@ -665,6 +665,9 @@ router.put('/me', (req, res) => {
   }
   if (coparent_phone !== undefined) {
     db.prepare('UPDATE users SET coparent_phone = ? WHERE id = ?').run(coparent_phone ? coparent_phone.trim() : null, user.id);
+  }
+  if (partner_phone !== undefined) {
+    db.prepare('UPDATE users SET partner_phone = ? WHERE id = ?').run(partner_phone ? partner_phone.trim() : null, user.id);
   }
   res.json({ ok: true });
 });
@@ -755,6 +758,8 @@ router.get('/activities/partner-mobile', (req, res) => {
     AND (requester_id = ? OR target_id = ?)
     LIMIT 1
   `).get(me.id, me.id);
+  // Own partner_phone always takes priority (most reliable — user entered it themselves)
+  if (me.partner_phone) return res.json({ mobile: me.partner_phone });
   if (!conn) return res.json({ mobile: null });
   const otherId = conn.requester_id === me.id ? conn.target_id : conn.requester_id;
   const other = db.prepare('SELECT mobile FROM users WHERE id = ?').get(otherId);
