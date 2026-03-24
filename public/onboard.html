@@ -543,8 +543,8 @@ async function saveAndContinue() {
   const patternType = isTwoWeek ? 'alternating_weeks' : 'specific_days';
   const patternData = isTwoWeek
     ? {
-        week1_self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean),
-        week2_self_days: week2Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean)
+        week_a_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean),
+        week_b_days: week2Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean)
       }
     : { self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 

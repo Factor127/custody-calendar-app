@@ -40,6 +40,25 @@ try {
 } catch(e) { /* ignore if column not ready */ }
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* table may not exist yet on first run */ }
 
+// ── Migrate pattern_data key names from onboarding legacy format ──────────────
+// Onboarding used week1_self_days/week2_self_days; canonical is week_a_days/week_b_days
+try {
+  const rows = db.prepare("SELECT user_id, pattern_data FROM custody_pattern WHERE pattern_type='alternating_weeks'").all();
+  const upd  = db.prepare("UPDATE custody_pattern SET pattern_data = ? WHERE user_id = ?");
+  for (const row of rows) {
+    try {
+      const d = JSON.parse(row.pattern_data);
+      if (d.week1_self_days !== undefined || d.week2_self_days !== undefined) {
+        if (!d.week_a_days) d.week_a_days = d.week1_self_days || [];
+        if (!d.week_b_days) d.week_b_days = d.week2_self_days || [];
+        delete d.week1_self_days;
+        delete d.week2_self_days;
+        upd.run(JSON.stringify(d), row.user_id);
+      }
+    } catch(e) { /* skip malformed row */ }
+  }
+} catch(e) { /* custody_pattern table may not exist yet */ }
+
 // ── Schema ──────────────────────────────────────────────────────────────────
 
 db.exec(`
@@ -246,11 +265,13 @@ function generateDaysFromPattern(pattern, startDate, endDate) {
     // New format: week_a_days / week_b_days (per-day selection per alternating week)
     // Old compat: first_week = 'self'|'coparent' (whole-week toggle)
     const ALL_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const hasPerDay = Array.isArray(data.week_a_days);
-    const weekADays = hasPerDay ? data.week_a_days
-      : (data.first_week === 'self' ? ALL_DAYS : []);
-    const weekBDays = hasPerDay ? data.week_b_days
-      : (data.first_week === 'coparent' ? ALL_DAYS : []);
+    // Canonical format: week_a_days / week_b_days
+    // Onboarding legacy: week1_self_days / week2_self_days
+    // Oldest compat: first_week = 'self'|'coparent'
+    const weekADays = data.week_a_days || data.week1_self_days
+      || (data.first_week === 'self' ? ALL_DAYS : []);
+    const weekBDays = data.week_b_days || data.week2_self_days
+      || (data.first_week === 'coparent' ? ALL_DAYS : []);
 
     const weekANums = weekADays.map(dayNameToNum);
     const weekBNums = weekBDays.map(dayNameToNum);

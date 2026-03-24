@@ -210,12 +210,14 @@ async function loadSchedule() {
     });
 
   } else if (pattern.pattern_type === 'alternating_weeks') {
-    // New format: week_a_days / week_b_days
-    // Old compat: first_week = 'self'|'coparent' (full week toggle) → treat as all 7 days in that week
-    const weekADays = data.week_a_days || (data.first_week === 'self'
-      ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] : []);
-    const weekBDays = data.week_b_days || (data.first_week === 'coparent'
-      ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] : []);
+    // Canonical: week_a_days / week_b_days
+    // Onboarding legacy: week1_self_days / week2_self_days
+    // Oldest compat: first_week = 'self'|'coparent'
+    const ALL_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const weekADays = data.week_a_days || data.week1_self_days
+      || (data.first_week === 'self' ? ALL_DAYS : []);
+    const weekBDays = data.week_b_days || data.week2_self_days
+      || (data.first_week === 'coparent' ? ALL_DAYS : []);
 
     document.querySelectorAll('#week-a-picker .day-btn').forEach(btn => {
       btn.classList.toggle('selected', weekADays.includes(btn.dataset.day));

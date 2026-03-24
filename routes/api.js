@@ -16,6 +16,18 @@ function requireToken(req, res) {
   return user;
 }
 
+// Normalise pattern_data to canonical key names before storing
+function normalizePatternData(pattern_type, pattern_data) {
+  if (pattern_type !== 'alternating_weeks' || !pattern_data) return pattern_data;
+  const d = typeof pattern_data === 'string' ? JSON.parse(pattern_data) : pattern_data;
+  // Map onboarding keys → canonical keys
+  if (!d.week_a_days && d.week1_self_days) d.week_a_days = d.week1_self_days;
+  if (!d.week_b_days && d.week2_self_days) d.week_b_days = d.week2_self_days;
+  delete d.week1_self_days;
+  delete d.week2_self_days;
+  return d;
+}
+
 function requireOwner(req, res) {
   const user = requireToken(req, res);
   if (!user) return null;
@@ -50,18 +62,16 @@ router.post('/users/setup', (req, res) => {
 
   // Save pattern for future reference / regeneration
   if (pattern_type && pattern_type !== 'none') {
-    q.upsertPattern.run(id, pattern_type, JSON.stringify(pattern_data || {}), anchor_date || null);
-  }
+    const normData = normalizePatternData(pattern_type, pattern_data);
+    q.upsertPattern.run(id, pattern_type, JSON.stringify(normData || {}), anchor_date || null);
 
-  // For structured patterns, generate 12 months of days as a baseline
-  if (pattern_type && pattern_type !== 'none' && pattern_type !== 'custom') {
-    const start = toDateStr(new Date());
-    const yearOut = new Date();
-    yearOut.setFullYear(yearOut.getFullYear() + 1);
-    const end = toDateStr(yearOut);
-    const fakePattern = { pattern_type, pattern_data: JSON.stringify(pattern_data || {}), anchor_date };
-    const generatedDays = generateDaysFromPattern(fakePattern, start, end);
-    upsertManyDays(id, generatedDays);
+    // For structured patterns, generate 12 months of days as a baseline
+    if (pattern_type !== 'custom') {
+      const start = toDateStr(new Date());
+      const yearOut = new Date(); yearOut.setFullYear(yearOut.getFullYear() + 1);
+      const fakePattern = { pattern_type, pattern_data: JSON.stringify(normData || {}), anchor_date };
+      upsertManyDays(id, generateDaysFromPattern(fakePattern, start, toDateStr(yearOut)));
+    }
   }
 
   // Save reviewed/edited days from the wizard (overrides generated days for the covered period)
@@ -122,16 +132,14 @@ router.post('/users/register', (req, res) => {
 
   // Save pattern if provided
   if (pattern_type && pattern_type !== 'custom') {
-    q.upsertPattern.run(userId, pattern_type, JSON.stringify(pattern_data || {}), anchor_date || null);
+    const normData = normalizePatternData(pattern_type, pattern_data);
+    q.upsertPattern.run(userId, pattern_type, JSON.stringify(normData || {}), anchor_date || null);
 
     // Auto-generate days for the next 12 months
     const start = toDateStr(new Date());
-    const yearOut = new Date();
-    yearOut.setFullYear(yearOut.getFullYear() + 1);
-    const end = toDateStr(yearOut);
-    const fakePattern = { pattern_type, pattern_data: JSON.stringify(pattern_data || {}), anchor_date };
-    const generatedDays = generateDaysFromPattern(fakePattern, start, end);
-    upsertManyDays(userId, generatedDays);
+    const yearOut = new Date(); yearOut.setFullYear(yearOut.getFullYear() + 1);
+    const fakePattern = { pattern_type, pattern_data: JSON.stringify(normData || {}), anchor_date };
+    upsertManyDays(userId, generateDaysFromPattern(fakePattern, start, toDateStr(yearOut)));
   }
 
   // Save manual days if provided (custom mode)
@@ -688,19 +696,16 @@ router.put('/pattern', (req, res) => {
     return res.status(400).json({ error: 'Invalid pattern_type' });
   }
 
-  const dataStr = typeof pattern_data === 'string' ? pattern_data : JSON.stringify(pattern_data || {});
+  const normData = normalizePatternData(pattern_type, pattern_data);
+  const dataStr = JSON.stringify(normData || {});
   q.upsertPattern.run(user.id, pattern_type, dataStr, anchor_date || null);
 
   // Regenerate calendar days only for auto-generate types
   if (pattern_type !== 'custom') {
-    const start = new Date();
-    start.setFullYear(start.getFullYear() - 1); // 1 year back
-    const end = new Date();
-    end.setFullYear(end.getFullYear() + 2);     // 2 years ahead
-
+    const start = new Date(); start.setFullYear(start.getFullYear() - 1); // 1 year back
+    const end   = new Date(); end.setFullYear(end.getFullYear() + 2);     // 2 years ahead
     const pattern = { pattern_type, pattern_data: dataStr, anchor_date: anchor_date || null };
-    const days = generateDaysFromPattern(pattern, toDateStr(start), toDateStr(end));
-    upsertManyDays(user.id, days);
+    upsertManyDays(user.id, generateDaysFromPattern(pattern, toDateStr(start), toDateStr(end)));
   }
 
   res.json({ ok: true });
