@@ -1405,7 +1405,7 @@ async function showWhatsappModal(note) {
   }
 
   try {
-    const connId = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner')?.id;
+    const connId = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent')?.id;
     if (!connId) { wirePhoneInput(); return; }
     const res = await fetch(`/api/connections/${connId}/coparent-mobile?token=${MY_TOKEN}`);
     if (!res.ok) { wirePhoneInput(); return; }
