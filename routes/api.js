@@ -6,6 +6,9 @@ const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays,
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
+const { sendCalendarInvite } = require('../utils/email');
+
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
 function requireToken(req, res) {
@@ -804,7 +807,7 @@ router.get('/activities/partner-mobile', (req, res) => {
 });
 
 // POST /api/activities/:id/accept
-router.post('/activities/:id/accept', (req, res) => {
+router.post('/activities/:id/accept', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
   const a = q.getActivityById.get(req.params.id);
@@ -812,6 +815,37 @@ router.post('/activities/:id/accept', (req, res) => {
   if (a.to_user_id !== me.id) return res.status(403).json({ error: 'Not your activity to accept' });
   if (a.status !== 'pending') return res.status(409).json({ error: 'Already handled' });
   q.updateActivityStatus.run('accepted', a.id);
+
+  // Send .ics calendar invite to both parties (fire and forget)
+  try {
+    const fromUser = q.getUserById.get(a.from_user_id);
+    const toUser   = me;
+    const dates    = JSON.parse(a.dates);
+    const activity = { ...a, dates };
+    const icsContent = buildInvite({ activity, fromUser, toUser });
+    const dateLabel  = dates.length === 1 ? dates[0] : `${dates[0]} + ${dates.length - 1} more day${dates.length > 2 ? 's' : ''}`;
+    const subject    = `📅 ${a.title} — ${dateLabel}`;
+
+    if (fromUser?.email) {
+      sendCalendarInvite({
+        to: fromUser.email,
+        subject,
+        bodyText: `${toUser.name} accepted your invitation to "${a.title}". The event has been added to your calendar.`,
+        icsContent,
+      });
+    }
+    if (toUser?.email) {
+      sendCalendarInvite({
+        to: toUser.email,
+        subject,
+        bodyText: `You accepted "${a.title}" with ${fromUser?.name || 'your partner'}. The event has been added to your calendar.`,
+        icsContent,
+      });
+    }
+  } catch (err) {
+    console.error('[activities/accept] email error:', err.message);
+  }
+
   res.json({ status: 'accepted' });
 });
 
@@ -848,14 +882,47 @@ router.post('/activities/:id/redate', (req, res) => {
 });
 
 // DELETE /api/activities/:id — delete for both parties
-router.delete('/activities/:id', (req, res) => {
+router.delete('/activities/:id', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
   const a = q.getActivityById.get(req.params.id);
   if (!a) return res.status(404).json({ error: 'Not found' });
   if (a.from_user_id !== me.id && a.to_user_id !== me.id) return res.status(403).json({ error: 'Not authorized' });
+
+  // If accepted, send cancellation emails before deleting
+  if (a.status === 'accepted') {
+    try {
+      const fromUser = q.getUserById.get(a.from_user_id);
+      const toUser   = q.getUserById.get(a.to_user_id);
+      const dates    = JSON.parse(a.dates);
+      const icsContent = buildCancellation({ activity: { ...a, dates }, fromUser, toUser });
+      const subject    = `Cancelled: ${a.title}`;
+      const body       = `"${a.title}" has been cancelled and removed from your calendar.`;
+      if (fromUser?.email) sendCalendarInvite({ to: fromUser.email, subject, bodyText: body, icsContent, method: 'CANCEL' });
+      if (toUser?.email)   sendCalendarInvite({ to: toUser.email,   subject, bodyText: body, icsContent, method: 'CANCEL' });
+    } catch (err) {
+      console.error('[activities/delete] cancellation email error:', err.message);
+    }
+  }
+
   q.deleteActivity.run(a.id);
   res.json({ ok: true });
+});
+
+// GET /api/calendar.ics?token= — iCal subscribe feed (custody days)
+// Paste this URL into Apple Calendar / Outlook / Google Calendar once to get a live feed
+router.get('/calendar.ics', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+
+  const days = q.getDaysForUser.all(user.id);
+  const icsContent = buildSubscribeFeed({ user, days: days.map(parseTags) });
+
+  const safeName = user.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="spontany-${safeName}.ics"`);
+  res.setHeader('Cache-Control', 'no-cache');
+  res.send(icsContent);
 });
 
 module.exports = router;
