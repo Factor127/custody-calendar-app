@@ -628,8 +628,8 @@ function nextMonth() {
   // Load partner data if any active connection, then update strip
   await loadPartnerOverlay();
 
-  // Update next-free-title with partner name if connected
-  const approved = partnerConnections.find(c => c.status === 'approved');
+  // Update next-free-title with PARTNER name (not co-parent)
+  const approved = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner');
   if (approved) document.getElementById('next-free-title').textContent = 'Next Free Time With ' + approved.requester_name;
 
   updateNextTime();
@@ -757,7 +757,8 @@ function renderConnectionsList() {
 
 // ── Load partner overlay ──────────────────────────────────────────────────
 async function loadPartnerOverlay() {
-  const approved = partnerConnections.find(c => c.status === 'approved');
+  // Only use PARTNER-type connection for overlay/strip — co-parent connections are for calendar display only
+  const approved = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner');
   if (!approved) {
     document.querySelector('.legend-item[style*="orange"]').classList.add('hidden');
     return;
@@ -1404,7 +1405,7 @@ async function showWhatsappModal(note) {
   }
 
   try {
-    const connId = partnerConnections.find(c => c.status === 'approved')?.id;
+    const connId = partnerConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner')?.id;
     if (!connId) { wirePhoneInput(); return; }
     const res = await fetch(`/api/connections/${connId}/coparent-mobile?token=${MY_TOKEN}`);
     if (!res.ok) { wirePhoneInput(); return; }
