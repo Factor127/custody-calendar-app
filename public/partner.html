@@ -499,7 +499,6 @@ async function checkConnection() {
     if (conn.auto_renew) {
       document.getElementById('auto-renew-badge').hidden = false;
     }
-    document.getElementById('toggle-suggest-group').style.display = 'flex';
     document.getElementById('legend-both-free').hidden = false;
   } else if (conn.status === 'pending') {
     document.getElementById('pending-banner').classList.remove('hidden');
@@ -692,7 +691,6 @@ function toggleSuggestMode(on) {
 }
 
 function cancelSuggest() {
-  document.getElementById('toggle-suggest').checked = false;
   toggleSuggestMode(false);
 }
 
@@ -776,9 +774,7 @@ document.addEventListener('click', e => {
 
 function startHolidayEdit() {
   document.getElementById('edit-dropdown').style.display = 'none';
-  // activate holiday edit mode
-  const cb = document.getElementById('toggle-holiday-edit');
-  if (cb) { cb.checked = true; setEditMode('holiday', true); }
+  setEditMode('holiday', true);
 }
 
 // ── Suggest changes flow ──────────────────────────────────────────────
@@ -798,9 +794,7 @@ function closeSuggestReason() {
 function startSuggestFromReason() {
   suggestReason = document.getElementById('suggest-reason-text').value.trim();
   closeSuggestReason();
-  // Enter suggest mode
-  const cb = document.getElementById('toggle-suggest');
-  if (cb) { cb.checked = true; toggleSuggestMode(true); }
+  toggleSuggestMode(true);
 }
 
 function closeWhatsappModal() {
