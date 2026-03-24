@@ -133,6 +133,21 @@ db.exec(`
     FOREIGN KEY (from_user_id) REFERENCES users(id),
     FOREIGN KEY (to_user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS activities (
+    id TEXT PRIMARY KEY,
+    from_user_id TEXT NOT NULL,
+    to_user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    link TEXT,
+    dates TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'pending'
+      CHECK(status IN ('pending','accepted','declined','cancelled')),
+    created_at TEXT DEFAULT (datetime('now')),
+    responded_at TEXT,
+    FOREIGN KEY (from_user_id) REFERENCES users(id),
+    FOREIGN KEY (to_user_id) REFERENCES users(id)
+  );
 `);
 
 // Ensure email index exists on the (possibly just-created) users table
@@ -248,6 +263,26 @@ const q = {
     ORDER BY s.created_at DESC
   `),
   updateSuggestionStatus: db.prepare("UPDATE suggestions SET status = ? WHERE id = ?"),
+
+  // Activities
+  createActivity: db.prepare(
+    'INSERT INTO activities (id, from_user_id, to_user_id, title, link, dates) VALUES (?, ?, ?, ?, ?, ?)'
+  ),
+  getActivitiesForUser: db.prepare(`
+    SELECT a.*,
+      fu.name as from_name, tu.name as to_name
+    FROM activities a
+    JOIN users fu ON a.from_user_id = fu.id
+    JOIN users tu ON a.to_user_id = tu.id
+    WHERE (a.from_user_id = ? OR a.to_user_id = ?)
+      AND a.status != 'cancelled'
+    ORDER BY a.created_at DESC
+  `),
+  getActivityById: db.prepare('SELECT * FROM activities WHERE id = ?'),
+  updateActivityStatus: db.prepare(
+    "UPDATE activities SET status = ?, responded_at = datetime('now') WHERE id = ?"
+  ),
+  deleteActivity: db.prepare('DELETE FROM activities WHERE id = ?'),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────

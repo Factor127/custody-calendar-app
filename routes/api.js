@@ -711,4 +711,109 @@ router.put('/pattern', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Activities ────────────────────────────────────────────────────────────
+
+// POST /api/activities — create an activity suggestion
+router.post('/activities', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const { title, link, dates, to_user_id } = req.body;
+  if (!title || !title.trim()) return res.status(400).json({ error: 'title required' });
+  if (!Array.isArray(dates) || dates.length === 0) return res.status(400).json({ error: 'dates required' });
+  if (!to_user_id) return res.status(400).json({ error: 'to_user_id required' });
+
+  // Verify they share an approved partner connection
+  const conn = db.prepare(`
+    SELECT * FROM connections
+    WHERE status = 'approved' AND relationship_type = 'partner'
+    AND ((requester_id = ? AND target_id = ?) OR (requester_id = ? AND target_id = ?))
+  `).get(me.id, to_user_id, to_user_id, me.id);
+  if (!conn) return res.status(403).json({ error: 'No approved partner connection' });
+
+  const id = uuidv4();
+  q.createActivity.run(id, me.id, to_user_id, title.trim(), link?.trim() || null, JSON.stringify(dates));
+  res.json({ id, status: 'pending' });
+});
+
+// GET /api/activities — get all activities for current user
+router.get('/activities', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const activities = q.getActivitiesForUser.all(me.id, me.id);
+  res.json({ activities: activities.map(a => ({ ...a, dates: JSON.parse(a.dates) })) });
+});
+
+// GET /api/activities/partner-mobile — get partner's mobile for activity WhatsApp
+// (declared before /:id routes to avoid being captured by the param pattern)
+router.get('/activities/partner-mobile', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const conn = db.prepare(`
+    SELECT * FROM connections
+    WHERE status = 'approved' AND relationship_type = 'partner'
+    AND (requester_id = ? OR target_id = ?)
+    LIMIT 1
+  `).get(me.id, me.id);
+  if (!conn) return res.json({ mobile: null });
+  const otherId = conn.requester_id === me.id ? conn.target_id : conn.requester_id;
+  const other = db.prepare('SELECT mobile FROM users WHERE id = ?').get(otherId);
+  res.json({ mobile: other?.mobile || null });
+});
+
+// POST /api/activities/:id/accept
+router.post('/activities/:id/accept', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const a = q.getActivityById.get(req.params.id);
+  if (!a) return res.status(404).json({ error: 'Not found' });
+  if (a.to_user_id !== me.id) return res.status(403).json({ error: 'Not your activity to accept' });
+  if (a.status !== 'pending') return res.status(409).json({ error: 'Already handled' });
+  q.updateActivityStatus.run('accepted', a.id);
+  res.json({ status: 'accepted' });
+});
+
+// POST /api/activities/:id/decline
+router.post('/activities/:id/decline', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const a = q.getActivityById.get(req.params.id);
+  if (!a) return res.status(404).json({ error: 'Not found' });
+  if (a.to_user_id !== me.id) return res.status(403).json({ error: 'Not your activity' });
+  if (a.status !== 'pending') return res.status(409).json({ error: 'Already handled' });
+  q.updateActivityStatus.run('declined', a.id);
+  res.json({ status: 'declined' });
+});
+
+// POST /api/activities/:id/redate — suggest different dates (declines current, creates new from other direction)
+router.post('/activities/:id/redate', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const a = q.getActivityById.get(req.params.id);
+  if (!a) return res.status(404).json({ error: 'Not found' });
+  if (a.to_user_id !== me.id) return res.status(403).json({ error: 'Not your activity' });
+
+  const { dates } = req.body;
+  if (!Array.isArray(dates) || dates.length === 0) return res.status(400).json({ error: 'dates required' });
+
+  // Decline original
+  q.updateActivityStatus.run('declined', a.id);
+
+  // Create new suggestion in reverse direction
+  const newId = uuidv4();
+  q.createActivity.run(newId, me.id, a.from_user_id, a.title, a.link, JSON.stringify(dates));
+  res.json({ id: newId, status: 'pending' });
+});
+
+// DELETE /api/activities/:id — delete for both parties
+router.delete('/activities/:id', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const a = q.getActivityById.get(req.params.id);
+  if (!a) return res.status(404).json({ error: 'Not found' });
+  if (a.from_user_id !== me.id && a.to_user_id !== me.id) return res.status(403).json({ error: 'Not authorized' });
+  q.deleteActivity.run(a.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;
