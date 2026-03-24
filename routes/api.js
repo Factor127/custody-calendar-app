@@ -639,14 +639,14 @@ function parseHtmlBackup(html) {
 router.get('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null });
+  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null });
 });
 
 // PUT /api/me — update profile (name, mobile, coparent_name)
 router.put('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  const { name, mobile, coparent_name } = req.body;
+  const { name, mobile, coparent_name, coparent_phone } = req.body;
   if (name && name.trim()) {
     q.updateUserProfile.run(name.trim(), mobile ? mobile.trim() : null, user.id);
   } else if (mobile !== undefined) {
@@ -654,6 +654,9 @@ router.put('/me', (req, res) => {
   }
   if (coparent_name !== undefined) {
     q.updateCoparentName.run(coparent_name ? coparent_name.trim() : null, user.id);
+  }
+  if (coparent_phone !== undefined) {
+    db.prepare('UPDATE users SET coparent_phone = ? WHERE id = ?').run(coparent_phone ? coparent_phone.trim() : null, user.id);
   }
   res.json({ ok: true });
 });

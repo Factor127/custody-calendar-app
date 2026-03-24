@@ -76,6 +76,12 @@
       <input id="profile-coparent-name" class="field-input" type="text" placeholder="e.g. Zoe">
     </div>
 
+    <div class="field-group">
+      <label class="field-label" for="profile-coparent-phone">Co-parent's WhatsApp number <span style="color:var(--muted);font-weight:400;">(for schedule change notifications)</span></label>
+      <input id="profile-coparent-phone" class="field-input" type="tel" placeholder="+972 50 000 0000" autocomplete="tel">
+      <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Used when you suggest custody changes — opens WhatsApp with a pre-written message.</p>
+    </div>
+
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
       <button class="btn btn-outline" onclick="signOut()" style="color:#c62828;border-color:#ef9a9a;">Sign out</button>
       <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
@@ -177,6 +183,7 @@ if (!MY_TOKEN) { window.location.href = '/login'; }
   document.getElementById('profile-email').textContent = user.email || 'No email on file';
   document.getElementById('profile-mobile').value = user.mobile || '';
   document.getElementById('profile-coparent-name').value = user.coparent_name || '';
+  document.getElementById('profile-coparent-phone').value = user.coparent_phone || '';
 
   await loadConnections();
   await loadSchedule();
@@ -337,12 +344,13 @@ async function saveProfile() {
   const name = document.getElementById('profile-name').value.trim();
   const mobile = document.getElementById('profile-mobile').value.trim();
   const coparent_name = document.getElementById('profile-coparent-name').value.trim();
+  const coparent_phone = document.getElementById('profile-coparent-phone').value.trim();
   if (!name) { alert('Name cannot be empty'); return; }
 
   const res = await fetch(`/api/me?token=${MY_TOKEN}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, mobile: mobile || null, coparent_name: coparent_name || null })
+    body: JSON.stringify({ name, mobile: mobile || null, coparent_name: coparent_name || null, coparent_phone: coparent_phone || null })
   });
   if (res.ok) showToast('✓ Profile saved');
   else alert('Save failed — please try again');

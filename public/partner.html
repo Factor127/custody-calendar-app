@@ -356,6 +356,7 @@ const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 let myUserId = null;
 let myName = 'Me';
 let myCoparentInitial = 'C'; // my own co-parent's initial, loaded from /api/me
+let myCoparentPhone = null;  // co-parent's WhatsApp number (stored on own profile)
 let ownerName = 'Partner';
 let ownerId = null;
 let calendarDays = {};   // my days: date -> { owner, tags }
@@ -394,6 +395,7 @@ function toDateStr(d) {
   myName = me.name;
   myUserId = me.id;
   if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
+  myCoparentPhone = me.coparent_phone || null;
 
   // Persist token so visiting / auto-logs in next time
   localStorage.setItem('myToken', MY_TOKEN);
@@ -868,19 +870,13 @@ async function showWhatsappModal(note) {
     };
   }
 
-  try {
-    const connId = connStatus?.connection_id;
-    if (!connId) { wirePhoneInput(); return; }
-    const res = await fetch(`/api/connections/${connId}/coparent-mobile?token=${MY_TOKEN}`);
-    if (!res.ok) { wirePhoneInput(); return; }
-    const { mobile } = await res.json();
-    if (mobile) {
-      linkEl.href = buildLink(mobile);
-      linkEl.style.display = 'inline-flex';
-    } else {
-      wirePhoneInput();
-    }
-  } catch(e) { wirePhoneInput(); }
+  // Use co-parent phone stored on own profile (fastest, no extra fetch)
+  if (myCoparentPhone) {
+    linkEl.href = buildLink(myCoparentPhone);
+    linkEl.style.display = 'inline-flex';
+  } else {
+    wirePhoneInput();
+  }
 }
 
 // ── Next time / day strip ─────────────────────────────────────────────────
