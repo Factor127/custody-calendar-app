@@ -32,9 +32,31 @@
       to   { opacity:1; transform:translateY(0); }
     }
 
+    /* App header */
+    .app-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 0 8px; margin-bottom:4px; border-bottom:1px solid var(--border);
+    }
+    .app-header-logo { font-size:24px; }
+    .app-header-brand { font-size:20px; font-weight:900; color:var(--text); letter-spacing:-0.01em; }
+    .app-title-strip { text-align:center; font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; padding:14px 0 10px; }
+
+    /* Centered calendar wrap */
+    .cal-section { max-width:680px; margin:0 auto; }
+
+    /* Section heading for "Next Free Time With" */
+    .section-heading { text-align:center; font-size:16px; font-weight:800; color:var(--text); margin:28px 0 14px; }
+
+    /* Brand footer */
+    .brand-footer {
+      margin-top:48px; padding:20px 0 28px;
+      border-top:1px solid var(--border);
+      text-align:center;
+    }
+    .brand-footer p { margin:4px 0; font-size:12px; color:var(--muted); }
+    .brand-footer a { color:var(--muted); text-decoration:underline; }
+
     /* ── Page header ────────────────────────────────────────────────────── */
-    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
-    .page-header h1 { margin:0; font-size:20px; }
     .profile-circle {
       position:relative; width:38px; height:38px; border-radius:50%;
       background:var(--blue); color:white; display:flex; align-items:center;
@@ -101,73 +123,17 @@
   <div class="splash-tag">Finds your moments—<br>before they slip away.</div>
 </div>
 
-<div class="page-header">
-  <h1 id="page-title">My Custody Calendar</h1>
+<div class="app-header">
+  <div class="app-header-logo">📅</div>
+  <div class="app-header-brand">Spontany</div>
   <a id="profile-btn" href="#" class="profile-circle" title="My profile">
     <span id="profile-initial">?</span>
     <span id="notif-dot" class="notif-dot hidden"></span>
   </a>
 </div>
+<div class="app-title-strip">Your Custody Calendar</div>
 
-<!-- "Next time I see you" — scrolling day strip -->
-<div id="next-time-section" style="margin-bottom:20px;">
-  <div class="next-time-label">Next time I see you</div>
-  <div class="next-time-headline" id="next-time-headline">—</div>
-
-  <!-- Connected: scrolling strip -->
-  <div id="next-time-connected" class="hidden">
-    <div class="strip-wrap">
-      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
-      <div id="day-strip"></div>
-      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
-    </div>
-    <div class="strip-range" id="strip-range"></div>
-  </div>
-
-  <!-- Locked: blurred placeholder + CTA -->
-  <div id="next-time-locked">
-    <div style="position:relative;border-radius:10px;overflow:hidden;">
-      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div></div>
-      </div>
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
-        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
-        <button class="btn btn-primary btn-sm" onclick="showInviteFromPartner()">Invite my partner</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Connection status banner -->
-<div id="connection-banner" class="partner-overlay-banner hidden">
-  <span style="font-size:18px;">📅</span>
-  <div>
-    <strong id="owner-name-banner">Partner</strong>'s custody days are shown as a colored stripe.
-    Access granted until <strong id="access-until">—</strong>.
-    <span id="auto-renew-badge" class="chip" style="background:#e8f5e9;color:#2e7d32;margin-left:4px;" hidden>Auto-renews</span>
-  </div>
-</div>
-
-<!-- Pending request banner -->
-<div id="pending-banner" class="hidden" style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;">
-  <span style="font-size:18px;">⏳</span>
-  <span>Your request to view <strong id="owner-name-pending">your partner</strong>'s calendar is waiting for approval.</span>
-</div>
-
-<!-- Expired banner -->
-<div id="expired-banner" class="hidden" style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;">
-  <span style="font-size:18px;">⚠️</span>
-  <div>
-    Access to <strong id="owner-name-expired">your partner</strong>'s calendar has expired.
-    <button class="btn btn-sm btn-outline" style="margin-left:8px;" onclick="openDurationModal()">Request access again</button>
-  </div>
-</div>
+<div class="cal-section">
 
 <!-- Edit mode notices -->
 <div class="edit-notice notice-custody" id="edit-notice">
@@ -277,6 +243,75 @@
   </div>
 </div>
 
+</div><!-- /.cal-section -->
+
+<h2 class="section-heading" id="next-free-title">Next Free Time</h2>
+
+<div class="cal-section">
+
+<!-- "Next time I see you" — scrolling day strip -->
+<div id="next-time-section" style="margin-bottom:20px;">
+
+  <!-- Connection status banner -->
+  <div id="connection-banner" class="partner-overlay-banner hidden">
+    <span style="font-size:18px;">📅</span>
+    <div>
+      <strong id="owner-name-banner">Partner</strong>'s custody days are shown as a colored stripe.
+      Access granted until <strong id="access-until">—</strong>.
+      <span id="auto-renew-badge" class="chip" style="background:#e8f5e9;color:#2e7d32;margin-left:4px;" hidden>Auto-renews</span>
+    </div>
+  </div>
+
+  <!-- Pending request banner -->
+  <div id="pending-banner" class="hidden" style="background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:18px;">⏳</span>
+    <span>Your request to view <strong id="owner-name-pending">your partner</strong>'s calendar is waiting for approval.</span>
+  </div>
+
+  <!-- Expired banner -->
+  <div id="expired-banner" class="hidden" style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:18px;">⚠️</span>
+    <div>
+      Access to <strong id="owner-name-expired">your partner</strong>'s calendar has expired.
+      <button class="btn btn-sm btn-outline" style="margin-left:8px;" onclick="openDurationModal()">Request access again</button>
+    </div>
+  </div>
+
+  <div class="next-time-label">Next time I see you</div>
+  <div class="next-time-headline" id="next-time-headline">—</div>
+
+  <!-- Connected: scrolling strip -->
+  <div id="next-time-connected" class="hidden">
+    <div class="strip-wrap">
+      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
+      <div id="day-strip"></div>
+      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
+    </div>
+    <div class="strip-range" id="strip-range"></div>
+  </div>
+
+  <!-- Locked: blurred placeholder + CTA -->
+  <div id="next-time-locked">
+    <div style="position:relative;border-radius:10px;overflow:hidden;">
+      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div></div>
+      </div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
+        <button class="btn btn-primary btn-sm" onclick="showInviteFromPartner()">Invite my partner</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.cal-section (next-time) -->
+
 <!-- Duration request modal (for expired / no-connection states) -->
 <div id="duration-request-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:16px;">
   <div style="background:white;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
@@ -313,6 +348,11 @@
     <button class="btn btn-primary btn-sm" onclick="approveSuggestion()">Apply changes</button>
   </div>
 </div>
+
+<footer class="brand-footer">
+  <p><em>Spontany finds your moments—before they slip away.</em></p>
+  <p>Questions? <a href="mailto:info@Spontany.club">info@Spontany.club</a> · <a href="/privacy">Privacy Policy</a></p>
+</footer>
 
 <script>
 const params = new URLSearchParams(location.search);
@@ -363,8 +403,6 @@ function toDateStr(d) {
   // Persist token so visiting / auto-logs in next time
   localStorage.setItem('myToken', MY_TOKEN);
   localStorage.setItem('myRole', 'partner');
-
-  document.getElementById('page-title').textContent = `${myName}'s Custody Calendar`;
 
   // Profile circle
   const initial = (myName || '?')[0].toUpperCase();
@@ -480,6 +518,9 @@ async function checkConnection() {
 
   document.getElementById('owner-name-pending').textContent = conn.owner_name || 'your partner';
   document.getElementById('owner-name-expired').textContent = conn.owner_name || 'your partner';
+
+  // Update next-free-title with partner name
+  document.getElementById('next-free-title').textContent = conn ? 'Next Free Time With ' + (conn.owner_name || 'your partner') : 'Next Free Time';
 
   if (conn.status === 'approved') {
     await loadOwnerCalendar(conn);

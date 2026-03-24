@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     /* ── Splash screen ───────────────────────────────────────────────────── */
     #splash {
@@ -33,8 +32,30 @@
       to   { opacity:1; transform:translateY(0); }
     }
 
-    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
-    .page-header h1 { margin:0; font-size:20px; }
+    /* App header */
+    .app-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 0 8px; margin-bottom:4px; border-bottom:1px solid var(--border);
+    }
+    .app-header-logo { font-size:24px; }
+    .app-header-brand { font-size:20px; font-weight:900; color:var(--text); letter-spacing:-0.01em; }
+    .app-title-strip { text-align:center; font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; padding:14px 0 10px; }
+
+    /* Centered calendar wrap */
+    .cal-section { max-width:680px; margin:0 auto; }
+
+    /* Section heading for "Next Free Time With" */
+    .section-heading { text-align:center; font-size:16px; font-weight:800; color:var(--text); margin:28px 0 14px; }
+
+    /* Brand footer */
+    .brand-footer {
+      margin-top:48px; padding:20px 0 28px;
+      border-top:1px solid var(--border);
+      text-align:center;
+    }
+    .brand-footer p { margin:4px 0; font-size:12px; color:var(--muted); }
+    .brand-footer a { color:var(--muted); text-decoration:underline; }
+
     .profile-circle {
       position:relative; width:38px; height:38px; border-radius:50%;
       background:var(--blue); color:white; display:flex; align-items:center;
@@ -106,48 +127,17 @@
   <div class="splash-tag">Finds your moments—<br>before they slip away.</div>
 </div>
 
-<div class="page-header">
-  <h1 id="page-title">Custody Calendar</h1>
+<div class="app-header">
+  <div class="app-header-logo">📅</div>
+  <div class="app-header-brand">Spontany</div>
   <a id="profile-btn" href="#" class="profile-circle" title="My profile">
     <span id="profile-initial">?</span>
     <span id="notif-dot" class="notif-dot hidden"></span>
   </a>
 </div>
+<div class="app-title-strip">Your Custody Calendar</div>
 
-<!-- "Next time I see you" — scrolling day strip -->
-<div id="next-time-section" style="margin-bottom:20px;">
-  <div class="next-time-label" id="next-time-label">Next time both you & your partner are free</div>
-  <div class="next-time-headline" id="next-time-headline">—</div>
-
-  <!-- Connected: scrolling strip -->
-  <div id="next-time-connected" class="hidden">
-    <div class="strip-wrap">
-      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
-      <div id="day-strip"></div>
-      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
-    </div>
-    <div class="strip-range" id="strip-range"></div>
-  </div>
-
-  <!-- Locked: blurred placeholder + CTA -->
-  <div id="next-time-locked">
-    <div style="position:relative;border-radius:10px;overflow:hidden;">
-      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div></div>
-      </div>
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
-        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
-        <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">Invite my partner</button>
-      </div>
-    </div>
-  </div>
-</div>
+<div class="cal-section">
 
 <!-- Edit mode notices -->
 <div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;display:none;">
@@ -160,22 +150,10 @@
   🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
 </div>
 
-<!-- Import notice (shown if no calendar data yet) -->
-<div id="import-notice" class="hidden" style="background:#fff3cd;border:1px solid #f0c36d;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
-  <strong>No calendar data yet.</strong>
-  Import your existing backup HTML file to get started:
-  <label class="btn btn-sm btn-outline" style="margin-left:10px;cursor:pointer;">
-    📂 Import backup
-    <input type="file" accept=".html" style="display:none;" onchange="importHtml(this)">
-  </label>
-  <span class="text-muted text-sm" style="margin-left:8px;">Or just start editing the calendar manually.</span>
-</div>
-
 <!-- Legend -->
 <div class="legend">
   <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
   <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
-  <div class="legend-item hidden" id="legend-partner"></div>
   <div class="legend-item"><span class="tag">H</span> Holiday</div>
   <div class="legend-item"><span class="tag">V</span> Vacation</div>
   <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
@@ -193,7 +171,26 @@
   <div style="padding:40px;text-align:center;color:var(--muted);">Loading calendar…</div>
 </div>
 
-<!-- Controls — below calendar -->
+<!-- Custody Balance — below calendar -->
+<div class="summary" style="margin-top:14px;">
+  <span class="bold" style="font-size:15px;">Custody Balance:</span>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--r);"></span>
+    <span class="bold" id="owner-name-label">Me:</span>
+    <span class="summary-count" style="color:#1e8e3e;" id="r-count">— days</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-swatch" style="background:var(--z);"></span>
+    <span class="bold">Co-parent:</span>
+    <span class="summary-count" style="color:#1967d2;" id="z-count">— days</span>
+  </div>
+  <div class="summary-stat" style="margin-left:8px;">
+    <span class="bold">Difference:</span>
+    <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
+  </div>
+</div>
+
+<!-- Controls — below balance -->
 <div class="controls" style="margin-top:14px;">
   <span class="controls-title">Show:</span>
 
@@ -241,32 +238,55 @@
 
   <div class="ml-auto flex-gap">
     <button class="btn btn-green" onclick="saveCalendar()">💾 Save</button>
-    <button class="btn btn-gray" onclick="downloadBackup()">📥 Backup</button>
-    <button class="btn btn-purple" onclick="shareWithCoparent()">📤 Share</button>
-    <button class="btn btn-primary" onclick="exportToPDF()">📄 PDF</button>
   </div>
 </div>
 
-<!-- Custody Balance — below controls -->
-<div class="summary" style="margin-top:14px;">
-  <span class="bold" style="font-size:15px;">Custody Balance:</span>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--r);"></span>
-    <span class="bold" id="owner-name-label">Me:</span>
-    <span class="summary-count" style="color:#1e8e3e;" id="r-count">— days</span>
+</div><!-- /.cal-section -->
+
+<h2 class="section-heading" id="next-free-title">Next Free Time</h2>
+
+<div class="cal-section">
+
+<!-- "Next time I see you" — scrolling day strip -->
+<div id="next-time-section" style="margin-bottom:20px;">
+  <div class="next-time-label" id="next-time-label">Next time both you & your partner are free</div>
+  <div class="next-time-headline" id="next-time-headline">—</div>
+
+  <!-- Connected: scrolling strip -->
+  <div id="next-time-connected" class="hidden">
+    <div class="strip-wrap">
+      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
+      <div id="day-strip"></div>
+      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
+    </div>
+    <div class="strip-range" id="strip-range"></div>
   </div>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--z);"></span>
-    <span class="bold">Co-parent:</span>
-    <span class="summary-count" style="color:#1967d2;" id="z-count">— days</span>
-  </div>
-  <div class="summary-stat" style="margin-left:8px;">
-    <span class="bold">Difference:</span>
-    <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
+
+  <!-- Locked: blurred placeholder + CTA -->
+  <div id="next-time-locked">
+    <div style="position:relative;border-radius:10px;overflow:hidden;">
+      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div></div>
+        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div></div>
+        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div></div>
+      </div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
+        <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">Invite my partner</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Connections panel — bottom of page -->
+</div><!-- /.cal-section (next-time) -->
+
+<div class="cal-section">
+
+<!-- Connections panel -->
 <div id="connections-panel" class="connections-panel hidden" style="margin-top:16px;">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
     <span class="bold" style="font-size:14px;">Connections</span>
@@ -277,6 +297,8 @@
     <p class="text-muted" style="margin:0;font-size:13px;">Loading…</p>
   </div>
 </div>
+
+</div><!-- /.cal-section (connections) -->
 
 <!-- Approve connection modal -->
 <div class="modal-overlay" id="approve-modal">
@@ -388,6 +410,11 @@
   <button class="btn btn-outline" onclick="cancelSuggest()">Cancel</button>
   <button class="btn btn-primary" onclick="submitSuggestion()">Send suggestion</button>
 </div>
+
+<footer class="brand-footer">
+  <p><em>Spontany finds your moments—before they slip away.</em></p>
+  <p>Questions? <a href="mailto:info@Spontany.club">info@Spontany.club</a> · <a href="/privacy">Privacy Policy</a></p>
+</footer>
 
 <script>
 // ── Auth ──────────────────────────────────────────────────────────────────
@@ -549,7 +576,6 @@ function nextMonth() {
   localStorage.setItem('myToken', MY_TOKEN);
   localStorage.setItem('myRole', 'owner');
 
-  document.getElementById('page-title').textContent = `Custody Calendar — ${myName}`;
   document.getElementById('owner-name-label').textContent = `${myName}:`;
 
   // Profile circle
@@ -565,6 +591,11 @@ function nextMonth() {
 
   // Load partner data if any active connection, then update strip
   await loadPartnerOverlay();
+
+  // Update next-free-title with partner name if connected
+  const approved = partnerConnections.find(c => c.status === 'approved');
+  if (approved) document.getElementById('next-free-title').textContent = 'Next Free Time With ' + approved.requester_name;
+
   updateNextTime();
 
   // Dismiss splash after a short hold
@@ -585,9 +616,6 @@ async function loadMyCalendar() {
   for (const day of data.days) {
     calendarDays[day.date] = { owner: day.owner, tags: day.tags };
   }
-
-  const hasDays = data.days.length > 0;
-  document.getElementById('import-notice').classList.toggle('hidden', hasDays);
 
   renderCalendar();
 }
@@ -696,7 +724,6 @@ async function loadPartnerOverlay() {
   const approved = partnerConnections.find(c => c.status === 'approved');
   if (!approved) {
     document.getElementById('toggle-partner-group').classList.add('hidden');
-    document.getElementById('legend-partner').classList.add('hidden');
     document.getElementById('toggle-frames').closest('.toggle-group').classList.add('hidden');
     document.querySelector('.legend-item[style*="orange"]').classList.add('hidden');
     return;
@@ -1269,50 +1296,6 @@ async function rejectSuggestion() {
 // ── Kids month export ─────────────────────────────────────────────────────
 function openKidsExport() {
   window.open(`/kids-export?token=${MY_TOKEN}`, '_blank');
-}
-
-// ── Share / export ────────────────────────────────────────────────────────
-function downloadBackup() {
-  const html = document.documentElement.outerHTML;
-  const blob = new Blob([html], { type: 'text/html' });
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob),
-    download: `custody_calendar_backup_${new Date().toISOString().slice(0,10)}.html`
-  });
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
-}
-
-function shareWithCoparent() {
-  // Clone, remove partner info, download
-  const clone = document.documentElement.cloneNode(true);
-  clone.querySelectorAll('.partner-dots').forEach(el => el.remove());
-  clone.querySelectorAll('.bothfree').forEach(el => el.classList.remove('bothfree'));
-  clone.querySelectorAll('#toggle-partner-group,#toggle-partner-edit-group,#legend-partner,#partner-edit-notice,#connections-panel').forEach(el => el.remove());
-  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
-  const blob = new Blob([html], { type: 'text/html' });
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob),
-    download: `custody_calendar_shared_${new Date().toISOString().slice(0,10)}.html`
-  });
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
-  showToast('✓ Shared version downloaded (partner info removed)');
-}
-
-function exportToPDF() {
-  const clone = document.querySelector('.calendar-container').cloneNode(true);
-  const opt = {
-    margin: [5,5,5,5],
-    filename: `custody_calendar_${new Date().toISOString().slice(0,10)}.pdf`,
-    html2canvas: { scale: 1.2, useCORS: true },
-    jsPDF: { unit:'mm', format:'a4', orientation:'landscape' }
-  };
-  html2pdf().set(opt).from(clone).save();
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────

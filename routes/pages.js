@@ -78,4 +78,8 @@ router.get('/partner', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'partner.html'));
 });
 
+router.get('/privacy', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'privacy.html'));
+});
+
 module.exports = router;
