@@ -432,6 +432,11 @@
     <div id="whatsapp-no-mobile" style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
       Your co-parent hasn't added their phone number yet. Ask them to add it in their Profile.
     </div>
+    <div id="whatsapp-phone-wrap" style="display:none;margin-bottom:14px;">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Enter their WhatsApp number:</label>
+      <input id="whatsapp-phone-input" type="tel" placeholder="+1 555 000 0000"
+        class="field-input" style="max-width:220px;font-size:14px;">
+    </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button class="btn btn-outline" onclick="closeWhatsappModal()">Done</button>
       <a id="whatsapp-link" href="#" target="_blank" class="btn btn-primary" onclick="closeWhatsappModal()"
@@ -976,9 +981,10 @@ async function submitSuggestion() {
   });
 
   if (res.ok) {
+    const finalNote = document.getElementById('suggest-note')?.value.trim() || suggestReason;
     cancelSuggest();
     showToast(`✓ Suggestion sent (${count} day${count > 1 ? 's' : ''})`);
-    showWhatsappModal();
+    showWhatsappModal(finalNote);
   } else {
     const err = await res.json().catch(() => ({}));
     showToast(err.error || 'Failed to send suggestion');
@@ -1367,37 +1373,49 @@ function closeWhatsappModal() {
   document.getElementById('whatsapp-modal').style.display = 'none';
 }
 
-async function showWhatsappModal() {
+async function showWhatsappModal(note) {
   const modal = document.getElementById('whatsapp-modal');
   const linkEl = document.getElementById('whatsapp-link');
   const noMobileEl = document.getElementById('whatsapp-no-mobile');
+  const phoneWrap = document.getElementById('whatsapp-phone-wrap');
 
   modal.style.display = 'flex';
   linkEl.style.display = 'none';
   noMobileEl.style.display = 'none';
+  if (phoneWrap) phoneWrap.style.display = 'none';
 
-  // Try to get co-parent's mobile from active connection
-  try {
-    // Find active connection ID
-    const connId = partnerConnections.find(c => c.status === 'approved')?.id;
-    if (!connId) { noMobileEl.style.display = 'block'; return; }
-
-    const res = await fetch(`/api/connections/${connId}/coparent-mobile?token=${MY_TOKEN}`);
-    if (!res.ok) { noMobileEl.style.display = 'block'; return; }
-    const { mobile } = await res.json();
-    if (!mobile) { noMobileEl.style.display = 'block'; return; }
-
-    // Build WhatsApp message
-    const baseMsg = `Hi! I've proposed some schedule changes on Spontany.`;
-    const reasonPart = suggestReason ? ` Reason: "${suggestReason}"` : '';
-    const linkPart = ` Review here: ${window.location.origin}/`;
-    const fullMsg = encodeURIComponent(baseMsg + reasonPart + linkPart);
-    const phone = mobile.replace(/\D/g, '');
-    linkEl.href = `https://wa.me/${phone}?text=${fullMsg}`;
-    linkEl.style.display = 'inline-flex';
-  } catch(e) {
-    noMobileEl.style.display = 'block';
+  function buildLink(phone) {
+    const base = `Hi! I've proposed some schedule changes on Spontany.`;
+    const notePart = note ? ` Reason: "${note}"` : '';
+    const url = ` Review here: ${window.location.origin}/`;
+    return `https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(base + notePart + url)}`;
   }
+
+  function wirePhoneInput() {
+    if (!phoneWrap) { noMobileEl.style.display = 'block'; return; }
+    phoneWrap.style.display = 'block';
+    document.getElementById('whatsapp-phone-input').oninput = function() {
+      const val = this.value.trim();
+      if (val.replace(/\D/g,'').length > 6) {
+        linkEl.href = buildLink(val);
+        linkEl.style.display = 'inline-flex';
+      } else { linkEl.style.display = 'none'; }
+    };
+  }
+
+  try {
+    const connId = partnerConnections.find(c => c.status === 'approved')?.id;
+    if (!connId) { wirePhoneInput(); return; }
+    const res = await fetch(`/api/connections/${connId}/coparent-mobile?token=${MY_TOKEN}`);
+    if (!res.ok) { wirePhoneInput(); return; }
+    const { mobile } = await res.json();
+    if (mobile) {
+      linkEl.href = buildLink(mobile);
+      linkEl.style.display = 'inline-flex';
+    } else {
+      wirePhoneInput();
+    }
+  } catch(e) { wirePhoneInput(); }
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────
