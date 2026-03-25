@@ -162,6 +162,57 @@
     </div>
   </div>
 
+  <!-- Work schedule -->
+  <div class="section-card">
+    <div class="section-title">⏰ My work schedule</div>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">
+      Helps Spontany know when you're actually free — not just kid-free.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px;" id="work-type-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border-radius:9px;border:1.5px solid var(--border);transition:border-color .15s;" onclick="selectWorkType('none',this)">
+        <input type="radio" name="work-type" value="none">
+        <div><div style="font-size:13px;font-weight:600;">Don't track work hours</div><div style="font-size:11px;color:var(--muted);">All kid-free days count as free</div></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border-radius:9px;border:1.5px solid var(--border);transition:border-color .15s;" onclick="selectWorkType('standard_weekdays',this)">
+        <input type="radio" name="work-type" value="standard_weekdays">
+        <div><div style="font-size:13px;font-weight:600;">Standard Mon–Fri</div><div style="font-size:11px;color:var(--muted);">Weekdays are marked as busy</div></div>
+      </label>
+      <label id="custom-work-label" style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:8px 12px;border-radius:9px;border:1.5px solid var(--border);transition:border-color .15s;" onclick="selectWorkType('custom',this)">
+        <input type="radio" name="work-type" value="custom" style="margin-top:3px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;">Custom days</div>
+          <div id="custom-work-picker" style="display:none;margin-top:8px;" class="day-picker">
+            <button class="day-btn" data-dow="0" onclick="toggleWorkDay(event,this)">Su</button>
+            <button class="day-btn" data-dow="1" onclick="toggleWorkDay(event,this)">Mo</button>
+            <button class="day-btn" data-dow="2" onclick="toggleWorkDay(event,this)">Tu</button>
+            <button class="day-btn" data-dow="3" onclick="toggleWorkDay(event,this)">We</button>
+            <button class="day-btn" data-dow="4" onclick="toggleWorkDay(event,this)">Th</button>
+            <button class="day-btn" data-dow="5" onclick="toggleWorkDay(event,this)">Fr</button>
+            <button class="day-btn" data-dow="6" onclick="toggleWorkDay(event,this)">Sa</button>
+          </div>
+        </div>
+      </label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+      <button class="btn btn-primary btn-sm" onclick="saveWorkSchedule()">Save</button>
+    </div>
+  </div>
+
+  <!-- Google Calendar import -->
+  <div class="section-card">
+    <div class="section-title">📅 Import from Google Calendar</div>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px;">
+      Paste your Google Calendar's iCal URL to automatically mark your event days as busy.
+      In Google Calendar: ⚙ Settings → your calendar → "Secret address in iCal format".
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="ical-import-url" type="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"
+        style="flex:1;min-width:0;font-size:12px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:monospace;color:var(--text);">
+      <button class="btn btn-primary btn-sm" onclick="importIcal()">Import</button>
+    </div>
+    <div id="ical-import-status" style="margin-top:8px;font-size:12px;color:var(--muted);display:none;"></div>
+  </div>
+
   <!-- Connections -->
   <div class="section-card">
     <div class="section-title">My connections</div>
@@ -191,6 +242,10 @@ if (!MY_TOKEN) { window.location.href = '/login'; }
   document.getElementById('profile-coparent-name').value = user.coparent_name || '';
   document.getElementById('profile-coparent-phone').value = user.coparent_phone || '';
   document.getElementById('profile-partner-phone').value = user.partner_phone || '';
+
+  if (user.work_schedule) {
+    try { loadWorkSchedule(JSON.parse(user.work_schedule)); } catch(e) {}
+  }
 
   await loadConnections();
   await loadSchedule();
@@ -287,6 +342,104 @@ async function saveSchedule() {
   } else {
     const err = await res.json().catch(() => ({}));
     showToast(err.error || 'Save failed — please try again');
+  }
+}
+
+// ── Work schedule ─────────────────────────────────────────────────────────
+let workScheduleType = 'none';
+
+function selectWorkType(type, labelEl) {
+  workScheduleType = type;
+  document.querySelectorAll('#work-type-group label').forEach(l => l.style.borderColor = 'var(--border)');
+  labelEl.style.borderColor = 'var(--blue)';
+  labelEl.querySelector('input').checked = true;
+  document.getElementById('custom-work-picker').style.display = type === 'custom' ? 'flex' : 'none';
+}
+
+function toggleWorkDay(e, btn) {
+  e.stopPropagation();
+  btn.classList.toggle('selected');
+}
+
+function loadWorkSchedule(ws) {
+  if (!ws) return;
+  const type = ws.type || 'none';
+  const days = ws.days || [];
+  workScheduleType = type;
+  document.querySelectorAll('#work-type-group label').forEach(l => {
+    const radio = l.querySelector('input');
+    if (radio && radio.value === type) {
+      radio.checked = true;
+      l.style.borderColor = 'var(--blue)';
+    }
+  });
+  if (type === 'custom') {
+    document.getElementById('custom-work-picker').style.display = 'flex';
+    document.querySelectorAll('#custom-work-picker .day-btn').forEach(btn => {
+      btn.classList.toggle('selected', days.includes(parseInt(btn.dataset.dow)));
+    });
+  }
+}
+
+async function saveWorkSchedule() {
+  let payload;
+  if (workScheduleType === 'standard_weekdays') {
+    payload = { type: 'standard_weekdays' };
+  } else if (workScheduleType === 'custom') {
+    const days = [...document.querySelectorAll('#custom-work-picker .day-btn.selected')]
+      .map(b => parseInt(b.dataset.dow));
+    payload = { type: 'custom', days };
+  } else {
+    payload = { type: 'none' };
+  }
+  const res = await fetch(`/api/me?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ work_schedule: payload })
+  });
+  if (res.ok) showToast('✓ Work schedule saved');
+  else showToast('Failed to save work schedule');
+}
+
+// ── Google Calendar iCal import ────────────────────────────────────────────
+async function importIcal() {
+  const url = document.getElementById('ical-import-url').value.trim();
+  if (!url) { showToast('Paste an iCal URL first'); return; }
+
+  const statusEl = document.getElementById('ical-import-status');
+  statusEl.textContent = 'Fetching calendar…';
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--muted)';
+
+  const res = await fetch(`/api/ical/import?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    statusEl.textContent = '⚠ ' + (err.error || 'Could not fetch that URL — check it and try again');
+    statusEl.style.color = '#c62828';
+    return;
+  }
+
+  const { dates, count } = await res.json();
+  // Store as work_schedule type:'ical' with dates + ical_url
+  const saveRes = await fetch(`/api/me?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ work_schedule: { type: 'ical', dates, ical_url: url } })
+  });
+
+  if (saveRes.ok) {
+    statusEl.textContent = `✓ Imported ${count} event days over the next 90 days — those days are now marked as busy.`;
+    statusEl.style.color = '#2e7d32';
+    workScheduleType = 'ical';
+    showToast(`✓ Calendar imported — ${count} busy days set`);
+  } else {
+    statusEl.textContent = 'Import fetched but failed to save — try again';
+    statusEl.style.color = '#c62828';
   }
 }
 

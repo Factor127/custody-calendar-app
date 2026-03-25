@@ -691,11 +691,11 @@ router.get('/me', (req, res) => {
   res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null, work_schedule: user.work_schedule || null });
 });
 
-// PUT /api/me — update profile (name, mobile, coparent_name)
+// PUT /api/me — update profile (name, mobile, coparent_name, work_schedule)
 router.put('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  const { name, mobile, coparent_name, coparent_phone, partner_phone } = req.body;
+  const { name, mobile, coparent_name, coparent_phone, partner_phone, work_schedule } = req.body;
   if (name && name.trim()) {
     q.updateUserProfile.run(name.trim(), mobile ? mobile.trim() : null, user.id);
   } else if (mobile !== undefined) {
@@ -710,7 +710,49 @@ router.put('/me', (req, res) => {
   if (partner_phone !== undefined) {
     db.prepare('UPDATE users SET partner_phone = ? WHERE id = ?').run(partner_phone ? partner_phone.trim() : null, user.id);
   }
+  if (work_schedule !== undefined) {
+    db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?')
+      .run(work_schedule ? JSON.stringify(work_schedule) : null, user.id);
+  }
   res.json({ ok: true });
+});
+
+// POST /api/ical/import — fetch an iCal URL server-side and return event dates
+router.post('/ical/import', async (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const { url } = req.body;
+  if (!url || !url.startsWith('http')) return res.status(400).json({ error: 'Valid URL required' });
+
+  let text;
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return res.status(502).json({ error: `Could not fetch calendar (HTTP ${r.status})` });
+    text = await r.text();
+  } catch (e) {
+    return res.status(502).json({ error: 'Could not reach that URL — check it is public and correct' });
+  }
+
+  // Minimal iCal parser — extract DTSTART dates from VEVENT blocks
+  const today = new Date();
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 90);
+  const todayStr = today.toISOString().slice(0, 10);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+  const dates = new Set();
+  const vevents = text.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+  for (const ev of vevents) {
+    // Match DTSTART with or without TZID, date-only or datetime
+    const m = ev.match(/DTSTART[^:\n]*:(\d{8})/);
+    if (!m) continue;
+    const raw = m[1];
+    const ds = `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`;
+    if (ds >= todayStr && ds <= cutoffStr) dates.add(ds);
+  }
+
+  const dateArr = [...dates].sort();
+  res.json({ dates: dateArr, count: dateArr.length });
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

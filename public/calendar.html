@@ -415,6 +415,7 @@
 
 <div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
   <div class="social-cal-title">Who's free when you're free</div>
+  <div id="next-free-banner" style="display:none;font-size:12px;font-weight:700;color:#e65100;background:rgba(230,81,0,0.08);padding:6px 14px;border-radius:8px;margin:0 0 10px;text-align:center;"></div>
 
   <div class="strip-wrap">
     <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
@@ -795,6 +796,7 @@ function isWorkBlock(date) {
   if (!myWorkSchedule || myWorkSchedule.type === 'none') return false;
   if (myWorkSchedule.type === 'standard_weekdays') return dow >= 1 && dow <= 5;
   if (myWorkSchedule.type === 'custom') return (myWorkSchedule.days || []).includes(dow);
+  if (myWorkSchedule.type === 'ical') return (myWorkSchedule.dates || []).includes(toDateStr(date));
   return false;
 }
 
@@ -819,15 +821,25 @@ function updateNextTime() {
   if (!hasSocial) return;
   renderStrip();
 
-  // Headline: next day I'm free AND at least one social connection is also free
+  // Banner: next day I'm free AND at least one social connection is also free
   const today = new Date(); today.setHours(0,0,0,0);
   let found = null; let foundPeople = [];
   for (let i = 0; i < 90; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const ds = toDateStr(d);
     if (calendarDays[ds]?.owner !== 'coparent' || isWorkBlock(d)) continue;
-    const free = socialConnections.filter(sc => sc.days[ds]?.owner === 'coparent');
+    const free = socialConnections.filter(sc => (sc.days || {})[ds]?.owner === 'coparent');
     if (free.length > 0) { found = d; foundPeople = free; break; }
+  }
+  const banner = document.getElementById('next-free-banner');
+  if (banner) {
+    if (found) {
+      const names = foundPeople.map(p => p.name).join(' & ');
+      banner.textContent = `Next free together: ${conversationalDate(toDateStr(found))} with ${names}`;
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
 }
