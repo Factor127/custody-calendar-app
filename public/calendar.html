@@ -780,6 +780,7 @@ let friendColorIndex = 0;
 
 // Outings
 let myOutings = [];
+let myIncomingOutings = [];
 let inviteSelectedDate = null;
 let inviteSelectedPeople = new Set(); // set of connection userIds
 let inviteWaSentFlags = {};           // userId → true/false
@@ -2118,14 +2119,23 @@ function inviteStep3() {
   const msg = document.getElementById('invite-msg-area').value.trim();
   if (!msg) { showToast('Add a message first'); return; }
 
-  // Build WA queue
   const selected = socialConnections.filter(sc => inviteSelectedPeople.has(sc.userId));
-  const queueEl  = document.getElementById('invite-wa-queue');
+
+  // ── Fire system invite immediately (parallel with WhatsApp) ──────────────
+  const invitees = selected.map(sc => ({ userId: sc.userId, name: sc.name, phone: sc.phone || null }));
+  fetch(`/api/outings?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: inviteSelectedDate, message: msg, invitees })
+  }).then(r => { if (r.ok) loadOutings(); });
+
+  // ── Build WhatsApp queue ─────────────────────────────────────────────────
+  const queueEl = document.getElementById('invite-wa-queue');
   document.getElementById('inv-queue-desc').textContent =
     `Sending to ${selected.length} person${selected.length !== 1 ? 's' : ''}`;
 
   queueEl.innerHTML = selected.map(sc => {
-    const phone = sc.phone || null; // phone stored on the connection if available
+    const phone = sc.phone || null;
     const waUrl = phone
       ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -2150,43 +2160,23 @@ function markInviteWaSent(userId) {
   if (badge) badge.style.display = 'inline';
 }
 
-async function saveOutingAndClose() {
-  if (!inviteSelectedDate || inviteSelectedPeople.size === 0) {
-    closeModal('social-invite-modal');
-    return;
-  }
-  const msg      = document.getElementById('invite-msg-area').value.trim();
-  const selected = socialConnections.filter(sc => inviteSelectedPeople.has(sc.userId));
-  const invitees = selected.map(sc => ({
-    userId: sc.userId,
-    name:   sc.name,
-    phone:  sc.phone || null
-  }));
-
-  const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date: inviteSelectedDate, message: msg, invitees })
-  });
-
+function saveOutingAndClose() {
+  // Outing was already saved when the WhatsApp queue was built (step 3).
+  // This button just closes the modal and surfaces the plans panel.
   closeModal('social-invite-modal');
-  if (res.ok) {
-    showToast('✓ Outing saved! Check the Plans panel.');
-    await loadOutings();
-    // Open the plans panel so they see it
-    document.getElementById('notif-panel').classList.add('open');
-  } else {
-    showToast('Failed to save outing');
-  }
+  showToast('✓ Plans panel updated!');
+  document.getElementById('notif-panel').classList.add('open');
 }
 
 // ── Load outings ───────────────────────────────────────────────────────────
 async function loadOutings() {
   try {
-    const res = await fetch(`/api/outings?token=${MY_TOKEN}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    myOutings = data.outings || [];
+    const [myRes, inRes] = await Promise.all([
+      fetch(`/api/outings?token=${MY_TOKEN}`),
+      fetch(`/api/outings/incoming?token=${MY_TOKEN}`)
+    ]);
+    if (myRes.ok) { const d = await myRes.json(); myOutings = d.outings || []; }
+    if (inRes.ok) { const d = await inRes.json(); myIncomingOutings = d.outings || []; }
     renderNotifPanel();
   } catch(e) {}
 }
@@ -2200,6 +2190,19 @@ async function setInviteeStatus(outingId, inviteeId, status) {
   if (res.ok) {
     await loadOutings();
     showToast(status === 'accepted' ? '🎉 Marked as yes!' : 'Marked as declined');
+  }
+}
+
+// Invitee responds to an incoming plan invite
+async function respondToIncomingOuting(outingId, inviteeRecordId, status) {
+  const res = await fetch(`/api/outings/${outingId}/invitees/${inviteeRecordId}?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (res.ok) {
+    await loadOutings();
+    showToast(status === 'accepted' ? "🎉 You're in! They'll see your yes." : "Got it — declined.");
   }
 }
 
@@ -2252,12 +2255,40 @@ function renderNotifPanel() {
   if (!list) return;
 
   const relevant = myActivities.filter(a => a.status !== 'cancelled');
-  if (relevant.length === 0 && myOutings.length === 0) {
+  if (relevant.length === 0 && myOutings.length === 0 && myIncomingOutings.length === 0) {
     list.innerHTML = '<div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet.<br>Tap a day in the social calendar to invite someone!</div>';
     return;
   }
 
-  const outingHtml = myOutings.map(o => {
+  // ── Incoming plan invites (sent to me by others) ─────────────────────────
+  const incomingHtml = myIncomingOutings.length === 0 ? '' : `
+    <div style="padding:10px 14px 4px;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">
+      Invites for you
+    </div>
+    ${myIncomingOutings.map(o => {
+      const dateLabel = conversationalDate(o.date);
+      const statusColour = o.my_invitee_status === 'accepted' ? '#2e7d32' : o.my_invitee_status === 'declined' ? '#c62828' : '#e65100';
+      const statusLabel  = o.my_invitee_status === 'accepted' ? '✓ Going' : o.my_invitee_status === 'declined' ? '✗ Declined' : '⏳ Pending';
+      const actions = o.my_invitee_status === 'pending' ? `
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn btn-sm" style="flex:1;background:#e8f5e9;color:#2e7d32;border:none;border-radius:8px;padding:5px 0;font-size:12px;font-weight:700;cursor:pointer;"
+            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','accepted')">✓ I'm in!</button>
+          <button class="btn btn-sm" style="flex:1;background:#fce4ec;color:#c62828;border:none;border-radius:8px;padding:5px 0;font-size:12px;font-weight:700;cursor:pointer;"
+            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','declined')">Can't make it</button>
+        </div>` : '';
+      return `<div class="notif-item notif-outing" style="border-left:3px solid ${statusColour};">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div class="notif-item-title">🗓 ${o.creator_name} → ${dateLabel}</div>
+          <span style="font-size:10px;font-weight:700;color:${statusColour};">${statusLabel}</span>
+        </div>
+        ${o.message ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;">"${o.message}"</div>` : ''}
+        ${actions}
+      </div>`;
+    }).join('')}
+    <div style="height:1px;background:var(--border);margin:6px 0 2px;"></div>
+  `;
+
+  const outingHtml = myOutings.length === 0 ? '' : myOutings.map(o => {
     const dateLabel = conversationalDate(o.date);
     const hasAccepted = o.invitees.some(i => i.status === 'accepted');
     const inviteesHtml = o.invitees.map(i =>
@@ -2335,7 +2366,7 @@ function renderNotifPanel() {
     </div>`;
   }).join('');
 
-  list.innerHTML = outingHtml + activityHtml;
+  list.innerHTML = incomingHtml + outingHtml + activityHtml;
 }
 
 function toggleNotifPanel() {

@@ -331,6 +331,13 @@ const q = {
   createOutingInvitee:   db.prepare('INSERT INTO outing_invitees (id, outing_id, user_id, name, phone) VALUES (?, ?, ?, ?, ?)'),
   getOutingInvitees:     db.prepare('SELECT * FROM outing_invitees WHERE outing_id = ?'),
   updateInviteeStatus:   db.prepare('UPDATE outing_invitees SET status = ? WHERE id = ?'),
+  getOutingsAsInvitee:   db.prepare(`
+    SELECT o.*, oi.id AS invitee_record_id, oi.status AS my_invitee_status
+    FROM outings o
+    JOIN outing_invitees oi ON oi.outing_id = o.id
+    WHERE oi.user_id = ?
+    ORDER BY o.date ASC
+  `),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────

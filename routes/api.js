@@ -993,6 +993,19 @@ router.get('/outings', (req, res) => {
   res.json({ outings: result });
 });
 
+// GET /api/outings/incoming — outings where I am an invitee (partner sees plans sent to them)
+router.get('/outings/incoming', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outings = q.getOutingsAsInvitee.all(me.id);
+  const result = outings.map(o => {
+    const creator = q.getUserById.get(o.created_by);
+    return { ...o, creator_name: creator?.name || 'Someone' };
+  });
+  res.json({ outings: result });
+});
+
 // PUT /api/outings/:id/invitees/:inviteeId — update one invitee's status
 router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
   const me = requireToken(req, res);
