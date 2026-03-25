@@ -84,6 +84,7 @@
     .day-card .dc-num  { font-size:39px; font-weight:800; line-height:1.1; color:var(--text); }
     .day-card.match .dc-num { color:#e65100; }
     .day-card .dc-free { font-size:13px; font-weight:800; color:#e65100; text-transform:uppercase; letter-spacing:0.06em; margin-top:3px; }
+    .day-card .dc-plan-it { font-size:10px; font-weight:800; color:#e65100; text-transform:uppercase; letter-spacing:0.05em; margin-top:5px; background:rgba(230,81,0,0.12); padding:2px 8px; border-radius:10px; }
     .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
 
     /* ── Mini custody calendar card ──────────────────────────────────────── */
@@ -107,6 +108,7 @@
       .day-card .dc-name { font-size:9px; }
       .day-card .dc-num  { font-size:22px; }
       .day-card .dc-free { font-size:8px; }
+      .day-card .dc-plan-it { font-size:7px; padding:1px 5px; }
       .person-bubble { width:13px; height:13px; font-size:7px; }
       #social-calendar-section { padding:14px 10px 12px; }
       .social-cal-title { font-size:15px; }
@@ -735,6 +737,7 @@ const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 let myUserId = null;
 let myName = 'Me';
 let myCoparentInitial = 'C';
+let myWorkSchedule = { type: 'none' };
 let myCoparentPhone = null;
 let partnerMobile = null;
 
@@ -786,6 +789,14 @@ let myActivities = [];
 let activitiesByDate = {};
 let activityModalDates = [];
 
+function isWorkBlock(date) {
+  const dow = date.getDay(); // 0=Sun, 6=Sat
+  if (!myWorkSchedule || myWorkSchedule.type === 'none') return false;
+  if (myWorkSchedule.type === 'standard_weekdays') return dow >= 1 && dow <= 5;
+  if (myWorkSchedule.type === 'custom') return (myWorkSchedule.days || []).includes(dow);
+  return false;
+}
+
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -813,7 +824,7 @@ function updateNextTime() {
   for (let i = 0; i < 90; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const ds = toDateStr(d);
-    if (calendarDays[ds]?.owner !== 'coparent') continue;
+    if (calendarDays[ds]?.owner !== 'coparent' || isWorkBlock(d)) continue;
     const free = socialConnections.filter(sc => sc.days[ds]?.owner === 'coparent');
     if (free.length > 0) { found = d; foundPeople = free; break; }
   }
@@ -836,7 +847,7 @@ function renderStrip() {
     d.setDate(today.getDate() + stripOffset + i);
     const ds = toDateStr(d);
 
-    const myFree  = calendarDays[ds]?.owner === 'coparent';
+    const myFree  = calendarDays[ds]?.owner === 'coparent' && !isWorkBlock(d);
     const freePeople = socialConnections.filter(sc => sc.days[ds]?.owner === 'coparent');
     const isMatch = myFree && freePeople.length > 0;
     const isToday = ds === todayStr;
@@ -864,13 +875,15 @@ function renderStrip() {
       ? `onclick="openSocialInviteModal('${ds}')" onmouseenter="showFreeTooltip(event,'${ds}')" onmouseleave="hideFreeTooltip()" style="cursor:pointer;"`
       : '';
 
-    const freeLabel = myFree ? `<div class="dc-free">I'm free</div>` : `<div style="min-height:12px;"></div>`;
+    const freeLabel   = myFree ? `<div class="dc-free">I'm free</div>` : `<div style="min-height:12px;"></div>`;
+    const planItBadge = isMatch ? `<div class="dc-plan-it">Plan →</div>` : '';
     html += `<div class="${cls}" ${cardAttrs}>
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
       ${freeLabel}
       ${actTitle}
       ${bubbleHtml}
+      ${planItBadge}
     </div>`;
   }
 
@@ -916,6 +929,7 @@ function nextMonth() {
   if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
   myCoparentPhone = me.coparent_phone || null;
   partnerMobile   = me.partner_phone  || null;
+  myWorkSchedule = me.work_schedule ? JSON.parse(me.work_schedule) : { type: 'none' };
 
   localStorage.setItem('myToken', MY_TOKEN);
 
