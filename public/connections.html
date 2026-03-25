@@ -229,10 +229,13 @@ function renderConnectionsList() {
     const until         = untilParts.length ? ' · ' + untilParts.join(' · ') : '';
     const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : '') : '';
 
-    const isPartner = c.relationship_type === 'partner';
-    const relBadge  = isPartner
-      ? `<button class="badge" onclick="toggleConnectionRole('${c.id}','coparent')" title="Click to change to Co-parent" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">❤️ Partner</button>`
-      : `<button class="badge" onclick="toggleConnectionRole('${c.id}','partner')" title="Click to change to Partner" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👨‍👩‍👧 Co-parent</button>`;
+    const relType = c.relationship_type || 'coparent';
+    const nextRole = relType === 'coparent' ? 'partner' : relType === 'partner' ? 'friend' : 'coparent';
+    const relBadge = relType === 'partner'
+      ? `<button class="badge" onclick="toggleConnectionRole('${c.id}','${nextRole}')" title="Click to change type" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">❤️ Partner</button>`
+      : relType === 'friend'
+      ? `<button class="badge" onclick="toggleConnectionRole('${c.id}','${nextRole}')" title="Click to change type" style="background:#e8f5e9;color:#2e7d32;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👋 Friend</button>`
+      : `<button class="badge" onclick="toggleConnectionRole('${c.id}','${nextRole}')" title="Click to change type" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👨‍👩‍👧 Co-parent</button>`;
 
     let actions = '';
     if (c.i_am_target && c.status === 'pending') {
@@ -320,8 +323,8 @@ async function toggleAutoRenew(connId, newVal) {
 }
 
 async function toggleConnectionRole(connId, newRole) {
-  const label = newRole === 'partner' ? 'Partner ❤️' : 'Co-parent 👨‍👩‍👧';
-  if (!confirm(`Change this person's role to ${label}?`)) return;
+  const label = newRole === 'partner' ? 'Partner ❤️' : newRole === 'friend' ? 'Friend 👋' : 'Co-parent 👨‍👩‍👧';
+  if (!confirm(`Change this person's type to ${label}?`)) return;
   const res = await fetch(`/api/connections/${connId}/role?token=${MY_TOKEN}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ relationship_type: newRole })
