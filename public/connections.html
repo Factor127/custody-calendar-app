@@ -142,9 +142,10 @@
   <div class="modal">
     <h2>Generate Invite Link</h2>
     <p class="text-muted" style="margin-bottom:14px;">Who are you inviting?</p>
-    <div style="display:flex;gap:10px;margin-bottom:16px;">
-      <button id="invite-btn-coparent" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="selectInviteType('coparent')">👨‍👩‍👧 Co-parent</button>
-      <button id="invite-btn-partner"  class="btn btn-outline" style="flex:1;justify-content:center;" onclick="selectInviteType('partner')">❤️ My partner</button>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <button id="invite-btn-coparent" class="btn btn-primary" style="flex:1;min-width:80px;justify-content:center;" onclick="selectInviteType('coparent')">👨‍👩‍👧 Co-parent</button>
+      <button id="invite-btn-partner"  class="btn btn-outline" style="flex:1;min-width:80px;justify-content:center;" onclick="selectInviteType('partner')">❤️ Partner</button>
+      <button id="invite-btn-friend"   class="btn btn-outline" style="flex:1;min-width:80px;justify-content:center;" onclick="selectInviteType('friend')">👋 Friend</button>
     </div>
     <div id="invite-link-section" style="display:none;">
       <label class="field-label">Share this link:</label>
@@ -357,6 +358,8 @@ function openInviteModal() {
   document.getElementById('invite-link-input').value = '';
   document.getElementById('invite-btn-coparent').className = 'btn btn-primary';
   document.getElementById('invite-btn-partner').className  = 'btn btn-outline';
+  if (document.getElementById('invite-btn-friend'))
+    document.getElementById('invite-btn-friend').className = 'btn btn-outline';
   document.getElementById('invite-modal').classList.add('open');
 }
 
@@ -364,6 +367,8 @@ async function selectInviteType(type) {
   selectedInviteType = type;
   document.getElementById('invite-btn-coparent').className = type === 'coparent' ? 'btn btn-primary' : 'btn btn-outline';
   document.getElementById('invite-btn-partner').className  = type === 'partner'  ? 'btn btn-primary' : 'btn btn-outline';
+  if (document.getElementById('invite-btn-friend'))
+    document.getElementById('invite-btn-friend').className = type === 'friend'   ? 'btn btn-primary' : 'btn btn-outline';
 
   const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

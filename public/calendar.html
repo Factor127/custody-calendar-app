@@ -87,6 +87,75 @@
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
 
     td.suggest-proposed { outline: 2.5px dashed var(--orange) !important; background: #fff8e1 !important; }
+    /* Partner free-day teal stripe on calendar cells */
+    td.partner-free::before {
+      content:''; position:absolute; top:3px; bottom:3px; left:2px;
+      width:3px; border-radius:2px; background:#00bcd4; opacity:0.7;
+    }
+    td { position:relative; }
+
+    /* Social calendar section */
+    #social-calendar-section {
+      background: linear-gradient(135deg, #fff8f0 0%, #fef3e2 100%);
+      border: 1.5px solid #ffcc80;
+      border-radius: 16px;
+      padding: 20px 18px 18px;
+      box-shadow: 0 4px 24px rgba(255,152,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .social-cal-title {
+      font-size: 18px; font-weight: 900; color: #bf360c; margin: 0 0 2px;
+      letter-spacing: -0.01em;
+    }
+    .social-cal-sub {
+      font-size: 12px; color: #e65100; margin: 0 0 14px; font-style: italic;
+    }
+    .social-next-headline {
+      font-size: 14px; font-weight: 800; color: #3e2723; margin-bottom: 10px;
+    }
+    .social-next-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #bf360c; margin-bottom: 3px;
+    }
+
+    /* Letter bubbles in strip */
+    .bubble-cluster {
+      display: flex; align-items: center; justify-content: flex-end;
+      margin-top: 4px; min-height: 16px;
+    }
+    .person-bubble {
+      width: 16px; height: 16px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 900; color: white;
+      border: 1.5px solid white; flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .person-bubble + .person-bubble { margin-left: -5px; }
+
+    /* Partner toggle pill in show-bar */
+    .partner-pill {
+      background: #e0f7fa; color: #00838f;
+      border: 1.5px solid #00bcd4; border-radius: 20px;
+      padding: 2px 10px; font-size: 11px; font-weight: 700;
+      cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .partner-pill input { cursor: pointer; }
+
+    /* Custody balance inside calendar frame */
+    .custody-balance-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 8px 12px; border-top: 1px solid var(--border);
+      background: #f8f9fa; border-radius: 0 0 10px 10px;
+      font-size: 11px;
+    }
+    .custody-balance-bar .bal-label { font-weight: 700; color: var(--muted); }
+    .custody-balance-bar .bal-swatch { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink:0; }
+    .custody-balance-bar .bal-name { font-weight: 700; }
+    .custody-balance-bar .bal-count { font-weight: 800; }
+    .custody-balance-bar .bal-diff { color: var(--muted); font-style: italic; margin-left: 4px; }
 
     .cal-show-bar { display:flex; gap:16px; flex-wrap:wrap; padding:8px 12px; background:#f8f9fa; border-radius:0 0 10px 10px; border:1px solid var(--border); border-top:none; margin-bottom:14px; }
     .cal-show-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
@@ -295,78 +364,57 @@
 </div>
 <!-- Show options bar — inside calendar section -->
 <div class="cal-show-bar">
-  <label class="cal-show-item">
-    <input type="checkbox" id="toggle-partner" checked onchange="toggleClass('hide-partner',!this.checked)">
-    <span id="partner-toggle-label">Partner days</span>
+  <label class="partner-pill" id="partner-pill-wrap" style="display:none;">
+    <input type="checkbox" id="toggle-partner" checked onchange="togglePartnerOverlay(this.checked)">
+    <span id="partner-toggle-label">Partner</span>
   </label>
   <label class="cal-show-item">
     <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
-    <span>Both free frames</span>
+    <span>Both free</span>
   </label>
 </div>
 
-<!-- Custody Balance — below calendar -->
-<div class="summary" style="margin-top:14px;">
-  <span class="bold" style="font-size:15px;">Custody Balance:</span>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--r);"></span>
-    <span class="bold" id="owner-name-label">Me:</span>
-    <span class="summary-count" style="color:#1e8e3e;" id="r-count">— days</span>
-  </div>
-  <div class="summary-stat">
-    <span class="summary-swatch" style="background:var(--z);"></span>
-    <span class="bold">Co-parent:</span>
-    <span class="summary-count" style="color:#1967d2;" id="z-count">— days</span>
-  </div>
-  <div class="summary-stat" style="margin-left:8px;">
-    <span class="bold">Difference:</span>
-    <span class="summary-count" id="difference" style="color:var(--muted);">—</span>
-  </div>
+<!-- Custody balance — attached below calendar grid -->
+<div class="custody-balance-bar">
+  <span class="bal-label">Balance:</span>
+  <span class="bal-swatch" style="background:var(--r);"></span>
+  <span class="bal-name" id="owner-name-label">Me</span>
+  <span class="bal-count" style="color:#1e8e3e;" id="r-count">—</span>
+  <span style="color:var(--border);">·</span>
+  <span class="bal-swatch" style="background:var(--z);"></span>
+  <span class="bal-name">Co-parent</span>
+  <span class="bal-count" style="color:#1967d2;" id="z-count">—</span>
+  <span class="bal-diff" id="difference"></span>
 </div>
 
 
 </div><!-- /.cal-section -->
 
-<h2 class="section-heading" id="next-free-title">Next Free Time</h2>
+<div id="social-calendar-section" style="display:none;">
+  <div class="social-cal-title">My social calendar</div>
+  <div class="social-cal-sub">when do I match free time with the people I like?</div>
 
-<div class="cal-section">
+  <div class="social-next-label" id="social-next-label">NEXT MATCH</div>
+  <div class="social-next-headline" id="social-next-headline">—</div>
 
-<!-- "Next time I see you" — scrolling day strip -->
-<div id="next-time-section" style="margin-bottom:20px;">
-  <div class="next-time-label" id="next-time-label">Next time both you & your partner are free</div>
-  <div class="next-time-headline" id="next-time-headline">—</div>
-
-  <!-- Connected: scrolling strip -->
-  <div id="next-time-connected" class="hidden">
-    <div class="strip-wrap">
-      <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
-      <div id="day-strip"></div>
-      <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
-    </div>
-    <div class="strip-range" id="strip-range"></div>
+  <div class="strip-wrap" style="margin-top:10px;">
+    <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
+    <div id="day-strip"></div>
+    <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
   </div>
-
-  <!-- Locked: blurred placeholder + CTA -->
-  <div id="next-time-locked">
-    <div style="position:relative;border-radius:10px;overflow:hidden;">
-      <div style="display:flex;gap:5px;filter:blur(3px);opacity:0.45;pointer-events:none;">
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Mon</div><div class="dc-num">24</div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Tue</div><div class="dc-num">25</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Wed</div><div class="dc-num">26</div></div>
-        <div class="day-card match" style="flex:1;"><div class="dc-name">Thu</div><div class="dc-num">27</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Fri</div><div class="dc-num">28</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sat</div><div class="dc-num">29</div></div>
-        <div class="day-card dim" style="flex:1;"><div class="dc-name">Sun</div><div class="dc-num">30</div></div>
-      </div>
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.82);backdrop-filter:blur(2px);gap:8px;border-radius:10px;">
-        <div style="font-size:13px;font-weight:700;color:#202124;">Invite a partner to see your free time together</div>
-        <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">Invite my partner</button>
-      </div>
-    </div>
-  </div>
+  <div class="strip-range" id="strip-range"></div>
 </div>
 
-</div><!-- /.cal-section (next-time) -->
+<!-- Locked: show when no social connections -->
+<div id="social-calendar-locked" style="max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
+  <div class="social-cal-title" style="margin-bottom:6px;">My social calendar</div>
+  <div class="social-cal-sub" style="margin-bottom:16px;">when do I match free time with the people I like?</div>
+  <div style="font-size:13px;color:#6d4c41;margin-bottom:14px;">Invite a friend or partner to see your matching free time</div>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">❤️ Invite partner</button>
+    <button class="btn btn-outline btn-sm" onclick="openInviteModal();selectInviteType('friend')" style="border-color:#ffcc80;color:#bf360c;">👋 Invite friend</button>
+  </div>
+</div>
 
 
 <!-- Notification / Activity side panel -->
@@ -437,12 +485,15 @@
     <!-- Step 1: who are you inviting? -->
     <div id="invite-type-picker">
       <p class="text-muted" style="margin-bottom:14px;">Who are you inviting?</p>
-      <div style="display:flex;gap:10px;margin-bottom:8px;">
-        <button id="invite-btn-coparent" class="btn btn-primary" style="flex:1;justify-content:center;" onclick="selectInviteType('coparent')">
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <button id="invite-btn-coparent" class="btn btn-primary" style="flex:1;min-width:80px;justify-content:center;" onclick="selectInviteType('coparent')">
           👨‍👩‍👧 Co-parent
         </button>
-        <button id="invite-btn-partner" class="btn btn-outline" style="flex:1;justify-content:center;" onclick="selectInviteType('partner')">
-          ❤️ My partner
+        <button id="invite-btn-partner" class="btn btn-outline" style="flex:1;min-width:80px;justify-content:center;" onclick="selectInviteType('partner')">
+          ❤️ Partner
+        </button>
+        <button id="invite-btn-friend" class="btn btn-outline" style="flex:1;min-width:80px;justify-content:center;" onclick="selectInviteType('friend')">
+          👋 Friend
         </button>
       </div>
       <p id="invite-type-desc" class="text-muted" style="font-size:12px;margin:0 0 16px;">
@@ -643,6 +694,11 @@ let currentViewYear = null;
 let currentViewMonth = null;
 let stripOffset = 0;
 
+// Social connections (partner + friends) for the social calendar strip
+let socialConnections = []; // [{id, name, initial, color, type, days:{}}]
+const FRIEND_COLORS = ['#ff7043','#9c27b0','#ff9800','#43a047','#e91e63','#1565c0'];
+let friendColorIndex = 0;
+
 // Activities
 let myActivities = [];
 let activitiesByDate = {};
@@ -661,30 +717,33 @@ function scrollStrip(delta) {
 }
 
 function updateNextTime() {
-  const hasPartner = !!partnerConn;
-  document.getElementById('next-time-connected').classList.toggle('hidden', !hasPartner);
-  document.getElementById('next-time-locked').style.display = hasPartner ? 'none' : 'block';
-  if (!hasPartner) {
-    document.getElementById('next-time-headline').textContent = '—';
-    return;
-  }
+  const hasSocial = socialConnections.length > 0;
+  document.getElementById('social-calendar-section').style.display = hasSocial ? 'block' : 'none';
+  document.getElementById('social-calendar-locked').style.display  = hasSocial ? 'none'  : 'block';
+
+  if (!hasSocial) return;
   renderStrip();
-  // Headline: find next matching free day within 90 days
+
+  // Headline: next day I'm free AND at least one social connection is also free
   const today = new Date(); today.setHours(0,0,0,0);
-  let found = null;
+  let found = null; let foundPeople = [];
   for (let i = 0; i < 90; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
     const ds = toDateStr(d);
-    const withinWindow = !partnerWindowUntil || ds <= partnerWindowUntil;
-    if (calendarDays[ds]?.owner === 'coparent' && withinWindow && partnerDays[ds]?.owner === 'coparent') { found = d; break; }
+    if (calendarDays[ds]?.owner !== 'coparent') continue;
+    const free = socialConnections.filter(sc => sc.days[ds]?.owner === 'coparent');
+    if (free.length > 0) { found = d; foundPeople = free; break; }
   }
+
+  const headlineEl = document.getElementById('social-next-headline');
   if (found) {
     const daysAway = Math.round((found - today) / 86400000);
     const label = daysAway === 0 ? 'Today 🎉' : daysAway === 1 ? 'Tomorrow ✨' : `${daysAway} days away`;
     const dn = found.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-    document.getElementById('next-time-headline').textContent = `${dn} · ${label}`;
+    const names = foundPeople.map(p => p.name).join(' & ');
+    headlineEl.textContent = `${dn} · ${label} · with ${names}`;
   } else {
-    document.getElementById('next-time-headline').textContent = 'No overlap in the next 90 days';
+    headlineEl.textContent = 'No overlapping free time in the next 90 days';
   }
 }
 
@@ -697,7 +756,6 @@ function renderStrip() {
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayStr = toDateStr(today);
-
   let html = '';
 
   for (let i = 0; i < 7; i++) {
@@ -705,31 +763,36 @@ function renderStrip() {
     d.setDate(today.getDate() + stripOffset + i);
     const ds = toDateStr(d);
 
-    // Only show match highlight within partner's approved window
-    const withinWindow = !partnerWindowUntil || ds <= partnerWindowUntil;
-    const myFree     = calendarDays[ds]?.owner === 'coparent';
-    const partFree   = withinWindow && (partnerDays[ds]?.owner === 'coparent');
-    const isMatch    = myFree && partFree;
-    const isToday    = ds === todayStr;
-    const actOnDay   = activitiesByDate[ds];
+    const myFree  = calendarDays[ds]?.owner === 'coparent';
+    const freePeople = socialConnections.filter(sc => sc.days[ds]?.owner === 'coparent');
+    const isMatch = myFree && freePeople.length > 0;
+    const isToday = ds === todayStr;
+    const actOnDay = activitiesByDate[ds];
 
     const cls = ['day-card',
-      isMatch ? 'match' : 'dim',
+      isMatch ? 'match' : (myFree ? '' : 'dim'),
       isToday ? 'strip-today' : '',
       actOnDay ? 'act-glow' : ''
     ].filter(Boolean).join(' ');
 
     const actTitle = actOnDay
-      ? `<div style="font-size:8px;font-weight:700;color:#e65100;margin-top:2px;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px;">${actOnDay.title}</div>`
+      ? `<div style="font-size:8px;font-weight:700;color:#e65100;margin-top:1px;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px;">${actOnDay.title}</div>`
       : '';
 
-    // ALL days are clickable if a partner is connected
+    // Bubble cluster — show up to 4 overlapping circles
+    const shownPeople = freePeople.slice(0, 4);
+    const bubbles = shownPeople.map(p =>
+      `<div class="person-bubble" style="background:${p.color};">${p.initial}</div>`
+    ).join('');
+    const bubbleHtml = bubbles ? `<div class="bubble-cluster">${bubbles}</div>` : `<div style="min-height:16px;"></div>`;
+
     const clickAttr = partnerConn ? `onclick="openActivityModal('${ds}')" style="cursor:pointer;"` : '';
 
     html += `<div class="${cls}" ${clickAttr}>
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
       ${actTitle}
+      ${bubbleHtml}
     </div>`;
   }
 
@@ -737,7 +800,7 @@ function renderStrip() {
 
   const s = new Date(today); s.setDate(today.getDate() + stripOffset);
   const e = new Date(today); e.setDate(today.getDate() + stripOffset + 6);
-  const fmt = d => d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  const fmt = dt => dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
   if (rangeEl) rangeEl.textContent = `${fmt(s)} – ${fmt(e)}`;
 
   const prev = document.getElementById('strip-prev');
@@ -794,14 +857,17 @@ function nextMonth() {
   partnerConn  = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner') || null;
   coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
 
-  // Update UI labels based on connections
-  if (partnerConn) {
-    document.getElementById('next-free-title').textContent = 'Next Free Time With ' + partnerConn.other_name;
-    document.getElementById('next-time-label').textContent = `Next time both you & ${partnerConn.other_name} are free`;
-  }
-
   // Load partner overlay if connected
   if (partnerConn) await loadPartnerOverlay();
+
+  // Load social calendars (partner + friends) for the strip
+  await loadSocialCalendars();
+
+  // Show partner pill toggle in calendar bar
+  if (partnerConn) {
+    document.getElementById('partner-toggle-label').textContent = `Partner · ${partnerConn.other_name}`;
+    document.getElementById('partner-pill-wrap').style.display = 'inline-flex';
+  }
 
   updateNextTime();
   await loadActivities();
@@ -970,12 +1036,39 @@ async function loadPartnerOverlay() {
     } catch(e) {}
   }
 
-  document.getElementById('next-free-title').textContent = `Next Free Time With ${partnerName}`;
-  document.getElementById('next-time-label').textContent  = `Next time both you & ${partnerName} are free`;
-  const ptl = document.getElementById('partner-toggle-label');
-  if (ptl) ptl.textContent = `${partnerName}'s days`;
-
   renderCalendar();
+}
+
+// ── Load social calendars (partner + friends) for the strip ───────────────
+async function loadSocialCalendars() {
+  socialConnections = [];
+  friendColorIndex  = 0;
+  const eligible = allConnections.filter(c =>
+    c.status === 'approved' &&
+    (c.relationship_type === 'partner' || c.relationship_type === 'friend')
+  );
+
+  await Promise.all(eligible.map(async conn => {
+    const color = conn.relationship_type === 'partner'
+      ? '#00bcd4'
+      : FRIEND_COLORS[friendColorIndex++ % FRIEND_COLORS.length];
+    try {
+      const res = await fetch(`/api/calendar/${conn.other_user_id}?token=${MY_TOKEN}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const days = {};
+      for (const day of data.days) days[day.date] = { owner: day.owner };
+      socialConnections.push({
+        id:     conn.id,
+        userId: conn.other_user_id,
+        name:   conn.other_name,
+        initial:(conn.other_name || '?')[0].toUpperCase(),
+        color,
+        type:   conn.relationship_type,
+        days
+      });
+    } catch(e) { /* skip if unreachable */ }
+  }));
 }
 
 // ── Render calendar (single month) ────────────────────────────────────────
@@ -1104,10 +1197,12 @@ function refreshCell(cell, date) {
   const isToday = date === today;
 
   const withinWinR = !partnerWindowUntil || date <= partnerWindowUntil;
+  const partnerFree = withinWinR && pDay?.owner === 'coparent';
   cell.className = [
     owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
     isToday ? 'today' : '',
-    (owner === 'coparent' && withinWinR && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+    partnerFree ? 'partner-free' : '',
+    (owner === 'coparent' && partnerFree) ? 'bothfree' : ''
   ].filter(Boolean).join(' ');
   cell.dataset.date = date;
 
@@ -1320,14 +1415,21 @@ function openInviteModal() {
 function selectInviteType(type) {
   _inviteType = type;
   const isPartner = type === 'partner';
-  document.getElementById('invite-btn-coparent').className = isPartner ? 'btn btn-outline' : 'btn btn-primary';
+  const isFriend  = type === 'friend';
+  document.getElementById('invite-btn-coparent').className = type === 'coparent' ? 'btn btn-primary' : 'btn btn-outline';
   document.getElementById('invite-btn-coparent').style.flex = '1';
   document.getElementById('invite-btn-coparent').style.justifyContent = 'center';
   document.getElementById('invite-btn-partner').className = isPartner ? 'btn btn-primary' : 'btn btn-outline';
   document.getElementById('invite-btn-partner').style.flex = '1';
   document.getElementById('invite-btn-partner').style.justifyContent = 'center';
+  if (document.getElementById('invite-btn-friend')) {
+    document.getElementById('invite-btn-friend').className = isFriend ? 'btn btn-primary' : 'btn btn-outline';
+    document.getElementById('invite-btn-friend').style.cssText = isFriend ? 'flex:1;min-width:80px;justify-content:center;' : 'flex:1;min-width:80px;justify-content:center;';
+  }
   document.getElementById('invite-type-desc').textContent = isPartner
     ? 'They set up their own custody calendar and you\'ll both see when you\'re both free — your "next time I see you" view.'
+    : isFriend
+    ? 'They\'ll join your social calendar so you can see when you\'re both free to hang out.'
     : 'They\'ll set up their custody schedule and you\'ll both see when the kids are with each of you.';
 }
 
@@ -1440,6 +1542,12 @@ async function approveRequest() {
     partnerConn  = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'partner') || null;
     coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
     if (partnerConn) await loadPartnerOverlay();
+    await loadSocialCalendars();
+    if (partnerConn) {
+      document.getElementById('partner-toggle-label').textContent = `Partner · ${partnerConn.other_name}`;
+      document.getElementById('partner-pill-wrap').style.display = 'inline-flex';
+    }
+    updateNextTime();
     renderCalendar();
   } else {
     alert('Failed to approve');
@@ -1488,8 +1596,10 @@ async function revokeConnection(connId) {
     coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
     partnerDays = {};
     partnerUserId = null;
-    renderCalendar();
+    document.getElementById('partner-pill-wrap').style.display = 'none';
+    await loadSocialCalendars();
     updateNextTime();
+    renderCalendar();
   } else { showToast('Failed to disconnect'); }
 }
 
@@ -2017,6 +2127,15 @@ function closeActivityWaModal() {
 
 // ── Utilities ─────────────────────────────────────────────────────────────
 function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
+
+function togglePartnerOverlay(checked) {
+  toggleClass('hide-partner', !checked);
+  // Also show/hide the teal partner-free stripes
+  document.querySelectorAll('td.partner-free').forEach(td => {
+    td.style.setProperty('--pf-opacity', checked ? '0.7' : '0');
+  });
+}
+
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 

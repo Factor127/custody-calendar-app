@@ -270,8 +270,8 @@ router.post('/invites/generate', (req, res) => {
   if (!user) return;
 
   // Partners may only generate partner-type invites
-  const relType = (user.role === 'partner' || req.body.relationship_type === 'partner')
-    ? 'partner'
+  const relType = ['partner', 'friend'].includes(req.body.relationship_type)
+    ? req.body.relationship_type
     : 'coparent';
 
   const token = uuidv4();
@@ -497,8 +497,8 @@ router.put('/connections/:id/role', (req, res) => {
   if (!user) return;
 
   const { relationship_type } = req.body;
-  if (!['coparent', 'partner'].includes(relationship_type)) {
-    return res.status(400).json({ error: 'relationship_type must be coparent or partner' });
+  if (!['coparent', 'partner', 'friend'].includes(relationship_type)) {
+    return res.status(400).json({ error: 'relationship_type must be coparent, partner, or friend' });
   }
 
   const conn = q.getConnectionById.get(req.params.id);
