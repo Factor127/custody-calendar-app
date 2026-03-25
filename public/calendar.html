@@ -68,24 +68,50 @@
       border-radius:50%; background:#e53935; border:2px solid white;
     }
     .notif-dot.hidden { display:none; }
-    /* ── Day strip (same as partner.html) ───────────────────────────────── */
+    /* ── Day strip ───────────────────────────────────────────────────────── */
     .strip-wrap    { display:flex; align-items:center; gap:6px; }
     .strip-nav     { flex-shrink:0; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); background:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .strip-nav:hover:not(:disabled) { background:#f0f4ff; }
     .strip-nav:disabled { opacity:0.3; cursor:default; }
     #day-strip     { flex:1; display:flex; gap:5px; overflow:hidden; }
-    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:11px 4px 9px; border-radius:12px; border:1.5px solid var(--border); background:white; transition:opacity .15s; min-height:78px; }
+    /* PC: 50% bigger cards */
+    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:16px 6px 14px; border-radius:12px; border:1.5px solid var(--border); background:white; transition:opacity .15s; min-height:117px; }
     .day-card.match { background:#fff3e0; border-color:var(--orange); }
     .day-card.dim   { opacity:.38; transform:scale(0.88); border-color:transparent; background:transparent; }
     .day-card.strip-today { border-color:var(--blue); }
     .day-card.strip-today.dim { border-color:var(--blue); background:white; }
-    .day-card .dc-name { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
-    .day-card .dc-num  { font-size:26px; font-weight:800; line-height:1.1; color:var(--text); }
+    .day-card .dc-name { font-size:16px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+    .day-card .dc-num  { font-size:39px; font-weight:800; line-height:1.1; color:var(--text); }
     .day-card.match .dc-num { color:#e65100; }
-    .day-card .dc-free { font-size:9px; font-weight:800; color:#e65100; text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
+    .day-card .dc-free { font-size:13px; font-weight:800; color:#e65100; text-transform:uppercase; letter-spacing:0.06em; margin-top:3px; }
     .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
-    .next-time-label   { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
-    .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
+
+    /* ── Mini custody calendar card ──────────────────────────────────────── */
+    .mini-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .mini-card-month  { font-weight:800; font-size:15px; color:var(--text); }
+    .mini-card-edit   { color:var(--blue); font-size:13px; font-weight:700; }
+    .mini-cal-wrap    { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+    .mini-dow  { font-size:9px; font-weight:700; color:var(--muted); text-align:center; padding:2px 0 4px; text-transform:uppercase; letter-spacing:0.04em; }
+    .mini-cell { border-radius:5px; min-height:30px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3px 1px; }
+    .mini-cell.mini-self    { background:var(--r); }
+    .mini-cell.mini-coparent { background:var(--z); }
+    .mini-cell.mini-today   { outline:2px solid var(--blue); outline-offset:-2px; }
+    .mini-num  { font-size:11px; font-weight:700; color:var(--text); line-height:1.2; }
+    .mini-dots { display:flex; gap:2px; margin-top:2px; justify-content:center; flex-wrap:wrap; }
+    .mini-dot  { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .mini-card-footer { font-size:11px; color:var(--muted); margin-top:8px; text-align:center; border-top:1px solid var(--border); padding-top:8px; }
+
+    /* ── Mobile overrides ────────────────────────────────────────────────── */
+    @media (max-width:520px) {
+      .day-card      { padding:8px 3px 7px; min-height:72px; border-radius:9px; }
+      .day-card .dc-name { font-size:9px; }
+      .day-card .dc-num  { font-size:22px; }
+      .day-card .dc-free { font-size:8px; }
+      .person-bubble { width:13px; height:13px; font-size:7px; }
+      #social-calendar-section { padding:14px 10px 12px; }
+      .social-cal-title { font-size:15px; }
+      .strip-nav { width:22px; height:22px; font-size:12px; }
+    }
 
     td.suggest-proposed { outline: 2.5px dashed var(--orange) !important; background: #fff8e1 !important; }
     /* Partner free-day teal stripe on calendar cells */
@@ -108,18 +134,8 @@
       margin-right: auto;
     }
     .social-cal-title {
-      font-size: 18px; font-weight: 900; color: #bf360c; margin: 0 0 2px;
-      letter-spacing: -0.01em;
-    }
-    .social-cal-sub {
-      font-size: 12px; color: #e65100; margin: 0 0 14px; font-style: italic;
-    }
-    .social-next-headline {
-      font-size: 14px; font-weight: 800; color: #3e2723; margin-bottom: 10px;
-    }
-    .social-next-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: #bf360c; margin-bottom: 3px;
+      font-size: 18px; font-weight: 900; color: #bf360c; margin: 0 0 12px;
+      letter-spacing: -0.01em; text-align: center;
     }
 
     /* Letter bubbles in strip */
@@ -351,9 +367,9 @@
 
     /* ── Compact custody card ────────────────────────────────────────── */
     .cal-compact-card {
-      max-width:680px; margin:0 auto 16px; padding:14px 18px;
+      max-width:680px; margin:0 auto 16px; padding:14px 18px 12px;
       background:white; border:1.5px solid var(--border); border-radius:12px;
-      cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+      cursor:pointer; display:block;
       box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:box-shadow .15s;
     }
     .cal-compact-card:hover { box-shadow:0 4px 20px rgba(0,0,0,0.13); }
@@ -398,10 +414,7 @@
 <div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
   <div class="social-cal-title">Who's free when you're free</div>
 
-  <div class="social-next-label" id="social-next-label">NEXT MATCH</div>
-  <div class="social-next-headline" id="social-next-headline">—</div>
-
-  <div class="strip-wrap" style="margin-top:10px;">
+  <div class="strip-wrap">
     <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
     <div id="day-strip"></div>
     <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
@@ -421,16 +434,14 @@
 </div>
 
 
-<!-- Compact custody card — click to open full calendar modal -->
+<!-- Compact custody card — shows mini calendar, click opens full modal -->
 <div class="cal-compact-card" onclick="openCalendarModal()">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div style="font-size:22px;">📅</div>
-    <div>
-      <div style="font-weight:800;font-size:15px;" id="compact-month-label">Custody Calendar</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="compact-balance-label">Tap to view &amp; edit</div>
-    </div>
+  <div class="mini-card-header">
+    <div id="compact-month-label" class="mini-card-month">📅 Custody Calendar</div>
+    <div class="mini-card-edit">View &amp; Edit →</div>
   </div>
-  <div style="color:var(--blue);font-size:13px;font-weight:700;">View &amp; Edit →</div>
+  <div id="mini-cal-grid" class="mini-cal-wrap"></div>
+  <div id="compact-balance-label" class="mini-card-footer">Loading…</div>
 </div>
 
 <!-- Notification / Activity side panel -->
@@ -791,6 +802,7 @@ function updateNextTime() {
   const hasSocial = socialConnections.length > 0;
   document.getElementById('social-calendar-section').style.display = hasSocial ? 'block' : 'none';
   document.getElementById('social-calendar-locked').style.display  = hasSocial ? 'none'  : 'block';
+  renderMiniCal(); // refresh dots whenever social connections load/change
 
   if (!hasSocial) return;
   renderStrip();
@@ -806,16 +818,6 @@ function updateNextTime() {
     if (free.length > 0) { found = d; foundPeople = free; break; }
   }
 
-  const headlineEl = document.getElementById('social-next-headline');
-  if (found) {
-    const daysAway = Math.round((found - today) / 86400000);
-    const label = daysAway === 0 ? 'Today 🎉' : daysAway === 1 ? 'Tomorrow ✨' : `${daysAway} days away`;
-    const dn = found.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-    const names = foundPeople.map(p => p.name).join(' & ');
-    headlineEl.textContent = `${dn} · ${label} · with ${names}`;
-  } else {
-    headlineEl.textContent = 'No overlapping free time in the next 90 days';
-  }
 }
 
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -862,7 +864,7 @@ function renderStrip() {
       ? `onclick="openSocialInviteModal('${ds}')" onmouseenter="showFreeTooltip(event,'${ds}')" onmouseleave="hideFreeTooltip()" style="cursor:pointer;"`
       : '';
 
-    const freeLabel = myFree ? `<div class="dc-free">Free</div>` : `<div style="min-height:12px;"></div>`;
+    const freeLabel = myFree ? `<div class="dc-free">I'm free</div>` : `<div style="min-height:12px;"></div>`;
     html += `<div class="${cls}" ${cardAttrs}>
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
@@ -1150,6 +1152,51 @@ async function loadSocialCalendars() {
   }));
 }
 
+// ── Mini calendar grid (compact card) ─────────────────────────────────────
+function renderMiniCal() {
+  const grid = document.getElementById('mini-cal-grid');
+  if (!grid) return;
+
+  const today = new Date();
+  const y = currentViewYear !== null ? currentViewYear : today.getFullYear();
+  const m = currentViewMonth !== null ? currentViewMonth : today.getMonth();
+  const todayStr = toDateStr(today);
+
+  const DOW = ['S','M','T','W','T','F','S'];
+  let html = DOW.map(d => `<div class="mini-dow">${d}</div>`).join('');
+
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) html += `<div class="mini-cell"></div>`;
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const owner = (calendarDays[ds] || {}).owner;
+    const isToday = ds === todayStr;
+
+    let cls = 'mini-cell';
+    if (owner === 'self')     cls += ' mini-self';
+    if (owner === 'coparent') cls += ' mini-coparent';
+    if (isToday)              cls += ' mini-today';
+
+    // Dots: show each social connection that is free on this day
+    let dots = '';
+    for (const conn of socialConnections) {
+      if ((conn.days || {})[ds]?.owner === 'coparent') {
+        dots += `<div class="mini-dot" style="background:${conn.color};"></div>`;
+      }
+    }
+
+    html += `<div class="${cls}">
+      <div class="mini-num">${day}</div>
+      ${dots ? `<div class="mini-dots">${dots}</div>` : ''}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
 // ── Render calendar (single month) ────────────────────────────────────────
 function renderCalendar() {
   const container = document.getElementById('calendar-container');
@@ -1218,6 +1265,7 @@ function renderCalendar() {
   html += '</tbody></table></div>';
   container.innerHTML = html;
   calculateCustodyDays();
+  renderMiniCal();
 }
 
 // ── Click handler ─────────────────────────────────────────────────────────
