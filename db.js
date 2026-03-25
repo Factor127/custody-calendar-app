@@ -154,6 +154,26 @@ db.exec(`
   );
 `);
 
+db.exec(`CREATE TABLE IF NOT EXISTS outings (
+  id TEXT PRIMARY KEY,
+  created_by TEXT NOT NULL,
+  date TEXT NOT NULL,
+  message TEXT,
+  status TEXT DEFAULT 'pending',
+  venue TEXT,
+  event_time TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS outing_invitees (
+  id TEXT PRIMARY KEY,
+  outing_id TEXT NOT NULL,
+  user_id TEXT,
+  name TEXT NOT NULL,
+  phone TEXT,
+  status TEXT DEFAULT 'pending'
+)`);
+
 // Ensure email index exists on the (possibly just-created) users table
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* ignore */ }
 
@@ -302,6 +322,14 @@ const q = {
     "UPDATE activities SET status = ?, responded_at = datetime('now') WHERE id = ?"
   ),
   deleteActivity: db.prepare('DELETE FROM activities WHERE id = ?'),
+
+  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message) VALUES (?, ?, ?, ?)'),
+  getOutingsForUser:     db.prepare('SELECT * FROM outings WHERE created_by = ? ORDER BY date ASC'),
+  getOutingById:         db.prepare('SELECT * FROM outings WHERE id = ?'),
+  updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ? WHERE id = ?'),
+  createOutingInvitee:   db.prepare('INSERT INTO outing_invitees (id, outing_id, user_id, name, phone) VALUES (?, ?, ?, ?, ?)'),
+  getOutingInvitees:     db.prepare('SELECT * FROM outing_invitees WHERE outing_id = ?'),
+  updateInviteeStatus:   db.prepare('UPDATE outing_invitees SET status = ? WHERE id = ?'),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────

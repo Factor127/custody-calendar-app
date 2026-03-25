@@ -288,6 +288,65 @@
       border-color:var(--orange);
     }
     td.act-accepted { box-shadow:inset 0 0 0 3px #43a047, 0 0 8px rgba(67,160,71,0.25); }
+
+    /* ── Free-time tooltip ───────────────────────────────────────────── */
+    .free-tooltip {
+      position:fixed; z-index:600; background:#202124; color:white;
+      padding:7px 12px; border-radius:10px; font-size:12px; font-weight:600;
+      pointer-events:none; white-space:nowrap;
+      box-shadow:0 4px 20px rgba(0,0,0,0.28);
+      display:flex; flex-direction:column; gap:3px;
+    }
+    .free-tooltip::after {
+      content:''; position:absolute; bottom:-6px; left:50%;
+      transform:translateX(-50%);
+      border:6px solid transparent; border-top-color:#202124; border-bottom:none;
+    }
+    .free-tooltip-name { display:flex; align-items:center; gap:6px; }
+    .free-tooltip-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+    /* ── Social invite modal ─────────────────────────────────────────── */
+    #social-invite-modal .modal { padding:0; overflow:hidden; max-width:420px; }
+    .invite-step-indicator { display:flex; justify-content:center; gap:8px; padding:16px 0 0; }
+    .invite-step-dot { width:8px; height:8px; border-radius:50%; background:var(--border); transition:background .2s; }
+    .invite-step-dot.active { background:var(--blue); }
+    .invite-slider-outer { overflow:hidden; }
+    .invite-slider { display:flex; transition:transform .32s cubic-bezier(.4,0,.2,1); }
+    .invite-step { width:100%; flex-shrink:0; padding:20px 24px 24px; box-sizing:border-box; }
+    .person-select-row {
+      display:flex; align-items:center; gap:10px; padding:10px 0;
+      border-bottom:1px solid var(--border); cursor:pointer; user-select:none;
+    }
+    .person-select-row:last-child { border-bottom:none; }
+    .person-select-row.dimmed { opacity:.45; cursor:default; }
+    .person-select-check { width:18px; height:18px; border-radius:4px; border:2px solid var(--border);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.15s; }
+    .person-select-check.checked { background:var(--blue); border-color:var(--blue); color:white; font-size:12px; }
+    .person-bubble-lg { width:32px; height:32px; border-radius:50%; color:white; font-size:13px;
+      font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .free-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px;
+      background:#e8f5e9; color:#2e7d32; margin-left:auto; }
+    .busy-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px;
+      background:#f5f5f5; color:#9e9e9e; margin-left:auto; }
+    #invite-msg-area { width:100%; min-height:80px; padding:10px; border:1.5px solid var(--border);
+      border-radius:8px; font-size:14px; font-family:inherit; resize:vertical; box-sizing:border-box; }
+    #invite-msg-area:focus { outline:none; border-color:var(--blue); }
+    .wa-queue-item { display:flex; align-items:center; gap:10px; padding:10px 0;
+      border-bottom:1px solid var(--border); }
+    .wa-queue-item:last-child { border-bottom:none; }
+    .wa-sent-badge { font-size:10px; font-weight:700; color:#43a047; margin-left:auto; }
+
+    /* ── Outing in notif panel ───────────────────────────────────────── */
+    .notif-outing { border-left:3px solid #ff7043 !important; }
+    .outing-invitee-row { display:flex; align-items:center; gap:6px; font-size:11px; margin:3px 0; }
+    .status-pill { font-size:10px; padding:1px 7px; border-radius:8px; font-weight:700; }
+    .status-pill.pending  { background:#fff3e0; color:#e65100; }
+    .status-pill.accepted { background:#e8f5e9; color:#2e7d32; }
+    .status-pill.declined { background:#fce4ec; color:#c62828; }
+    .plan-it-wrap { margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+    .plan-it-fields { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+    .plan-it-fields input { flex:1; min-width:100px; padding:5px 8px; border:1.5px solid var(--border);
+      border-radius:6px; font-size:12px; font-family:inherit; }
   </style>
 </head>
 <body>
@@ -625,6 +684,55 @@
   </div>
 </div>
 
+<!-- Social invite modal (3-step: select → message → WhatsApp queue) -->
+<div class="modal-overlay" id="social-invite-modal">
+  <div class="modal">
+    <div class="invite-step-indicator">
+      <div class="invite-step-dot active" id="inv-dot-1"></div>
+      <div class="invite-step-dot" id="inv-dot-2"></div>
+      <div class="invite-step-dot" id="inv-dot-3"></div>
+    </div>
+    <div class="invite-slider-outer">
+      <div class="invite-slider" id="invite-slider">
+
+        <!-- Step 1: who to invite -->
+        <div class="invite-step">
+          <h2 style="margin:0 0 4px;font-size:17px;">Who do you want to invite?</h2>
+          <p id="inv-date-label" class="text-muted" style="margin:0 0 14px;font-size:13px;"></p>
+          <div id="invite-person-list"></div>
+          <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn btn-outline" onclick="closeModal('social-invite-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="inviteStep2()">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 2: message editor -->
+        <div class="invite-step">
+          <h2 style="margin:0 0 4px;font-size:17px;">Your message</h2>
+          <p class="text-muted" style="margin:0 0 10px;font-size:12px;">Edit before sending</p>
+          <textarea id="invite-msg-area"></textarea>
+          <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn btn-outline" onclick="inviteStep1()">← Back</button>
+            <button class="btn btn-primary" onclick="inviteStep3()">Send via WhatsApp →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: WhatsApp queue -->
+        <div class="invite-step">
+          <h2 style="margin:0 0 4px;font-size:17px;">Send messages</h2>
+          <p id="inv-queue-desc" class="text-muted" style="margin:0 0 14px;font-size:12px;"></p>
+          <div id="invite-wa-queue"></div>
+          <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn btn-outline" onclick="inviteStep2()">← Back</button>
+            <button class="btn btn-primary" onclick="saveOutingAndClose()">Done ✓</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Activity WhatsApp modal -->
 <div id="activity-whatsapp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1060;align-items:center;justify-content:center;padding:16px;">
   <div style="background:white;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
@@ -698,6 +806,12 @@ let stripOffset = 0;
 let socialConnections = []; // [{id, name, initial, color, type, days:{}}]
 const FRIEND_COLORS = ['#ff7043','#9c27b0','#ff9800','#43a047','#e91e63','#1565c0'];
 let friendColorIndex = 0;
+
+// Outings
+let myOutings = [];
+let inviteSelectedDate = null;
+let inviteSelectedPeople = new Set(); // set of connection userIds
+let inviteWaSentFlags = {};           // userId → true/false
 
 // Activities
 let myActivities = [];
@@ -786,9 +900,12 @@ function renderStrip() {
     ).join('');
     const bubbleHtml = bubbles ? `<div class="bubble-cluster">${bubbles}</div>` : `<div style="min-height:16px;"></div>`;
 
-    const clickAttr = partnerConn ? `onclick="openActivityModal('${ds}')" style="cursor:pointer;"` : '';
+    const hasSocial = socialConnections.length > 0;
+    const cardAttrs = hasSocial
+      ? `onclick="openSocialInviteModal('${ds}')" onmouseenter="showFreeTooltip(event,'${ds}')" onmouseleave="hideFreeTooltip()" style="cursor:pointer;"`
+      : '';
 
-    html += `<div class="${cls}" ${clickAttr}>
+    html += `<div class="${cls}" ${cardAttrs}>
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
       ${actTitle}
@@ -870,7 +987,7 @@ function nextMonth() {
   }
 
   updateNextTime();
-  await loadActivities();
+  await Promise.all([loadActivities(), loadOutings()]);
 
   // Check for pending suggestions (notifications dot)
   const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
@@ -1855,6 +1972,200 @@ async function showWhatsappModal(note) {
   }
 }
 
+// ── Conversational date helper ─────────────────────────────────────────────
+function conversationalDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((d - today) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  const names = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  if (diff >= 2 && diff <= 6) return 'this ' + names[d.getDay()];
+  if (diff === 7) return 'next ' + names[d.getDay()];
+  return 'on ' + d.toLocaleDateString('en-US', { month:'long', day:'numeric' });
+}
+
+// ── Free-time tooltip ──────────────────────────────────────────────────────
+let _tooltip = null;
+function showFreeTooltip(e, dateStr) {
+  hideFreeTooltip();
+  const free = socialConnections.filter(sc => sc.days[dateStr]?.owner === 'coparent');
+  if (free.length === 0) return;
+  const t = document.createElement('div');
+  t.className = 'free-tooltip';
+  t.innerHTML = free.map(p =>
+    `<div class="free-tooltip-name"><div class="free-tooltip-dot" style="background:${p.color};"></div>${p.name} is free</div>`
+  ).join('');
+  document.body.appendChild(t);
+  _tooltip = t;
+  const rect = e.currentTarget.getBoundingClientRect();
+  t.style.left = (rect.left + rect.width / 2 - t.offsetWidth / 2) + 'px';
+  t.style.top  = (rect.top - t.offsetHeight - 10 + window.scrollY) + 'px';
+}
+function hideFreeTooltip() {
+  if (_tooltip) { _tooltip.remove(); _tooltip = null; }
+}
+
+// ── Social invite modal ────────────────────────────────────────────────────
+function openSocialInviteModal(dateStr) {
+  inviteSelectedDate   = dateStr;
+  inviteSelectedPeople = new Set();
+  inviteWaSentFlags    = {};
+
+  document.getElementById('inv-date-label').textContent = conversationalDate(dateStr);
+  document.getElementById('invite-msg-area').value =
+    `up to doing something ${conversationalDate(dateStr)}?`;
+
+  // Build person list
+  const listEl = document.getElementById('invite-person-list');
+  listEl.innerHTML = socialConnections.map(sc => {
+    const isFree = sc.days[dateStr]?.owner === 'coparent';
+    const dimmed = !isFree ? ' dimmed' : '';
+    const tag = isFree
+      ? `<span class="free-tag">Free</span>`
+      : `<span class="busy-tag">Busy</span>`;
+    return `<div class="person-select-row${dimmed}" id="prow-${sc.userId}"
+        onclick="${isFree ? `toggleInvitePerson('${sc.userId}')` : ''}">
+      <div class="person-select-check" id="pcheck-${sc.userId}"></div>
+      <div class="person-bubble-lg" style="background:${sc.color};">${sc.initial}</div>
+      <span style="font-size:14px;font-weight:600;">${sc.name}</span>
+      ${tag}
+    </div>`;
+  }).join('');
+
+  // Reset slider to step 1
+  inviteGoToStepRaw(1);
+  document.getElementById('social-invite-modal').classList.add('open');
+}
+
+function toggleInvitePerson(userId) {
+  if (inviteSelectedPeople.has(userId)) {
+    inviteSelectedPeople.delete(userId);
+  } else {
+    inviteSelectedPeople.add(userId);
+  }
+  const check = document.getElementById(`pcheck-${userId}`);
+  if (check) {
+    check.classList.toggle('checked', inviteSelectedPeople.has(userId));
+    check.textContent = inviteSelectedPeople.has(userId) ? '✓' : '';
+  }
+}
+
+function inviteGoToStepRaw(step) {
+  const slider = document.getElementById('invite-slider');
+  if (slider) slider.style.transform = `translateX(${(step - 1) * -100}%)`;
+  [1,2,3].forEach(n => {
+    document.getElementById(`inv-dot-${n}`)?.classList.toggle('active', n === step);
+  });
+}
+
+function inviteStep1() { inviteGoToStepRaw(1); }
+
+function inviteStep2() {
+  if (inviteSelectedPeople.size === 0) { showToast('Select at least one person'); return; }
+  inviteGoToStepRaw(2);
+}
+
+function inviteStep3() {
+  const msg = document.getElementById('invite-msg-area').value.trim();
+  if (!msg) { showToast('Add a message first'); return; }
+
+  // Build WA queue
+  const selected = socialConnections.filter(sc => inviteSelectedPeople.has(sc.userId));
+  const queueEl  = document.getElementById('invite-wa-queue');
+  document.getElementById('inv-queue-desc').textContent =
+    `Sending to ${selected.length} person${selected.length !== 1 ? 's' : ''}`;
+
+  queueEl.innerHTML = selected.map(sc => {
+    const phone = sc.phone || null; // phone stored on the connection if available
+    const waUrl = phone
+      ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    return `<div class="wa-queue-item" id="wa-row-${sc.userId}">
+      <div class="person-bubble-lg" style="background:${sc.color};">${sc.initial}</div>
+      <span style="font-size:14px;font-weight:600;flex:1;">${sc.name}</span>
+      <span class="wa-sent-badge" id="wa-sent-${sc.userId}" style="display:none;">✓ Sent</span>
+      <a href="${waUrl}" target="_blank" rel="noopener"
+         class="btn btn-primary btn-sm" style="background:#25d366;border-color:#25d366;white-space:nowrap;"
+         onclick="markInviteWaSent('${sc.userId}')">
+        📱 Send →
+      </a>
+    </div>`;
+  }).join('');
+
+  inviteGoToStepRaw(3);
+}
+
+function markInviteWaSent(userId) {
+  inviteWaSentFlags[userId] = true;
+  const badge = document.getElementById(`wa-sent-${userId}`);
+  if (badge) badge.style.display = 'inline';
+}
+
+async function saveOutingAndClose() {
+  if (!inviteSelectedDate || inviteSelectedPeople.size === 0) {
+    closeModal('social-invite-modal');
+    return;
+  }
+  const msg      = document.getElementById('invite-msg-area').value.trim();
+  const selected = socialConnections.filter(sc => inviteSelectedPeople.has(sc.userId));
+  const invitees = selected.map(sc => ({
+    userId: sc.userId,
+    name:   sc.name,
+    phone:  sc.phone || null
+  }));
+
+  const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: inviteSelectedDate, message: msg, invitees })
+  });
+
+  closeModal('social-invite-modal');
+  if (res.ok) {
+    showToast('✓ Outing saved! Check the Plans panel.');
+    await loadOutings();
+    // Open the plans panel so they see it
+    document.getElementById('notif-panel').classList.add('open');
+  } else {
+    showToast('Failed to save outing');
+  }
+}
+
+// ── Load outings ───────────────────────────────────────────────────────────
+async function loadOutings() {
+  try {
+    const res = await fetch(`/api/outings?token=${MY_TOKEN}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    myOutings = data.outings || [];
+    renderNotifPanel();
+  } catch(e) {}
+}
+
+async function setInviteeStatus(outingId, inviteeId, status) {
+  const res = await fetch(`/api/outings/${outingId}/invitees/${inviteeId}?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (res.ok) {
+    await loadOutings();
+    showToast(status === 'accepted' ? '🎉 Marked as yes!' : 'Marked as declined');
+  }
+}
+
+async function saveOutingPlan(outingId) {
+  const venue = document.getElementById(`venue-${outingId}`)?.value.trim() || null;
+  const time  = document.getElementById(`time-${outingId}`)?.value.trim() || null;
+  const res = await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ venue, event_time: time, status: 'planning' })
+  });
+  if (res.ok) { showToast('✓ Plan saved!'); await loadOutings(); }
+}
+
 // ── Activity plans ─────────────────────────────────────────────────────────
 async function loadActivities() {
   try {
@@ -1893,12 +2204,46 @@ function renderNotifPanel() {
   if (!list) return;
 
   const relevant = myActivities.filter(a => a.status !== 'cancelled');
-  if (relevant.length === 0) {
-    list.innerHTML = '<div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet.<br>Tap a matching day in the strip to suggest one!</div>';
+  if (relevant.length === 0 && myOutings.length === 0) {
+    list.innerHTML = '<div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet.<br>Tap a day in the social calendar to invite someone!</div>';
     return;
   }
 
-  list.innerHTML = relevant.map(a => {
+  const outingHtml = myOutings.map(o => {
+    const dateLabel = conversationalDate(o.date);
+    const hasAccepted = o.invitees.some(i => i.status === 'accepted');
+    const inviteesHtml = o.invitees.map(i =>
+      `<div class="outing-invitee-row">
+        <span style="font-weight:600;font-size:11px;">${i.name}</span>
+        <span class="status-pill ${i.status}">${i.status === 'pending' ? 'waiting' : i.status === 'accepted' ? '✓ yes!' : '✗ no'}</span>
+        <div style="margin-left:auto;display:flex;gap:4px;">
+          ${i.status !== 'accepted' ? `<button class="btn btn-sm" style="padding:1px 7px;font-size:10px;background:#e8f5e9;color:#2e7d32;border:none;border-radius:6px;cursor:pointer;" onclick="setInviteeStatus('${o.id}','${i.id}','accepted')">Yes</button>` : ''}
+          ${i.status !== 'declined' ? `<button class="btn btn-sm" style="padding:1px 7px;font-size:10px;background:#fce4ec;color:#c62828;border:none;border-radius:6px;cursor:pointer;" onclick="setInviteeStatus('${o.id}','${i.id}','declined')">No</button>` : ''}
+        </div>
+      </div>`
+    ).join('');
+
+    const planItHtml = hasAccepted ? `
+      <div class="plan-it-wrap" id="plan-wrap-${o.id}">
+        <div style="font-size:12px;font-weight:700;color:#e65100;">🎉 Someone said yes! Firm it up:</div>
+        <div class="plan-it-fields">
+          <input id="venue-${o.id}" placeholder="📍 Where?" value="${o.venue || ''}">
+          <input id="time-${o.id}"  placeholder="🕐 What time?" value="${o.event_time || ''}">
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveOutingPlan('${o.id}')">Save plan</button>
+      </div>` : '';
+
+    return `<div class="notif-item notif-outing">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+        <div class="notif-item-title">🎉 Outing ${dateLabel}</div>
+        <span class="status-pill ${o.status}" style="font-size:10px;">${o.status}</span>
+      </div>
+      ${inviteesHtml}
+      ${planItHtml}
+    </div>`;
+  }).join('');
+
+  const activityHtml = relevant.map(a => {
     const isMine = a.from_user_id === myUserId;
     const otherName = isMine ? a.to_name : a.from_name;
     const dateStr = a.dates.map(d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})).join(', ');
@@ -1936,13 +2281,13 @@ function renderNotifPanel() {
         ${statusBadge}
       </div>
       <div class="notif-item-sub">
-        ${isMine ? '→ ' : '← '} ${otherName}<br>
-        📅 ${dateStr}<br>
-        ${linkHtml}
+        ${linkHtml}with ${otherName} · ${dateStr}
       </div>
       ${actions}
     </div>`;
   }).join('');
+
+  list.innerHTML = outingHtml + activityHtml;
 }
 
 function toggleNotifPanel() {

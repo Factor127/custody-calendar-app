@@ -959,4 +959,66 @@ router.post('/calendar/notify-change', async (req, res) => {
   res.json({ ok: true, notified: !!other?.email });
 });
 
+// ── Outings ───────────────────────────────────────────────────────────────
+
+// POST /api/outings — create a new outing with invitees
+router.post('/outings', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const { date, message, invitees } = req.body;
+  if (!date || !Array.isArray(invitees) || invitees.length === 0) {
+    return res.status(400).json({ error: 'date and invitees required' });
+  }
+
+  const outingId = uuidv4();
+  q.createOuting.run(outingId, me.id, date, message || null);
+
+  for (const inv of invitees) {
+    const invId = uuidv4();
+    q.createOutingInvitee.run(invId, outingId, inv.userId || null, inv.name, inv.phone || null);
+  }
+
+  res.json({ id: outingId, status: 'pending' });
+});
+
+// GET /api/outings — list my outings with invitees
+router.get('/outings', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outings = q.getOutingsForUser.all(me.id);
+  const result = outings.map(o => ({ ...o, invitees: q.getOutingInvitees.all(o.id) }));
+  res.json({ outings: result });
+});
+
+// PUT /api/outings/:id/invitees/:inviteeId — update one invitee's status
+router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing || outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+
+  const { status } = req.body;
+  if (!['pending', 'accepted', 'declined'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  q.updateInviteeStatus.run(status, req.params.inviteeId);
+  res.json({ ok: true, status });
+});
+
+// PUT /api/outings/:id — update outing details (venue, time, status)
+router.put('/outings/:id', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing || outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+
+  const { venue, event_time, status } = req.body;
+  q.updateOutingDetails.run(venue || null, event_time || null, status || outing.status, req.params.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;
