@@ -74,14 +74,15 @@
     .strip-nav:hover:not(:disabled) { background:#f0f4ff; }
     .strip-nav:disabled { opacity:0.3; cursor:default; }
     #day-strip     { flex:1; display:flex; gap:5px; overflow:hidden; }
-    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; border-radius:10px; border:1.5px solid var(--border); background:white; transition:opacity .15s; }
+    .day-card      { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; padding:11px 4px 9px; border-radius:12px; border:1.5px solid var(--border); background:white; transition:opacity .15s; min-height:78px; }
     .day-card.match { background:#fff3e0; border-color:var(--orange); }
     .day-card.dim   { opacity:.38; transform:scale(0.88); border-color:transparent; background:transparent; }
     .day-card.strip-today { border-color:var(--blue); }
     .day-card.strip-today.dim { border-color:var(--blue); background:white; }
-    .day-card .dc-name { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
-    .day-card .dc-num  { font-size:19px; font-weight:800; line-height:1.1; color:var(--text); }
+    .day-card .dc-name { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+    .day-card .dc-num  { font-size:26px; font-weight:800; line-height:1.1; color:var(--text); }
     .day-card.match .dc-num { color:#e65100; }
+    .day-card .dc-free { font-size:9px; font-weight:800; color:#e65100; text-transform:uppercase; letter-spacing:0.06em; margin-top:2px; }
     .strip-range   { text-align:center; font-size:11px; color:var(--muted); margin-top:5px; }
     .next-time-label   { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
     .next-time-headline { font-size:15px; font-weight:800; color:var(--text); margin-bottom:10px; }
@@ -347,6 +348,28 @@
     .plan-it-fields { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
     .plan-it-fields input { flex:1; min-width:100px; padding:5px 8px; border:1.5px solid var(--border);
       border-radius:6px; font-size:12px; font-family:inherit; }
+
+    /* ── Compact custody card ────────────────────────────────────────── */
+    .cal-compact-card {
+      max-width:680px; margin:0 auto 16px; padding:14px 18px;
+      background:white; border:1.5px solid var(--border); border-radius:12px;
+      cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+      box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:box-shadow .15s;
+    }
+    .cal-compact-card:hover { box-shadow:0 4px 20px rgba(0,0,0,0.13); }
+
+    /* ── Calendar modal ──────────────────────────────────────────────── */
+    #calendar-modal { z-index:800; align-items:flex-start; padding:16px; overflow-y:auto; }
+    #calendar-modal .cal-modal-inner {
+      background:white; border-radius:16px; padding:20px 20px 24px;
+      max-width:720px; width:100%; box-shadow:0 8px 40px rgba(0,0,0,0.18);
+      margin:auto;
+    }
+    .cal-modal-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border);
+    }
+    .cal-modal-title { font-size:15px; font-weight:800; color:var(--text); text-transform:uppercase; letter-spacing:0.08em; }
   </style>
 </head>
 <body>
@@ -371,87 +394,9 @@
     </a>
   </div>
 </div>
-<div class="app-title-strip">Your Custody Calendar</div>
 
-<div class="cal-section">
-
-<!-- Edit mode notices -->
-<div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;display:none;">
-  💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your partner. Click again to un-propose.
-</div>
-<div class="edit-notice" id="change-notice" style="background:#e8f5e9;border:1px solid #66bb6a;color:#2e7d32;display:none;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-  <span>📅 <span class="bold">Change days:</span> Click any day to switch it between yours and co-parent's.</span>
-  <div style="display:flex;gap:6px;">
-    <button class="btn btn-sm btn-outline" onclick="cancelChangeDays()" style="color:#2e7d32;border-color:#66bb6a;">Cancel</button>
-    <button class="btn btn-sm btn-primary" onclick="saveChangeDays()" style="background:#43a047;border-color:#43a047;">Save &amp; Notify Co-parent</button>
-  </div>
-</div>
-<div class="edit-notice notice-holiday" id="holiday-edit-notice">
-  🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
-</div>
-
-<!-- Legend -->
-<div class="legend">
-  <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
-  <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
-  <div class="legend-item"><span class="tag">H</span> Holiday</div>
-  <div class="legend-item"><span class="tag">V</span> Vacation</div>
-  <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
-</div>
-
-<!-- Month navigation + edit menu -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;padding-bottom:8px;">
-  <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
-  <span id="month-label" style="font-weight:700;font-size:16px;"></span>
-  <div style="display:flex;align-items:center;gap:6px;">
-    <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
-    <div style="position:relative;" id="edit-menu-wrap">
-      <button class="btn btn-sm" onclick="toggleEditMenu()" title="Edit options"
-        style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
-      <div id="edit-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.13);z-index:200;min-width:190px;overflow:hidden;">
-        <button onclick="startHolidayEdit()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">🏖️ Edit Holidays</button>
-        <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">💡 Suggest Changes</button>
-        <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">📅 Change days</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Calendar container -->
-<div class="calendar-container" id="calendar-container">
-  <div style="padding:40px;text-align:center;color:var(--muted);">Loading calendar…</div>
-</div>
-<!-- Show options bar — inside calendar section -->
-<div class="cal-show-bar">
-  <label class="partner-pill" id="partner-pill-wrap" style="display:none;">
-    <input type="checkbox" id="toggle-partner" checked onchange="togglePartnerOverlay(this.checked)">
-    <span id="partner-toggle-label">Partner</span>
-  </label>
-  <label class="cal-show-item">
-    <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
-    <span>Both free</span>
-  </label>
-</div>
-
-<!-- Custody balance — attached below calendar grid -->
-<div class="custody-balance-bar">
-  <span class="bal-label">Balance:</span>
-  <span class="bal-swatch" style="background:var(--r);"></span>
-  <span class="bal-name" id="owner-name-label">Me</span>
-  <span class="bal-count" style="color:#1e8e3e;" id="r-count">—</span>
-  <span style="color:var(--border);">·</span>
-  <span class="bal-swatch" style="background:var(--z);"></span>
-  <span class="bal-name">Co-parent</span>
-  <span class="bal-count" style="color:#1967d2;" id="z-count">—</span>
-  <span class="bal-diff" id="difference"></span>
-</div>
-
-
-</div><!-- /.cal-section -->
-
-<div id="social-calendar-section" style="display:none;">
-  <div class="social-cal-title">My social calendar</div>
-  <div class="social-cal-sub">when do I match free time with the people I like?</div>
+<div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
+  <div class="social-cal-title">Who's free when you're free</div>
 
   <div class="social-next-label" id="social-next-label">NEXT MATCH</div>
   <div class="social-next-headline" id="social-next-headline">—</div>
@@ -466,8 +411,8 @@
 
 <!-- Locked: show when no social connections -->
 <div id="social-calendar-locked" style="max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
-  <div class="social-cal-title" style="margin-bottom:6px;">My social calendar</div>
-  <div class="social-cal-sub" style="margin-bottom:16px;">when do I match free time with the people I like?</div>
+  <div class="social-cal-title" style="margin-bottom:6px;">Who's free when you're free</div>
+  <div class="social-cal-sub" style="margin-bottom:16px;">Invite a friend or partner to see when you match</div>
   <div style="font-size:13px;color:#6d4c41;margin-bottom:14px;">Invite a friend or partner to see your matching free time</div>
   <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
     <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">❤️ Invite partner</button>
@@ -475,6 +420,18 @@
   </div>
 </div>
 
+
+<!-- Compact custody card — click to open full calendar modal -->
+<div class="cal-compact-card" onclick="openCalendarModal()">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="font-size:22px;">📅</div>
+    <div>
+      <div style="font-weight:800;font-size:15px;" id="compact-month-label">Custody Calendar</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="compact-balance-label">Tap to view &amp; edit</div>
+    </div>
+  </div>
+  <div style="color:var(--blue);font-size:13px;font-weight:700;">View &amp; Edit →</div>
+</div>
 
 <!-- Notification / Activity side panel -->
 <div id="notif-panel">
@@ -884,7 +841,7 @@ function renderStrip() {
     const actOnDay = activitiesByDate[ds];
 
     const cls = ['day-card',
-      isMatch ? 'match' : (myFree ? '' : 'dim'),
+      myFree ? 'match' : 'dim',
       isToday ? 'strip-today' : '',
       actOnDay ? 'act-glow' : ''
     ].filter(Boolean).join(' ');
@@ -905,9 +862,11 @@ function renderStrip() {
       ? `onclick="openSocialInviteModal('${ds}')" onmouseenter="showFreeTooltip(event,'${ds}')" onmouseleave="hideFreeTooltip()" style="cursor:pointer;"`
       : '';
 
+    const freeLabel = myFree ? `<div class="dc-free">Free</div>` : `<div style="min-height:12px;"></div>`;
     html += `<div class="${cls}" ${cardAttrs}>
       <div class="dc-name">${DAY_NAMES[d.getDay()]}</div>
       <div class="dc-num">${d.getDate()}</div>
+      ${freeLabel}
       ${actTitle}
       ${bubbleHtml}
     </div>`;
@@ -1199,6 +1158,8 @@ function renderCalendar() {
   const m = currentViewMonth;
   const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   document.getElementById('month-label').textContent = monthName;
+  const compactMonth = document.getElementById('compact-month-label');
+  if (compactMonth) compactMonth.textContent = monthName;
 
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const firstDow = new Date(y, m, 1).getDay();
@@ -1483,6 +1444,16 @@ function calculateCustodyDays() {
   const diff = Math.abs(self - coparent);
   const leader = self > coparent ? myName : 'Co-parent';
   document.getElementById('difference').textContent = self === coparent ? 'Equal' : `${diff} days (${leader} has more)`;
+
+  // Update compact card label
+  const compactEl = document.getElementById('compact-balance-label');
+  if (compactEl) {
+    const rVal = parseInt(document.getElementById('r-count').textContent) || 0;
+    const zVal = parseInt(document.getElementById('z-count').textContent) || 0;
+    const diffVal = Math.abs(rVal - zVal);
+    const who  = rVal >= zVal ? (myName || 'Me') : 'Co-parent';
+    compactEl.textContent = `${rVal} days with kids · ${diffVal > 0 ? diffVal + ' days ahead' : 'equal split'}`;
+  }
 }
 
 // ── Autosave — fires immediately on every change ───────────────────────────
@@ -1970,6 +1941,11 @@ async function showWhatsappModal(note) {
   } else {
     wirePhoneInput();
   }
+}
+
+// ── Calendar modal ─────────────────────────────────────────────────────────
+function openCalendarModal() {
+  document.getElementById('calendar-modal').classList.add('open');
 }
 
 // ── Conversational date helper ─────────────────────────────────────────────
@@ -2534,5 +2510,90 @@ function showToast(msg) {
     </div>
   </div>
 </div>
+
+<!-- Calendar modal — full custody calendar -->
+<div class="modal-overlay" id="calendar-modal">
+  <div class="cal-modal-inner">
+    <div class="cal-modal-header">
+      <div class="cal-modal-title">Your Custody Calendar</div>
+      <button onclick="closeModal('calendar-modal')" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
+    </div>
+
+    <div class="cal-section">
+    <!-- Edit mode notices -->
+    <div class="edit-notice" id="suggest-notice" style="background:#fff3e0;border:1px solid var(--orange);color:#e65100;display:none;">
+      💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your partner. Click again to un-propose.
+    </div>
+    <div class="edit-notice" id="change-notice" style="background:#e8f5e9;border:1px solid #66bb6a;color:#2e7d32;display:none;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <span>📅 <span class="bold">Change days:</span> Click any day to switch it between yours and co-parent's.</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-outline" onclick="cancelChangeDays()" style="color:#2e7d32;border-color:#66bb6a;">Cancel</button>
+        <button class="btn btn-sm btn-primary" onclick="saveChangeDays()" style="background:#43a047;border-color:#43a047;">Save &amp; Notify Co-parent</button>
+      </div>
+    </div>
+    <div class="edit-notice notice-holiday" id="holiday-edit-notice">
+      🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--r);"></span> Me</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--z);"></span> Co-parent</div>
+      <div class="legend-item"><span class="tag">H</span> Holiday</div>
+      <div class="legend-item"><span class="tag">V</span> Vacation</div>
+      <div class="legend-item" style="color:var(--orange);">■ Both free frame</div>
+    </div>
+
+    <!-- Month navigation + edit menu -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;padding-bottom:8px;">
+      <button class="btn btn-outline btn-sm" onclick="prevMonth()">← Prev</button>
+      <span id="month-label" style="font-weight:700;font-size:16px;"></span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="btn btn-outline btn-sm" onclick="nextMonth()">Next →</button>
+        <div style="position:relative;" id="edit-menu-wrap">
+          <button class="btn btn-sm" onclick="toggleEditMenu()" title="Edit options"
+            style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
+          <div id="edit-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.13);z-index:200;min-width:190px;overflow:hidden;">
+            <button onclick="startHolidayEdit()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">🏖️ Edit Holidays</button>
+            <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">💡 Suggest Changes</button>
+            <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">📅 Change days</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar container -->
+    <div class="calendar-container" id="calendar-container">
+      <div style="padding:40px;text-align:center;color:var(--muted);">Loading calendar…</div>
+    </div>
+
+    <!-- Show options bar -->
+    <div class="cal-show-bar">
+      <label class="partner-pill" id="partner-pill-wrap" style="display:none;">
+        <input type="checkbox" id="toggle-partner" checked onchange="togglePartnerOverlay(this.checked)">
+        <span id="partner-toggle-label">Partner</span>
+      </label>
+      <label class="cal-show-item">
+        <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
+        <span>Both free</span>
+      </label>
+    </div>
+
+    <!-- Custody balance — inside calendar frame -->
+    <div class="custody-balance-bar">
+      <span class="bal-label">Balance:</span>
+      <span class="bal-swatch" style="background:var(--r);"></span>
+      <span class="bal-name" id="owner-name-label">Me</span>
+      <span class="bal-count" style="color:#1e8e3e;" id="r-count">—</span>
+      <span style="color:var(--border);">·</span>
+      <span class="bal-swatch" style="background:var(--z);"></span>
+      <span class="bal-name">Co-parent</span>
+      <span class="bal-count" style="color:#1967d2;" id="z-count">—</span>
+      <span class="bal-diff" id="difference"></span>
+    </div>
+    </div><!-- /.cal-section -->
+  </div>
+</div>
+
 </body>
 </html>
