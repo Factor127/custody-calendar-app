@@ -755,6 +755,136 @@ router.post('/ical/import', async (req, res) => {
   res.json({ dates: dateArr, count: dateArr.length });
 });
 
+// ── Weekly free-time digest ────────────────────────────────────────────────────
+//
+// POST /api/cron/weekly-digest
+// Called by Railway cron (or any external scheduler) every Friday morning.
+// Set CRON_SECRET env var in Railway; pass it as header X-Cron-Secret.
+// Railway cron setup: Dashboard → your service → Settings → Cron Schedule
+//   Schedule: 0 8 * * 5  (08:00 UTC every Friday)
+//   Command:  curl -X POST https://YOUR_APP.railway.app/api/cron/weekly-digest
+//                  -H "X-Cron-Secret: $CRON_SECRET"
+//
+router.post('/cron/weekly-digest', async (req, res) => {
+  const secret = req.headers['x-cron-secret'];
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const BASE_URL = process.env.BASE_URL || `https://${req.headers.host}`;
+  const today    = new Date(); today.setHours(0, 0, 0, 0);
+  const endDate  = new Date(today); endDate.setDate(today.getDate() + 14);
+  const fromStr  = toDateStr(today);
+  const toStr    = toDateStr(endDate);
+
+  // Helper: is a date string a work block given a work_schedule JSON string
+  function isWorkDay(dateStr, wsStr) {
+    if (!wsStr) return false;
+    try {
+      const ws  = JSON.parse(wsStr);
+      const dow = new Date(dateStr + 'T12:00:00').getDay();
+      if (ws.type === 'standard_weekdays') return dow >= 1 && dow <= 5;
+      if (ws.type === 'custom')  return (ws.days || []).includes(dow);
+      if (ws.type === 'ical')    return (ws.dates || []).includes(dateStr);
+    } catch { /* ignore */ }
+    return false;
+  }
+
+  // Collect notifications per user: userId → { name, email, token, overlaps:[{withName, dates[]}] }
+  const notify = {};
+
+  const connections = q.getAllApprovedConnections.all();
+  for (const c of connections) {
+    const reqDays = Object.fromEntries(
+      q.getDaysForUserInRange.all(c.requester_id, fromStr, toStr).map(r => [r.date, r.owner])
+    );
+    const tgtDays = Object.fromEntries(
+      q.getDaysForUserInRange.all(c.target_id, fromStr, toStr).map(r => [r.date, r.owner])
+    );
+
+    // Find mutually free dates
+    const overlapDates = [];
+    for (let i = 0; i <= 14; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      const ds = toDateStr(d);
+      const reqFree = reqDays[ds] === 'coparent' && !isWorkDay(ds, c.req_ws);
+      const tgtFree = tgtDays[ds] === 'coparent' && !isWorkDay(ds, c.tgt_ws);
+      if (reqFree && tgtFree) overlapDates.push(ds);
+    }
+    if (overlapDates.length === 0) continue;
+
+    // Format dates nicely
+    const formatted = overlapDates.map(ds => {
+      const d = new Date(ds + 'T12:00:00');
+      return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+    });
+
+    // Add to requester's notification
+    if (c.req_email) {
+      if (!notify[c.requester_id]) notify[c.requester_id] = { name: c.req_name, email: c.req_email, token: c.req_token, overlaps: [] };
+      notify[c.requester_id].overlaps.push({ withName: c.tgt_name, dates: formatted });
+    }
+    // Add to target's notification
+    if (c.tgt_email) {
+      if (!notify[c.target_id]) notify[c.target_id] = { name: c.tgt_name, email: c.tgt_email, token: c.tgt_token, overlaps: [] };
+      notify[c.target_id].overlaps.push({ withName: c.req_name, dates: formatted });
+    }
+  }
+
+  // Send one email per user
+  let sent = 0;
+  for (const [, user] of Object.entries(notify)) {
+    const calUrl = `${BASE_URL}/calendar?token=${user.token}`;
+
+    // Build overlap lines
+    const overlapHtml = user.overlaps.map(o =>
+      `<div style="margin-bottom:14px;">
+        <div style="font-weight:700;font-size:14px;color:#202124;">${o.withName}</div>
+        ${o.dates.map(d =>
+          `<div style="font-size:13px;color:#e65100;font-weight:600;padding:3px 0;">📅 ${d}</div>`
+        ).join('')}
+      </div>`
+    ).join('');
+
+    const overlapText = user.overlaps.map(o =>
+      `${o.withName}: ${o.dates.join(', ')}`
+    ).join('\n');
+
+    const html = `<!DOCTYPE html>
+<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:28px 20px;color:#202124;background:#fff;">
+  <div style="font-size:22px;font-weight:900;color:#bf360c;margin-bottom:2px;letter-spacing:-0.01em;">Spontany</div>
+  <div style="font-size:12px;color:#999;margin-bottom:28px;">Your free time, made visible</div>
+
+  <p style="font-size:17px;font-weight:700;margin:0 0 8px;">Hey ${user.name} 👋</p>
+  <p style="font-size:14px;color:#555;margin:0 0 20px;line-height:1.5;">
+    You have some upcoming free time that overlaps with people you know.<br>
+    Don't let the window slip — make a plan while there's still time.
+  </p>
+
+  <div style="background:#fff8f0;border:1.5px solid #ffcc80;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#999;margin-bottom:10px;">Free together in the next 2 weeks</div>
+    ${overlapHtml}
+  </div>
+
+  <a href="${calUrl}" style="display:inline-block;background:#e65100;color:white;padding:13px 28px;border-radius:9px;text-decoration:none;font-weight:800;font-size:14px;">
+    Plan something →
+  </a>
+
+  <p style="font-size:11px;color:#bbb;margin-top:28px;line-height:1.6;">
+    You're getting this because you have active Spontany connections.<br>
+    Open your calendar to manage or update your schedule.
+  </p>
+</body></html>`;
+
+    const bodyText = `Hey ${user.name},\n\nYou have upcoming free time overlapping with:\n${overlapText}\n\nPlan something: ${calUrl}`;
+
+    await sendEmail({ to: user.email, subject: `🗓 You have free time coming up — don't miss it`, bodyText, html });
+    sent++;
+  }
+
+  res.json({ ok: true, connections_checked: connections.length, emails_sent: sent });
+});
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function parseTags(row) {

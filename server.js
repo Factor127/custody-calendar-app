@@ -41,4 +41,43 @@ app.listen(PORT, () => {
     '| GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '✓ set' : '✗ MISSING',
     '| BASE_URL:', process.env.BASE_URL || '(using default)'
   );
+
+  // ── Weekly digest scheduler ──────────────────────────────────────────────
+  // Fires every Friday at 08:00 UTC. No external cron service needed.
+  if (process.env.CRON_SECRET && process.env.RESEND_API_KEY) {
+    scheduleWeeklyDigest();
+    console.log('  → Weekly digest scheduler: active (fires Fridays 08:00 UTC)');
+  } else {
+    console.log('  → Weekly digest: disabled (set CRON_SECRET + RESEND_API_KEY to enable)');
+  }
 });
+
+function scheduleWeeklyDigest() {
+  function msUntilNextFriday8am() {
+    const now = new Date();
+    const next = new Date(now);
+    // Advance to next Friday
+    const dayOfWeek = now.getUTCDay(); // 0=Sun, 5=Fri
+    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7; // always at least 1 week if already Friday
+    next.setUTCDate(now.getUTCDate() + daysUntilFriday);
+    next.setUTCHours(8, 0, 0, 0);
+    return next - now;
+  }
+
+  function runDigest() {
+    const url = `http://localhost:${PORT}/api/cron/weekly-digest`;
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Cron-Secret': process.env.CRON_SECRET }
+    })
+      .then(r => r.json())
+      .then(d => console.log(`[digest] Sent ${d.emails_sent} emails (${d.connections_checked} connections checked)`))
+      .catch(e => console.error('[digest] Error:', e.message));
+
+    // Schedule next run in exactly 7 days
+    setTimeout(runDigest, 7 * 24 * 60 * 60 * 1000);
+  }
+
+  // First run: wait until next Friday 08:00 UTC
+  setTimeout(runDigest, msUntilNextFriday8am());
+}
