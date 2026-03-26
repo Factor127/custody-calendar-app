@@ -161,6 +161,33 @@
       border-color: var(--blue);
       color: white;
     }
+
+    /* ── Step 5: invite tabs + free strip ── */
+    .inv-type-tabs {
+      display: flex; gap: 4px; background: #f0f0f0;
+      border-radius: 9px; padding: 4px; margin-bottom: 12px;
+    }
+    .inv-type-tab {
+      flex: 1; padding: 8px 4px; border: none; border-radius: 7px;
+      background: transparent; font-size: 12px; font-weight: 700;
+      color: #666; cursor: pointer; transition: all 0.15s;
+    }
+    .inv-type-tab.active { background: white; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+    .inv-panel-desc { font-size: 12px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
+    .inv-url-box {
+      background: white; border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px 12px; font-family: monospace; font-size: 11px;
+      word-break: break-all; color: var(--muted);
+    }
+    .wa-send-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+      background: #25d366; color: white; text-decoration: none;
+    }
+    .free-chip {
+      flex: 1; min-width: 32px; border-radius: 7px; padding: 5px 2px;
+      text-align: center; font-size: 9px;
+    }
   </style>
 </head>
 <body>
@@ -279,53 +306,64 @@
     <!-- ── Step 5: Done + invite ── -->
     <div class="wizard-step" id="step-5">
       <div class="success-icon">✓</div>
-      <div class="wizard-title" style="text-align:center;">Your calendar is ready!</div>
-      <p class="wizard-sub" style="text-align:center;">Invite your co-parent so they can share their schedule with you.</p>
+      <div class="wizard-title" style="text-align:center;margin-bottom:4px;">Your calendar is ready!</div>
+      <p class="wizard-sub" style="text-align:center;margin-bottom:14px;">Here are your free days coming up.</p>
 
-      <!-- Primary: invite co-parent -->
-      <div style="background:#f0fdf4;border:1.5px solid var(--r-border);border-radius:10px;padding:16px;margin-bottom:14px;">
-        <div style="font-weight:700;font-size:14px;margin-bottom:8px;">📲 Invite your co-parent</div>
-        <div id="setup-invite-url" style="background:white;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:10px;color:var(--muted);">Generating link…</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <a id="setup-wa-coparent" href="#" target="_blank" rel="noopener"
-             style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <!-- Free days preview strip -->
+      <div id="setup-free-strip" style="margin-bottom:20px;"></div>
+
+      <!-- Invite section -->
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Connect with someone →</div>
+
+      <div class="inv-type-tabs">
+        <button class="inv-type-tab active" id="itab-coparent" onclick="switchInviteTab('coparent')">Co-parent</button>
+        <button class="inv-type-tab" id="itab-partner"  onclick="switchInviteTab('partner')">Partner</button>
+        <button class="inv-type-tab" id="itab-friend"   onclick="switchInviteTab('friend')">Friend</button>
+      </div>
+
+      <!-- Co-parent panel -->
+      <div id="inv-panel-coparent" class="inv-panel">
+        <p class="inv-panel-desc">Share custody schedules and coordinate handoffs.</p>
+        <div id="setup-invite-url" class="inv-url-box">Generating…</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <a id="setup-wa-coparent" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             Send via WhatsApp
           </a>
-          <button class="btn btn-outline" onclick="copySetupInvite()">📋 Copy link</button>
+          <button class="btn btn-outline btn-sm" onclick="copySetupInviteByType('coparent')">📋 Copy</button>
         </div>
       </div>
 
-      <!-- Secondary: invite partner / friend for social calendar -->
-      <div style="background:#e8f0fe;border:1.5px solid #c5d8f8;border-radius:10px;padding:16px;margin-bottom:14px;">
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">📲 Invite your partner or a close friend</div>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Once they're connected, you'll see when you're both free at the same time.</p>
-        <div id="setup-invite-url-partner" style="background:white;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:10px;color:var(--muted);">Generating link…</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <a id="setup-wa-partner" href="#" target="_blank" rel="noopener"
-             style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <!-- Partner panel -->
+      <div id="inv-panel-partner" class="inv-panel" style="display:none;">
+        <p class="inv-panel-desc">Once connected, you'll see when you're both free at the same time.</p>
+        <div id="setup-invite-url-partner" class="inv-url-box">Generating…</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <a id="setup-wa-partner" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             Send via WhatsApp
           </a>
-          <button class="btn btn-outline" onclick="copyPartnerInvite()">📋 Copy link</button>
+          <button class="btn btn-outline btn-sm" onclick="copySetupInviteByType('partner')">📋 Copy</button>
         </div>
       </div>
 
-      <!-- Secondary: share with a friend in the divorcee circle -->
-      <div style="background:#fff8e1;border:1.5px solid #ffe082;border-radius:10px;padding:14px;margin-bottom:20px;">
-        <div style="font-weight:700;font-size:13px;margin-bottom:4px;">Know another co-parent who could use this?</div>
-        <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Share Spontany with friends going through the same thing — it's free.</p>
-        <a id="setup-wa-share" href="#" target="_blank" rel="noopener"
-           style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;background:#25d366;color:white;text-decoration:none;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          Share with a friend
-        </a>
+      <!-- Friend panel -->
+      <div id="inv-panel-friend" class="inv-panel" style="display:none;">
+        <p class="inv-panel-desc">A close friend who gets the co-parent life — see when you're free together.</p>
+        <div id="setup-invite-url-friend" class="inv-url-box">Generating…</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <a id="setup-wa-friend" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send via WhatsApp
+          </a>
+          <button class="btn btn-outline btn-sm" onclick="copySetupInviteByType('friend')">📋 Copy</button>
+        </div>
       </div>
 
-      <div style="text-align:center;">
-        <button class="btn btn-primary" onclick="goToCalendar()">Go to my calendar →</button>
-        <p style="font-size:12px;color:var(--muted);margin-top:8px;">You can always invite from your calendar later.</p>
-      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" onclick="goToCalendar()">
+        Open my calendar →
+      </button>
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">You can invite more people from your calendar any time.</p>
     </div>
 
   </div>
@@ -660,39 +698,78 @@ async function saveAndFinish() {
     document.getElementById('setup-wa-coparent').href = `https://wa.me/?text=${coparentMsg}`;
   }
 
-  // Generate partner/friend invite link
+  // Generate partner invite
   const partnerInvRes = await fetch(`/api/invites/generate?token=${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ relationship_type: 'partner' })
   });
   if (partnerInvRes.ok) {
-    const partnerInvData = await partnerInvRes.json();
-    document.getElementById('setup-invite-url-partner').textContent = partnerInvData.invite_url;
-    const partnerMsg = encodeURIComponent(
-      `Hey! I'm using Spontany to see when we're both free at the same time. Connect your schedule here: ${partnerInvData.invite_url}`
-    );
-    document.getElementById('setup-wa-partner').href = `https://wa.me/?text=${partnerMsg}`;
-    window._partnerInviteUrl = partnerInvData.invite_url;
+    const d = await partnerInvRes.json();
+    document.getElementById('setup-invite-url-partner').textContent = d.invite_url;
+    document.getElementById('setup-wa-partner').href =
+      `https://wa.me/?text=${encodeURIComponent(`Hey! I'm using Spontany to see when we're both free at the same time. Connect your schedule here: ${d.invite_url}`)}`;
   }
 
-  const friendMsg = encodeURIComponent(
-    `I've been using Spontany to organize custody scheduling — it really helps with co-parenting. It's free: ${window.location.origin}`
-  );
-  document.getElementById('setup-wa-share').href = `https://wa.me/?text=${friendMsg}`;
+  // Generate friend invite
+  const friendInvRes = await fetch(`/api/invites/generate?token=${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relationship_type: 'friend' })
+  });
+  if (friendInvRes.ok) {
+    const d = await friendInvRes.json();
+    document.getElementById('setup-invite-url-friend').textContent = d.invite_url;
+    document.getElementById('setup-wa-friend').href =
+      `https://wa.me/?text=${encodeURIComponent(`Hey! I use Spontany for custody scheduling — it also shows when we're both free. Join here: ${d.invite_url}`)}`;
+  }
 
+  renderSetupFreeStrip();
   goStep(5);
 }
 
-function copySetupInvite() {
-  const url = document.getElementById('setup-invite-url').textContent;
+function renderSetupFreeStrip() {
+  const el = document.getElementById('setup-free-strip');
+  if (!el || !generatedDays.length) return;
+  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  const dayMap = {};
+  generatedDays.forEach(d => { dayMap[d.date] = d.owner; });
+
+  let chips = '';
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const ds = toDateStr(d);
+    const free = dayMap[ds] === 'coparent';
+    const isToday = ds === todayStr;
+    const bg    = free ? '#e6f4ea' : '#f5f5f5';
+    const numCl = free ? 'color:#1a7340;font-weight:800' : 'color:#bbb;font-weight:600';
+    const outline = isToday ? 'outline:2px solid #1967d2;outline-offset:-2px;' : '';
+    chips += `<div class="free-chip" style="background:${bg};${outline}">
+      <div style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;">${DOW[d.getDay()]}</div>
+      <div style="font-size:15px;line-height:1.3;${numCl}">${d.getDate()}</div>
+      ${free ? '<div style="font-size:8px;font-weight:800;color:#1a7340;letter-spacing:.02em;">FREE</div>'
+              : '<div style="font-size:8px;color:#ddd;">·</div>'}
+    </div>`;
+  }
+  el.innerHTML = `<div style="display:flex;gap:3px;">${chips}</div>`;
+}
+
+function switchInviteTab(type) {
+  ['coparent','partner','friend'].forEach(t => {
+    document.getElementById(`itab-${t}`)?.classList.toggle('active', t === type);
+    const p = document.getElementById(`inv-panel-${t}`);
+    if (p) p.style.display = t === type ? 'block' : 'none';
+  });
+}
+
+function copySetupInviteByType(type) {
+  const idMap = { coparent: 'setup-invite-url', partner: 'setup-invite-url-partner', friend: 'setup-invite-url-friend' };
+  const url = document.getElementById(idMap[type])?.textContent || '';
   navigator.clipboard.writeText(url).then(() => showSetupToast('✓ Link copied!'));
 }
 
-function copyPartnerInvite() {
-  const url = document.getElementById('setup-invite-url-partner').textContent;
-  navigator.clipboard.writeText(url).then(() => showSetupToast('✓ Link copied!'));
-}
 
 function goToCalendar() {
   window.location.href = '/calendar?token=' + createdToken;
