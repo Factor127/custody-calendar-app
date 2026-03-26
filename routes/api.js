@@ -1179,12 +1179,23 @@ router.get('/outings/incoming', (req, res) => {
 });
 
 // PUT /api/outings/:id/invitees/:inviteeId — update one invitee's status
+// Allowed if: you are the outing creator (can update any invitee)
+//          OR you are the invitee updating your own record
 router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
   const outing = q.getOutingById.get(req.params.id);
-  if (!outing || outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+  if (!outing) return res.status(404).json({ error: 'Outing not found' });
+
+  // Check if the caller is the outing creator OR the specific invitee
+  const invitees    = q.getOutingInvitees.all(outing.id);
+  const inviteeRow  = invitees.find(i => i.id === req.params.inviteeId);
+  if (!inviteeRow)  return res.status(404).json({ error: 'Invitee not found' });
+
+  const isCreator  = outing.created_by === me.id;
+  const isInvitee  = inviteeRow.user_id === me.id;
+  if (!isCreator && !isInvitee) return res.status(403).json({ error: 'Not authorized' });
 
   const { status } = req.body;
   if (!['pending', 'accepted', 'declined'].includes(status)) {

@@ -1166,6 +1166,8 @@ async function loadSocialCalendars() {
       const data = await res.json();
       const days = {};
       for (const day of data.days) days[day.date] = { owner: day.owner };
+      // i_am_target=1 means I'm the target, so the other person is the requester
+      const otherMobile = conn.i_am_target ? conn.requester_mobile : conn.target_mobile;
       socialConnections.push({
         id:     conn.id,
         userId: conn.other_user_id,
@@ -1173,6 +1175,7 @@ async function loadSocialCalendars() {
         initial:(conn.other_name || '?')[0].toUpperCase(),
         color,
         type:   conn.relationship_type,
+        phone:  otherMobile || null,
         days
       });
     } catch(e) { /* skip if unreachable */ }
