@@ -370,8 +370,47 @@ async function validateInvite() {
     }
     const data = await res.json();
     ownerName = data.owner_name || 'your partner';
-    document.getElementById('invite-greeting').textContent = `Hi! ${ownerName} has invited you.`;
-    goStep(1);
+
+    // Transform step-0 into a personalised welcome screen
+    document.getElementById('step-0').innerHTML = `
+      <div style="text-align:center;padding:12px 0 22px;">
+        <div style="font-size:42px;margin-bottom:10px;">👋</div>
+        <div style="font-size:22px;font-weight:900;color:#bf360c;letter-spacing:-0.02em;margin-bottom:8px;">${ownerName} invited you!</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0;">
+          Set up your custody schedule so you can both see<br>when you're free at the same time — automatically.
+        </p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🗓️</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#202124;margin-bottom:2px;">Set up your custody calendar</div>
+            <div style="font-size:12px;color:#888;line-height:1.5;">Takes 2 minutes. You can edit it any time from your personal link.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">✨</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#202124;margin-bottom:2px;">See when you're both free</div>
+            <div style="font-size:12px;color:#888;line-height:1.5;">${ownerName} will see your shared free windows — no more back-and-forth to figure out when to meet.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🔒</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#202124;margin-bottom:2px;">Your schedule stays private</div>
+            <div style="font-size:12px;color:#888;line-height:1.5;">${ownerName} only sees when you're free — never your full calendar details.</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="goStep(1)">
+        Get started →
+      </button>
+      <p style="text-align:center;font-size:11px;color:#aaa;margin-top:10px;">Takes about 2 minutes</p>
+    `;
+    // step-0 stays active — user taps "Get started" to proceed
   } catch(err) {
     console.error('[onboard] validateInvite error:', err);
     showInviteError(`Could not validate this invite link. (${err.message})`);

@@ -194,20 +194,52 @@
 
 <div class="wizard">
 
-  <div style="text-align:center;margin-bottom:24px;">
-    <div style="font-size:36px;margin-bottom:6px;">📅</div>
-    <h1 style="margin:0;font-size:22px;">Custody Calendar</h1>
-    <p class="text-muted" style="margin:6px 0 0;">Takes about a minute to set up.</p>
-  </div>
-
   <div class="progress-bar" style="margin-bottom:20px;">
-    <div class="progress-fill" id="progress" style="width:25%"></div>
+    <div class="progress-fill" id="progress" style="width:0%"></div>
   </div>
 
   <div class="wizard-card">
 
+    <!-- ── Step 0: Welcome / intro ── -->
+    <div class="wizard-step active" id="step-0">
+      <div style="text-align:center;padding:12px 0 22px;">
+        <div style="font-size:44px;margin-bottom:10px;">📅</div>
+        <div style="font-size:26px;font-weight:900;color:#bf360c;letter-spacing:-0.02em;margin-bottom:6px;">Spontany</div>
+        <div style="font-size:14px;color:var(--muted);font-weight:500;line-height:1.5;">Your free time, made visible.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🗓️</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">Know when you're kid-free</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Your custody calendar, clear and always up to date.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">✨</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">See when you're both free</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Connect with your partner or close friends — your overlapping free days appear automatically.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🔒</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">Your schedule stays private</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Only people you approve can ever see your calendar.</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="goStep(1)">
+        Let's start →
+      </button>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Takes about 2 minutes</p>
+    </div>
+
     <!-- ── Step 1: Name ── -->
-    <div class="wizard-step active" id="step-1">
+    <div class="wizard-step" id="step-1">
       <div class="wizard-title">What's your name?</div>
       <p class="wizard-sub">This is how you'll appear on shared views.</p>
       <div class="field-group">
@@ -459,6 +491,7 @@ function goStep(n) {
   document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
   document.getElementById('step-' + n).classList.add('active');
   currentStep = n;
+  // step-0 = 0%, step-1..5 = 20%..100%
   document.getElementById('progress').style.width = Math.round((n / 5) * 100) + '%';
   window.scrollTo(0, 0);
 }
