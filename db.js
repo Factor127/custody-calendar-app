@@ -205,8 +205,8 @@ const q = {
   ),
   getAllApprovedConnections: db.prepare(`
     SELECT c.id,
-           c.requester_id, u1.name AS req_name, u1.email AS req_email, u1.work_schedule AS req_ws, u1.token AS req_token,
-           c.target_id,   u2.name AS tgt_name, u2.email AS tgt_email, u2.work_schedule AS tgt_ws, u2.token AS tgt_token
+           c.requester_id, u1.name AS req_name, u1.email AS req_email, u1.work_schedule AS req_ws, u1.access_token AS req_token,
+           c.target_id,   u2.name AS tgt_name, u2.email AS tgt_email, u2.work_schedule AS tgt_ws, u2.access_token AS tgt_token
     FROM connections c
     JOIN users u1 ON u1.id = c.requester_id
     JOIN users u2 ON u2.id = c.target_id
