@@ -188,6 +188,73 @@
       flex: 1; min-width: 32px; border-radius: 7px; padding: 5px 2px;
       text-align: center; font-size: 9px;
     }
+
+    /* ── Parent question ── */
+    .parent-opts-row { display:flex; gap:14px; margin:20px 0 28px; }
+    .parent-opt {
+      flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:10px; border-radius:14px; border:2.5px solid var(--border);
+      padding:24px 12px; cursor:pointer; user-select:none;
+      transition:background .13s,border-color .13s,transform .1s; text-align:center;
+    }
+    .parent-opt:active { transform:scale(0.96); }
+    .parent-opt.selected { border-color:#1a73e8; background:#e8f0fe; }
+    .parent-opt-emoji  { font-size:38px; line-height:1; }
+    .parent-opt-label  { font-size:15px; font-weight:700; color:var(--text); }
+    .parent-opt-sub    { font-size:11px; color:var(--muted); line-height:1.4; }
+
+    /* ── Work-day grid (reuses wp-cell, .work modifier = blue) ── */
+    .wp-cell.work { background:#e8f0fe; border-color:#4285f4; }
+    .wp-cell.work .wp-day-lbl { color:#1a73e8; }
+
+    /* ── Work day cell content ── */
+    .wp-day-lbl {
+      font-size:13px; font-weight:800; color:var(--muted);
+      line-height:1; text-transform:uppercase; letter-spacing:.02em;
+    }
+    .wp-day-full {
+      font-size:9px; font-weight:600; color:var(--muted);
+      letter-spacing:.04em; text-transform:uppercase;
+    }
+    .wp-cell.work .wp-day-full { color:#1565c0; }
+
+    /* ── Time slider ── */
+    .ts-section { margin-top:22px; }
+    .ts-section-title {
+      font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.05em; margin-bottom:14px;
+    }
+    .ts-time-display {
+      text-align:center; font-size:20px; font-weight:900; color:var(--text);
+      margin-bottom:18px; letter-spacing:-.01em;
+    }
+    .ts-time-display .ts-highlight { color:#1a73e8; }
+    .ts-track-wrap {
+      position:relative; height:44px; display:flex; align-items:center;
+      padding:0 14px; margin-bottom:4px; touch-action:none;
+    }
+    .ts-track {
+      width:100%; height:6px; background:var(--border);
+      border-radius:3px; position:relative;
+    }
+    .ts-active {
+      position:absolute; height:6px; background:#1a73e8;
+      border-radius:3px; top:0; pointer-events:none;
+    }
+    .ts-handle {
+      position:absolute; width:26px; height:26px; background:white;
+      border:3px solid #1a73e8; border-radius:50%; top:50%;
+      transform:translate(-50%,-50%); cursor:grab; touch-action:none;
+      box-shadow:0 2px 6px rgba(0,0,0,.18); z-index:2;
+    }
+    .ts-handle:active { cursor:grabbing; box-shadow:0 4px 12px rgba(26,115,232,.35); }
+    .ts-ticks { display:flex; justify-content:space-between; padding:0 14px; }
+    .ts-tick  { font-size:9px; color:var(--muted); font-weight:600; }
+    .ts-skip-link {
+      display:block; text-align:center; font-size:12px; color:var(--muted);
+      margin-top:18px; text-decoration:underline; cursor:pointer;
+    }
+    .ts-skip-link:hover { color:var(--blue); }
   </style>
 </head>
 <body>
@@ -252,6 +319,30 @@
       </div>
     </div>
 
+    <!-- ── Step "parent": Are you a parent? ── -->
+    <div class="wizard-step" id="step-parent">
+      <div class="wizard-title">Do you have kids?</div>
+      <p class="wizard-sub">This helps us set up the right calendar for you.</p>
+
+      <div class="parent-opts-row">
+        <div class="parent-opt selected" id="popt-yes" onclick="setParent(true)">
+          <div class="parent-opt-emoji">👨‍👧</div>
+          <div class="parent-opt-label">Yes, I'm a parent</div>
+          <div class="parent-opt-sub">I share custody and want to track my kids' days</div>
+        </div>
+        <div class="parent-opt" id="popt-no" onclick="setParent(false)">
+          <div class="parent-opt-emoji">🙋</div>
+          <div class="parent-opt-label">No kids</div>
+          <div class="parent-opt-sub">I just want to see when I'm free to make plans</div>
+        </div>
+      </div>
+
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="parentNext()">Next →</button>
+      </div>
+    </div>
+
     <!-- ── Step 2: Week picker ── -->
     <div class="wizard-step" id="step-2">
       <div class="wizard-title">Which days are the kids with you?</div>
@@ -281,7 +372,7 @@
       </button>
 
       <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-outline btn-sm" onclick="goStep('parent')">← Back</button>
         <button class="btn btn-primary" onclick="step2Next()">Looks right →</button>
       </div>
     </div>
@@ -302,35 +393,46 @@
 
     <!-- ── Step 4: Work schedule ── -->
     <div class="wizard-step" id="step-4">
-      <div class="wizard-title">When do you typically work?</div>
-      <p class="wizard-sub">We use this to show when you're <em>actually</em> free — kid-free and work-free.</p>
+      <div class="wizard-title">When do you work?</div>
+      <p class="wizard-sub">Tap your work days, then set your usual hours. We use this to show when you're <em>actually</em> free.</p>
 
-      <div class="work-option selected" id="wopt-standard" onclick="selectWorkType('standard_weekdays')">
-        <div class="wo-title">📅 Standard weekdays</div>
-        <div class="wo-sub">Mon – Fri, 9 to 5 (most common)</div>
+      <!-- Work day grid -->
+      <div class="wp-legend" style="margin-bottom:10px;">
+        <span><span class="wp-legend-swatch" style="background:#e8f0fe;border-color:#4285f4;"></span>Work day</span>
+        <span><span class="wp-legend-swatch" style="background:white;"></span>Day off</span>
       </div>
+      <div class="week-picker-grid" id="work-day-grid"></div>
 
-      <div class="work-option" id="wopt-custom" onclick="selectWorkType('custom')">
-        <div class="wo-title">🗓 Custom days</div>
-        <div class="wo-sub">I work on specific days of the week</div>
-        <div id="custom-days-picker" class="work-day-picker hidden" onclick="event.stopPropagation()">
-          <div class="wd-chip" id="wdc-0" onclick="toggleWorkDay(0)">Sun</div>
-          <div class="wd-chip on"  id="wdc-1" onclick="toggleWorkDay(1)">Mon</div>
-          <div class="wd-chip on"  id="wdc-2" onclick="toggleWorkDay(2)">Tue</div>
-          <div class="wd-chip on"  id="wdc-3" onclick="toggleWorkDay(3)">Wed</div>
-          <div class="wd-chip on"  id="wdc-4" onclick="toggleWorkDay(4)">Thu</div>
-          <div class="wd-chip on"  id="wdc-5" onclick="toggleWorkDay(5)">Fri</div>
-          <div class="wd-chip" id="wdc-6" onclick="toggleWorkDay(6)">Sat</div>
+      <!-- Time range slider -->
+      <div class="ts-section">
+        <div class="ts-section-title">Work hours</div>
+        <div class="ts-time-display">
+          <span class="ts-highlight" id="ts-lbl-start">9:00 AM</span>
+          <span style="color:var(--muted);font-size:14px;font-weight:500;"> to </span>
+          <span class="ts-highlight" id="ts-lbl-end">5:00 PM</span>
+        </div>
+        <div class="ts-track-wrap" id="ts-wrap">
+          <div class="ts-track" id="ts-track">
+            <div class="ts-active" id="ts-active"></div>
+          </div>
+          <div class="ts-handle" id="ts-h-start"></div>
+          <div class="ts-handle" id="ts-h-end"></div>
+        </div>
+        <div class="ts-ticks">
+          <span class="ts-tick">6 AM</span>
+          <span class="ts-tick">9</span>
+          <span class="ts-tick">12 PM</span>
+          <span class="ts-tick">3</span>
+          <span class="ts-tick">6</span>
+          <span class="ts-tick">9</span>
+          <span class="ts-tick">11 PM</span>
         </div>
       </div>
 
-      <div class="work-option" id="wopt-none" onclick="selectWorkType('none')">
-        <div class="wo-title">⏭ Skip for now</div>
-        <div class="wo-sub">I'll set this up later in my profile</div>
-      </div>
+      <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip — I'll set this up later</span>
 
-      <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(3)">← Back</button>
+      <div class="wizard-nav" style="margin-top:18px;">
+        <button class="btn btn-outline btn-sm" id="step4-back-btn" onclick="step4Back()">← Back</button>
         <button class="btn btn-primary" onclick="saveAndFinish()">Save &amp; open my calendar →</button>
       </div>
     </div>
@@ -428,6 +530,7 @@ let currentStep    = 1;
 let isTwoWeek      = false;
 let weekStartDate  = null; // always a Sunday (Date object, midnight local)
 let createdToken   = null; // set after successful account creation
+let isParent       = true; // set in step-parent
 
 // selected[i] = true if day i (0=Sun … 6=Sat) is "yours"
 let week1Selected  = [false,false,false,false,false,false,false];
@@ -435,31 +538,122 @@ let week2Selected  = [false,false,false,false,false,false,false];
 
 let generatedDays  = []; // [{date,owner,tags}] built before review step
 
-let workScheduleType = 'standard_weekdays';
-let workCustomDays   = [1,2,3,4,5]; // Mon–Fri default
+// Work schedule state
+let workDays       = [1,2,3,4,5]; // Mon–Fri default
+let workStartHour  = 9;
+let workEndHour    = 17;
+let skipWork       = false;
 
-function selectWorkType(type) {
-  workScheduleType = type;
-  ['standard_weekdays','custom','none'].forEach(t => {
-    const el = document.getElementById(`wopt-${t === 'standard_weekdays' ? 'standard' : t}`);
-    if (el) el.classList.toggle('selected', t === type);
-  });
-  const picker = document.getElementById('custom-days-picker');
-  if (picker) picker.classList.toggle('hidden', type !== 'custom');
+const WD_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WD_LETTER = ['S','M','T','W','T','F','S'];
+
+// ── Parent question ──────────────────────────────────────────────────────────
+function setParent(val) {
+  isParent = val;
+  document.getElementById('popt-yes').classList.toggle('selected', val);
+  document.getElementById('popt-no').classList.toggle('selected', !val);
 }
 
-function toggleWorkDay(dow) {
-  const idx = workCustomDays.indexOf(dow);
-  if (idx === -1) workCustomDays.push(dow);
-  else workCustomDays.splice(idx, 1);
-  const chip = document.getElementById(`wdc-${dow}`);
-  if (chip) chip.classList.toggle('on', workCustomDays.includes(dow));
+function parentNext() {
+  if (isParent) goStep(2);
+  else          goStep(4);
+}
+
+function step4Back() {
+  if (isParent) goStep(3);
+  else          goStep('parent');
+}
+
+function skipWorkSchedule() {
+  skipWork = true;
+  saveAndFinish();
+}
+
+// ── Work day grid ────────────────────────────────────────────────────────────
+function renderWorkDayGrid() {
+  const grid = document.getElementById('work-day-grid');
+  if (!grid) return;
+  grid.innerHTML = [0,1,2,3,4,5,6].map(dow => {
+    const on = workDays.includes(dow);
+    return `<div class="wp-cell${on ? ' work' : ''}" id="wwd-${dow}" onclick="toggleWorkDayCell(${dow})">
+      <div class="wp-day-lbl">${WD_LETTER[dow]}</div>
+      <div class="wp-day-full">${WD_ABBR[dow]}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWorkDayCell(dow) {
+  const idx = workDays.indexOf(dow);
+  if (idx === -1) workDays.push(dow);
+  else workDays.splice(idx, 1);
+  document.getElementById(`wwd-${dow}`)?.classList.toggle('work', workDays.includes(dow));
+}
+
+// ── Time slider ──────────────────────────────────────────────────────────────
+const TS_MIN = 6, TS_MAX = 23;
+
+function formatHour(h) {
+  if (h === 0)  return '12:00 AM';
+  if (h === 12) return '12:00 PM';
+  return h < 12 ? `${h}:00 AM` : `${h-12}:00 PM`;
+}
+
+function updateTimeSliderUI() {
+  const wrap    = document.getElementById('ts-wrap');
+  const track   = document.getElementById('ts-track');
+  if (!wrap || !track) return;
+  const pctS = (workStartHour - TS_MIN) / (TS_MAX - TS_MIN) * 100;
+  const pctE = (workEndHour   - TS_MIN) / (TS_MAX - TS_MIN) * 100;
+  document.getElementById('ts-active').style.cssText   = `left:${pctS}%;width:${pctE-pctS}%`;
+  document.getElementById('ts-h-start').style.left     = `calc(${pctS}% + 14px - 13px)`;
+  document.getElementById('ts-h-end').style.left       = `calc(${pctE}% + 14px - 13px)`;
+  document.getElementById('ts-lbl-start').textContent  = formatHour(workStartHour);
+  document.getElementById('ts-lbl-end').textContent    = formatHour(workEndHour);
+}
+
+function initTimeSlider() {
+  const wrap = document.getElementById('ts-wrap');
+  if (!wrap) return;
+
+  function hourFromClientX(clientX) {
+    const rect = document.getElementById('ts-track').getBoundingClientRect();
+    const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Math.round(pct * (TS_MAX - TS_MIN) + TS_MIN);
+  }
+
+  function makeHandle(handleId, isStart) {
+    const el = document.getElementById(handleId);
+    let dragging = false;
+
+    el.addEventListener('mousedown',  e => { dragging = true; e.preventDefault(); });
+    el.addEventListener('touchstart', e => { dragging = true; }, { passive: true });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const h = hourFromClientX(e.clientX);
+      if (isStart) workStartHour = Math.max(TS_MIN, Math.min(h, workEndHour - 1));
+      else         workEndHour   = Math.min(TS_MAX, Math.max(h, workStartHour + 1));
+      updateTimeSliderUI();
+    });
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const h = hourFromClientX(e.touches[0].clientX);
+      if (isStart) workStartHour = Math.max(TS_MIN, Math.min(h, workEndHour - 1));
+      else         workEndHour   = Math.min(TS_MAX, Math.max(h, workStartHour + 1));
+      updateTimeSliderUI();
+    }, { passive: true });
+    document.addEventListener('mouseup',  () => { dragging = false; });
+    document.addEventListener('touchend', () => { dragging = false; });
+  }
+
+  makeHandle('ts-h-start', true);
+  makeHandle('ts-h-end',   false);
+  updateTimeSliderUI();
 }
 
 function getWorkSchedulePayload() {
-  if (workScheduleType === 'standard_weekdays') return { type: 'standard_weekdays' };
-  if (workScheduleType === 'custom') return { type: 'custom', days: [...workCustomDays] };
-  return { type: 'none' };
+  if (skipWork) return { type: 'none' };
+  return { type: 'custom', days: [...workDays], start_hour: workStartHour, end_hour: workEndHour };
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -487,12 +681,16 @@ function weekDateAt(weekNum, idx) {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
+const STEP_PROGRESS = { '0':0, '1':12, 'parent':24, '2':38, '3':52, '4':72, '5':100 };
+
 function goStep(n) {
   document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
   document.getElementById('step-' + n).classList.add('active');
   currentStep = n;
-  // step-0 = 0%, step-1..5 = 20%..100%
-  document.getElementById('progress').style.width = Math.round((n / 5) * 100) + '%';
+  const pct = STEP_PROGRESS[String(n)] ?? Math.round((Number(n) / 5) * 100);
+  document.getElementById('progress').style.width = pct + '%';
+  // Init work day grid + slider when entering step 4
+  if (String(n) === '4') { renderWorkDayGrid(); initTimeSlider(); }
   window.scrollTo(0, 0);
 }
 
@@ -501,7 +699,7 @@ function step1Next() {
     alert('Please enter your name');
     return;
   }
-  goStep(2);
+  goStep('parent');
 }
 
 function step2Next() {
@@ -698,10 +896,10 @@ async function saveAndFinish() {
       magic:         MAGIC_TOKEN,
       name,
       google_id:     GOOGLE_ID || undefined,
-      pattern_type:  patternType,
-      pattern_data:  patternData,
+      pattern_type:  isParent ? patternType : 'none',
+      pattern_data:  isParent ? patternData : {},
       anchor_date:   toDateStr(weekStartDate),
-      days:          generatedDays,
+      days:          isParent ? generatedDays : [],
       work_schedule: getWorkSchedulePayload()
     })
   });

@@ -792,13 +792,17 @@ let activitiesByDate = {};
 let activityModalDates = [];
 
 function isWorkBlock(date) {
-  const dow = date.getDay(); // 0=Sun, 6=Sat
+  const dow = date.getDay();
   if (!myWorkSchedule || myWorkSchedule.type === 'none') return false;
   if (myWorkSchedule.type === 'standard_weekdays') return dow >= 1 && dow <= 5;
   if (myWorkSchedule.type === 'custom') return (myWorkSchedule.days || []).includes(dow);
   if (myWorkSchedule.type === 'ical') return (myWorkSchedule.dates || []).includes(toDateStr(date));
   return false;
 }
+
+// Returns true if the WHOLE day is a work day (ignoring hours — used for day-level free/busy).
+// Hours are informational for now (future: partial-day free slots).
+function isWorkDay(date) { return isWorkBlock(date); }
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
