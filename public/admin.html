@@ -107,19 +107,18 @@ async function load() {
                     : 'none';
     const connLabel = u.conn_status || 'none';
 
-    // Role column: owners show "owner"; partners show their relationship type with toggle button
+    // Role column: owners show "owner"; connected users show their relationship type (3-way cycle)
     let roleCell;
     if (u.role === 'owner') {
       roleCell = `<span class="badge badge-owner">owner</span>`;
     } else if (u.conn_id) {
-      const rel = u.relationship_type || 'coparent';
-      const isPartner = rel === 'partner';
-      const bg    = isPartner ? '#fce4ec' : '#e8f0fe';
-      const color = isPartner ? '#c2185b' : '#1967d2';
-      const label = isPartner ? '❤️ partner' : '👨‍👩‍👧 co-parent';
-      const next  = isPartner ? 'coparent' : 'partner';
+      const rel  = u.relationship_type || 'coparent';
+      const next = rel === 'coparent' ? 'partner' : rel === 'partner' ? 'friend' : 'coparent';
+      const bg    = rel === 'partner' ? '#fce4ec' : rel === 'friend' ? '#e8f5e9' : '#e8f0fe';
+      const color = rel === 'partner' ? '#c2185b' : rel === 'friend' ? '#2e7d32' : '#1967d2';
+      const label = rel === 'partner' ? '❤️ partner' : rel === 'friend' ? '👋 friend' : '👨‍👩‍👧 co-parent';
       roleCell = `<button onclick="setRole('${u.conn_id}','${next}')"
-        title="Click to switch to ${next}" style="background:${bg};color:${color};border:none;
+        title="Click to cycle role" style="background:${bg};color:${color};border:none;
         padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">${label}</button>`;
     } else {
       roleCell = `<span class="badge badge-partner">partner (no connection)</span>`;
@@ -138,7 +137,7 @@ async function load() {
 }
 
 async function setRole(connId, newRole) {
-  const label = newRole === 'partner' ? '❤️ partner' : '👨‍👩‍👧 co-parent';
+  const label = newRole === 'partner' ? '❤️ partner' : newRole === 'friend' ? '👋 friend' : '👨‍👩‍👧 co-parent';
   const res = await fetch(`/api/admin/connections/${connId}/role?token=${ADMIN_TOKEN}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

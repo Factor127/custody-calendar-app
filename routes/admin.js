@@ -24,11 +24,16 @@ router.get('/admin/users', (req, res) => {
     SELECT
       u.id, u.name, u.email, u.role, u.created_at,
       (SELECT COUNT(*) FROM calendar_days WHERE user_id = u.id) AS day_count,
-      c.id         AS conn_id,
-      c.status     AS conn_status,
+      c.id              AS conn_id,
+      c.status          AS conn_status,
       c.relationship_type AS relationship_type
     FROM users u
-    LEFT JOIN connections c ON c.requester_id = u.id
+    LEFT JOIN connections c ON c.id = (
+      SELECT id FROM connections
+      WHERE (requester_id = u.id OR target_id = u.id)
+      ORDER BY CASE WHEN status = 'approved' THEN 0 ELSE 1 END, created_at DESC
+      LIMIT 1
+    )
     ORDER BY u.created_at DESC
   `).all();
 
@@ -40,8 +45,8 @@ router.put('/admin/connections/:id/role', (req, res) => {
   if (!requireAdmin(req, res)) return;
 
   const { relationship_type } = req.body;
-  if (!['coparent', 'partner'].includes(relationship_type)) {
-    return res.status(400).json({ error: 'relationship_type must be coparent or partner' });
+  if (!['coparent', 'partner', 'friend'].includes(relationship_type)) {
+    return res.status(400).json({ error: 'relationship_type must be coparent, partner or friend' });
   }
 
   const conn = db.prepare('SELECT * FROM connections WHERE id = ?').get(req.params.id);
