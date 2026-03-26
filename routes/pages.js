@@ -8,6 +8,7 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 // Admin panel (protected by ADMIN_TOKEN env var)
 router.get('/admin', (req, res) => {
   if (!req.query.token) return res.status(403).send('<h2>Access denied</h2><p>Include ?token= in the URL.</p>');
+  res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 

@@ -24,16 +24,19 @@ router.get('/admin/users', (req, res) => {
     SELECT
       u.id, u.name, u.email, u.role, u.created_at,
       (SELECT COUNT(*) FROM calendar_days WHERE user_id = u.id) AS day_count,
-      c.id              AS conn_id,
-      c.status          AS conn_status,
-      c.relationship_type AS relationship_type
+      (SELECT c.id FROM connections c
+        WHERE c.requester_id = u.id OR c.target_id = u.id
+        ORDER BY CASE WHEN c.status='approved' THEN 0 ELSE 1 END, c.created_at DESC
+        LIMIT 1) AS conn_id,
+      (SELECT c.status FROM connections c
+        WHERE c.requester_id = u.id OR c.target_id = u.id
+        ORDER BY CASE WHEN c.status='approved' THEN 0 ELSE 1 END, c.created_at DESC
+        LIMIT 1) AS conn_status,
+      (SELECT c.relationship_type FROM connections c
+        WHERE c.requester_id = u.id OR c.target_id = u.id
+        ORDER BY CASE WHEN c.status='approved' THEN 0 ELSE 1 END, c.created_at DESC
+        LIMIT 1) AS relationship_type
     FROM users u
-    LEFT JOIN connections c ON c.id = (
-      SELECT id FROM connections
-      WHERE (requester_id = u.id OR target_id = u.id)
-      ORDER BY CASE WHEN status = 'approved' THEN 0 ELSE 1 END, created_at DESC
-      LIMIT 1
-    )
     ORDER BY u.created_at DESC
   `).all();
 
