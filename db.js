@@ -27,7 +27,9 @@ try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"
 try { db.exec('ALTER TABLE connections ADD COLUMN requester_share_until TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE connections ADD COLUMN target_share_until TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE connections ADD COLUMN requester_duration_days INTEGER'); } catch(e) { /* already exists */ }
-// Backfill connections.relationship_type from the invite that was used to join
+// Backfill connections.relationship_type from the invite that was used to join.
+// Only runs on connections still at the default 'coparent' value — never overwrites
+// a relationship_type that was manually set (e.g. changed via the badge toggle).
 try {
   db.exec(`
     UPDATE connections SET relationship_type = (
@@ -36,11 +38,13 @@ try {
       WHERE i.used_by = connections.requester_id
         AND i.created_by = connections.target_id
       LIMIT 1
-    ) WHERE EXISTS (
-      SELECT 1 FROM invites i
-      WHERE i.used_by = connections.requester_id
-        AND i.created_by = connections.target_id
-    )
+    ) WHERE relationship_type = 'coparent'
+      AND EXISTS (
+        SELECT 1 FROM invites i
+        WHERE i.used_by = connections.requester_id
+          AND i.created_by = connections.target_id
+          AND i.relationship_type != 'coparent'
+      )
   `);
 } catch(e) { /* ignore if column not ready */ }
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* table may not exist yet on first run */ }
