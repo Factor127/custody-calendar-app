@@ -17,11 +17,11 @@ router.get('/login', (req, res) => {
   res.redirect('/');
 });
 
-// First-time setup page
+// First-time setup page — now served by the unified onboard.html
 // Multi-tenant: any verified email can set up — requires ?magic= from auth flow
 router.get('/setup', (req, res) => {
   if (!req.query.magic) return res.redirect('/login');
-  res.sendFile(path.join(PUBLIC, 'setup.html'));
+  res.sendFile(path.join(PUBLIC, 'onboard.html'));
 });
 
 // Unified calendar — works for all authenticated users

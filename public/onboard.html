@@ -3,17 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Custody Calendar — Set Up Your Profile</title>
+  <title>Spontany — Set Up Your Profile</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
-    /* ── Week picker (same as setup.html) ── */
+    /* ── Week picker ── */
     .week-picker-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 8px;
       margin: 12px 0;
     }
-
     .week-picker-head {
       text-align: center;
       font-size: 11px;
@@ -23,7 +22,6 @@
       padding-bottom: 4px;
       letter-spacing: 0.03em;
     }
-
     .wp-cell {
       display: flex;
       flex-direction: column;
@@ -38,23 +36,19 @@
       transition: background 0.13s, border-color 0.13s, transform 0.1s;
       min-height: 64px;
     }
-
     .wp-cell:active { transform: scale(0.95); }
-
     .wp-cell .wp-num {
       font-size: 20px;
       font-weight: 700;
       line-height: 1;
       color: var(--text);
     }
-
     .wp-cell .wp-month {
       font-size: 10px;
       font-weight: 600;
       color: var(--muted);
       letter-spacing: 0.04em;
     }
-
     .wp-cell.self {
       background: var(--r);
       border-color: var(--r-border);
@@ -70,7 +64,6 @@
       letter-spacing: 0.05em;
       margin: 16px 0 6px;
     }
-
     .expand-btn {
       width: 100%;
       margin-top: 16px;
@@ -86,10 +79,7 @@
       transition: background 0.15s, border-color 0.15s;
       font-family: inherit;
     }
-    .expand-btn:hover {
-      background: #e8f0fe;
-      border-color: var(--blue);
-    }
+    .expand-btn:hover { background: #e8f0fe; border-color: var(--blue); }
 
     .wp-legend {
       display: flex;
@@ -108,31 +98,35 @@
       vertical-align: middle;
       border: 1px solid var(--border);
     }
-    /* Work schedule step */
-    .work-option {
-      display: flex; flex-direction: column; gap: 4px;
-      padding: 14px 16px; border: 2px solid var(--border);
-      border-radius: 12px; cursor: pointer; margin-bottom: 10px;
-      transition: border-color .15s, background .15s; user-select: none;
+
+    /* ── Invite tabs + free strip ── */
+    .inv-type-tabs {
+      display: flex; gap: 4px; background: #f0f0f0;
+      border-radius: 9px; padding: 4px; margin-bottom: 12px;
     }
-    .work-option:hover { background: #f8f8f8; }
-    .work-option.selected { border-color: var(--blue); background: #e8f0fe; }
-    .work-option .wo-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .work-option .wo-sub   { font-size: 12px; color: var(--muted); }
-    .work-day-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .wd-chip {
-      padding: 5px 10px; border-radius: 20px; border: 1.5px solid var(--border);
-      font-size: 12px; font-weight: 700; cursor: pointer; background: white;
-      user-select: none; transition: all .13s;
+    .inv-type-tab {
+      flex: 1; padding: 8px 4px; border: none; border-radius: 7px;
+      background: transparent; font-size: 12px; font-weight: 700;
+      color: #666; cursor: pointer; transition: all 0.15s;
     }
-    .wd-chip.on { background: var(--blue); border-color: var(--blue); color: white; }
-    /* Done screen free strip */
+    .inv-type-tab.active { background: white; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+    .inv-panel-desc { font-size: 12px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
+    .inv-url-box {
+      background: white; border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px 12px; font-family: monospace; font-size: 11px;
+      word-break: break-all; color: var(--muted);
+    }
+    .wa-send-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+      background: #25d366; color: white; text-decoration: none;
+    }
     .free-chip {
-      flex: 1; min-width: 32px; border-radius: 7px;
-      padding: 5px 2px; text-align: center;
+      flex: 1; min-width: 32px; border-radius: 7px; padding: 5px 2px;
+      text-align: center; font-size: 9px;
     }
 
-    /* ── Intro overlay (screens 0 → 0.3) ── */
+    /* ── Intro overlay ── */
     .intro-overlay {
       position: fixed; inset: 0; z-index: 9999;
       background: linear-gradient(180deg, #08081a 0%, #110730 45%, #1c0848 75%, #2a0a60 100%);
@@ -141,46 +135,103 @@
       transition: opacity 0.55s ease;
     }
     .intro-overlay.hiding { opacity: 0; pointer-events: none; }
-    .intro-slide { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 340px; animation: iSlideUp 0.5s ease; }
-    .intro-slide.active { display: flex; }
-    @keyframes iSlideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-    .intro-logo  { font-size:16px; font-weight:800; color:rgba(255,255,255,0.5); letter-spacing:.12em; text-transform:uppercase; margin-bottom:48px; }
-    .intro-big   { font-size:42px; font-weight:900; color:white; line-height:1.1; letter-spacing:-0.025em; margin-bottom:12px; }
-    .intro-headline { font-size:30px; font-weight:800; color:white; line-height:1.2; letter-spacing:-0.02em; margin-bottom:14px; }
-    .intro-sub   { font-size:15px; color:rgba(255,255,255,0.55); line-height:1.65; margin-bottom:52px; max-width:280px; }
-    .intro-dots  { display:flex; gap:9px; margin-bottom:52px; }
-    .intro-dot   { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.25); transition:background .3s, transform .3s; }
-    .intro-dot.active { background:white; transform:scale(1.25); }
-    .intro-loading { color:rgba(255,255,255,0.45); font-size:15px; margin-top:24px; }
-    .intro-cta {
-      background:#4285f4; color:white; border:none; border-radius:28px;
-      padding:16px 36px; font-size:16px; font-weight:700; cursor:pointer;
-      font-family:inherit; box-shadow:0 6px 24px rgba(66,133,244,.45);
-      transition:transform .12s, box-shadow .12s;
+    .intro-slide {
+      display: none; flex-direction: column; align-items: center;
+      width: 100%; max-width: 340px; animation: iSlideUp 0.5s ease;
     }
-    .intro-cta:active { transform:scale(0.97); box-shadow:0 3px 12px rgba(66,133,244,.3); }
+    .intro-slide.active { display: flex; }
+    @keyframes iSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .intro-logo  { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 48px; }
+    .intro-big   { font-size: 46px; font-weight: 900; color: white; line-height: 1.1; letter-spacing: -0.025em; margin-bottom: 12px; }
+    .intro-headline { font-size: 30px; font-weight: 800; color: white; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 14px; }
+    .intro-sub   { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.65; margin-bottom: 52px; max-width: 280px; }
+    .intro-loading { color: rgba(255,255,255,0.45); font-size: 15px; margin-top: 24px; }
+    .intro-dots  { display: flex; gap: 9px; margin-bottom: 52px; }
+    .intro-dot   { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: background 0.3s, transform 0.3s; }
+    .intro-dot.active { background: white; transform: scale(1.25); }
+    .intro-cta {
+      background: #4285f4; color: white; border: none; border-radius: 28px;
+      padding: 16px 36px; font-size: 16px; font-weight: 700; cursor: pointer;
+      font-family: inherit; box-shadow: 0 6px 24px rgba(66,133,244,.45);
+      transition: transform .12s, box-shadow .12s;
+    }
+    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(66,133,244,.3); }
 
-    /* Step 1 dark header */
+    /* ── Wizard hidden until intro done ── */
     #wizard-main { transition: opacity 0.4s ease; }
-    .step1-header { background:linear-gradient(180deg,#110730,#1c0848); margin:-24px -24px 24px; padding:30px 24px 28px; border-radius:16px 16px 0 0; text-align:center; }
-    .step1-header-title { font-size:24px; font-weight:900; color:white; line-height:1.2; letter-spacing:-0.01em; }
 
-    /* Relationship status chips */
-    .rel-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
-    .rel-chip { padding:8px 16px; border-radius:20px; border:1.5px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; background:white; color:var(--text); user-select:none; transition:all .13s; }
-    .rel-chip.on { background:#e8f0fe; border-color:#4285f4; color:#1a73e8; }
+    /* ── Step 1 dark header ── */
+    .step1-header {
+      background: linear-gradient(180deg, #110730, #1c0848);
+      margin: -24px -24px 24px; padding: 30px 24px 28px;
+      border-radius: 16px 16px 0 0; text-align: center;
+    }
+    .step1-header-title { font-size: 26px; font-weight: 900; color: white; line-height: 1.2; letter-spacing: -0.01em; }
+
+    /* ── Relationship status chips ── */
+    .rel-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .rel-chip {
+      padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+      font-size: 13px; font-weight: 600; cursor: pointer; background: white;
+      color: var(--text); user-select: none; transition: all .13s;
+    }
+    .rel-chip.on { background: #e8f0fe; border-color: #4285f4; color: #1a73e8; }
+
+    /* ── Parent question ── */
+    .parent-opts-row { display: flex; gap: 14px; margin: 20px 0 28px; }
+    .parent-opt {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; border-radius: 14px; border: 2.5px solid var(--border);
+      padding: 24px 12px; cursor: pointer; user-select: none;
+      transition: background .13s, border-color .13s, transform .1s; text-align: center;
+    }
+    .parent-opt:active { transform: scale(0.96); }
+    .parent-opt.selected { border-color: #1a73e8; background: #e8f0fe; }
+    .parent-opt-emoji  { font-size: 38px; line-height: 1; }
+    .parent-opt-label  { font-size: 15px; font-weight: 700; color: var(--text); }
+    .parent-opt-sub    { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    /* ── Work-day grid ── */
+    .wp-cell.work { background: #e8f0fe; border-color: #4285f4; }
+    .wp-cell.work .wp-day-lbl { color: #1a73e8; }
+    .wp-day-lbl  { font-size: 13px; font-weight: 800; color: var(--muted); line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
+    .wp-day-full { font-size: 9px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+    .wp-cell.work .wp-day-full { color: #1565c0; }
+
+    /* ── Time slider ── */
+    .ts-section { margin-top: 22px; }
+    .ts-section-title { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+    .ts-time-display  { text-align: center; font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 18px; letter-spacing: -.01em; }
+    .ts-time-display .ts-highlight { color: #1a73e8; }
+    .ts-track-wrap { position: relative; height: 44px; display: flex; align-items: center; padding: 0 14px; margin-bottom: 4px; touch-action: none; }
+    .ts-track  { width: 100%; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
+    .ts-active { position: absolute; height: 6px; background: #1a73e8; border-radius: 3px; top: 0; pointer-events: none; }
+    .ts-handle {
+      position: absolute; width: 26px; height: 26px; background: white;
+      border: 3px solid #1a73e8; border-radius: 50%; top: 50%;
+      transform: translate(-50%, -50%); cursor: grab; touch-action: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18); z-index: 2;
+    }
+    .ts-handle:active { cursor: grabbing; box-shadow: 0 4px 12px rgba(26,115,232,.35); }
+    .ts-ticks { display: flex; justify-content: space-between; padding: 0 14px; }
+    .ts-tick  { font-size: 9px; color: var(--muted); font-weight: 600; }
+    .ts-skip-link { display: block; text-align: center; font-size: 12px; color: var(--muted); margin-top: 18px; text-decoration: underline; cursor: pointer; }
+    .ts-skip-link:hover { color: var(--blue); }
   </style>
 </head>
 <body>
 
-<!-- ── INTRO OVERLAY — validates invite silently, then runs slide sequence ── -->
+<!-- ── INTRO OVERLAY ── -->
 <div id="intro-overlay" class="intro-overlay">
-  <!-- Slide 0: loading → becomes personalised welcome after validation -->
+  <!-- Slide 0: direct mode = "Welcome to Spontany" | invite mode = personalised after token validation -->
   <div class="intro-slide active" id="isl-0">
     <div class="intro-logo">Spontany</div>
-    <div class="intro-loading">Checking your invite…</div>
+    <div class="intro-loading">Loading…</div>
   </div>
-  <!-- Slide 0.1 -->
+  <!-- Slide 1 -->
   <div class="intro-slide" id="isl-1">
     <div class="intro-dots">
       <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
@@ -188,7 +239,7 @@
     <div class="intro-headline">Friendships need<br>face-to-face time</div>
     <div class="intro-sub">Real connection happens in person — coffee, walks, just being there.</div>
   </div>
-  <!-- Slide 0.2 -->
+  <!-- Slide 2 -->
   <div class="intro-slide" id="isl-2">
     <div class="intro-dots">
       <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
@@ -196,7 +247,7 @@
     <div class="intro-headline">But, sometime it's just too hard to find the right time</div>
     <div class="intro-sub">Schedules are complex. The back-and-forth is exhausting.</div>
   </div>
-  <!-- Slide 0.3 -->
+  <!-- Slide 3: CTA -->
   <div class="intro-slide" id="isl-3">
     <div class="intro-dots">
       <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
@@ -216,7 +267,7 @@
 
   <div class="wizard-card" style="padding:0 0 24px;overflow:hidden;">
 
-    <!-- Step 0: invisible placeholder for error states only -->
+    <!-- Step 0: error placeholder (invite mode only) -->
     <div class="wizard-step" id="step-0" style="padding:24px;">
       <div style="text-align:center;padding:20px 0;">
         <div style="font-size:32px;margin-bottom:12px;">🔗</div>
@@ -227,30 +278,34 @@
     <!-- Step 1: Personal details -->
     <div class="wizard-step" id="step-1">
       <div class="step1-header">
-        <div class="step1-header-title" id="invite-greeting">Let's learn<br>about you</div>
+        <div class="step1-header-title">Let's learn<br>about you</div>
       </div>
       <div style="padding:0 24px;">
-        <div class="field-group">
-          <label class="field-label" for="partner-name">Your name <span style="color:#e53935;">*</span></label>
-          <input id="partner-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name"
-                 oninput="checkStep1Ready()">
-        </div>
 
         <div class="field-group">
-          <label class="field-label" for="partner-email">Email address <span style="color:#e53935;">*</span></label>
-          <input id="partner-email" class="field-input" type="email" placeholder="you@example.com"
+          <label class="field-label" for="user-name">Your name <span style="color:#e53935;">*</span></label>
+          <input id="user-name" class="field-input" type="text" placeholder="First name"
+                 autocomplete="given-name" oninput="checkStep1Ready()">
+        </div>
+
+        <!-- Shown in invite mode, hidden in direct mode -->
+        <div class="field-group" id="email-group">
+          <label class="field-label" for="user-email">Email address <span style="color:#e53935;">*</span></label>
+          <input id="user-email" class="field-input" type="email" placeholder="you@example.com"
                  autocomplete="email" autocapitalize="none" oninput="checkStep1Ready()">
           <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Used to log back in — never shared.</p>
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="partner-age">Your age</label>
-          <input id="partner-age" class="field-input" type="number" placeholder="e.g. 34" min="18" max="99">
+          <label class="field-label" for="user-age">Your age</label>
+          <input id="user-age" class="field-input" type="number" placeholder="e.g. 34" min="18" max="99">
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="partner-mobile">Phone number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
-          <input id="partner-mobile" class="field-input" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
+          <label class="field-label" for="user-phone">Phone number
+            <span style="color:var(--muted);font-weight:400;">(optional)</span>
+          </label>
+          <input id="user-phone" class="field-input" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
         </div>
 
         <div class="field-group">
@@ -270,11 +325,10 @@
       </div>
     </div>
 
-    <!-- Step mirror: Is schedule a mirror image? -->
+    <!-- Step mirror: invite mode — is schedule a mirror of the inviter's? -->
     <div class="wizard-step" id="step-mirror">
-      <div class="wizard-title" id="mirror-question">Is your custody schedule a mirror image of <strong id="mirror-owner-name">your partner</strong>'s?</div>
+      <div class="wizard-title">Is your custody schedule a mirror image of <strong id="mirror-owner-name">your co-parent</strong>'s?</div>
       <p class="wizard-sub">For example, if they have the kids Mon–Wed, you have them Thu–Sun.</p>
-
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
         <button class="btn btn-primary" style="justify-content:center;" onclick="chooseMirror(true)">
           Yes — it's the opposite of theirs
@@ -283,143 +337,239 @@
           No — let me set my own schedule
         </button>
       </div>
-
       <div class="wizard-nav" style="margin-top:16px;">
         <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
         <span></span>
       </div>
     </div>
 
-    <!-- Step 2: Week picker -->
+    <!-- Step parent: do you have kids? -->
+    <div class="wizard-step" id="step-parent">
+      <div class="wizard-title">Do you have kids?</div>
+      <p class="wizard-sub">This helps us set up the right calendar for you.</p>
+      <div class="parent-opts-row">
+        <div class="parent-opt selected" id="popt-yes" onclick="setParent(true)">
+          <div class="parent-opt-emoji">👨‍👧</div>
+          <div class="parent-opt-label">Yes, I'm a parent</div>
+          <div class="parent-opt-sub">I share custody and want to track my kids' days</div>
+        </div>
+        <div class="parent-opt" id="popt-no" onclick="setParent(false)">
+          <div class="parent-opt-emoji">🙋</div>
+          <div class="parent-opt-label">No kids</div>
+          <div class="parent-opt-sub">I just want to see when I'm free to make plans</div>
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="parentBack()">← Back</button>
+        <button class="btn btn-primary" onclick="parentNext()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Week picker (parents only) -->
     <div class="wizard-step" id="step-2">
       <div class="wizard-title">Which days are the kids with you?</div>
       <p class="wizard-sub">Tap a day to mark it as yours. Tap again to unmark it.</p>
-
       <div class="wp-legend">
         <span><span class="wp-legend-swatch" style="background:var(--r);border-color:var(--r-border);"></span>Your day</span>
         <span><span class="wp-legend-swatch" style="background:white;"></span>Co-parent's day</span>
       </div>
-
-      <!-- Week 1 -->
       <div id="week1-section">
         <div class="week-section-label" id="week1-label"></div>
         <div class="week-picker-grid" id="week1-heads"></div>
         <div class="week-picker-grid" id="week1-cells"></div>
       </div>
-
-      <!-- Week 2 (hidden until expanded) -->
       <div id="week2-section" class="hidden">
         <div class="week-section-label" id="week2-label"></div>
         <div class="week-picker-grid" id="week2-cells"></div>
       </div>
-
       <button class="expand-btn" id="expand-btn" onclick="expandToTwoWeeks()">
         ↕ Two-week custody pattern? Press here to expand
       </button>
-
       <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-outline btn-sm" onclick="goStep('parent')">← Back</button>
         <button class="btn btn-primary" onclick="step2Next()">Looks right →</button>
       </div>
     </div>
 
-    <!-- Step 3: Review -->
+    <!-- Step 3: Review calendar -->
     <div class="wizard-step" id="step-3">
       <div class="wizard-title">Review your calendar</div>
       <p class="wizard-sub">Here's the next 3 months based on your pattern. Tap any day to flip it.</p>
-
       <div id="review-calendar"></div>
-
       <div class="wizard-nav">
         <button class="btn btn-outline btn-sm" onclick="goStep(2)">← Back</button>
-        <button class="btn btn-primary" onclick="saveAndContinue()">Next →</button>
+        <button class="btn btn-primary" onclick="goStep('work')">Next →</button>
       </div>
     </div>
 
-    <!-- Step work: work schedule -->
+    <!-- Step work: work schedule (day grid + time slider) -->
     <div class="wizard-step" id="step-work">
-      <div class="wizard-title">When do you typically work?</div>
-      <p class="wizard-sub">We use this to show when you're <em>actually</em> free — kid-free and work-free.</p>
-
-      <div class="work-option selected" id="wopt-standard" onclick="selectWorkType('standard_weekdays')">
-        <div class="wo-title">📅 Standard weekdays</div>
-        <div class="wo-sub">Mon – Fri, 9 to 5 (most common)</div>
+      <div class="wizard-title">When do you work?</div>
+      <p class="wizard-sub">Tap your work days, then set your usual hours. We use this to show when you're <em>actually</em> free.</p>
+      <div class="wp-legend" style="margin-bottom:10px;">
+        <span><span class="wp-legend-swatch" style="background:#e8f0fe;border-color:#4285f4;"></span>Work day</span>
+        <span><span class="wp-legend-swatch" style="background:white;"></span>Day off</span>
       </div>
-      <div class="work-option" id="wopt-custom" onclick="selectWorkType('custom')">
-        <div class="wo-title">🗓 Custom days</div>
-        <div class="wo-sub">I work on specific days of the week</div>
-        <div id="custom-days-picker" class="work-day-picker hidden" onclick="event.stopPropagation()">
-          <div class="wd-chip"    id="wdc-0" onclick="toggleWorkDay(0)">Sun</div>
-          <div class="wd-chip on" id="wdc-1" onclick="toggleWorkDay(1)">Mon</div>
-          <div class="wd-chip on" id="wdc-2" onclick="toggleWorkDay(2)">Tue</div>
-          <div class="wd-chip on" id="wdc-3" onclick="toggleWorkDay(3)">Wed</div>
-          <div class="wd-chip on" id="wdc-4" onclick="toggleWorkDay(4)">Thu</div>
-          <div class="wd-chip on" id="wdc-5" onclick="toggleWorkDay(5)">Fri</div>
-          <div class="wd-chip"    id="wdc-6" onclick="toggleWorkDay(6)">Sat</div>
+      <div class="week-picker-grid" id="work-day-grid"></div>
+      <div class="ts-section">
+        <div class="ts-section-title">Work hours</div>
+        <div class="ts-time-display">
+          <span class="ts-highlight" id="ts-lbl-start">9:00 AM</span>
+          <span style="color:var(--muted);font-size:14px;font-weight:500;"> to </span>
+          <span class="ts-highlight" id="ts-lbl-end">5:00 PM</span>
+        </div>
+        <div class="ts-track-wrap" id="ts-wrap">
+          <div class="ts-track" id="ts-track">
+            <div class="ts-active" id="ts-active"></div>
+          </div>
+          <div class="ts-handle" id="ts-h-start"></div>
+          <div class="ts-handle" id="ts-h-end"></div>
+        </div>
+        <div class="ts-ticks">
+          <span class="ts-tick">6 AM</span>
+          <span class="ts-tick">9</span>
+          <span class="ts-tick">12 PM</span>
+          <span class="ts-tick">3</span>
+          <span class="ts-tick">6</span>
+          <span class="ts-tick">9</span>
+          <span class="ts-tick">11 PM</span>
         </div>
       </div>
-      <div class="work-option" id="wopt-none" onclick="selectWorkType('none')">
-        <div class="wo-title">⏭ Skip for now</div>
-        <div class="wo-sub">I'll set this up later in my profile</div>
-      </div>
-
-      <div class="wizard-nav">
-        <button class="btn btn-outline btn-sm" onclick="goStep(3)">← Back</button>
-        <button class="btn btn-primary" onclick="saveWorkAndContinue()">Save &amp; finish →</button>
+      <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip — I'll set this up later</span>
+      <div class="wizard-nav" style="margin-top:18px;">
+        <button class="btn btn-outline btn-sm" onclick="workBack()">← Back</button>
+        <button class="btn btn-primary" onclick="saveAndFinish()">Save &amp; finish →</button>
       </div>
     </div>
 
-    <!-- Step done: onboarding complete -->
+    <!-- Step done: completion screen (content filled by JS based on mode) -->
     <div class="wizard-step" id="step-done">
       <div class="success-icon">✓</div>
-      <div class="wizard-title" style="text-align:center;" id="done-title">You're connected!</div>
+      <div class="wizard-title" style="text-align:center;margin-bottom:4px;" id="done-title">You're all set!</div>
+      <p class="wizard-sub" style="text-align:center;margin-bottom:14px;" id="done-sub">Here are your free days coming up.</p>
 
-      <div id="done-explanation" style="background:#e8f0fe;border:1.5px solid #c5d8f8;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:13px;line-height:1.6;color:#1967d2;">
-        <strong id="done-owner-name">Your co-parent</strong> can now see when you're both free at the same time — and can suggest a plan on days that work for you both.
-      </div>
+      <!-- Invite mode: connection explanation -->
+      <div id="done-connected-box" style="display:none;background:#e8f0fe;border:1.5px solid #c5d8f8;border-radius:10px;padding:14px 16px;margin:0 0 16px;font-size:13px;line-height:1.6;color:#1967d2;"></div>
 
+      <!-- Free days strip (both modes) -->
       <div style="margin-bottom:20px;">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Your upcoming free days</div>
         <div id="done-free-strip"></div>
       </div>
 
-      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="goToPartnerCalendar()">
+      <!-- Direct mode only: invite tabs -->
+      <div id="done-invite-section" style="display:none;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Connect with someone →</div>
+        <div class="inv-type-tabs">
+          <button class="inv-type-tab active" id="itab-coparent" onclick="switchInviteTab('coparent')">Co-parent</button>
+          <button class="inv-type-tab"        id="itab-partner"  onclick="switchInviteTab('partner')">Partner</button>
+          <button class="inv-type-tab"        id="itab-friend"   onclick="switchInviteTab('friend')">Friend</button>
+        </div>
+        <div id="inv-panel-coparent" class="inv-panel">
+          <p class="inv-panel-desc">Share custody schedules and coordinate handoffs.</p>
+          <div id="inv-url-coparent" class="inv-url-box">Generating…</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <a id="inv-wa-coparent" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Send via WhatsApp
+            </a>
+            <button class="btn btn-outline btn-sm" onclick="copyInvite('coparent')">📋 Copy</button>
+          </div>
+        </div>
+        <div id="inv-panel-partner" class="inv-panel" style="display:none;">
+          <p class="inv-panel-desc">Once connected, you'll see when you're both free at the same time.</p>
+          <div id="inv-url-partner" class="inv-url-box">Generating…</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <a id="inv-wa-partner" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Send via WhatsApp
+            </a>
+            <button class="btn btn-outline btn-sm" onclick="copyInvite('partner')">📋 Copy</button>
+          </div>
+        </div>
+        <div id="inv-panel-friend" class="inv-panel" style="display:none;">
+          <p class="inv-panel-desc">A close friend — see when you're both free together.</p>
+          <div id="inv-url-friend" class="inv-url-box">Generating…</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <a id="inv-wa-friend" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Send via WhatsApp
+            </a>
+            <button class="btn btn-outline btn-sm" onclick="copyInvite('friend')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" onclick="goToCalendar()">
         Open my calendar →
       </button>
-      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Your schedule is private — only you and people you approve can see it.</p>
+      <p id="done-footnote" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">
+        Your schedule is private — only people you approve can see it.
+      </p>
     </div>
 
   </div><!-- /.wizard-card -->
 </div><!-- /.wizard#wizard-main -->
 
 <script>
+// ── Mode detection ─────────────────────────────────────────────────────────────
+const _urlParams   = new URLSearchParams(location.search);
+const INVITE_TOKEN = (window.location.pathname.match(/\/invite\/([^/?]+)/) || [])[1] || null;
+const MAGIC_TOKEN  = _urlParams.get('magic');
+const GOOGLE_NAME  = _urlParams.get('name') || '';
+const GOOGLE_ID    = _urlParams.get('google_id') || '';
+const MODE         = INVITE_TOKEN ? 'invite' : 'direct';
+
+// Guard: direct mode requires magic token
+if (MODE === 'direct' && !MAGIC_TOKEN) { window.location.replace('/'); }
+
+// ── Constants ──────────────────────────────────────────────────────────────────
 const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const FULL_DAYS  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const WD_LETTER  = ['S','M','T','W','T','F','S'];
 
-const INVITE_TOKEN = window.location.pathname.split('/invite/')[1];
-let ownerName  = 'your partner';
-let myToken    = null;
-let myUserId   = null;
-let currentStep = 0;
-
-// Week picker state
-let isTwoWeek     = false;
+// ── State ──────────────────────────────────────────────────────────────────────
+let ownerName     = 'your co-parent';
+let createdToken  = null;
+let relStatus     = null;
+let isParent      = true;
 let isMirror      = false;
+let isTwoWeek     = false;
 let weekStartDate = null;
 let week1Selected = [false,false,false,false,false,false,false];
 let week2Selected = [false,false,false,false,false,false,false];
 let generatedDays = [];
-let relStatus     = null;
+let workDays      = [1,2,3,4,5]; // Mon–Fri default
+let workStartHour = 9;
+let workEndHour   = 17;
+let skipWork      = false;
+let currentStep   = 0;
 
-// ── Intro sequence ────────────────────────────────────────────────────────────
-const INTRO_DURATIONS = [2600, 3000, 3000, null];
+// ── Progress ──────────────────────────────────────────────────────────────────
+const STEP_PROGRESS = { '0':0, '1':8, 'mirror':22, 'parent':32, '2':48, '3':64, 'work':80, 'done':100 };
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('step-' + n);
+  if (el) el.classList.add('active');
+  currentStep = n;
+  document.getElementById('progress').style.width = (STEP_PROGRESS[String(n)] ?? 50) + '%';
+  if (String(n) === '2') ensureWeekInit();
+  if (String(n) === 'work') { renderWorkDayGrid(); initTimeSlider(); }
+  window.scrollTo(0, 0);
+}
+
+// ── Intro sequence ─────────────────────────────────────────────────────────────
+const INTRO_DURATIONS = [2400, 3000, 3000, null];
 let introTimer = null;
 
 function showIntroSlide(n) {
   clearTimeout(introTimer);
   document.querySelectorAll('.intro-slide').forEach(s => s.classList.remove('active'));
-  document.getElementById(`isl-${n}`)?.classList.add('active');
+  const sl = document.getElementById('isl-' + n);
+  if (sl) sl.classList.add('active');
   const dur = INTRO_DURATIONS[n];
   if (dur !== null) introTimer = setTimeout(() => showIntroSlide(n + 1), dur);
 }
@@ -433,12 +583,11 @@ function startOnboarding() {
     wiz.style.opacity = '1';
     wiz.style.pointerEvents = 'auto';
     goStep(1);
-    setTimeout(() => document.getElementById('partner-name')?.focus(), 100);
+    setTimeout(() => document.getElementById('user-name')?.focus(), 100);
   }, 560);
 }
 
 function showWizardError(msg) {
-  // Bypass intro, show wizard in error state
   document.getElementById('intro-overlay').style.display = 'none';
   const wiz = document.getElementById('wizard-main');
   wiz.style.opacity = '1'; wiz.style.pointerEvents = 'auto';
@@ -447,34 +596,89 @@ function showWizardError(msg) {
       <div style="font-size:32px;margin-bottom:12px;">❌</div>
       <h2 style="font-size:18px;margin:0 0 8px;">Invalid invite link</h2>
       <p class="text-muted">${msg}</p>
-      <p class="text-muted" style="margin-top:8px;font-size:12px;">Ask your partner to generate a new invite link.</p>
+      <p class="text-muted" style="margin-top:8px;font-size:12px;">Ask the person who invited you to send a new link.</p>
     </div>`;
   goStep(0);
+}
+
+// ── Step 1 ─────────────────────────────────────────────────────────────────────
+function checkStep1Ready() {
+  const name = document.getElementById('user-name')?.value.trim();
+  const btn  = document.getElementById('step1-next-btn');
+  if (!btn) return;
+  if (MODE === 'invite') {
+    const email = document.getElementById('user-email')?.value.trim();
+    btn.disabled = !(name && email && email.includes('@'));
+  } else {
+    btn.disabled = !name;
+  }
 }
 
 function selectRelStatus(val) {
   relStatus = val;
   ['single','relationship','married','separated'].forEach(v =>
-    document.getElementById(`rchip-${v}`)?.classList.toggle('on', v === val)
+    document.getElementById('rchip-' + v)?.classList.toggle('on', v === val)
   );
 }
 
-function checkStep1Ready() {
-  const name  = document.getElementById('partner-name')?.value.trim();
-  const email = document.getElementById('partner-email')?.value.trim();
-  const btn   = document.getElementById('step1-next-btn');
-  if (btn) btn.disabled = !(name && email);
+function step1Next() {
+  const name = document.getElementById('user-name')?.value.trim();
+  if (!name) return;
+  if (MODE === 'invite') {
+    const email = document.getElementById('user-email')?.value.trim();
+    if (!email || !email.includes('@')) return;
+    document.getElementById('mirror-owner-name').textContent = ownerName;
+    goStep('mirror');
+  } else {
+    goStep('parent');
+  }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-(async function init() {
-  weekStartDate = getNextFullWeekStart();
-  await validateInvite();
-})();
+// ── Mirror (invite mode) ───────────────────────────────────────────────────────
+function chooseMirror(yes) {
+  isMirror = yes;
+  // Mirror: skip custody setup, go straight to work schedule
+  if (yes) goStep('work');
+  else     goStep('parent');
+}
 
+// ── Parent step ────────────────────────────────────────────────────────────────
+function setParent(val) {
+  isParent = val;
+  document.getElementById('popt-yes').classList.toggle('selected',  val);
+  document.getElementById('popt-no').classList.toggle('selected',  !val);
+}
+
+function parentBack() {
+  if (MODE === 'invite') goStep('mirror');
+  else                   goStep(1);
+}
+
+function parentNext() {
+  if (isParent) { ensureWeekInit(); goStep(2); }
+  else          goStep('work');
+}
+
+// ── Work step ──────────────────────────────────────────────────────────────────
+function workBack() {
+  if (isParent)        goStep(3);
+  else if (isMirror)   goStep('mirror');
+  else                 goStep('parent');
+}
+
+function skipWorkSchedule() {
+  skipWork = true;
+  saveAndFinish();
+}
+
+function getWorkSchedulePayload() {
+  if (skipWork) return { type: 'none' };
+  return { type: 'custom', days: [...workDays], start_hour: workStartHour, end_hour: workEndHour };
+}
+
+// ── Week picker ────────────────────────────────────────────────────────────────
 function getNextFullWeekStart() {
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
+  const t = new Date(); t.setHours(0,0,0,0);
   const dow = t.getDay();
   if (dow === 0) return t;
   const next = new Date(t);
@@ -482,79 +686,14 @@ function getNextFullWeekStart() {
   return next;
 }
 
-// ── Invite validation ─────────────────────────────────────────────────────────
-async function validateInvite() {
-  if (!INVITE_TOKEN || INVITE_TOKEN === 'undefined') {
-    showWizardError('Missing invite token — the link may be broken.');
-    return;
-  }
-  try {
-    const res = await fetch(`/api/invites/${INVITE_TOKEN}`);
-    if (res.status === 409) {
-      const saved = localStorage.getItem('myToken');
-      if (saved) { window.location.href = `/partner?token=${saved}`; return; }
-      showWizardError('This invite has already been used. Ask your partner to send a new one.');
-      return;
-    }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    ownerName = data.owner_name || 'your partner';
-
-    // Personalise intro slide 0 and start the sequence
-    document.getElementById('isl-0').innerHTML = `
-      <div class="intro-logo">Spontany</div>
-      <div class="intro-big">${ownerName}<br>invited you 👋</div>
-      <div class="intro-sub" style="margin-top:10px;">You're joining ${ownerName} on Spontany.</div>
-    `;
-    showIntroSlide(0);
-
-  } catch(err) {
-    console.error('[onboard] validateInvite error:', err);
-    showWizardError(`Could not validate this invite link. (${err.message})`);
-  }
-}
-
-// ── Navigation ────────────────────────────────────────────────────────────────
-function goStep(n) {
-  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
-  const stepEl = typeof n === 'string' ? document.getElementById(`step-${n}`) : document.getElementById(`step-${n}`);
-  if (stepEl) stepEl.classList.add('active');
-  currentStep = n;
-  // Progress bar
-  const progressMap = { 0: 0, 1: 5, 'mirror': 28, 2: 48, 3: 68, 4: 82, 'done': 100 };
-  document.getElementById('progress').style.width = (progressMap[n] ?? 50) + '%';
-  window.scrollTo(0, 0);
-}
-
-function step1Next() {
-  const name  = document.getElementById('partner-name')?.value.trim();
-  const email = document.getElementById('partner-email')?.value.trim();
-  if (!name || !email || !email.includes('@')) return;
-  document.getElementById('mirror-owner-name').textContent = ownerName;
-  goStep('mirror');
-}
-
-async function chooseMirror(yes) {
-  isMirror = yes;
-  if (yes) {
-    await saveAndContinue();
-  } else {
+function ensureWeekInit() {
+  if (!weekStartDate) {
+    weekStartDate = getNextFullWeekStart();
     renderWeekHeads();
     renderWeekCells(1);
-    goStep(2);
   }
 }
 
-function step2Next() {
-  buildGeneratedDays();
-  renderReviewCalendar();
-  goStep(3);
-}
-
-// ── Week picker ───────────────────────────────────────────────────────────────
 function weekDateAt(weekNum, idx) {
   const d = new Date(weekStartDate);
   d.setDate(d.getDate() + (weekNum - 1) * 7 + idx);
@@ -568,130 +707,91 @@ function renderWeekHeads() {
 
 function renderWeekCells(weekNum) {
   const selected = weekNum === 1 ? week1Selected : week2Selected;
-  const cells = DAY_ABBR.map((_, idx) => {
-    const d = weekDateAt(weekNum, idx);
-    const isSelf = selected[idx];
-    return `<div class="wp-cell ${isSelf ? 'self' : ''}"
-                 onclick="toggleWpDay(${weekNum},${idx},this)">
-              <div class="wp-num">${d.getDate()}</div>
-              <div class="wp-month">${MONTH_ABBR[d.getMonth()]}</div>
-            </div>`;
-  });
-  document.getElementById(`week${weekNum}-cells`).innerHTML = cells.join('');
-
-  const start = weekDateAt(weekNum, 0);
-  const end   = weekDateAt(weekNum, 6);
-  const label = isTwoWeek
-    ? `Week ${weekNum} · ${MONTH_ABBR[start.getMonth()]} ${start.getDate()} – ${MONTH_ABBR[end.getMonth()]} ${end.getDate()}`
-    : `Week of ${MONTH_ABBR[start.getMonth()]} ${start.getDate()} – ${MONTH_ABBR[end.getMonth()]} ${end.getDate()}`;
-  document.getElementById(`week${weekNum}-label`).textContent = label;
+  document.getElementById('week' + weekNum + '-cells').innerHTML =
+    DAY_ABBR.map((_, idx) => {
+      const d = weekDateAt(weekNum, idx);
+      return `<div class="wp-cell ${selected[idx] ? 'self' : ''}" onclick="toggleWpDay(${weekNum},${idx},this)">
+                <div class="wp-num">${d.getDate()}</div>
+                <div class="wp-month">${MONTH_ABBR[d.getMonth()]}</div>
+              </div>`;
+    }).join('');
+  const s = weekDateAt(weekNum, 0), e = weekDateAt(weekNum, 6);
+  document.getElementById('week' + weekNum + '-label').textContent = isTwoWeek
+    ? 'Week ' + weekNum + ' · ' + MONTH_ABBR[s.getMonth()] + ' ' + s.getDate() + ' – ' + MONTH_ABBR[e.getMonth()] + ' ' + e.getDate()
+    : 'Week of ' + MONTH_ABBR[s.getMonth()] + ' ' + s.getDate() + ' – ' + MONTH_ABBR[e.getMonth()] + ' ' + e.getDate();
 }
 
 function toggleWpDay(weekNum, idx, el) {
   const sel = weekNum === 1 ? week1Selected : week2Selected;
   sel[idx] = !sel[idx];
-  el.className = `wp-cell ${sel[idx] ? 'self' : ''}`;
+  el.className = 'wp-cell ' + (sel[idx] ? 'self' : '');
 }
 
 function expandToTwoWeeks() {
   isTwoWeek = true;
   document.getElementById('expand-btn').classList.add('hidden');
   document.getElementById('week2-section').classList.remove('hidden');
-
-  const s1 = weekDateAt(1, 0), e1 = weekDateAt(1, 6);
+  const s1 = weekDateAt(1,0), e1 = weekDateAt(1,6);
   document.getElementById('week1-label').textContent =
-    `Week 1 · ${MONTH_ABBR[s1.getMonth()]} ${s1.getDate()} – ${MONTH_ABBR[e1.getMonth()]} ${e1.getDate()}`;
-
+    'Week 1 · ' + MONTH_ABBR[s1.getMonth()] + ' ' + s1.getDate() + ' – ' + MONTH_ABBR[e1.getMonth()] + ' ' + e1.getDate();
   renderWeekCells(2);
 }
 
-// ── Generate 12-month days ────────────────────────────────────────────────────
+function step2Next() {
+  buildGeneratedDays();
+  renderReviewCalendar();
+  goStep(3);
+}
+
+function toDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function buildGeneratedDays() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const yearOut = new Date(today);
-  yearOut.setFullYear(yearOut.getFullYear() + 1);
-
-  // Use noon for DST-safe week offset calculation
-  const anchorNoon = new Date(
-    weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate(), 12
-  );
-
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yearOut = new Date(today); yearOut.setFullYear(yearOut.getFullYear() + 1);
+  const anchorNoon = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate(), 12);
   const days = [];
-
   for (let d = new Date(today); d <= yearOut; d.setDate(d.getDate() + 1)) {
-    const dow    = d.getDay();
-    const dNoon  = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
-    const daysDiff   = Math.round((dNoon - anchorNoon) / (24 * 60 * 60 * 1000));
+    const dow = d.getDay();
+    const dNoon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    const daysDiff = Math.round((dNoon - anchorNoon) / 86400000);
     const weekOffset = Math.floor(daysDiff / 7);
-
-    let isSelf;
-    if (!isTwoWeek) {
-      isSelf = week1Selected[dow];
-    } else {
-      isSelf = ((weekOffset % 2) + 2) % 2 === 0
-        ? week1Selected[dow]
-        : week2Selected[dow];
-    }
-
+    const isSelf = !isTwoWeek ? week1Selected[dow]
+      : (((weekOffset % 2) + 2) % 2 === 0 ? week1Selected[dow] : week2Selected[dow]);
     days.push({ date: toDateStr(d), owner: isSelf ? 'self' : 'coparent', tags: [] });
   }
-
   generatedDays = days;
 }
 
-// Local-time date string — avoids UTC offset shifting date back in UTC+ timezones
-function toDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-// ── 3-month review calendar ───────────────────────────────────────────────────
 function renderReviewCalendar() {
   const dayMap = {};
-  for (const d of generatedDays) dayMap[d.date] = d;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = new Date(today.getFullYear(), today.getMonth(), 1);
-  const end   = new Date(today.getFullYear(), today.getMonth() + 3, 0);
-
-  let html = '';
-  let cur  = new Date(start);
-
+  generatedDays.forEach(d => { dayMap[d.date] = d; });
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+  let html = '', cur = new Date(today.getFullYear(), today.getMonth(), 1);
   while (cur <= end) {
-    const y           = cur.getFullYear();
-    const m           = cur.getMonth();
-    const label       = cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const firstDow    = new Date(y, m, 1).getDay();
-
+    const y = cur.getFullYear(), m = cur.getMonth();
+    const label = cur.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+    const daysInMonth = new Date(y, m+1, 0).getDate();
     html += `<div class="mini-calendar-preview" style="margin-bottom:12px;">
-      <div class="mini-cal-title">${label}</div>
-      <div class="mini-cal-grid">`;
-
+      <div class="mini-cal-title">${label}</div><div class="mini-cal-grid">`;
     html += DAY_ABBR.map(d => `<div class="mini-cal-head">${d}</div>`).join('');
-
-    for (let i = 0; i < firstDow; i++) html += '<div class="mini-cal-day empty"></div>';
-
+    for (let i = 0; i < new Date(y, m, 1).getDay(); i++) html += '<div class="mini-cal-day empty"></div>';
     for (let day = 1; day <= daysInMonth; day++) {
-      const ds    = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const ds = y + '-' + String(m+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
       const entry = dayMap[ds];
-      const cls   = entry?.owner === 'self' ? 'self' : (entry?.owner === 'coparent' ? 'coparent' : '');
-      html += `<div class="mini-cal-day ${cls}" data-date="${ds}" data-owner="${entry?.owner || 'coparent'}"
-                    onclick="toggleReviewDay(this)" style="cursor:pointer;" title="Tap to flip">${day}</div>`;
+      const cls = entry?.owner === 'self' ? 'self' : (entry?.owner === 'coparent' ? 'coparent' : '');
+      html += `<div class="mini-cal-day ${cls}" data-date="${ds}" data-owner="${entry?.owner||'coparent'}"
+                    onclick="toggleReviewDay(this)" style="cursor:pointer;">${day}</div>`;
     }
-
     html += '</div></div>';
-    cur.setMonth(cur.getMonth() + 1);
-    cur.setDate(1);
+    cur.setMonth(cur.getMonth() + 1); cur.setDate(1);
   }
-
   html += `<p class="text-muted" style="font-size:12px;margin-top:4px;">
     <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid var(--r-border);border-radius:2px;margin-right:4px;"></span>Your days &nbsp;
     <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid var(--z-border);border-radius:2px;margin-right:4px;"></span>Co-parent's days — tap any day to flip it.
   </p>`;
-
   document.getElementById('review-calendar').innerHTML = html;
 }
 
@@ -704,12 +804,87 @@ function toggleReviewDay(el) {
   else generatedDays.push({ date: el.dataset.date, owner: next, tags: [] });
 }
 
-// ── Save & register ───────────────────────────────────────────────────────────
-async function saveAndContinue() {
-  const name = document.getElementById('partner-name').value.trim();
-  if (!name) { alert('Name missing'); goStep(1); return; }
+// ── Work day grid ──────────────────────────────────────────────────────────────
+function renderWorkDayGrid() {
+  const grid = document.getElementById('work-day-grid');
+  if (!grid) return;
+  grid.innerHTML = [0,1,2,3,4,5,6].map(dow => {
+    const on = workDays.includes(dow);
+    return `<div class="wp-cell${on ? ' work' : ''}" id="wwd-${dow}" onclick="toggleWorkDayCell(${dow})">
+      <div class="wp-day-lbl">${WD_LETTER[dow]}</div>
+      <div class="wp-day-full">${DAY_ABBR[dow]}</div>
+    </div>`;
+  }).join('');
+}
 
-  // Sync any last-minute DOM edits from the review calendar
+function toggleWorkDayCell(dow) {
+  const idx = workDays.indexOf(dow);
+  if (idx === -1) workDays.push(dow);
+  else            workDays.splice(idx, 1);
+  document.getElementById('wwd-' + dow)?.classList.toggle('work', workDays.includes(dow));
+}
+
+// ── Time slider ────────────────────────────────────────────────────────────────
+const TS_MIN = 6, TS_MAX = 23;
+
+function formatHour(h) {
+  if (h === 0)  return '12:00 AM';
+  if (h === 12) return '12:00 PM';
+  return h < 12 ? h + ':00 AM' : (h - 12) + ':00 PM';
+}
+
+function updateTimeSliderUI() {
+  if (!document.getElementById('ts-track')) return;
+  const pctS = (workStartHour - TS_MIN) / (TS_MAX - TS_MIN) * 100;
+  const pctE = (workEndHour   - TS_MIN) / (TS_MAX - TS_MIN) * 100;
+  document.getElementById('ts-active').style.cssText  = 'left:' + pctS + '%;width:' + (pctE - pctS) + '%';
+  document.getElementById('ts-h-start').style.left    = 'calc(' + pctS + '% + 14px - 13px)';
+  document.getElementById('ts-h-end').style.left      = 'calc(' + pctE + '% + 14px - 13px)';
+  document.getElementById('ts-lbl-start').textContent = formatHour(workStartHour);
+  document.getElementById('ts-lbl-end').textContent   = formatHour(workEndHour);
+}
+
+function initTimeSlider() {
+  const wrap = document.getElementById('ts-wrap');
+  if (!wrap || wrap.dataset.init) return;
+  wrap.dataset.init = '1';
+  function hourFromX(clientX) {
+    const rect = document.getElementById('ts-track').getBoundingClientRect();
+    return Math.round(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * (TS_MAX - TS_MIN) + TS_MIN);
+  }
+  function makeHandle(id, isStart) {
+    const el = document.getElementById(id);
+    let dragging = false;
+    el.addEventListener('mousedown',  e => { dragging = true; e.preventDefault(); });
+    el.addEventListener('touchstart', () => { dragging = true; }, { passive: true });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const h = hourFromX(e.clientX);
+      if (isStart) workStartHour = Math.max(TS_MIN, Math.min(h, workEndHour - 1));
+      else         workEndHour   = Math.min(TS_MAX, Math.max(h, workStartHour + 1));
+      updateTimeSliderUI();
+    });
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const h = hourFromX(e.touches[0].clientX);
+      if (isStart) workStartHour = Math.max(TS_MIN, Math.min(h, workEndHour - 1));
+      else         workEndHour   = Math.min(TS_MAX, Math.max(h, workStartHour + 1));
+      updateTimeSliderUI();
+    }, { passive: true });
+    document.addEventListener('mouseup',  () => { dragging = false; });
+    document.addEventListener('touchend', () => { dragging = false; });
+  }
+  makeHandle('ts-h-start', true);
+  makeHandle('ts-h-end',   false);
+  updateTimeSliderUI();
+}
+
+// ── Save & finish ──────────────────────────────────────────────────────────────
+async function saveAndFinish() {
+  const name = document.getElementById('user-name').value.trim();
+  if (!name) { goStep(1); return; }
+
+  // Sync any last-minute review calendar edits
   document.querySelectorAll('#review-calendar .mini-cal-day[data-date]').forEach(el => {
     const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
     if (idx !== -1) generatedDays[idx].owner = el.dataset.owner;
@@ -717,123 +892,208 @@ async function saveAndContinue() {
 
   const patternType = isTwoWeek ? 'alternating_weeks' : 'specific_days';
   const patternData = isTwoWeek
-    ? {
-        week_a_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean),
-        week_b_days: week2Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean)
-      }
-    : { self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
+    ? { week_a_days: week1Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean),
+        week_b_days: week2Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean) }
+    : { self_days:   week1Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 
-  const email = document.getElementById('partner-email').value.trim().toLowerCase();
+  const phone        = document.getElementById('user-phone')?.value.trim() || null;
+  const age          = parseInt(document.getElementById('user-age')?.value) || null;
+  const workSchedule = getWorkSchedulePayload();
+  const hasCustody   = isParent && !isMirror && generatedDays.length > 0;
 
-  const res = await fetch('/api/users/register', {
+  let endpoint, body;
+  if (MODE === 'invite') {
+    const email = document.getElementById('user-email').value.trim().toLowerCase();
+    endpoint = '/api/users/register';
+    body = {
+      invite_token:        INVITE_TOKEN,
+      name, email,
+      mobile:              phone, age,
+      relationship_status: relStatus,
+      work_schedule:       workSchedule,
+      pattern_type:        hasCustody ? patternType : null,
+      pattern_data:        hasCustody ? patternData : null,
+      anchor_date:         hasCustody && weekStartDate ? toDateStr(weekStartDate) : null,
+      days:                hasCustody ? generatedDays : [],
+      is_mirror:           isMirror
+    };
+  } else {
+    endpoint = '/api/users/setup';
+    body = {
+      magic:               MAGIC_TOKEN,
+      name,
+      google_id:           GOOGLE_ID || undefined,
+      mobile:              phone, age,
+      relationship_status: relStatus,
+      work_schedule:       workSchedule,
+      pattern_type:        hasCustody ? patternType : 'none',
+      pattern_data:        hasCustody ? patternData : {},
+      anchor_date:         weekStartDate ? toDateStr(weekStartDate) : null,
+      days:                hasCustody ? generatedDays : []
+    };
+  }
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      invite_token: INVITE_TOKEN,
-      name,
-      email,
-      mobile:              document.getElementById('partner-mobile').value.trim() || null,
-      age:                 parseInt(document.getElementById('partner-age')?.value) || null,
-      relationship_status: relStatus,
-      pattern_type:        isMirror ? null : patternType,
-      pattern_data:        isMirror ? null : patternData,
-      anchor_date:         isMirror ? null : toDateStr(weekStartDate),
-      days:                isMirror ? [] : generatedDays,
-      is_mirror:           isMirror
-    })
+    body: JSON.stringify(body)
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    alert(err.error || 'Registration failed — please try again');
+    alert(err.error || 'Setup failed — please try again');
     return;
   }
 
   const data = await res.json();
-  myToken  = data.token;
-  myUserId = data.userId;
-  localStorage.setItem('myToken', myToken);
-  localStorage.setItem('myRole', 'partner');
+  createdToken = data.token;
+  localStorage.setItem('myToken', createdToken);
+  localStorage.setItem('myRole', MODE === 'invite' ? 'partner' : 'owner');
 
-  goStep('work');
-}
-
-// ── Work schedule step ─────────────────────────────────────────────────────────
-let workScheduleType = 'standard_weekdays';
-let workCustomDays   = [1,2,3,4,5];
-
-function selectWorkType(type) {
-  workScheduleType = type;
-  ['standard_weekdays','custom','none'].forEach(t => {
-    const el = document.getElementById(`wopt-${t === 'standard_weekdays' ? 'standard' : t}`);
-    if (el) el.classList.toggle('selected', t === type);
-  });
-  const picker = document.getElementById('custom-days-picker');
-  if (picker) picker.classList.toggle('hidden', type !== 'custom');
-}
-
-function toggleWorkDay(dow) {
-  const chip = document.getElementById(`wdc-${dow}`);
-  if (workCustomDays.includes(dow)) {
-    workCustomDays = workCustomDays.filter(d => d !== dow);
-    chip?.classList.remove('on');
-  } else {
-    workCustomDays.push(dow);
-    chip?.classList.add('on');
-  }
-}
-
-function getWorkSchedulePayload() {
-  if (workScheduleType === 'standard_weekdays') return { type: 'standard_weekdays' };
-  if (workScheduleType === 'custom') return { type: 'custom', days: [...workCustomDays] };
-  return { type: 'none' };
-}
-
-async function saveWorkAndContinue() {
-  if (myToken) {
-    await fetch(`/api/me?token=${myToken}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ work_schedule: getWorkSchedulePayload() })
-    }).catch(() => {});
-  }
-  renderDoneFreeStrip();
+  await renderDoneScreen();
   goStep('done');
 }
 
-function renderDoneFreeStrip() {
+// ── Done screen ────────────────────────────────────────────────────────────────
+async function renderDoneScreen() {
+  renderFreeStrip();
+
+  if (MODE === 'invite') {
+    document.getElementById('done-title').textContent = "You're connected!";
+    const box = document.getElementById('done-connected-box');
+    box.style.display = 'block';
+    box.innerHTML = `<strong>${ownerName}</strong> can now see when you're both free at the same time — and can suggest a plan on days that work for you both.`;
+    document.getElementById('done-footnote').textContent = 'Your schedule is private — only people you approve can see it.';
+  } else {
+    document.getElementById('done-title').textContent = 'Your calendar is ready!';
+    document.getElementById('done-invite-section').style.display = 'block';
+    document.getElementById('done-footnote').textContent = 'You can invite more people from your calendar any time.';
+    await generateInviteLinks(createdToken);
+  }
+}
+
+function renderFreeStrip() {
   const el = document.getElementById('done-free-strip');
   if (!el) return;
-  // Update done screen owner name
-  const nameEl = document.getElementById('done-owner-name');
-  if (nameEl) nameEl.textContent = ownerName || 'Your co-parent';
-
   const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   const today = new Date(); today.setHours(0,0,0,0);
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const todayStr = toDateStr(today);
   const dayMap = {};
   generatedDays.forEach(d => { dayMap[d.date] = d.owner; });
-
   let chips = '';
   for (let i = 0; i < 14; i++) {
     const d = new Date(today); d.setDate(today.getDate() + i);
-    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const ds = toDateStr(d);
     const free = dayMap[ds] === 'coparent';
-    const isToday = ds === todayStr;
-    const bg = free ? '#e6f4ea' : '#f5f5f5';
-    const numCl = free ? 'color:#1a7340;font-weight:800' : 'color:#bbb;font-weight:600';
-    const outline = isToday ? 'outline:2px solid #1967d2;outline-offset:-2px;' : '';
-    chips += `<div class="free-chip" style="background:${bg};${outline}">
+    const outline = ds === todayStr ? 'outline:2px solid #1967d2;outline-offset:-2px;' : '';
+    chips += `<div class="free-chip" style="background:${free ? '#e6f4ea' : '#f5f5f5'};${outline}">
       <div style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;">${DOW[d.getDay()]}</div>
-      <div style="font-size:15px;line-height:1.3;${numCl}">${d.getDate()}</div>
-      ${free ? '<div style="font-size:8px;font-weight:800;color:#1a7340;">FREE</div>'
-             : '<div style="font-size:8px;color:#ddd;">·</div>'}
+      <div style="font-size:15px;line-height:1.3;${free ? 'color:#1a7340;font-weight:800' : 'color:#bbb;font-weight:600'}">${d.getDate()}</div>
+      ${free ? '<div style="font-size:8px;font-weight:800;color:#1a7340;">FREE</div>' : '<div style="font-size:8px;color:#ddd;">·</div>'}
     </div>`;
   }
   el.innerHTML = `<div style="display:flex;gap:3px;">${chips}</div>`;
 }
 
-function goToPartnerCalendar() { window.location.href = `/partner?token=${myToken}`; }
+async function generateInviteLinks(token) {
+  const msgs = {
+    coparent: u => `Hi! I'm using Spontany to manage our custody schedule. Click here to set up your side: ${u}`,
+    partner:  u => `Hey! I'm using Spontany to see when we're both free at the same time. Connect your schedule here: ${u}`,
+    friend:   u => `Hey! I use Spontany for scheduling — it shows when we're both free. Join here: ${u}`
+  };
+  for (const type of ['coparent','partner','friend']) {
+    try {
+      const r = await fetch(`/api/invites/generate?token=${token}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ relationship_type: type })
+      });
+      if (!r.ok) continue;
+      const { invite_url } = await r.json();
+      document.getElementById('inv-url-' + type).textContent = invite_url;
+      document.getElementById('inv-wa-' + type).href = 'https://wa.me/?text=' + encodeURIComponent(msgs[type](invite_url));
+    } catch(e) { /* silent */ }
+  }
+}
+
+function switchInviteTab(type) {
+  ['coparent','partner','friend'].forEach(t => {
+    document.getElementById('itab-' + t)?.classList.toggle('active', t === type);
+    const p = document.getElementById('inv-panel-' + t);
+    if (p) p.style.display = t === type ? 'block' : 'none';
+  });
+}
+
+function copyInvite(type) {
+  const url = document.getElementById('inv-url-' + type)?.textContent || '';
+  navigator.clipboard.writeText(url).then(() => showToast('✓ Link copied!'));
+}
+
+function showToast(msg) {
+  let t = document.getElementById('ob-toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'ob-toast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#202124;color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;transition:opacity 0.3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+function goToCalendar() {
+  window.location.href = '/calendar?token=' + createdToken;
+}
+
+// ── Invite validation ──────────────────────────────────────────────────────────
+async function validateInvite() {
+  if (!INVITE_TOKEN || INVITE_TOKEN === 'undefined') {
+    showWizardError('Missing invite token — the link may be broken.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/invites/' + INVITE_TOKEN);
+    if (res.status === 409) {
+      const saved = localStorage.getItem('myToken');
+      if (saved) { window.location.href = '/calendar?token=' + saved; return; }
+      showWizardError('This invite has already been used. Ask for a new one.');
+      return;
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || 'HTTP ' + res.status);
+    }
+    const data = await res.json();
+    ownerName = data.owner_name || 'your co-parent';
+    document.getElementById('isl-0').innerHTML = `
+      <div class="intro-logo">Spontany</div>
+      <div class="intro-big">${ownerName}<br>invited you 👋</div>
+      <div class="intro-sub" style="margin-top:10px;">You're joining ${ownerName} on Spontany.</div>
+    `;
+    showIntroSlide(0);
+  } catch(err) {
+    console.error('[onboard] validateInvite error:', err);
+    showWizardError('Could not validate this invite link. (' + err.message + ')');
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (MODE === 'direct') {
+    if (GOOGLE_NAME) {
+      const el = document.getElementById('user-name');
+      if (el) { el.value = GOOGLE_NAME; checkStep1Ready(); }
+    }
+    // Hide email field — already verified via magic link
+    document.getElementById('email-group').style.display = 'none';
+    // Generic welcome intro
+    document.getElementById('isl-0').innerHTML = `
+      <div class="intro-logo">Spontany</div>
+      <div class="intro-big">Welcome to<br>Spontany</div>
+    `;
+    showIntroSlide(0);
+  } else {
+    validateInvite();
+  }
+});
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && currentStep === 1) step1Next();
