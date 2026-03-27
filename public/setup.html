@@ -189,6 +189,76 @@
       text-align: center; font-size: 9px;
     }
 
+    /* ── Intro overlay (screens 0 → 0.3) ── */
+    .intro-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(180deg, #08081a 0%, #110730 45%, #1c0848 75%, #2a0a60 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 48px 32px; text-align: center;
+      transition: opacity 0.55s ease;
+    }
+    .intro-overlay.hiding { opacity: 0; pointer-events: none; }
+    .intro-slide {
+      display: none; flex-direction: column; align-items: center;
+      width: 100%; max-width: 340px; animation: iSlideUp 0.5s ease;
+    }
+    .intro-slide.active { display: flex; }
+    @keyframes iSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .intro-logo {
+      font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.5);
+      letter-spacing: .12em; text-transform: uppercase; margin-bottom: 48px;
+    }
+    .intro-big {
+      font-size: 46px; font-weight: 900; color: white; line-height: 1.1;
+      letter-spacing: -0.025em; margin-bottom: 12px;
+    }
+    .intro-headline {
+      font-size: 30px; font-weight: 800; color: white; line-height: 1.2;
+      letter-spacing: -0.02em; margin-bottom: 14px;
+    }
+    .intro-sub {
+      font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.65;
+      margin-bottom: 52px; max-width: 280px;
+    }
+    .intro-dots { display: flex; gap: 9px; margin-bottom: 52px; }
+    .intro-dot  {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); transition: background 0.3s, transform 0.3s;
+    }
+    .intro-dot.active { background: white; transform: scale(1.25); }
+    .intro-cta {
+      background: #4285f4; color: white; border: none; border-radius: 28px;
+      padding: 16px 36px; font-size: 16px; font-weight: 700; cursor: pointer;
+      font-family: inherit; box-shadow: 0 6px 24px rgba(66,133,244,.45);
+      transition: transform .12s, box-shadow .12s;
+    }
+    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(66,133,244,.3); }
+
+    /* ── Wizard hidden until intro done ── */
+    #wizard-main { transition: opacity 0.4s ease; }
+
+    /* ── Step 1 dark header ── */
+    .step1-header {
+      background: linear-gradient(180deg, #110730, #1c0848);
+      margin: -24px -24px 24px; padding: 30px 24px 28px;
+      border-radius: 16px 16px 0 0; text-align: center;
+    }
+    .step1-header-title {
+      font-size: 26px; font-weight: 900; color: white; line-height: 1.2; letter-spacing: -0.01em;
+    }
+
+    /* ── Relationship status chips ── */
+    .rel-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .rel-chip {
+      padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+      font-size: 13px; font-weight: 600; cursor: pointer; background: white;
+      color: var(--text); user-select: none; transition: all .13s;
+    }
+    .rel-chip.on { background: #e8f0fe; border-color: #4285f4; color: #1a73e8; }
+
     /* ── Parent question ── */
     .parent-opts-row { display:flex; gap:14px; margin:20px 0 28px; }
     .parent-opt {
@@ -259,63 +329,97 @@
 </head>
 <body>
 
-<div class="wizard">
+<!-- ── INTRO OVERLAY (screens 0 → 0.3, auto-advancing) ── -->
+<div id="intro-overlay" class="intro-overlay">
+
+  <!-- Screen 0: Welcome splash -->
+  <div class="intro-slide active" id="isl-0">
+    <div class="intro-logo">Spontany</div>
+    <div class="intro-big">Welcome to<br>Spontany</div>
+  </div>
+
+  <!-- Screen 0.1: The Need -->
+  <div class="intro-slide" id="isl-1">
+    <div class="intro-dots">
+      <div class="intro-dot active"></div>
+      <div class="intro-dot"></div>
+      <div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">Friendships need<br>face-to-face time</div>
+    <div class="intro-sub">Real connection happens in person — coffee, walks, just being there.</div>
+  </div>
+
+  <!-- Screen 0.2: The Problem -->
+  <div class="intro-slide" id="isl-2">
+    <div class="intro-dots">
+      <div class="intro-dot"></div>
+      <div class="intro-dot active"></div>
+      <div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">But, sometime it's just too hard to find the right time</div>
+    <div class="intro-sub">Schedules are complex. The back-and-forth is exhausting.</div>
+  </div>
+
+  <!-- Screen 0.3: The Solution + CTA -->
+  <div class="intro-slide" id="isl-3">
+    <div class="intro-dots">
+      <div class="intro-dot"></div>
+      <div class="intro-dot"></div>
+      <div class="intro-dot active"></div>
+    </div>
+    <div class="intro-headline">Spontany helps you get together, easily, no pressure, no ghosting :)</div>
+    <div class="intro-sub">We find the gaps in your schedules automatically — no more "when are you free?" texts.</div>
+    <button class="intro-cta" onclick="startOnboarding()">Let's build my profile</button>
+  </div>
+
+</div>
+
+<!-- ── WIZARD (revealed after intro) ── -->
+<div class="wizard" id="wizard-main" style="opacity:0;pointer-events:none;">
 
   <div class="progress-bar" style="margin-bottom:20px;">
     <div class="progress-fill" id="progress" style="width:0%"></div>
   </div>
 
-  <div class="wizard-card">
+  <div class="wizard-card" style="padding:0 0 24px;overflow:hidden;">
 
-    <!-- ── Step 0: Welcome / intro ── -->
-    <div class="wizard-step active" id="step-0">
-      <div style="text-align:center;padding:12px 0 22px;">
-        <div style="font-size:44px;margin-bottom:10px;">📅</div>
-        <div style="font-size:26px;font-weight:900;color:#bf360c;letter-spacing:-0.02em;margin-bottom:6px;">Spontany</div>
-        <div style="font-size:14px;color:var(--muted);font-weight:500;line-height:1.5;">Your free time, made visible.</div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px;">
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🗓️</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">Know when you're kid-free</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Your custody calendar, clear and always up to date.</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">✨</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">See when you're both free</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Connect with your partner or close friends — your overlapping free days appear automatically.</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🔒</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">Your schedule stays private</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5;">Only people you approve can ever see your calendar.</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="goStep(1)">
-        Let's start →
-      </button>
-      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px;">Takes about 2 minutes</p>
-    </div>
-
-    <!-- ── Step 1: Name ── -->
+    <!-- ── Step 1: Personal details ── -->
     <div class="wizard-step" id="step-1">
-      <div class="wizard-title">What's your name?</div>
-      <p class="wizard-sub">This is how you'll appear on shared views.</p>
-      <div class="field-group">
-        <label class="field-label" for="owner-name">Your first name</label>
-        <input id="owner-name" class="field-input" type="text" placeholder="e.g. Ran" autocomplete="off" autofocus>
+      <div class="step1-header">
+        <div class="step1-header-title">Let's learn<br>about you</div>
       </div>
-      <div class="wizard-nav">
-        <span></span>
-        <button class="btn btn-primary" onclick="step1Next()">Next →</button>
+
+      <div style="padding:0 24px;">
+        <div class="field-group">
+          <label class="field-label" for="owner-name">Your name <span style="color:#e53935;">*</span></label>
+          <input id="owner-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name"
+                 oninput="checkStep1Ready()">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="owner-age">Your age</label>
+          <input id="owner-age" class="field-input" type="number" placeholder="e.g. 34" min="18" max="99">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="owner-phone">Phone number</label>
+          <input id="owner-phone" class="field-input" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Relationship status</label>
+          <div class="rel-chips">
+            <div class="rel-chip" id="rchip-single"     onclick="selectRelStatus('single')">Single</div>
+            <div class="rel-chip" id="rchip-relationship" onclick="selectRelStatus('relationship')">In a relationship</div>
+            <div class="rel-chip" id="rchip-married"    onclick="selectRelStatus('married')">Married</div>
+            <div class="rel-chip" id="rchip-separated"  onclick="selectRelStatus('separated')">Separated / Divorced</div>
+          </div>
+        </div>
+
+        <div class="wizard-nav" style="margin-top:24px;">
+          <span></span>
+          <button class="btn btn-primary" id="step1-next-btn" onclick="step1Next()" disabled>Next →</button>
+        </div>
       </div>
     </div>
 
@@ -500,8 +604,8 @@
       <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">You can invite more people from your calendar any time.</p>
     </div>
 
-  </div>
-</div>
+  </div><!-- /.wizard-card -->
+</div><!-- /.wizard#wizard-main -->
 
 <script>
 const DAY_ABBR  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -526,11 +630,45 @@ if (GOOGLE_NAME) {
   });
 }
 
+// ── Intro sequence ────────────────────────────────────────────────────────────
+// Slide durations: 0=splash, 1=need, 2=problem, 3=solution(waits for tap)
+const INTRO_DURATIONS = [2400, 3000, 3000, null];
+let introIdx = 0;
+let introTimer = null;
+
+function showIntroSlide(n) {
+  clearTimeout(introTimer);
+  document.querySelectorAll('.intro-slide').forEach(s => s.classList.remove('active'));
+  const sl = document.getElementById(`isl-${n}`);
+  if (sl) sl.classList.add('active');
+  introIdx = n;
+  const dur = INTRO_DURATIONS[n];
+  if (dur !== null) introTimer = setTimeout(() => showIntroSlide(n + 1), dur);
+}
+
+function startOnboarding() {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.classList.add('hiding');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    const wiz = document.getElementById('wizard-main');
+    wiz.style.opacity = '1';
+    wiz.style.pointerEvents = 'auto';
+    // Focus name input once visible
+    setTimeout(() => document.getElementById('owner-name')?.focus(), 100);
+  }, 560);
+}
+
+// Start intro on load
+window.addEventListener('DOMContentLoaded', () => showIntroSlide(0));
+
+// ── Wizard state ──────────────────────────────────────────────────────────────
 let currentStep    = 1;
 let isTwoWeek      = false;
 let weekStartDate  = null; // always a Sunday (Date object, midnight local)
 let createdToken   = null; // set after successful account creation
 let isParent       = true; // set in step-parent
+let relStatus      = null; // relationship status
 
 // selected[i] = true if day i (0=Sun … 6=Sat) is "yours"
 let week1Selected  = [false,false,false,false,false,false,false];
@@ -546,6 +684,20 @@ let skipWork       = false;
 
 const WD_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WD_LETTER = ['S','M','T','W','T','F','S'];
+
+// ── Step 1 helpers ────────────────────────────────────────────────────────────
+function checkStep1Ready() {
+  const ok = !!document.getElementById('owner-name')?.value.trim();
+  const btn = document.getElementById('step1-next-btn');
+  if (btn) btn.disabled = !ok;
+}
+
+function selectRelStatus(val) {
+  relStatus = val;
+  ['single','relationship','married','separated'].forEach(v => {
+    document.getElementById(`rchip-${v}`)?.classList.toggle('on', v === val);
+  });
+}
 
 // ── Parent question ──────────────────────────────────────────────────────────
 function setParent(val) {
@@ -656,12 +808,15 @@ function getWorkSchedulePayload() {
   return { type: 'custom', days: [...workDays], start_hour: workStartHour, end_hour: workEndHour };
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  weekStartDate = getNextFullWeekStart();
-  renderWeekHeads();
-  renderWeekCells(1);
-});
+// ── Init week picker when entering step 2 ─────────────────────────────────────
+// (weekStartDate is set the first time step 2 is entered via goStep)
+function ensureWeekInit() {
+  if (!weekStartDate) {
+    weekStartDate = getNextFullWeekStart();
+    renderWeekHeads();
+    renderWeekCells(1);
+  }
+}
 
 function getNextFullWeekStart() {
   const t = new Date();
@@ -681,7 +836,7 @@ function weekDateAt(weekNum, idx) {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
-const STEP_PROGRESS = { '0':0, '1':12, 'parent':24, '2':38, '3':52, '4':72, '5':100 };
+const STEP_PROGRESS = { '1':5, 'parent':20, '2':36, '3':52, '4':72, '5':100 };
 
 function goStep(n) {
   document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
@@ -689,16 +844,13 @@ function goStep(n) {
   currentStep = n;
   const pct = STEP_PROGRESS[String(n)] ?? Math.round((Number(n) / 5) * 100);
   document.getElementById('progress').style.width = pct + '%';
-  // Init work day grid + slider when entering step 4
+  if (String(n) === '2') ensureWeekInit();
   if (String(n) === '4') { renderWorkDayGrid(); initTimeSlider(); }
   window.scrollTo(0, 0);
 }
 
 function step1Next() {
-  if (!document.getElementById('owner-name').value.trim()) {
-    alert('Please enter your name');
-    return;
-  }
+  if (!document.getElementById('owner-name')?.value.trim()) return;
   goStep('parent');
 }
 
@@ -889,18 +1041,24 @@ async function saveAndFinish() {
       }
     : { self_days: week1Selected.map((s, i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 
+  const phone = document.getElementById('owner-phone')?.value.trim() || null;
+  const age   = parseInt(document.getElementById('owner-age')?.value)  || null;
+
   const res = await fetch('/api/users/setup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      magic:         MAGIC_TOKEN,
+      magic:               MAGIC_TOKEN,
       name,
-      google_id:     GOOGLE_ID || undefined,
-      pattern_type:  isParent ? patternType : 'none',
-      pattern_data:  isParent ? patternData : {},
-      anchor_date:   toDateStr(weekStartDate),
-      days:          isParent ? generatedDays : [],
-      work_schedule: getWorkSchedulePayload()
+      google_id:           GOOGLE_ID || undefined,
+      mobile:              phone,
+      age,
+      relationship_status: relStatus,
+      pattern_type:        isParent ? patternType : 'none',
+      pattern_data:        isParent ? patternData : {},
+      anchor_date:         toDateStr(weekStartDate),
+      days:                isParent ? generatedDays : [],
+      work_schedule:       getWorkSchedulePayload()
     })
   });
 

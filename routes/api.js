@@ -44,7 +44,8 @@ function requireOwner(req, res) {
 // Multi-tenant: any email can set up their own account (no single-owner constraint).
 // Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
-  const { magic, name, pattern_type, pattern_data, anchor_date, days, google_id, work_schedule } = req.body;
+  const { magic, name, pattern_type, pattern_data, anchor_date, days, google_id,
+          work_schedule, mobile, age, relationship_status } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
   if (!magic) return res.status(400).json({ error: 'Email verification required. Please use the link sent to your email.' });
 
@@ -61,8 +62,11 @@ router.post('/users/setup', (req, res) => {
   q.createUserWithEmail.run(id, name.trim(), 'owner', token, link.email);
 
   // Link Google ID if the user came via Google SSO
-  if (google_id) q.updateGoogleId.run(google_id, id);
-  if (work_schedule) db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?').run(JSON.stringify(work_schedule), id);
+  if (google_id)           q.updateGoogleId.run(google_id, id);
+  if (work_schedule)       db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?').run(JSON.stringify(work_schedule), id);
+  if (mobile)              db.prepare('UPDATE users SET mobile = ? WHERE id = ?').run(mobile.trim(), id);
+  if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, id);
+  if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, id);
 
   // Save pattern for future reference / regeneration
   if (pattern_type && pattern_type !== 'none') {
