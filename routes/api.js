@@ -109,7 +109,8 @@ router.post('/pattern/generate', (req, res) => {
 
 // POST /api/users/register — complete partner onboarding
 router.post('/users/register', (req, res) => {
-  const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days } = req.body;
+  const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days,
+          age, relationship_status } = req.body;
 
   if (!invite_token) return res.status(400).json({ error: 'invite_token required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
@@ -133,7 +134,9 @@ router.post('/users/register', (req, res) => {
   const userId = uuidv4();
   const token = uuidv4();
   q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail);
-  if (normalMobile) q.updateUserMobile.run(normalMobile, userId);
+  if (normalMobile)      q.updateUserMobile.run(normalMobile, userId);
+  if (age)               db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, userId);
+  if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, userId);
 
   // Mark invite as used
   q.claimInvite.run(userId, invite_token);

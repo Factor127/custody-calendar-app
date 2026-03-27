@@ -131,58 +131,142 @@
       flex: 1; min-width: 32px; border-radius: 7px;
       padding: 5px 2px; text-align: center;
     }
+
+    /* ── Intro overlay (screens 0 → 0.3) ── */
+    .intro-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(180deg, #08081a 0%, #110730 45%, #1c0848 75%, #2a0a60 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 48px 32px; text-align: center;
+      transition: opacity 0.55s ease;
+    }
+    .intro-overlay.hiding { opacity: 0; pointer-events: none; }
+    .intro-slide { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 340px; animation: iSlideUp 0.5s ease; }
+    .intro-slide.active { display: flex; }
+    @keyframes iSlideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    .intro-logo  { font-size:16px; font-weight:800; color:rgba(255,255,255,0.5); letter-spacing:.12em; text-transform:uppercase; margin-bottom:48px; }
+    .intro-big   { font-size:42px; font-weight:900; color:white; line-height:1.1; letter-spacing:-0.025em; margin-bottom:12px; }
+    .intro-headline { font-size:30px; font-weight:800; color:white; line-height:1.2; letter-spacing:-0.02em; margin-bottom:14px; }
+    .intro-sub   { font-size:15px; color:rgba(255,255,255,0.55); line-height:1.65; margin-bottom:52px; max-width:280px; }
+    .intro-dots  { display:flex; gap:9px; margin-bottom:52px; }
+    .intro-dot   { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.25); transition:background .3s, transform .3s; }
+    .intro-dot.active { background:white; transform:scale(1.25); }
+    .intro-loading { color:rgba(255,255,255,0.45); font-size:15px; margin-top:24px; }
+    .intro-cta {
+      background:#4285f4; color:white; border:none; border-radius:28px;
+      padding:16px 36px; font-size:16px; font-weight:700; cursor:pointer;
+      font-family:inherit; box-shadow:0 6px 24px rgba(66,133,244,.45);
+      transition:transform .12s, box-shadow .12s;
+    }
+    .intro-cta:active { transform:scale(0.97); box-shadow:0 3px 12px rgba(66,133,244,.3); }
+
+    /* Step 1 dark header */
+    #wizard-main { transition: opacity 0.4s ease; }
+    .step1-header { background:linear-gradient(180deg,#110730,#1c0848); margin:-24px -24px 24px; padding:30px 24px 28px; border-radius:16px 16px 0 0; text-align:center; }
+    .step1-header-title { font-size:24px; font-weight:900; color:white; line-height:1.2; letter-spacing:-0.01em; }
+
+    /* Relationship status chips */
+    .rel-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .rel-chip { padding:8px 16px; border-radius:20px; border:1.5px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; background:white; color:var(--text); user-select:none; transition:all .13s; }
+    .rel-chip.on { background:#e8f0fe; border-color:#4285f4; color:#1a73e8; }
   </style>
 </head>
 <body>
-<div class="wizard">
 
-  <div style="text-align:center;margin-bottom:24px;">
-    <div style="font-size:36px;margin-bottom:6px;">📅</div>
-    <h1 style="margin:0;font-size:22px;">Custody Calendar</h1>
-    <p class="text-muted" style="margin:6px 0 0;">Takes about a minute to set up.</p>
+<!-- ── INTRO OVERLAY — validates invite silently, then runs slide sequence ── -->
+<div id="intro-overlay" class="intro-overlay">
+  <!-- Slide 0: loading → becomes personalised welcome after validation -->
+  <div class="intro-slide active" id="isl-0">
+    <div class="intro-logo">Spontany</div>
+    <div class="intro-loading">Checking your invite…</div>
   </div>
+  <!-- Slide 0.1 -->
+  <div class="intro-slide" id="isl-1">
+    <div class="intro-dots">
+      <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">Friendships need<br>face-to-face time</div>
+    <div class="intro-sub">Real connection happens in person — coffee, walks, just being there.</div>
+  </div>
+  <!-- Slide 0.2 -->
+  <div class="intro-slide" id="isl-2">
+    <div class="intro-dots">
+      <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">But, sometime it's just too hard to find the right time</div>
+    <div class="intro-sub">Schedules are complex. The back-and-forth is exhausting.</div>
+  </div>
+  <!-- Slide 0.3 -->
+  <div class="intro-slide" id="isl-3">
+    <div class="intro-dots">
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
+    </div>
+    <div class="intro-headline">Spontany helps you get together, easily, no pressure, no ghosting :)</div>
+    <div class="intro-sub">We find the gaps in your schedules automatically.</div>
+    <button class="intro-cta" onclick="startOnboarding()">Let's build my profile</button>
+  </div>
+</div>
+
+<!-- ── WIZARD (revealed after intro) ── -->
+<div class="wizard" id="wizard-main" style="opacity:0;pointer-events:none;">
 
   <div class="progress-bar" style="margin-bottom:20px;">
     <div class="progress-fill" id="progress" style="width:0%"></div>
   </div>
 
-  <div class="wizard-card">
+  <div class="wizard-card" style="padding:0 0 24px;overflow:hidden;">
 
-    <!-- Step 0: Validating invite -->
-    <div class="wizard-step active" id="step-0">
+    <!-- Step 0: invisible placeholder for error states only -->
+    <div class="wizard-step" id="step-0" style="padding:24px;">
       <div style="text-align:center;padding:20px 0;">
         <div style="font-size:32px;margin-bottom:12px;">🔗</div>
-        <p class="text-muted">Validating your invite link…</p>
+        <p class="text-muted">Checking invite…</p>
       </div>
     </div>
 
-    <!-- Step 1: Name + Email -->
+    <!-- Step 1: Personal details -->
     <div class="wizard-step" id="step-1">
-      <div class="wizard-title" id="invite-greeting">Hi! You've been invited.</div>
-      <p class="wizard-sub">Let's set up your custody calendar. A few quick details first.</p>
-
-      <div class="field-group">
-        <label class="field-label" for="partner-name">Your first name</label>
-        <input id="partner-name" class="field-input" type="text" placeholder="e.g. Maya" autocomplete="given-name" autofocus>
+      <div class="step1-header">
+        <div class="step1-header-title" id="invite-greeting">Let's learn<br>about you</div>
       </div>
+      <div style="padding:0 24px;">
+        <div class="field-group">
+          <label class="field-label" for="partner-name">Your name <span style="color:#e53935;">*</span></label>
+          <input id="partner-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name"
+                 oninput="checkStep1Ready()">
+        </div>
 
-      <div class="field-group">
-        <label class="field-label" for="partner-email">Your email address</label>
-        <input id="partner-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" autocapitalize="none" required>
-        <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">
-          Required — used to log back in from any device. We'll never share it.
-        </p>
-      </div>
+        <div class="field-group">
+          <label class="field-label" for="partner-email">Email address <span style="color:#e53935;">*</span></label>
+          <input id="partner-email" class="field-input" type="email" placeholder="you@example.com"
+                 autocomplete="email" autocapitalize="none" oninput="checkStep1Ready()">
+          <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Used to log back in — never shared.</p>
+        </div>
 
-      <div class="field-group">
-        <label class="field-label" for="partner-mobile">Your WhatsApp number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
-        <input id="partner-mobile" class="field-input" type="tel" placeholder="+972 50 000 0000" autocomplete="tel">
-        <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Makes it easy for your co-parent to reach you.</p>
-      </div>
+        <div class="field-group">
+          <label class="field-label" for="partner-age">Your age</label>
+          <input id="partner-age" class="field-input" type="number" placeholder="e.g. 34" min="18" max="99">
+        </div>
 
-      <div class="wizard-nav">
-        <span></span>
-        <button class="btn btn-primary" onclick="step1Next()">Next →</button>
+        <div class="field-group">
+          <label class="field-label" for="partner-mobile">Phone number <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+          <input id="partner-mobile" class="field-input" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Relationship status</label>
+          <div class="rel-chips">
+            <div class="rel-chip" id="rchip-single"       onclick="selectRelStatus('single')">Single</div>
+            <div class="rel-chip" id="rchip-relationship" onclick="selectRelStatus('relationship')">In a relationship</div>
+            <div class="rel-chip" id="rchip-married"      onclick="selectRelStatus('married')">Married</div>
+            <div class="rel-chip" id="rchip-separated"    onclick="selectRelStatus('separated')">Separated / Divorced</div>
+          </div>
+        </div>
+
+        <div class="wizard-nav" style="margin-top:24px;">
+          <span></span>
+          <button class="btn btn-primary" id="step1-next-btn" onclick="step1Next()" disabled>Next →</button>
+        </div>
       </div>
     </div>
 
@@ -305,8 +389,8 @@
       <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Your schedule is private — only you and people you approve can see it.</p>
     </div>
 
-  </div>
-</div>
+  </div><!-- /.wizard-card -->
+</div><!-- /.wizard#wizard-main -->
 
 <script>
 const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -326,6 +410,61 @@ let weekStartDate = null;
 let week1Selected = [false,false,false,false,false,false,false];
 let week2Selected = [false,false,false,false,false,false,false];
 let generatedDays = [];
+let relStatus     = null;
+
+// ── Intro sequence ────────────────────────────────────────────────────────────
+const INTRO_DURATIONS = [2600, 3000, 3000, null];
+let introTimer = null;
+
+function showIntroSlide(n) {
+  clearTimeout(introTimer);
+  document.querySelectorAll('.intro-slide').forEach(s => s.classList.remove('active'));
+  document.getElementById(`isl-${n}`)?.classList.add('active');
+  const dur = INTRO_DURATIONS[n];
+  if (dur !== null) introTimer = setTimeout(() => showIntroSlide(n + 1), dur);
+}
+
+function startOnboarding() {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.classList.add('hiding');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    const wiz = document.getElementById('wizard-main');
+    wiz.style.opacity = '1';
+    wiz.style.pointerEvents = 'auto';
+    goStep(1);
+    setTimeout(() => document.getElementById('partner-name')?.focus(), 100);
+  }, 560);
+}
+
+function showWizardError(msg) {
+  // Bypass intro, show wizard in error state
+  document.getElementById('intro-overlay').style.display = 'none';
+  const wiz = document.getElementById('wizard-main');
+  wiz.style.opacity = '1'; wiz.style.pointerEvents = 'auto';
+  document.getElementById('step-0').innerHTML = `
+    <div style="text-align:center;padding:24px 0 20px;">
+      <div style="font-size:32px;margin-bottom:12px;">❌</div>
+      <h2 style="font-size:18px;margin:0 0 8px;">Invalid invite link</h2>
+      <p class="text-muted">${msg}</p>
+      <p class="text-muted" style="margin-top:8px;font-size:12px;">Ask your partner to generate a new invite link.</p>
+    </div>`;
+  goStep(0);
+}
+
+function selectRelStatus(val) {
+  relStatus = val;
+  ['single','relationship','married','separated'].forEach(v =>
+    document.getElementById(`rchip-${v}`)?.classList.toggle('on', v === val)
+  );
+}
+
+function checkStep1Ready() {
+  const name  = document.getElementById('partner-name')?.value.trim();
+  const email = document.getElementById('partner-email')?.value.trim();
+  const btn   = document.getElementById('step1-next-btn');
+  if (btn) btn.disabled = !(name && email);
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
@@ -345,86 +484,37 @@ function getNextFullWeekStart() {
 
 // ── Invite validation ─────────────────────────────────────────────────────────
 async function validateInvite() {
-  console.log('[onboard] INVITE_TOKEN:', INVITE_TOKEN);
   if (!INVITE_TOKEN || INVITE_TOKEN === 'undefined') {
-    showInviteError('Missing invite token — the link may be broken.');
+    showWizardError('Missing invite token — the link may be broken.');
     return;
   }
   try {
     const res = await fetch(`/api/invites/${INVITE_TOKEN}`);
-    console.log('[onboard] /api/invites status:', res.status);
     if (res.status === 409) {
       const saved = localStorage.getItem('myToken');
       if (saved) { window.location.href = `/partner?token=${saved}`; return; }
-      document.getElementById('step-0').innerHTML = `
-        <div style="text-align:center;padding:20px 0;">
-          <div style="font-size:32px;margin-bottom:12px;">🔒</div>
-          <h2>This invite has already been used</h2>
-          <p class="text-muted">Ask your partner to send you a new invite link.</p>
-        </div>`;
+      showWizardError('This invite has already been used. Ask your partner to send a new one.');
       return;
     }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(`HTTP ${res.status}: ${body.error || 'unknown'}`);
+      throw new Error(body.error || `HTTP ${res.status}`);
     }
     const data = await res.json();
     ownerName = data.owner_name || 'your partner';
 
-    // Transform step-0 into a personalised welcome screen
-    document.getElementById('step-0').innerHTML = `
-      <div style="text-align:center;padding:12px 0 22px;">
-        <div style="font-size:42px;margin-bottom:10px;">👋</div>
-        <div style="font-size:22px;font-weight:900;color:#bf360c;letter-spacing:-0.02em;margin-bottom:8px;">${ownerName} invited you!</div>
-        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0;">
-          Set up your custody schedule so you can both see<br>when you're free at the same time — automatically.
-        </p>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px;">
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🗓️</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#202124;margin-bottom:2px;">Set up your custody calendar</div>
-            <div style="font-size:12px;color:#888;line-height:1.5;">Takes 2 minutes. You can edit it any time from your personal link.</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">✨</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#202124;margin-bottom:2px;">See when you're both free</div>
-            <div style="font-size:12px;color:#888;line-height:1.5;">${ownerName} will see your shared free windows — no more back-and-forth to figure out when to meet.</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;">
-          <span style="font-size:22px;flex-shrink:0;line-height:1.2;">🔒</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#202124;margin-bottom:2px;">Your schedule stays private</div>
-            <div style="font-size:12px;color:#888;line-height:1.5;">${ownerName} only sees when you're free — never your full calendar details.</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="goStep(1)">
-        Get started →
-      </button>
-      <p style="text-align:center;font-size:11px;color:#aaa;margin-top:10px;">Takes about 2 minutes</p>
+    // Personalise intro slide 0 and start the sequence
+    document.getElementById('isl-0').innerHTML = `
+      <div class="intro-logo">Spontany</div>
+      <div class="intro-big">${ownerName}<br>invited you 👋</div>
+      <div class="intro-sub" style="margin-top:10px;">You're joining ${ownerName} on Spontany.</div>
     `;
-    // step-0 stays active — user taps "Get started" to proceed
+    showIntroSlide(0);
+
   } catch(err) {
     console.error('[onboard] validateInvite error:', err);
-    showInviteError(`Could not validate this invite link. (${err.message})`);
+    showWizardError(`Could not validate this invite link. (${err.message})`);
   }
-}
-
-function showInviteError(msg) {
-  document.getElementById('step-0').innerHTML = `
-    <div style="text-align:center;padding:20px 0;">
-      <div style="font-size:32px;margin-bottom:12px;">❌</div>
-      <h2>Invalid invite link</h2>
-      <p class="text-muted">${msg}</p>
-      <p class="text-muted" style="margin-top:8px;font-size:12px;">Ask your partner to generate a new invite link.</p>
-    </div>`;
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -434,20 +524,15 @@ function goStep(n) {
   if (stepEl) stepEl.classList.add('active');
   currentStep = n;
   // Progress bar
-  const progressMap = { 0: 0, 1: 20, 'mirror': 35, 2: 55, 3: 75, 'done': 100 };
+  const progressMap = { 0: 0, 1: 5, 'mirror': 28, 2: 48, 3: 68, 4: 82, 'done': 100 };
   document.getElementById('progress').style.width = (progressMap[n] ?? 50) + '%';
   window.scrollTo(0, 0);
 }
 
 function step1Next() {
-  const name = document.getElementById('partner-name').value.trim();
-  const email = document.getElementById('partner-email').value.trim();
-  if (!name) { alert('Please enter your name'); return; }
-  if (!email || !email.includes('@') || !email.includes('.')) {
-    alert('Please enter a valid email address — you\'ll need it to log back in later.');
-    return;
-  }
-  // Update mirror question with owner's name
+  const name  = document.getElementById('partner-name')?.value.trim();
+  const email = document.getElementById('partner-email')?.value.trim();
+  if (!name || !email || !email.includes('@')) return;
   document.getElementById('mirror-owner-name').textContent = ownerName;
   goStep('mirror');
 }
@@ -647,12 +732,14 @@ async function saveAndContinue() {
       invite_token: INVITE_TOKEN,
       name,
       email,
-      mobile: document.getElementById('partner-mobile').value.trim() || null,
-      pattern_type: isMirror ? null : patternType,
-      pattern_data: isMirror ? null : patternData,
-      anchor_date:  isMirror ? null : toDateStr(weekStartDate),
-      days:         isMirror ? [] : generatedDays,
-      is_mirror:    isMirror
+      mobile:              document.getElementById('partner-mobile').value.trim() || null,
+      age:                 parseInt(document.getElementById('partner-age')?.value) || null,
+      relationship_status: relStatus,
+      pattern_type:        isMirror ? null : patternType,
+      pattern_data:        isMirror ? null : patternData,
+      anchor_date:         isMirror ? null : toDateStr(weekStartDate),
+      days:                isMirror ? [] : generatedDays,
+      is_mirror:           isMirror
     })
   });
 
