@@ -321,11 +321,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       transition:opacity 0.7s ease;
     }
     #splash.fade-out { opacity:0; pointer-events:none; }
-    .splash-logo { font-size:52px; animation:splash-pop 0.5s ease; }
-    .splash-name {
-      font-size:32px; font-weight:900; color:white;
-      letter-spacing:-0.02em; animation:splash-pop 0.5s ease 0.1s both;
-    }
+    #splash img { animation:splash-pop 0.5s ease; }
+    #splash div { animation:splash-pop 0.4s ease 0.1s both; }
     .splash-tag {
       font-size:16px; color:rgba(255,255,255,0.65);
       text-align:center; max-width:280px; line-height:1.5;
@@ -904,9 +901,18 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </head>
 <body>
 <!-- ── Splash screen ── -->
+<script>
+  // Hide splash immediately if already shown today
+  (function(){
+    const today = new Date().toDateString();
+    if (localStorage.getItem('splash_date') === today) {
+      document.write('<style>#splash{display:none!important}</style>');
+    }
+  })();
+</script>
 <div id="splash">
-  <div class="splash-logo" style="font-size:36px;font-weight:900;color:white;letter-spacing:-0.02em;">SPONTANY</div>
-  <div class="splash-name">Spontany</div>
+  <img src="/logo.svg" style="width:52px;height:52px;margin-bottom:16px;" alt="">
+  <div style="font-size:28px;font-weight:900;color:white;letter-spacing:-0.01em;">SPONTANY</div>
   <div class="splash-tag">Finds your moments—<br>before they slip away.</div>
 </div>
 
@@ -1498,11 +1504,11 @@ function nextMonth() {
   document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
 
   const splash = document.getElementById('splash');
-  if (sessionStorage.getItem('splashSeen')) {
-    // Already seen this session — remove instantly
+  const today = new Date().toDateString();
+  if (!splash || localStorage.getItem('splash_date') === today) {
     splash && splash.remove();
   } else {
-    sessionStorage.setItem('splashSeen', '1');
+    localStorage.setItem('splash_date', today);
     setTimeout(() => {
       splash.classList.add('fade-out');
       setTimeout(() => splash.remove(), 700);
