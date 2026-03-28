@@ -1554,11 +1554,17 @@ function nextMonth() {
     document.getElementById('notif-panel').classList.add('open');
   }
 
-  setTimeout(() => {
-    const splash = document.getElementById('splash');
-    splash.classList.add('fade-out');
-    setTimeout(() => splash.remove(), 700);
-  }, 1800);
+  const splash = document.getElementById('splash');
+  if (sessionStorage.getItem('splashSeen')) {
+    // Already seen this session — remove instantly
+    splash && splash.remove();
+  } else {
+    sessionStorage.setItem('splashSeen', '1');
+    setTimeout(() => {
+      splash.classList.add('fade-out');
+      setTimeout(() => splash.remove(), 700);
+    }, 1800);
+  }
 })();
 
 // ── Load my calendar ──────────────────────────────────────────────────────

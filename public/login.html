@@ -220,6 +220,8 @@ function hideError() {
 
 // ── Auto-login: check for saved token on page load ────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Clear splash flag so it plays fresh on next login
+  sessionStorage.removeItem('splashSeen');
   document.getElementById('email-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') requestLink();
   });
