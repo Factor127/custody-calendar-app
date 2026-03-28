@@ -661,13 +661,16 @@ function parentBack() {
 }
 
 function parentNext() {
-  if (isParent) { ensureWeekInit(); goStep(2); }
-  else          goStep('work');
+  // Married parents have no custody split — skip week picker entirely
+  const hasCustodySplit = isParent && relStatus !== 'married';
+  if (hasCustodySplit) { ensureWeekInit(); goStep(2); }
+  else                 goStep('work');
 }
 
 // ── Work step ──────────────────────────────────────────────────────────────────
 function workBack() {
-  if (isParent)        goStep(3);
+  const hasCustodySplit = isParent && relStatus !== 'married';
+  if (hasCustodySplit) goStep(3);
   else if (isMirror)   goStep('mirror');
   else                 goStep('parent');
 }
