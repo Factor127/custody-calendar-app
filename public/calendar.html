@@ -2296,12 +2296,60 @@ function cancelSuggest() {
 }
 
 function startChangeDays() {
-  if (!coparentConn) { showToast('Connect with your co-parent first to use this feature'); return; }
   document.getElementById('edit-dropdown').style.display = 'none';
   changeDaysMode = true;
   changedDays    = {};
   origOwners     = {};
   document.getElementById('change-notice').style.display = 'flex';
+
+  // One-time nudge when no co-parent connected
+  if (!coparentConn && !localStorage.getItem('coparent_nudge_dismissed')) {
+    showCoparentNudge();
+  }
+}
+
+function showCoparentNudge() {
+  const existing = document.getElementById('coparent-nudge');
+  if (existing) return;
+  const el = document.createElement('div');
+  el.id = 'coparent-nudge';
+  el.style.cssText = `
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+    background:#1a1a30;border:1px solid rgba(167,139,250,0.30);
+    border-radius:14px;padding:16px 18px;max-width:320px;width:calc(100% - 40px);
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:8000;
+    font-size:13px;color:var(--text);line-height:1.5;
+  `;
+  el.innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">💡 Tip</div>
+    <div style="color:var(--muted);margin-bottom:14px;">
+      Want your co-parent to see updates automatically?
+      Invite them to join Spontany.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="openInviteModal();selectInviteType('coparent');dismissCoparentNudge(false)"
+        style="flex:1;padding:8px 12px;border-radius:8px;border:none;background:var(--blue);
+               color:white;font-weight:700;font-size:12px;cursor:pointer;">
+        Send invite →
+      </button>
+      <button onclick="dismissCoparentNudge(true)"
+        style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);
+               background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">
+        Don't show again
+      </button>
+      <button onclick="dismissCoparentNudge(false)"
+        style="padding:8px 12px;border-radius:8px;border:none;
+               background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">
+        Got it
+      </button>
+    </div>`;
+  document.body.appendChild(el);
+}
+
+function dismissCoparentNudge(permanent) {
+  if (permanent) localStorage.setItem('coparent_nudge_dismissed', '1');
+  const el = document.getElementById('coparent-nudge');
+  if (el) el.remove();
 }
 
 function cancelChangeDays() {
@@ -2341,7 +2389,9 @@ async function saveChangeDays() {
     });
   }
 
-  showToast(`✓ ${count} day${count !== 1 ? 's' : ''} updated & co-parent notified`);
+  showToast(coparentConn
+    ? `✓ ${count} day${count !== 1 ? 's' : ''} updated & co-parent notified`
+    : `✓ ${count} day${count !== 1 ? 's' : ''} updated`);
   changeDaysMode = false;
   changedDays    = {};
   origOwners     = {};
