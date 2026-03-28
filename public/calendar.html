@@ -1317,9 +1317,18 @@ let currentViewMonth = null;
 let stripOffset = 0;
 
 // Social connections (partner + friends) for the social calendar strip
-let socialConnections = []; // [{id, name, initial, color, type, days:{}}]
+let socialConnections = []; // [{id, name, initial, photo, color, type, days:{}}]
 const FRIEND_COLORS = ['#ff7043','#9c27b0','#ff9800','#43a047','#e91e63','#1565c0'];
 let friendColorIndex = 0;
+
+// Avatar helper — returns an HTML string for a social connection avatar
+function scAvatar(sc, size = 20, extraStyle = '') {
+  const s = `width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;${extraStyle}`;
+  if (sc.photo) {
+    return `<span style="${s}"><img src="${sc.photo}" style="width:100%;height:100%;object-fit:cover;" alt="${sc.initial}"></span>`;
+  }
+  return `<span style="${s};background:${sc.color};color:white;font-weight:800;font-size:${Math.round(size*0.42)}px;">${sc.initial}</span>`;
+}
 
 // Outings
 let myOutings = [];
@@ -1398,9 +1407,7 @@ function renderStrip() {
 
     // Bubble cluster — show up to 4 overlapping circles
     const shownPeople = freePeople.slice(0, 4);
-    const bubbles = shownPeople.map(p =>
-      `<div class="person-bubble" style="background:${p.color};">${p.initial}</div>`
-    ).join('');
+    const bubbles = shownPeople.map(p => scAvatar(p, 13, 'border:1.5px solid var(--bg);')).join('');
     const bubbleHtml = bubbles ? `<div class="bubble-cluster">${bubbles}</div>` : `<div style="min-height:16px;"></div>`;
 
     const hasSocial = socialConnections.length > 0;
@@ -1729,7 +1736,7 @@ function renderTogetherCard() {
             <div class="ctg-card-date">${MONTH[d.getMonth()]} ${d.getDate()}</div>
             <div class="ctg-card-with">with ${sc.name}</div>
             <div class="ctg-card-footer">
-              <div class="ctg-avatar" style="background:${sc.color}">${sc.initial}</div>
+              ${scAvatar(sc, 32, '')}
               <button class="ctg-arrow-btn"
                       onclick="quickPlanOuting('${ds}','${sc.userId}','${safeName}')">→</button>
             </div>
@@ -1782,6 +1789,7 @@ async function loadSocialCalendars() {
         userId: conn.other_user_id,
         name:   conn.other_name,
         initial:(conn.other_name || '?')[0].toUpperCase(),
+        photo:  conn.other_photo || null,
         color,
         type:   conn.relationship_type,
         phone:  otherMobile || null,
@@ -1907,9 +1915,7 @@ function renderCalendar() {
     // Avatar bubbles: connections also free on this day
     const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
     const avatarHtml = freeFriends.length ? `<div class="cell-avatars">${
-      freeFriends.slice(0, 3).map(sc =>
-        `<span class="cell-avatar" style="background:${sc.color}">${sc.initial}</span>`
-      ).join('') +
+      freeFriends.slice(0, 3).map(sc => scAvatar(sc, 14, 'border:1.5px solid var(--cell-bg);')).join('') +
       (freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 3}</span>` : '')
     }</div>` : '';
 
@@ -1977,9 +1983,7 @@ function showCellHover(event, dateStr) {
   const freeFriends = socialConnections.filter(sc => (sc.days || {})[dateStr]?.owner !== 'self');
   let friendsSection = '';
   if (freeFriends.length) {
-    const bubbles = freeFriends.slice(0, 5).map(sc =>
-      `<span class="chc-avatar" style="background:${sc.color}">${sc.initial}</span>`
-    ).join('');
+    const bubbles = freeFriends.slice(0, 5).map(sc => scAvatar(sc, 22, 'border:2px solid var(--surface);')).join('');
     const extra = freeFriends.length > 5 ? `<span style="font-size:11px;color:var(--muted);align-self:center;">+${freeFriends.length - 5}</span>` : '';
     friendsSection = `
       <div class="chc-divider"></div>
@@ -3008,7 +3012,7 @@ function openSocialInviteModal(dateStr) {
     return `<div class="person-select-row${dimmed}" id="prow-${sc.userId}"
         onclick="${isFree ? `toggleInvitePerson('${sc.userId}')` : ''}">
       <div class="person-select-check" id="pcheck-${sc.userId}"></div>
-      <div class="person-bubble-lg" style="background:${sc.color};">${sc.initial}</div>
+      ${scAvatar(sc, 32, '')}
       <span style="font-size:14px;font-weight:600;">${sc.name}</span>
       ${tag}
     </div>`;
@@ -3072,7 +3076,7 @@ function inviteStep3() {
       ? `https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     return `<div class="wa-queue-item" id="wa-row-${sc.userId}">
-      <div class="person-bubble-lg" style="background:${sc.color};">${sc.initial}</div>
+      ${scAvatar(sc, 32, '')}
       <span style="font-size:14px;font-weight:600;flex:1;">${sc.name}</span>
       <span class="wa-sent-badge" id="wa-sent-${sc.userId}" style="display:none;">✓ Sent</span>
       <a href="${waUrl}" target="_blank" rel="noopener"

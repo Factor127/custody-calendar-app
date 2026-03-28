@@ -378,7 +378,7 @@ router.get('/connections/pending', (req, res) => {
 router.get('/connections/all', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  const connections = q.getAllConnectionsForUser.all(user.id, user.id, user.id, user.id, user.id);
+  const connections = q.getAllConnectionsForUser.all(user.id, user.id, user.id, user.id, user.id, user.id);
   const live = connections.map(c => {
     const renewed = checkAndRenewConnection(c);
     const iAmRequester = renewed.requester_id === user.id;
@@ -722,7 +722,7 @@ router.get('/me', (req, res) => {
 router.put('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  const { name, mobile, coparent_name, coparent_phone, partner_phone, work_schedule } = req.body;
+  const { name, mobile, coparent_name, coparent_phone, partner_phone, work_schedule, photo } = req.body;
   if (name && name.trim()) {
     q.updateUserProfile.run(name.trim(), mobile ? mobile.trim() : null, user.id);
   } else if (mobile !== undefined) {
@@ -740,6 +740,9 @@ router.put('/me', (req, res) => {
   if (work_schedule !== undefined) {
     db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?')
       .run(work_schedule ? JSON.stringify(work_schedule) : null, user.id);
+  }
+  if (photo !== undefined) {
+    db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo || null, user.id);
   }
   res.json({ ok: true });
 });
