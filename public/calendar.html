@@ -2188,16 +2188,26 @@ function closeDaySheet(e) {
 
 async function cancelOuting(outingId, dateStr) {
   if (!confirm('Cancel this plan? This can\'t be undone.')) return;
-  await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
-  await loadOutings();
-  showToast('Plan cancelled');
-  // Refresh sheet if still open
+
+  // Optimistic update — remove immediately from local state
+  myOutings = myOutings.filter(o => o.id !== outingId);
+  if (dateStr && outingsByDate[dateStr]) {
+    outingsByDate[dateStr] = outingsByDate[dateStr].filter(o => o.id !== outingId);
+  }
+
+  // Refresh sheet and calendar right away
   const sheet = document.getElementById('day-sheet');
   if (sheet?.classList.contains('open') && dateStr) {
     const isFree = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
     const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
     renderDaySheetBody(dateStr, isFree, alsoFree);
   }
+  renderCalendar();
+  showToast('Plan cancelled');
+
+  // Then delete on server and sync
+  await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+  await loadOutings();
 }
 
 function openOutingModal(prefillDate) {
