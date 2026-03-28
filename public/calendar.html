@@ -8,42 +8,48 @@
   <style>
 /* ══ Dark theme ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:       #0b0b18;
-  --surface:  #13131f;
-  --cell-bg:  #16162a;
-  --border:   rgba(255,255,255,0.08);
+  --bg:       #07070f;
+  --surface:  #0d0d1b;
+  --cell-bg:  #111120;
+  --border:   rgba(255,255,255,0.06);
   --text:     #eeeef8;
-  --muted:    rgba(238,238,248,0.40);
+  --muted:    rgba(238,238,248,0.38);
   --blue:     #7c5cbf;
   --accent:   #a78bfa;
   --orange:   #f97316;
   --tagbg:    rgba(249,115,22,0.15);
   --tagbd:    rgba(249,115,22,0.35);
-  --r:        rgba(124,92,191,0.25);
-  --r-border: rgba(167,139,250,0.40);
-  --z:        rgba(255,255,255,0.04);
-  --z-border: rgba(255,255,255,0.10);
+  --r:        rgba(124,92,191,0.20);
+  --r-border: rgba(167,139,250,0.22);
+  --z:        rgba(255,255,255,0.025);
+  --z-border: rgba(255,255,255,0.06);
 }
 body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 
-/* Header */
+/* ── Header ── */
 .app-header {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  padding: 14px 20px 10px;
+  padding: 10px 20px 10px;
   position: sticky; top: 0; z-index: 600;
 }
-.app-header-brand { color: var(--text); font-size: 22px; font-weight: 900; letter-spacing: -0.02em; }
+.app-header-brand {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text); font-size: 18px; font-weight: 900; letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.app-logo { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
 
-/* Month heading strip */
+/* ── Month heading ── */
 .app-title-strip {
-  text-align: left;
-  padding: 20px 20px 4px;
+  padding: 0;
   max-width: 680px;
   margin: 0 auto;
+  flex: 1;
+  text-align: center;
 }
 .month-heading {
-  font-size: 42px;
+  font-size: 64px;
   font-weight: 900;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -52,43 +58,51 @@ body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 .month-heading .month-year { color: var(--accent); }
 .month-year-accent { color: var(--accent); }
 
-/* Calendar container */
-.cal-section { padding: 0 16px; }
+/* ── Calendar container ── */
+.cal-section { padding: 0 12px; }
 
-/* Calendar table cells — rounded dark cards */
-table.month-table { border-collapse: separate !important; border-spacing: 5px !important; }
+/* ── Calendar table cells ── */
+table.month-table { border-collapse: separate !important; border-spacing: 4px !important; }
 td {
   background: var(--cell-bg) !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   border: 1px solid var(--border) !important;
-  border-bottom: 1px solid var(--border) !important;
-  border-right: 1px solid var(--border) !important;
-  height: 90px;
-  padding: 8px 8px 6px;
+  height: 112px;
+  padding: 9px 9px 7px;
+  vertical-align: top;
 }
 td.empty { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
-th { color: var(--muted); border-bottom: 1px solid var(--border); font-size: 10px; letter-spacing: 0.07em; }
-.day-num { color: rgba(238,238,248,0.55); font-size: 12px; }
+th {
+  color: rgba(238,238,248,0.28);
+  border-bottom: 1px solid var(--border);
+  font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase;
+  padding-bottom: 6px;
+}
+.day-num { color: rgba(238,238,248,0.45); font-size: 12px; font-weight: 600; }
 .label { color: var(--text); }
 td.r { background: var(--r) !important; border-color: var(--r-border) !important; }
 td.z { background: var(--z) !important; border-color: var(--z-border) !important; }
-td.bothfree { box-shadow: inset 0 0 0 2px var(--orange) !important; }
-td.today .day-num {
-  background: var(--accent);
-  color: #0b0b18;
-  border-radius: 50%;
-  width: 20px; height: 20px;
-  display: flex; align-items: center; justify-content: center;
+td.bothfree { box-shadow: inset 0 0 0 1.5px var(--orange) !important; }
+td.today {
+  box-shadow: inset 0 0 0 1.5px rgba(238,238,248,0.55) !important;
 }
-td.act-accepted { box-shadow: inset 0 0 0 2px #34a853 !important; }
-td.suggest-proposed { background: rgba(249,115,22,0.12) !important; outline-color: var(--orange) !important; }
+td.today .day-num {
+  background: white;
+  color: #07070f;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+}
+td.act-accepted { box-shadow: inset 0 0 0 1.5px #34a853 !important; }
+td.suggest-proposed { background: rgba(249,115,22,0.10) !important; box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.5) !important; }
 
-/* FREE badge on calendar cells */
+/* ── FREE badge on calendar cells ── */
 .cell-free-badge {
   display: inline-block;
-  font-size: 8px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
-  color: #34d399; background: rgba(52,211,153,0.15);
-  border-radius: 4px; padding: 1px 5px; margin-top: 3px;
+  font-size: 7px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(238,238,248,0.42); background: rgba(255,255,255,0.08);
+  border-radius: 4px; padding: 2px 5px; margin-top: 2px;
 }
 
 /* Activity label on cell */
@@ -663,29 +677,29 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Cell event pills ─────────────────────────────────────────────── */
     .cell-event {
-      font-size: 9px; font-weight: 700;
-      background: rgba(249,115,22,0.18); color: var(--orange);
-      border-radius: 4px; padding: 2px 5px; margin-top: 2px;
+      font-size: 9px; font-weight: 600;
+      background: rgba(255,255,255,0.07); color: rgba(238,238,248,0.75);
+      border-radius: 5px; padding: 2px 6px; margin-top: 4px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 100%; display: block; line-height: 1.3;
+      max-width: 100%; display: block; line-height: 1.4;
     }
     .cell-event.cell-event-done {
-      background: rgba(52,211,153,0.15); color: #34d399;
+      background: rgba(167,139,250,0.15); color: var(--accent);
     }
 
     /* ── Cell avatar bubbles ──────────────────────────────────────────── */
     .cell-avatars {
-      position: absolute; bottom: 5px; right: 5px;
+      position: absolute; bottom: 6px; right: 6px;
       display: flex; flex-direction: row-reverse; align-items: center;
     }
     .cell-avatar {
-      width: 15px; height: 15px; border-radius: 50%;
+      width: 18px; height: 18px; border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 7px; font-weight: 900; color: white;
+      font-size: 8px; font-weight: 900; color: white;
       border: 1.5px solid var(--cell-bg);
-      margin-left: -4px; flex-shrink: 0;
+      margin-left: -5px; flex-shrink: 0;
     }
-    .cell-avatar-more { background: #444 !important; font-size: 6px; }
+    .cell-avatar-more { background: #333 !important; font-size: 6px; }
 
     /* ── Pending invite pulse on cell ────────────────────────────────── */
     .cell-pending-ring {
@@ -701,57 +715,64 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Coordinate Together section ─────────────────────────────────── */
     .coordinate-title {
-      font-size: 11px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: .1em; color: var(--muted); margin-bottom: 14px;
-      display: flex; align-items: center; gap: 8px;
+      font-size: 18px; font-weight: 800;
+      color: var(--text); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .coordinate-title .ctg-star {
+      font-size: 14px; color: var(--accent);
     }
     .coordinate-scroll {
-      display: flex; gap: 12px; overflow-x: auto;
+      display: flex; gap: 14px; overflow-x: auto;
       scrollbar-width: none; padding-bottom: 8px;
     }
     .coordinate-scroll::-webkit-scrollbar { display: none; }
     .ctg-card {
-      flex-shrink: 0; width: 148px; border-radius: 18px;
-      padding: 16px 14px 14px; cursor: pointer; position: relative;
-      border: 1px solid rgba(255,255,255,0.07);
+      flex-shrink: 0; width: 200px; border-radius: 20px;
+      cursor: pointer; position: relative;
+      border: 1px solid rgba(255,255,255,0.08);
       transition: transform .15s, box-shadow .15s;
-      overflow: hidden;
+      overflow: hidden; background: var(--surface);
     }
-    .ctg-card::before {
-      content: ''; position: absolute; inset: 0;
-      background: rgba(255,255,255,0.04);
-      border-radius: inherit; pointer-events: none;
+    .ctg-card:active { transform: scale(0.97); }
+    /* Image area at top */
+    .ctg-img {
+      height: 110px; width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; flex-shrink: 0;
+      position: relative; overflow: hidden;
     }
-    .ctg-card:active { transform: scale(0.96); }
+    /* Text area bottom */
+    .ctg-body { padding: 14px 14px 12px; }
     .ctg-card-dow {
-      font-size: 10px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: .1em; color: rgba(255,255,255,0.45); margin-bottom: 2px;
+      font-size: 9px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .12em; color: rgba(255,255,255,0.40); margin-bottom: 3px;
     }
     .ctg-card-date {
-      font-size: 22px; font-weight: 900; color: white; line-height: 1.1;
+      font-size: 26px; font-weight: 900; color: white; line-height: 1;
       letter-spacing: -.02em; margin-bottom: 4px;
     }
     .ctg-card-with {
-      font-size: 11px; color: rgba(255,255,255,0.5);
-      font-weight: 600; margin-bottom: 24px;
+      font-size: 12px; color: rgba(255,255,255,0.45);
+      font-weight: 500; margin-bottom: 14px;
     }
     .ctg-card-footer {
       display: flex; align-items: center; justify-content: space-between;
     }
     .ctg-avatar {
-      width: 26px; height: 26px; border-radius: 50%;
+      width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 900; color: white;
-      border: 2px solid rgba(255,255,255,0.2);
+      font-size: 12px; font-weight: 900; color: white;
+      border: 2px solid rgba(255,255,255,0.15);
     }
     .ctg-arrow-btn {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: rgba(255,255,255,0.15); border: none;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15);
       cursor: pointer; color: white; font-size: 15px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
       transition: background .13s; font-family: inherit;
     }
-    .ctg-arrow-btn:hover { background: rgba(255,255,255,0.28); }
+    .ctg-arrow-btn:hover { background: rgba(255,255,255,0.22); }
 
     /* ── Plans screen ────────────────────────────────────────────────────── */
     #plans-screen {
@@ -894,7 +915,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <div class="app-header">
-  <div class="app-header-brand" style="font-size:20px;font-weight:900;letter-spacing:-0.01em;">SPONTANY</div>
+  <div class="app-header-brand">
+    <img src="/logo.svg" class="app-logo" alt="Spontany">
+    SPONTANY
+  </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <a id="connections-btn" href="#" class="profile-circle" title="Connections"
        style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:17px;">
@@ -908,7 +932,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- ── Month heading row: prev / month+year / next + edit ── -->
-<div style="max-width:680px;margin:0 auto;padding:12px 16px 0;display:flex;align-items:center;gap:8px;">
+<div style="max-width:680px;margin:0 auto;padding:20px 16px 6px;display:flex;align-items:center;gap:8px;">
   <button class="btn btn-outline btn-sm" onclick="prevMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;">‹</button>
   <div class="app-title-strip" id="app-title-strip" style="flex:1;margin:0;padding:0;text-align:center;"></div>
   <button class="btn btn-outline btn-sm" onclick="nextMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;">›</button>
@@ -1262,8 +1286,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- ── Coordinate Together section ── -->
-<section id="coordinate-section" style="display:none;padding:20px 16px 8px;max-width:680px;margin:0 auto;">
-  <div class="coordinate-title">✦ Coordinate Together</div>
+<section id="coordinate-section" style="display:none;padding:24px 16px 12px;max-width:680px;margin:0 auto;">
+  <div class="coordinate-title"><span class="ctg-star">✦✦</span> Coordinate Together</div>
   <div class="coordinate-scroll" id="coordinate-scroll"></div>
 </section>
 
@@ -1694,13 +1718,13 @@ function renderTogetherCard() {
 
   if (!socialConnections.length || !myFree.size) { section.style.display = 'none'; return; }
 
-  // Card gradient palette — cycles per card
-  const GRADIENTS = [
-    'linear-gradient(135deg,#2d1b69,#1a1040)',
-    'linear-gradient(135deg,#0d3060,#091a40)',
-    'linear-gradient(135deg,#4a1942,#1a0d2e)',
-    'linear-gradient(135deg,#0d4a3a,#072e20)',
-    'linear-gradient(135deg,#4a3010,#2e1a04)',
+  // Image-area gradient palette per card
+  const IMG_GRADS = [
+    'linear-gradient(160deg,#2d1b69 0%,#4a2d8f 100%)',
+    'linear-gradient(160deg,#0d3060 0%,#1a5090 100%)',
+    'linear-gradient(160deg,#4a1942 0%,#7a2d6a 100%)',
+    'linear-gradient(160deg,#0d4a3a 0%,#1a7a5a 100%)',
+    'linear-gradient(160deg,#4a3010 0%,#7a5020 100%)',
   ];
 
   let cards = '';
@@ -1713,18 +1737,23 @@ function renderTogetherCard() {
 
     shared.forEach(ds => {
       const d    = new Date(ds + 'T12:00:00');
-      const grad = GRADIENTS[cardIdx % GRADIENTS.length];
+      const grad = IMG_GRADS[cardIdx % IMG_GRADS.length];
       cardIdx++;
       const safeName = (sc.name || '').replace(/'/g, "\\'");
       cards += `
-        <div class="ctg-card" style="background:${grad};">
-          <div class="ctg-card-dow">${DOW[d.getDay()]}</div>
-          <div class="ctg-card-date">${MONTH[d.getMonth()]} ${d.getDate()}</div>
-          <div class="ctg-card-with">with ${sc.name}</div>
-          <div class="ctg-card-footer">
-            <div class="ctg-avatar" style="background:${sc.color}">${sc.initial}</div>
-            <button class="ctg-arrow-btn"
-                    onclick="quickPlanOuting('${ds}','${sc.userId}','${safeName}')">→</button>
+        <div class="ctg-card">
+          <div class="ctg-img" style="background:${grad};">
+            <div style="font-size:40px;opacity:0.35;">✨</div>
+          </div>
+          <div class="ctg-body">
+            <div class="ctg-card-dow">${DOW[d.getDay()]}</div>
+            <div class="ctg-card-date">${MONTH[d.getMonth()]} ${d.getDate()}</div>
+            <div class="ctg-card-with">with ${sc.name}</div>
+            <div class="ctg-card-footer">
+              <div class="ctg-avatar" style="background:${sc.color}">${sc.initial}</div>
+              <button class="ctg-arrow-btn"
+                      onclick="quickPlanOuting('${ds}','${sc.userId}','${safeName}')">→</button>
+            </div>
           </div>
         </div>`;
     });
