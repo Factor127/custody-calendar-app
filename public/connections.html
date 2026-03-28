@@ -6,15 +6,202 @@
   <title>Connections — Spontany</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
-/* ══ Dark theme ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
+  --bg:#0c0c15; --surface:#131321; --card:#18182a;
   --border:rgba(255,255,255,0.07); --text:#eeeef8;
   --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
   --orange:#f97316;
 }
-body { background:var(--bg); color:var(--text); }
-.app-header { background:var(--bg) !important; border-color:var(--border) !important; }
+* { box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:inherit; margin:0; }
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.page-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:28px 24px 0;
+}
+.page-title { font-size:30px; font-weight:900; color:var(--text); letter-spacing:-0.02em; margin:0; }
+.invite-btn {
+  background:var(--blue); color:white; border:none; border-radius:50px;
+  padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:6px; transition:opacity .15s;
+}
+.invite-btn:hover { opacity:.88; }
+
+/* ── Back link ───────────────────────────────────────────────────────── */
+.back-link {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:13px; color:var(--accent); text-decoration:none; font-weight:600;
+  padding:16px 24px 0; opacity:.8;
+}
+.back-link:hover { opacity:1; }
+
+/* ── Main content ────────────────────────────────────────────────────── */
+.conn-page { max-width:960px; margin:0 auto; padding:0 16px 60px; }
+
+/* ── Connection cards grid ───────────────────────────────────────────── */
+.conn-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:14px;
+  margin-top:24px;
+}
+.conn-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  display:flex; flex-direction:column; gap:0;
+  position:relative;
+  transition:border-color .15s;
+}
+.conn-card:hover { border-color:rgba(167,139,250,0.2); }
+
+/* Three-dot menu */
+.conn-menu-btn {
+  position:absolute; top:14px; right:14px;
+  background:none; border:none; color:var(--muted);
+  font-size:18px; cursor:pointer; padding:4px 6px; border-radius:6px;
+  line-height:1; transition:color .15s, background .15s;
+}
+.conn-menu-btn:hover { color:var(--text); background:rgba(255,255,255,0.06); }
+
+/* Avatar */
+.conn-avatar-wrap { position:relative; width:64px; height:64px; margin-bottom:12px; }
+.conn-avatar {
+  width:64px; height:64px; border-radius:50%;
+  background:var(--blue); display:flex; align-items:center; justify-content:center;
+  font-size:24px; font-weight:900; color:white; overflow:hidden; flex-shrink:0;
+}
+.conn-avatar img { width:100%; height:100%; object-fit:cover; }
+.conn-status-dot {
+  position:absolute; bottom:2px; left:2px;
+  width:14px; height:14px; border-radius:50%;
+  border:2.5px solid var(--card);
+}
+.conn-status-dot.active  { background:#22c55e; }
+.conn-status-dot.pending { background:#f59e0b; }
+.conn-status-dot.inactive{ background:#6b7280; }
+
+/* Name + badge */
+.conn-name { font-size:17px; font-weight:800; color:var(--text); margin:0 0 6px; }
+.conn-role-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  padding:3px 10px; border-radius:20px; border:1.5px solid;
+  margin-bottom:16px;
+}
+.conn-role-badge.coparent { color:#a78bfa; border-color:rgba(167,139,250,0.35); background:rgba(124,92,191,0.15); }
+.conn-role-badge.partner  { color:#f9a8d4; border-color:rgba(249,168,212,0.35); background:rgba(236,72,153,0.12); }
+.conn-role-badge.friend   { color:#93c5fd; border-color:rgba(147,197,253,0.35); background:rgba(59,130,246,0.12); }
+
+/* Calendar date rows */
+.conn-dates { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+.conn-date-row {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--muted); font-weight:500;
+}
+.conn-date-icon { font-size:13px; flex-shrink:0; }
+
+/* Actions row */
+.conn-divider { border:none; border-top:1px solid var(--border); margin:0 0 14px; }
+.conn-actions {
+  display:flex; align-items:center; gap:0;
+  margin-bottom:12px;
+}
+.conn-action-btn {
+  background:none; border:none; color:var(--muted);
+  font-size:12px; font-weight:600; cursor:pointer; padding:0;
+  transition:color .15s; flex:1; text-align:center;
+}
+.conn-action-btn:hover { color:var(--text); }
+.conn-action-sep { color:var(--border); font-size:16px; flex-shrink:0; }
+
+/* Disconnect */
+.conn-disconnect {
+  display:flex; align-items:center; gap:6px;
+  background:none; border:none; color:#f87171;
+  font-size:12px; font-weight:600; cursor:pointer; padding:0;
+  transition:color .15s;
+}
+.conn-disconnect:hover { color:#ef4444; }
+
+/* Pending review card */
+.conn-card.pending-card { border-color:rgba(245,158,11,0.3); }
+.conn-review-btn {
+  width:100%; background:var(--blue); color:white; border:none;
+  border-radius:8px; padding:9px; font-size:13px; font-weight:700;
+  cursor:pointer; transition:opacity .15s; margin-top:4px;
+}
+.conn-review-btn:hover { opacity:.88; }
+
+/* Empty state */
+.conn-empty {
+  text-align:center; padding:48px 24px;
+  color:var(--muted); font-size:15px; line-height:1.6;
+}
+.conn-empty-icon { font-size:40px; margin-bottom:12px; }
+
+/* ── Groups section ──────────────────────────────────────────────────── */
+.groups-heading {
+  display:flex; align-items:center; gap:12px;
+  font-size:20px; font-weight:800; color:var(--text);
+  margin:36px 0 16px;
+}
+.groups-heading::before {
+  content:''; display:block; width:4px; height:22px;
+  background:var(--blue); border-radius:3px; flex-shrink:0;
+}
+.groups-grid {
+  display:grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap:14px;
+}
+@media (max-width:640px) {
+  .groups-grid { grid-template-columns:1fr; }
+  .conn-grid   { grid-template-columns:1fr; }
+}
+.group-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:6px;
+}
+.group-card.primary { background:#111127; border-color:rgba(124,92,191,0.25); }
+.group-label {
+  font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--accent);
+}
+.group-name { font-size:20px; font-weight:900; color:var(--text); line-height:1.2; }
+.group-desc { font-size:12px; color:var(--muted); line-height:1.5; flex:1; }
+.group-members { display:flex; align-items:center; gap:-8px; margin-top:8px; }
+.group-member-avatar {
+  width:30px; height:30px; border-radius:50%;
+  background:var(--blue); border:2px solid var(--card);
+  margin-right:-8px; overflow:hidden; display:flex; align-items:center;
+  justify-content:center; font-size:12px; font-weight:800; color:white;
+}
+.group-member-count {
+  font-size:12px; font-weight:700; color:var(--muted); margin-left:18px;
+}
+.group-icon-wrap {
+  width:36px; height:36px; border-radius:50%;
+  background:rgba(167,139,250,0.15); display:flex; align-items:center; justify-content:center;
+  font-size:18px; margin-bottom:4px;
+}
+.group-link {
+  font-size:13px; font-weight:700; color:var(--accent);
+  text-decoration:none; margin-top:auto; padding-top:8px;
+}
+.group-link:hover { text-decoration:underline; }
+
+/* ── iCal ────────────────────────────────────────────────────────────── */
+.ical-card {
+  margin-top:28px; padding:16px 20px;
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+}
+.ical-card p { font-size:13px; color:var(--muted); margin:4px 0 10px; }
+.ical-card strong { color:var(--text); font-size:14px; }
+
+/* ── Modal overrides ─────────────────────────────────────────────────── */
 .modal { background:var(--surface) !important; border-color:var(--border) !important; }
 .modal h2 { color:var(--text); }
 .radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text); }
@@ -23,80 +210,83 @@ body { background:var(--bg); color:var(--text); }
   background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
 }
 input::placeholder { color:var(--muted); }
-.conn-status.approved { background:rgba(46,125,50,0.18) !important; color:#81c784 !important; }
-.conn-status.pending  { background:rgba(230,81,0,0.18) !important;  color:#ffb74d !important; }
-.conn-status.rejected { background:rgba(198,40,40,0.18) !important; color:#ef9a9a !important; }
-.conn-status.expired  { background:rgba(117,117,117,0.18) !important; color:#9e9e9e !important; }
-/* ─────────────────────────────────────────────────────────────────────── */
-    .profile-circle {
-      position:relative; width:38px; height:38px; border-radius:50%;
-      background:var(--blue); color:white; display:flex; align-items:center;
-      justify-content:center; font-weight:800; font-size:15px; text-decoration:none;
-      flex-shrink:0; cursor:pointer; user-select:none;
-    }
-    .profile-circle:hover { opacity:0.88; }
-    .app-header {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:12px 0 8px; margin-bottom:4px; border-bottom:1px solid var(--border);
-    }
-    .app-header-brand { font-size:20px; font-weight:900; color:var(--text); letter-spacing:-0.01em; }
-    .page-heading { font-size:20px; font-weight:800; color:var(--text); margin:20px 0 4px; }
-    .page-sub { font-size:13px; color:var(--muted); margin:0 0 20px; }
-    .connection-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
-    .connection-row:last-child { border-bottom:none; }
-    .flex-gap { display:flex;gap:6px;flex-wrap:wrap; }
-    .conn-status { font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:5px; }
-    .conn-status.approved { background:#e8f5e9;color:#2e7d32; }
-    .conn-status.pending  { background:#fff3e0;color:#e65100; }
-    .conn-status.rejected { background:#fce4ec;color:#c62828; }
-    .conn-status.expired  { background:#f5f5f5;color:#757575; }
-    .text-muted { font-size:12px;color:var(--muted); }
-    .bold { font-weight:700; }
-    .badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:#e53935;color:white;font-size:10px;font-weight:800;padding:0 4px; }
+.text-muted { color:var(--muted); font-size:13px; }
+
+/* ── Context menu ────────────────────────────────────────────────────── */
+.ctx-menu {
+  position:fixed; background:var(--card); border:1px solid var(--border);
+  border-radius:10px; padding:4px; min-width:160px; z-index:999;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+}
+.ctx-item {
+  display:block; width:100%; text-align:left;
+  background:none; border:none; color:var(--text);
+  font-size:13px; font-weight:600; padding:9px 14px; border-radius:7px;
+  cursor:pointer; transition:background .12s;
+}
+.ctx-item:hover { background:rgba(255,255,255,0.07); }
+.ctx-item.danger { color:#f87171; }
   </style>
 </head>
 <body>
-<div class="container">
 
-  <div class="app-header">
-    <a id="calendar-btn" href="#" style="font-size:13px;color:var(--blue);text-decoration:none;font-weight:600;">← Calendar</a>
-    <div class="app-header-brand">
-      <img src="/logo.svg" alt="" width="28" height="28" style="border-radius:7px;flex-shrink:0;">
-      SPONTANY
-    </div>
-    <a id="profile-btn" href="#" class="profile-circle" title="My profile">
-      <span id="profile-initial">?</span>
-    </a>
+<a id="calendar-btn" href="#" class="back-link">← Calendar</a>
+
+<div class="conn-page">
+
+  <div class="page-header">
+    <h1 class="page-title">Your Connections</h1>
+    <button class="invite-btn" onclick="openInviteModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      Invite
+    </button>
   </div>
 
-  <div class="cal-section" style="max-width:680px;margin:0 auto;">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 16px;">
-      <div>
-        <div class="page-heading" style="margin:0;">Your Connections</div>
-        <div class="page-sub" style="margin:4px 0 0;">Manage co-parents and partners</div>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="openInviteModal()">+ Invite</button>
-    </div>
-
-    <div id="connections-list">
-      <p class="text-muted">Loading…</p>
-    </div>
-
-    <!-- iCal subscribe -->
-    <div style="margin-top:24px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
-      <p style="font-size:13px;font-weight:700;margin:0 0 6px;">📆 Subscribe to your custody calendar</p>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Paste this URL into Apple Calendar, Google Calendar, or Outlook to get a live feed of your custody days.</p>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input id="ical-url" readonly style="flex:1;min-width:0;font-size:11px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--text);font-family:monospace;">
-        <button class="btn btn-sm btn-outline" onclick="copyIcalUrl()">Copy URL</button>
-      </div>
-    </div>
-
+  <div class="conn-grid" id="connections-list">
+    <p class="text-muted">Loading…</p>
   </div>
+
+  <!-- Groups section (visual placeholder) -->
+  <div class="groups-heading">Groups</div>
+  <div class="groups-grid">
+    <div class="group-card primary">
+      <div class="group-label">Primary Node</div>
+      <div class="group-name">The Family Hub</div>
+      <div class="group-desc">Central coordination for all co-parenting schedules and household logistics.</div>
+      <div class="group-members" id="group-members-row">
+        <div class="group-member-count" style="margin-left:0;">—</div>
+      </div>
+    </div>
+    <div class="group-card">
+      <div class="group-icon-wrap">🧭</div>
+      <div class="group-name" style="font-size:16px;">Social Nexus</div>
+      <div class="group-desc">Inner circle of trusted friends for spontaneous gatherings.</div>
+      <a href="#" class="group-link">View Group →</a>
+    </div>
+    <div class="group-card">
+      <div class="group-icon-wrap">💼</div>
+      <div class="group-name" style="font-size:16px;">Project Kinetic</div>
+      <div class="group-desc">Business partners with shared visibility windows.</div>
+      <a href="#" class="group-link">View Group →</a>
+    </div>
+  </div>
+
+  <!-- iCal subscribe -->
+  <div class="ical-card">
+    <strong>📆 Subscribe to your custody calendar</strong>
+    <p>Paste this URL into Apple Calendar, Google Calendar, or Outlook to get a live feed of your custody days.</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="ical-url" readonly style="flex:1;min-width:0;font-size:11px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#0e0e1c;color:var(--muted);font-family:monospace;">
+      <button class="btn btn-sm btn-outline" onclick="copyIcalUrl()">Copy URL</button>
+    </div>
+  </div>
+
 </div>
 
-<!-- Approve connection modal -->
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu" style="display:none;"></div>
+
+<!-- Approve modal -->
 <div class="modal-overlay" id="approve-modal">
   <div class="modal">
     <h2 id="approve-title">Review connection request</h2>
@@ -133,7 +323,7 @@ input::placeholder { color:var(--muted); }
   </div>
 </div>
 
-<!-- My share window modal -->
+<!-- My share modal -->
 <div class="modal-overlay" id="my-share-modal">
   <div class="modal">
     <h2>My calendar share window</h2>
@@ -175,7 +365,7 @@ input::placeholder { color:var(--muted); }
     <div id="invite-link-section" style="display:none;">
       <label class="field-label">Share this link:</label>
       <div style="display:flex;gap:8px;margin-top:6px;">
-        <input id="invite-link-input" readonly style="flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-family:monospace;">
+        <input id="invite-link-input" readonly style="flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-family:monospace;color:var(--text);">
         <button class="btn btn-primary btn-sm" onclick="copyInviteLink()">Copy</button>
       </div>
       <div style="margin-top:10px;">
@@ -197,13 +387,11 @@ const params   = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token');
 if (!MY_TOKEN) location.replace('/');
 
-let allConnections    = [];
-let pendingConnections = [];
-let pendingSuggestions = [];
-let pendingConnectionId = null;
+let allConnections       = [];
+let pendingConnectionId  = null;
 let selectedDurationDays = 30;
-let myShareConnId = null;
-let myShareDays   = 30;
+let myShareConnId        = null;
+let myShareDays          = 30;
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 function showToast(msg) {
@@ -224,15 +412,57 @@ function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
 }
 
-// ── Load connections ───────────────────────────────────────────────────────
-async function loadConnections() {
-  const res = await fetch(`/api/connections/all?token=${MY_TOKEN}`);
-  if (res.ok) {
-    const data = await res.json();
-    allConnections     = data.connections || [];
-    pendingConnections = allConnections.filter(c => c.i_am_target && c.status === 'pending');
+// ── Context menu ──────────────────────────────────────────────────────────
+function openConnMenu(connId, btnEl) {
+  const c    = allConnections.find(x => x.id === connId);
+  const menu = document.getElementById('ctx-menu');
+  if (!c || !menu) return;
+
+  const relType = c.relationship_type || 'coparent';
+  const nextRole = relType === 'coparent' ? 'partner' : relType === 'partner' ? 'friend' : 'coparent';
+  const nextLabel = nextRole === 'partner' ? '❤️ Mark as Partner' : nextRole === 'friend' ? '👋 Mark as Friend' : '👨‍👩‍👧 Mark as Co-parent';
+
+  let items = `<button class="ctx-item" onclick="closeCtxMenu();openMyShareModal('${connId}')">📅 My Share Window</button>`;
+  if (c.status === 'approved') {
+    const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
+    items += `<button class="ctx-item" onclick="closeCtxMenu();toggleAutoRenew('${connId}',${!c.auto_renew})">🔄 ${arLabel}</button>`;
   }
-  renderConnectionsList();
+  items += `<button class="ctx-item" onclick="closeCtxMenu();toggleConnectionRole('${connId}','${nextRole}')">${nextLabel}</button>`;
+  if (c.status === 'approved') {
+    items += `<button class="ctx-item danger" onclick="closeCtxMenu();revokeConnection('${connId}')">⛔ Disconnect</button>`;
+  } else {
+    items += `<button class="ctx-item danger" onclick="closeCtxMenu();removeConnection('${connId}')">🗑 Remove</button>`;
+  }
+
+  menu.innerHTML = items;
+  menu.style.display = 'block';
+
+  const rect = btnEl.getBoundingClientRect();
+  const menuW = 180;
+  let left = rect.right - menuW;
+  let top  = rect.bottom + 6;
+  if (left < 8) left = 8;
+  if (top + 200 > window.innerHeight) top = rect.top - 210;
+  menu.style.left = left + 'px';
+  menu.style.top  = top  + 'px';
+}
+
+function closeCtxMenu() {
+  document.getElementById('ctx-menu').style.display = 'none';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.conn-menu-btn') && !e.target.closest('.ctx-menu')) closeCtxMenu();
+});
+
+// ── Render ────────────────────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
+}
+
+function avatarHtml(name, photo) {
+  if (photo) return `<img src="${photo}" alt="${name}">`;
+  return `<span>${(name || '?')[0].toUpperCase()}</span>`;
 }
 
 function renderConnectionsList() {
@@ -240,61 +470,101 @@ function renderConnectionsList() {
   if (!container) return;
 
   if (allConnections.length === 0) {
-    container.innerHTML = `<p class="text-muted" style="margin:0 0 12px;">No connections yet. Invite your co-parent or partner to get started.</p>`;
+    container.innerHTML = `<div class="conn-empty">
+      <div class="conn-empty-icon">👋</div>
+      <div>No connections yet.</div>
+      <div style="font-size:13px;margin-top:6px;">Invite your co-parent or partner to get started.</div>
+    </div>`;
     return;
   }
 
   container.innerHTML = allConnections.map(c => {
-    const statusLabel = { pending:'⏳ Pending', approved:'✓ Active', rejected:'✗ Declined', expired:'⚠ Expired' }[c.status] || c.status;
-    const theirUntil  = c.their_share_until || c.approved_until;
-    const myUntil     = c.my_share_until    || c.approved_until;
-    const untilParts  = [];
-    if (theirUntil) untilParts.push(`their calendar until ${new Date(theirUntil).toLocaleDateString()}`);
-    if (myUntil)    untilParts.push(`yours until ${new Date(myUntil).toLocaleDateString()}`);
-    const until         = untilParts.length ? ' · ' + untilParts.join(' · ') : '';
-    const autoRenewLabel = c.status === 'approved' ? (c.auto_renew ? ' · Auto-renews' : '') : '';
+    const relType  = c.relationship_type || 'coparent';
+    const relLabel = relType === 'partner' ? '❤ PARTNER' : relType === 'friend' ? '👤 FRIEND' : '🛡 CO-PARENT';
+    const dotClass = c.status === 'approved' ? 'active' : c.status === 'pending' ? 'pending' : 'inactive';
+    const theirUntil = c.their_share_until || c.approved_until;
+    const myUntil    = c.my_share_until    || c.approved_until;
 
-    const relType = c.relationship_type || 'coparent';
-    const nextRole = relType === 'coparent' ? 'partner' : relType === 'partner' ? 'friend' : 'coparent';
-    const relBadge = relType === 'partner'
-      ? `<button class="badge" onclick="toggleConnectionRole('${c.id}','${nextRole}')" title="Click to change type" style="background:#fce4ec;color:#c2185b;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">❤️ Partner</button>`
-      : relType === 'friend'
-      ? `<button class="badge" onclick="toggleConnectionRole('${c.id}','${nextRole}')" title="Click to change type" style="background:#e8f5e9;color:#2e7d32;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👋 Friend</button>`
-      : `<button class="badge" onclick="toggleConnectionRole('${c.id}','${nextRole}')" title="Click to change type" style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:4px;border:none;cursor:pointer;">👨‍👩‍👧 Co-parent</button>`;
-
-    let actions = '';
+    // Pending card (needs review)
     if (c.i_am_target && c.status === 'pending') {
-      actions = `<button class="btn btn-sm btn-primary" onclick="openApproveModal('${c.id}','${c.other_name}',${c.desired_duration_days||0})">Review</button>`;
-    } else if (c.status === 'approved') {
-      const arLabel = c.auto_renew ? 'Turn off auto-renew' : 'Turn on auto-renew';
-      actions = `
-        <button class="btn btn-sm btn-outline" onclick="openMyShareModal('${c.id}')">My share</button>
-        <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
-        <button class="btn btn-sm btn-danger"  onclick="revokeConnection('${c.id}')">Disconnect</button>`;
-    } else if (c.status === 'rejected' || c.status === 'expired') {
-      actions = `<button class="btn btn-sm btn-outline" onclick="removeConnection('${c.id}')">Remove</button>`;
+      return `<div class="conn-card pending-card">
+        <button class="conn-menu-btn" onclick="openConnMenu('${c.id}',this)">⋮</button>
+        <div class="conn-avatar-wrap">
+          <div class="conn-avatar">${avatarHtml(c.other_name, c.photo)}</div>
+          <div class="conn-status-dot pending"></div>
+        </div>
+        <div class="conn-name">${c.other_name}</div>
+        <div class="conn-role-badge ${relType}">${relLabel}</div>
+        <div style="font-size:12px;color:#f59e0b;margin-bottom:14px;font-weight:600;">⏳ Wants to connect</div>
+        <button class="conn-review-btn" onclick="openApproveModal('${c.id}','${c.other_name}',${c.desired_duration_days||0})">Review Request</button>
+      </div>`;
     }
 
-    return `<div class="connection-row">
-      <div style="flex:1;">
-        <span class="bold">${c.other_name}</span>${relBadge}
-        <span class="conn-status ${c.status}">${statusLabel}</span>
-        <div class="text-muted" style="margin-top:2px;">${until}${autoRenewLabel}</div>
+    const dateRows = [
+      theirUntil ? `<div class="conn-date-row"><span class="conn-date-icon">📅</span> their calendar until ${fmtDate(theirUntil)}</div>` : '',
+      myUntil    ? `<div class="conn-date-row"><span class="conn-date-icon">📅</span> yours until ${fmtDate(myUntil)}</div>` : ''
+    ].filter(Boolean).join('');
+
+    const arLabel = c.auto_renew ? 'Auto-renew ✓' : 'Auto-renew';
+
+    return `<div class="conn-card">
+      <button class="conn-menu-btn" onclick="openConnMenu('${c.id}',this)">⋮</button>
+      <div class="conn-avatar-wrap">
+        <div class="conn-avatar">${avatarHtml(c.other_name, c.photo)}</div>
+        <div class="conn-status-dot ${dotClass}"></div>
       </div>
-      <div class="flex-gap">${actions}</div>
+      <div class="conn-name">${c.other_name}</div>
+      <div class="conn-role-badge ${relType}">${relLabel}</div>
+      ${dateRows ? `<div class="conn-dates">${dateRows}</div>` : ''}
+      <hr class="conn-divider">
+      <div class="conn-actions">
+        <button class="conn-action-btn" onclick="openMyShareModal('${c.id}')">My Share</button>
+        <span class="conn-action-sep">|</span>
+        <button class="conn-action-btn" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})" style="${c.auto_renew ? 'color:var(--accent)' : ''}">${arLabel}</button>
+      </div>
+      ${c.status === 'approved'
+        ? `<button class="conn-disconnect" onclick="revokeConnection('${c.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 14l-4 4m0 0l4 4m-4-4h10.5a6 6 0 000-12H14"/><path d="M15 10l4-4m0 0l-4-4m4 4H8.5a6 6 0 000 12H10"/></svg>
+            Disconnect
+          </button>`
+        : `<button class="conn-disconnect" onclick="removeConnection('${c.id}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            Remove
+          </button>`
+      }
     </div>`;
   }).join('');
+
+  // Populate family hub member avatars
+  const approved = allConnections.filter(c => c.status === 'approved');
+  const memberRow = document.getElementById('group-members-row');
+  if (memberRow && approved.length > 0) {
+    const shown = approved.slice(0, 3);
+    const extra = approved.length - shown.length;
+    memberRow.innerHTML = shown.map(c =>
+      `<div class="group-member-avatar">${c.photo ? `<img src="${c.photo}" style="width:100%;height:100%;object-fit:cover;">` : (c.other_name||'?')[0].toUpperCase()}</div>`
+    ).join('') + (extra > 0 ? `<span class="group-member-count">+${extra}</span>` : '');
+  }
 }
 
-// ── Approve modal ──────────────────────────────────────────────────────────
+// ── Load ──────────────────────────────────────────────────────────────────
+async function loadConnections() {
+  const res = await fetch(`/api/connections/all?token=${MY_TOKEN}`);
+  if (res.ok) {
+    const data = await res.json();
+    allConnections = data.connections || [];
+  }
+  renderConnectionsList();
+}
+
+// ── Approve modal ─────────────────────────────────────────────────────────
 function openApproveModal(connId, name, desiredDays) {
   pendingConnectionId  = connId;
   selectedDurationDays = desiredDays || 30;
   document.getElementById('approve-title').textContent = `${name} wants to connect`;
   document.getElementById('approve-desc').textContent  = `Choose how long to share your calendar with ${name}.`;
   document.querySelectorAll('#duration-radios .radio-option').forEach(o => {
-    const val = parseInt(o.querySelector('input').value);
-    o.classList.toggle('selected', val === selectedDurationDays);
+    o.classList.toggle('selected', parseInt(o.querySelector('input').value) === selectedDurationDays);
   });
   document.getElementById('auto-renew-toggle').checked = false;
   document.getElementById('approve-modal').classList.add('open');
@@ -313,11 +583,8 @@ async function approveRequest() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ connection_id: pendingConnectionId, duration_days: selectedDurationDays, auto_renew: autoRenew })
   });
-  if (res.ok) {
-    closeModal('approve-modal');
-    showToast('✓ Connection approved');
-    await loadConnections();
-  } else { showToast('Failed to approve'); }
+  if (res.ok) { closeModal('approve-modal'); showToast('✓ Connection approved'); await loadConnections(); }
+  else showToast('Failed to approve');
 }
 
 async function rejectRequest() {
@@ -367,7 +634,7 @@ async function toggleConnectionRole(connId, newRole) {
   else showToast('Failed to update role');
 }
 
-// ── My share modal ─────────────────────────────────────────────────────────
+// ── My share modal ────────────────────────────────────────────────────────
 function openMyShareModal(connId) {
   myShareConnId = connId;
   myShareDays   = 30;
@@ -393,7 +660,7 @@ async function submitMyShare() {
   else showToast('Failed to update');
 }
 
-// ── Invite modal ───────────────────────────────────────────────────────────
+// ── Invite modal ──────────────────────────────────────────────────────────
 let selectedInviteType = 'coparent';
 
 function openInviteModal() {
@@ -402,8 +669,7 @@ function openInviteModal() {
   document.getElementById('invite-link-input').value = '';
   document.getElementById('invite-btn-coparent').className = 'btn btn-primary';
   document.getElementById('invite-btn-partner').className  = 'btn btn-outline';
-  if (document.getElementById('invite-btn-friend'))
-    document.getElementById('invite-btn-friend').className = 'btn btn-outline';
+  document.getElementById('invite-btn-friend').className   = 'btn btn-outline';
   document.getElementById('invite-modal').classList.add('open');
 }
 
@@ -411,9 +677,7 @@ async function selectInviteType(type) {
   selectedInviteType = type;
   document.getElementById('invite-btn-coparent').className = type === 'coparent' ? 'btn btn-primary' : 'btn btn-outline';
   document.getElementById('invite-btn-partner').className  = type === 'partner'  ? 'btn btn-primary' : 'btn btn-outline';
-  if (document.getElementById('invite-btn-friend'))
-    document.getElementById('invite-btn-friend').className = type === 'friend'   ? 'btn btn-primary' : 'btn btn-outline';
-
+  document.getElementById('invite-btn-friend').className   = type === 'friend'   ? 'btn btn-primary' : 'btn btn-outline';
   const res = await fetch(`/api/invites/generate?token=${MY_TOKEN}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ relationship_type: type })
@@ -437,28 +701,25 @@ async function copyInviteLink() {
   catch { prompt('Copy this link:', url); }
 }
 
-// ── iCal ───────────────────────────────────────────────────────────────────
+// ── iCal ─────────────────────────────────────────────────────────────────
 async function copyIcalUrl() {
   const url = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
   try { await navigator.clipboard.writeText(url); showToast('✓ Calendar URL copied — paste into Apple/Google Calendar'); }
   catch { prompt('Copy this URL:', url); }
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
   if (!meRes.ok) { location.replace('/'); return; }
   const me = await meRes.json();
 
-  document.getElementById('profile-initial').textContent = (me.name || '?')[0].toUpperCase();
-  document.getElementById('profile-btn').href   = `/profile?token=${MY_TOKEN}`;
-  document.getElementById('calendar-btn').href  = `/calendar?token=${MY_TOKEN}`;
-  document.getElementById('ical-url').value     = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
+  document.getElementById('calendar-btn').href = `/calendar?token=${MY_TOKEN}`;
+  document.getElementById('ical-url').value    = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
 
   await loadConnections();
 }
 
-// Close modals on backdrop click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });
