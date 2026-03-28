@@ -6,6 +6,247 @@
   <title>Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
+/* ══ Dark theme ══════════════════════════════════════════════════════════ */
+:root {
+  --bg:       #0b0b18;
+  --surface:  #13131f;
+  --cell-bg:  #16162a;
+  --border:   rgba(255,255,255,0.08);
+  --text:     #eeeef8;
+  --muted:    rgba(238,238,248,0.40);
+  --blue:     #7c5cbf;
+  --accent:   #a78bfa;
+  --orange:   #f97316;
+  --tagbg:    rgba(249,115,22,0.15);
+  --tagbd:    rgba(249,115,22,0.35);
+  --r:        rgba(124,92,191,0.25);
+  --r-border: rgba(167,139,250,0.40);
+  --z:        rgba(255,255,255,0.04);
+  --z-border: rgba(255,255,255,0.10);
+}
+body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
+
+/* Header */
+.app-header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px 10px;
+  position: sticky; top: 0; z-index: 600;
+}
+.app-header-brand { color: var(--text); font-size: 22px; font-weight: 900; letter-spacing: -0.02em; }
+
+/* Month heading strip */
+.app-title-strip {
+  text-align: left;
+  padding: 20px 20px 4px;
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+  max-width: 680px;
+  margin: 0 auto;
+}
+.month-year-accent { color: var(--accent); }
+
+/* Calendar container */
+.cal-section { padding: 0 16px; }
+
+/* Calendar table cells — rounded dark cards */
+table.month-table { border-collapse: separate !important; border-spacing: 5px !important; }
+td {
+  background: var(--cell-bg) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
+  height: 90px;
+  padding: 8px 8px 6px;
+}
+td.empty { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+th { color: var(--muted); border-bottom: 1px solid var(--border); font-size: 10px; letter-spacing: 0.07em; }
+.day-num { color: rgba(238,238,248,0.55); font-size: 12px; }
+.label { color: var(--text); }
+td.r { background: var(--r) !important; border-color: var(--r-border) !important; }
+td.z { background: var(--z) !important; border-color: var(--z-border) !important; }
+td.bothfree { box-shadow: inset 0 0 0 2px var(--orange) !important; }
+td.today .day-num {
+  background: var(--accent);
+  color: #0b0b18;
+  border-radius: 50%;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+td.act-accepted { box-shadow: inset 0 0 0 2px #34a853 !important; }
+td.suggest-proposed { background: rgba(249,115,22,0.12) !important; outline-color: var(--orange) !important; }
+
+/* FREE badge on calendar cells */
+.cell-free-badge {
+  display: inline-block;
+  font-size: 8px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #34d399; background: rgba(52,211,153,0.15);
+  border-radius: 4px; padding: 1px 5px; margin-top: 3px;
+}
+
+/* Activity label on cell */
+.act-cell-title {
+  background: rgba(249,115,22,0.18) !important;
+  color: var(--orange) !important;
+}
+
+/* Social section */
+#social-calendar-section {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  border-radius: 16px;
+  padding: 16px;
+}
+.social-cal-title { color: var(--text) !important; font-size: 15px !important; }
+#next-free-banner { background: rgba(249,115,22,0.12) !important; color: var(--orange) !important; }
+#social-calendar-locked {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+}
+.social-cal-sub { color: var(--muted) !important; }
+#together-card {
+  background: rgba(124,92,191,0.15) !important;
+  border-color: rgba(167,139,250,0.25) !important;
+}
+
+/* Day strip */
+.day-card { background: var(--cell-bg) !important; border-color: var(--border) !important; }
+.day-card.match { background: rgba(249,115,22,0.15) !important; border-color: var(--orange) !important; }
+.day-card.strip-today { border-color: var(--accent) !important; }
+.day-card.strip-today.dim { background: var(--cell-bg) !important; }
+.day-card.dim { background: transparent !important; border-color: transparent !important; }
+.day-card .dc-name { color: var(--muted) !important; }
+.day-card .dc-num { color: var(--text) !important; }
+.day-card.match .dc-num { color: var(--orange) !important; }
+.day-card .dc-free { color: #34d399 !important; }
+.day-card .dc-plan-it { color: var(--orange) !important; background: rgba(249,115,22,0.12) !important; }
+.strip-nav { background: var(--cell-bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.strip-nav:hover:not(:disabled) { background: rgba(124,92,191,0.2) !important; }
+.strip-range { color: var(--muted); }
+
+/* Compact custody card */
+.cal-compact-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+}
+.mini-card-month { color: var(--text) !important; }
+.mini-card-edit { color: var(--accent) !important; }
+.mini-dow { color: var(--muted) !important; }
+.mini-num { color: var(--text) !important; }
+.mini-cell.mini-self { background: var(--r) !important; }
+.mini-cell.mini-coparent { background: var(--z) !important; }
+.mini-cell.mini-today { outline-color: var(--accent) !important; }
+.mini-card-footer { color: var(--muted) !important; border-top-color: var(--border) !important; }
+.custody-balance-bar { background: var(--surface) !important; border-top-color: var(--border) !important; }
+.custody-balance-bar .bal-label { color: var(--muted) !important; }
+.cal-show-bar { background: var(--surface) !important; border-color: var(--border) !important; }
+.cal-show-item { color: var(--muted) !important; }
+
+/* Notif / Suggestion panels */
+#notif-panel { background: var(--surface) !important; border-color: var(--border) !important; }
+#notif-tab { background: var(--cell-bg) !important; color: var(--muted) !important; border-right-color: var(--border) !important; }
+#notif-tab:hover { background: rgba(124,92,191,0.15) !important; }
+#notif-content-header { border-bottom-color: var(--border) !important; }
+#notif-content-header strong { color: var(--text) !important; }
+#notif-close-btn { color: var(--muted) !important; }
+#notif-close-btn:hover { background: rgba(255,255,255,0.06) !important; color: var(--text) !important; }
+.notif-item { border-bottom-color: var(--border) !important; }
+.notif-item-title { color: var(--text) !important; }
+.notif-item-sub { color: var(--muted) !important; }
+#suggestion-panel { background: var(--surface) !important; border-color: var(--border) !important; }
+.sugg-panel-header { border-bottom-color: var(--border) !important; }
+.sugg-panel-header h3 { color: var(--text) !important; }
+.sugg-later-btn { color: var(--muted) !important; }
+.sugg-later-btn:hover { background: rgba(255,255,255,0.06) !important; color: var(--text) !important; }
+.sugg-panel-footer { border-top-color: var(--border) !important; }
+.sugg-highlight { border-left-color: var(--accent) !important; background: rgba(124,92,191,0.12) !important; }
+.partner-pill { background: rgba(0,188,212,0.12) !important; border-color: rgba(0,188,212,0.35) !important; color: #00e5ff !important; }
+
+/* Modals */
+.modal { background: var(--surface) !important; }
+#activity-modal .act-modal-box { background: var(--surface) !important; }
+#calendar-modal .cal-modal-inner { background: var(--surface) !important; }
+.cal-modal-title { color: var(--text) !important; }
+.cal-modal-header { border-bottom-color: var(--border) !important; }
+.modal-title { color: var(--text) !important; }
+.modal-close { color: var(--muted) !important; }
+.modal-close:hover { color: var(--text) !important; }
+
+/* Form fields in dark */
+input, textarea, select {
+  background: var(--cell-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+input::placeholder { color: var(--muted) !important; }
+input:focus, textarea:focus { border-color: var(--accent) !important; }
+
+/* Buttons */
+.btn-primary { background: var(--blue) !important; color: white !important; }
+.btn-outline { background: rgba(255,255,255,0.05) !important; color: var(--accent) !important; border-color: rgba(167,139,250,0.4) !important; }
+.btn-gray { background: rgba(255,255,255,0.08) !important; color: var(--muted) !important; }
+.btn-outline:hover { background: rgba(124,92,191,0.15) !important; }
+
+/* Outing / plan cards in notif panel */
+.status-pill.pending  { background: rgba(249,115,22,0.15) !important; color: var(--orange) !important; }
+.status-pill.accepted { background: rgba(52,211,153,0.15) !important; color: #34d399 !important; }
+.status-pill.declined { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; }
+.plan-it-wrap { border-top-color: var(--border) !important; }
+.venue-ac-dropdown { background: var(--surface) !important; border-color: var(--border) !important; }
+.venue-ac-item:hover { background: rgba(124,92,191,0.12) !important; }
+.venue-ac-main { color: var(--text) !important; }
+.venue-ac-sub { color: var(--muted) !important; }
+.venue-ac-item { border-bottom-color: var(--border) !important; }
+.venue-ac-spinner { color: var(--muted) !important; }
+.time-pick-btn { background: var(--cell-bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.time-pick-btn.open, .time-pick-btn:hover { border-color: var(--accent) !important; }
+.time-pick-dropdown { background: var(--surface) !important; border-color: var(--border) !important; }
+.tp-chip { background: var(--cell-bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.tp-chip:hover { background: rgba(124,92,191,0.2) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
+.tp-chip.selected { background: var(--blue) !important; border-color: var(--blue) !important; color: white !important; }
+.tp-section-label { color: var(--muted) !important; }
+
+/* Invite modal */
+.invite-step-dot { background: var(--border) !important; }
+.invite-step-dot.active { background: var(--accent) !important; }
+.person-select-row { border-bottom-color: var(--border) !important; }
+.person-select-check { border-color: var(--border) !important; }
+.person-select-check.checked { background: var(--blue) !important; border-color: var(--blue) !important; }
+.free-tag { background: rgba(52,211,153,0.15) !important; color: #34d399 !important; }
+.busy-tag { background: rgba(255,255,255,0.06) !important; color: var(--muted) !important; }
+#invite-msg-area { background: var(--cell-bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.wa-queue-item { border-bottom-color: var(--border) !important; }
+
+/* Free tooltip */
+.free-tooltip { background: var(--surface) !important; border: 1px solid var(--border); }
+.free-tooltip::before { border-bottom-color: var(--surface) !important; }
+
+/* Partner free stripe on cells */
+td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !important; }
+
+/* Connections modal */
+.modal-tabs { border-bottom-color: var(--border) !important; }
+.modal-tab { color: var(--muted) !important; }
+.modal-tab.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+
+/* Edit dropdown */
+#edit-dropdown { background: var(--surface) !important; border-color: var(--border) !important; }
+#edit-dropdown button { color: var(--text) !important; }
+#edit-dropdown button:hover { background: rgba(255,255,255,0.06) !important; }
+
+/* Tag */
+.tag { background: var(--tagbg) !important; border-color: var(--tagbd) !important; color: var(--orange) !important; }
+
+/* Act tooltip */
+.act-tooltip { background: var(--surface) !important; border: 1px solid var(--border); }
+
     /* ── Splash screen ───────────────────────────────────────────────────── */
     #splash {
       position:fixed; inset:0; z-index:9999;
@@ -35,11 +276,8 @@
     /* App header */
     .app-header {
       display:flex; align-items:center; justify-content:space-between;
-      padding:12px 0 8px; margin-bottom:4px; border-bottom:1px solid var(--border);
     }
     .app-header-logo { font-size:24px; }
-    .app-header-brand { font-size:20px; font-weight:900; color:var(--text); letter-spacing:-0.01em; }
-    .app-title-strip { text-align:center; font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; padding:14px 0 10px; }
 
     /* Centered calendar wrap */
     .cal-section { max-width:680px; margin:0 auto; }
@@ -446,14 +684,13 @@
 <body>
 <!-- ── Splash screen ── -->
 <div id="splash">
-  <div class="splash-logo">📅</div>
+  <div class="splash-logo" style="font-size:36px;font-weight:900;color:white;letter-spacing:-0.02em;">SPONTANY</div>
   <div class="splash-name">Spontany</div>
   <div class="splash-tag">Finds your moments—<br>before they slip away.</div>
 </div>
 
 <div class="app-header">
-  <div class="app-header-logo">📅</div>
-  <div class="app-header-brand">Spontany</div>
+  <div class="app-header-brand" style="font-size:20px;font-weight:900;letter-spacing:-0.01em;">SPONTANY</div>
   <div style="display:flex;align-items:center;gap:8px;">
     <a id="connections-btn" href="#" class="profile-circle" title="Connections"
        style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:17px;">
@@ -465,6 +702,8 @@
     </a>
   </div>
 </div>
+
+<div class="app-title-strip" id="app-title-strip"></div>
 
 <div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
 
@@ -1372,10 +1611,13 @@ function renderCalendar() {
 
   const y = currentViewYear;
   const m = currentViewMonth;
-  const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  document.getElementById('month-label').textContent = monthName;
+  const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long' });
+  const monthYear = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('month-label').textContent = monthYear;
   const compactMonth = document.getElementById('compact-month-label');
-  if (compactMonth) compactMonth.textContent = monthName;
+  if (compactMonth) compactMonth.textContent = monthYear;
+  const titleStrip = document.getElementById('app-title-strip');
+  if (titleStrip) titleStrip.innerHTML = '<span>' + monthName + '</span> <span class="month-year-accent">' + y + '</span>';
 
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const firstDow = new Date(y, m, 1).getDay();
@@ -1415,9 +1657,13 @@ function renderCalendar() {
            <span class="act-tooltip-delete" onclick="confirmDeleteActivity('${actForDay.id}',event)" title="Delete">✕</span>
          </div>`
       : '';
+    const cellDateObj = new Date(y, m, day);
+    const isFreeDay = owner !== 'self' && !isWorkDay(cellDateObj);
+    const freeBadge = isFreeDay ? '<span class="cell-free-badge">FREE</span>' : '';
     html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
       <div class="day-num">${day}</div>
       <div class="label">${ownerLabel} ${tagHtml}</div>
+      ${freeBadge}
       ${actMarker}
     </td>`;
 

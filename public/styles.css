@@ -62,7 +62,8 @@ h1 {
 
 table.month-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 5px;
   table-layout: fixed;
 }
 
