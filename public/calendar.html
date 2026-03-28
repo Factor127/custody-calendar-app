@@ -699,17 +699,19 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .venue-ac-sub  { font-size:10px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .venue-ac-spinner { padding:8px 10px; font-size:11px; color:var(--muted); text-align:center; }
 
-    /* ── Cell event pills ─────────────────────────────────────────────── */
-    .cell-event {
-      font-size: 10px; font-weight: 500;
-      background: none; color: rgba(238,238,248,0.72);
-      padding: 0; margin-top: 5px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 100%; display: block; line-height: 1.35;
+    /* ── Plan bubbles on cells ────────────────────────────────────────── */
+    .cell-plans {
+      display: flex; flex-wrap: wrap; gap: 3px;
+      margin-top: 5px; align-items: center;
     }
-    .cell-event::before { content: '• '; color: rgba(238,238,248,0.30); }
-    .cell-event.cell-event-done { color: var(--accent); }
-    .cell-event.cell-event-done::before { color: var(--accent); opacity: 0.5; }
+    .plan-bubble {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      cursor: pointer;
+    }
+    .plan-bubble.status-pending  { background: #f97316; }
+    .plan-bubble.status-planning { background: #a78bfa; }
+    .plan-bubble.status-accepted { background: #4ade80; }
+    .plan-bubble.status-my       { background: #7c5cbf; }
 
     /* ── Cell avatar bubbles ──────────────────────────────────────────── */
     .cell-avatars {
@@ -724,6 +726,75 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       margin-left: -5px; flex-shrink: 0;
     }
     .cell-avatar-more { background: #333 !important; font-size: 6px; }
+
+    /* ── Day management sheet ────────────────────────────────────────── */
+    #day-sheet {
+      position: fixed; inset: 0; z-index: 1100;
+      display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity 0.22s;
+    }
+    #day-sheet.open { opacity: 1; pointer-events: all; }
+    .day-sheet-inner {
+      width: 100%; max-width: 520px;
+      background: #131321; border-radius: 20px 20px 0 0;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      padding: 0 0 env(safe-area-inset-bottom,16px);
+      transform: translateY(100%); transition: transform 0.28s cubic-bezier(.32,1,.22,1);
+      max-height: 80vh; overflow-y: auto;
+    }
+    #day-sheet.open .day-sheet-inner { transform: translateY(0); }
+    .day-sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: rgba(255,255,255,0.15); margin: 12px auto 0;
+    }
+    .day-sheet-header {
+      padding: 14px 20px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .day-sheet-date {
+      font-size: 17px; font-weight: 800; color: #eeeef8; letter-spacing: -0.01em;
+    }
+    .day-sheet-sub { font-size: 12px; color: rgba(238,238,248,0.45); margin-top: 2px; }
+    .day-sheet-close {
+      background: rgba(255,255,255,0.07); border: none; border-radius: 50%;
+      width: 28px; height: 28px; cursor: pointer; color: #eeeef8; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .day-sheet-plans { padding: 10px 16px 0; }
+    .day-plan-card {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 13px 14px; margin-bottom: 10px;
+    }
+    .day-plan-card.is-pending { border-color: rgba(249,115,22,0.40); background: rgba(249,115,22,0.07); }
+    .day-plan-card.is-accepted { border-color: rgba(74,222,128,0.25); }
+    .dpc-title { font-size: 14px; font-weight: 700; color: #eeeef8; }
+    .dpc-meta { font-size: 11px; color: rgba(238,238,248,0.50); margin-top: 3px; }
+    .dpc-status { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
+    .dpc-status.pending  { background: rgba(249,115,22,0.20); color: #fb923c; }
+    .dpc-status.accepted { background: rgba(74,222,128,0.20); color: #4ade80; }
+    .dpc-status.planning { background: rgba(167,139,250,0.20); color: #a78bfa; }
+    .dpc-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .dpc-btn {
+      flex: 1; padding: 8px 0; border: none; border-radius: 10px;
+      font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .dpc-btn-accept { background: rgba(74,222,128,0.18); color: #4ade80; }
+    .dpc-btn-decline { background: rgba(239,68,68,0.14); color: #f87171; }
+    .dpc-btn-cancel  { background: rgba(255,255,255,0.07); color: rgba(238,238,248,0.60); }
+    .day-sheet-add-btn {
+      margin: 6px 16px 16px; padding: 13px; border: 1.5px dashed rgba(167,139,250,0.35);
+      border-radius: 14px; background: none; color: rgba(167,139,250,0.80);
+      font-size: 13px; font-weight: 700; width: calc(100% - 32px);
+      cursor: pointer; font-family: inherit;
+    }
+    .day-sheet-add-btn:hover { background: rgba(124,92,191,0.10); }
+    .day-sheet-free-banner {
+      margin: 10px 16px 4px; padding: 10px 14px; border-radius: 12px;
+      background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.20);
+      font-size: 12px; color: rgba(167,139,250,0.90); font-weight: 600;
+    }
 
     /* ── Pending invite pulse on cell ────────────────────────────────── */
     .cell-pending-ring {
@@ -1942,13 +2013,18 @@ function renderCalendar() {
     const isFreeDay = owner !== 'self' && !isWorkDay(cellDateObj);
     const freeBadge = isFreeDay ? '<span class="cell-free-badge">FREE</span>' : '';
 
-    // Event pills for outings on this day
+    // Plan bubbles for outings on this day
     const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
-    const outingHtml = dayOutings.slice(0, 2).map(o => {
-      const lbl   = (o.venue || o.message || 'Plan').substring(0, 18);
-      const isDone = o.status === 'accepted' || o.status === 'planning';
-      return `<div class="cell-event${isDone ? ' cell-event-done' : ''}">${lbl}</div>`;
-    }).join('');
+    const outingHtml = dayOutings.length ? `<div class="cell-plans">${
+      dayOutings.slice(0, 6).map(o => {
+        const isPending = myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending');
+        const cls = isPending ? 'status-pending'
+                  : o.status === 'accepted' ? 'status-accepted'
+                  : o.status === 'planning' ? 'status-planning'
+                  : 'status-my';
+        return `<div class="plan-bubble ${cls}"></div>`;
+      }).join('')
+    }</div>` : '';
 
     // Avatar bubbles: connections also free on this day
     const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
@@ -2005,12 +2081,125 @@ function handleDayClick(cell) {
     return;
   }
 
-  if (suggestMode) {
-    toggleSuggestDay(cell, date);
-  } else if (editMode === 'holiday') {
-    cycleTag(cell, date);
-  }
+  if (suggestMode) { toggleSuggestDay(cell, date); return; }
+  if (editMode === 'holiday') { cycleTag(cell, date); return; }
+
+  // Normal mode — open day management sheet
+  openDaySheet(date);
 }
+
+// ── Day management sheet ───────────────────────────────────────────────────
+function openDaySheet(dateStr) {
+  const d    = new Date(dateStr + 'T12:00:00');
+  const DOW  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateLabel = `${DOW[d.getDay()]}, ${MON[d.getMonth()]} ${d.getDate()}`;
+
+  // Sub-label: custody status + free status
+  const owner  = calendarDays[dateStr]?.owner;
+  const isMine = owner === 'self';
+  const isFree = !isMine && !isWorkDay(d);
+  const subParts = [];
+  if (isMine) subParts.push('Kids with you');
+  else if (owner === 'coparent') subParts.push('Kids with co-parent');
+  if (isFree) subParts.push('You\'re free ✓');
+
+  // Free connections also free on this day
+  const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
+
+  document.getElementById('day-sheet-date').textContent = dateLabel;
+  document.getElementById('day-sheet-sub').textContent  = subParts.join(' · ');
+
+  renderDaySheetBody(dateStr, isFree, alsoFree);
+  document.getElementById('day-sheet').classList.add('open');
+}
+
+function renderDaySheetBody(dateStr, isFree, alsoFree) {
+  const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
+  let html = '';
+
+  // Free-together banner
+  if (isFree && alsoFree.length) {
+    const names = alsoFree.map(c => c.name).join(', ');
+    html += `<div class="day-sheet-free-banner">✨ You & ${names} are both free</div>`;
+  }
+
+  html += '<div class="day-sheet-plans">';
+
+  if (dayOutings.length === 0) {
+    html += `<div style="padding:12px 0 4px;font-size:13px;color:rgba(238,238,248,0.40);text-align:center;">No plans yet for this day</div>`;
+  } else {
+    for (const o of dayOutings) {
+      const incoming = myIncomingOutings.find(i => i.id === o.id);
+      const isPending  = incoming && incoming.my_invitee_status === 'pending';
+      const isAccepted = (incoming && incoming.my_invitee_status === 'accepted') || o.status === 'accepted';
+      const cardCls = isPending ? 'is-pending' : isAccepted ? 'is-accepted' : '';
+
+      const title   = o.venue || o.message || 'Plan';
+      const metaParts = [];
+      if (o.event_time) metaParts.push(o.event_time);
+      if (o.venue_address) metaParts.push(o.venue_address);
+      else if (o.venue && o.message) metaParts.push(o.message);
+      if (o.creator_name && incoming) metaParts.push('from ' + o.creator_name);
+
+      const statusLabel = isPending ? 'Pending' : isAccepted ? 'Accepted' : o.status === 'planning' ? 'Planning' : '';
+      const statusCls   = isPending ? 'pending' : isAccepted ? 'accepted' : 'planning';
+
+      let actions = '';
+      if (isPending) {
+        actions = `<div class="dpc-actions">
+          <button class="dpc-btn dpc-btn-accept"
+            onclick="respondToIncomingOuting('${o.id}','${incoming.invitee_record_id}','accepted');closeDaySheet();loadOutings()">✓ I'm in!</button>
+          <button class="dpc-btn dpc-btn-decline"
+            onclick="respondToIncomingOuting('${o.id}','${incoming.invitee_record_id}','declined');closeDaySheet();loadOutings()">Can't make it</button>
+        </div>`;
+      } else if (!incoming) {
+        // My own plan
+        actions = `<div class="dpc-actions">
+          <button class="dpc-btn dpc-btn-cancel"
+            onclick="cancelOuting('${o.id}');closeDaySheet()">Cancel plan</button>
+        </div>`;
+      }
+
+      html += `<div class="day-plan-card ${cardCls}">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+          <span class="dpc-title">${title}</span>
+          ${statusLabel ? `<span class="dpc-status ${statusCls}">${statusLabel}</span>` : ''}
+        </div>
+        ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
+        ${actions}
+      </div>`;
+    }
+  }
+
+  html += '</div>';
+
+  // Add plan button
+  html += `<button class="day-sheet-add-btn"
+    onclick="closeDaySheet();openOutingModal('${dateStr}')">＋ Plan something here</button>`;
+
+  document.getElementById('day-sheet-body').innerHTML = html;
+}
+
+function closeDaySheet(e) {
+  if (e && e.target !== document.getElementById('day-sheet')) return;
+  document.getElementById('day-sheet').classList.remove('open');
+}
+
+async function cancelOuting(outingId) {
+  await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+  await loadOutings();
+  showToast('Plan cancelled');
+}
+
+function openOutingModal(prefillDate) {
+  // Open the existing outing/plan modal prefilled with a date
+  // Look for the new-plan button and trigger it, or open inline plan modal
+  const planBtn = document.getElementById('bn-fab') || document.querySelector('.bn-fab');
+  if (prefillDate) _prefillOutingDate = prefillDate;
+  openInviteModal(); // falls back to invite modal which has plan tab
+}
+let _prefillOutingDate = null;
 
 function toggleCustody(cell, date) {
   const current = calendarDays[date]?.owner || 'self';
@@ -3470,6 +3659,21 @@ function showToast(msg) {
 </div>
 
 <!-- calendar is now inline — modal removed -->
+
+<!-- ── Day management sheet ── -->
+<div id="day-sheet" onclick="closeDaySheet(event)">
+  <div class="day-sheet-inner" id="day-sheet-inner">
+    <div class="day-sheet-handle"></div>
+    <div class="day-sheet-header">
+      <div>
+        <div class="day-sheet-date" id="day-sheet-date"></div>
+        <div class="day-sheet-sub" id="day-sheet-sub"></div>
+      </div>
+      <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
+    </div>
+    <div id="day-sheet-body"></div>
+  </div>
+</div>
 
 <!-- ── Bottom navigation bar ── -->
 <nav class="bottom-nav" id="bottom-nav">
