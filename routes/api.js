@@ -1334,4 +1334,18 @@ router.put('/outings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// DELETE /api/outings/:id — cancel/delete an outing (creator only)
+router.delete('/outings/:id', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+  if (outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+
+  q.deleteOutingInvitees.run(req.params.id);
+  q.deleteOuting.run(req.params.id);
+  res.json({ ok: true });
+});
+
 module.exports = router;

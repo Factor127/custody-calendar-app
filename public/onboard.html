@@ -327,26 +327,6 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       </div>
       <div>
 
-        <!-- Profile photo -->
-        <div style="display:flex;justify-content:center;margin-bottom:20px;">
-          <label for="photo-input" style="cursor:pointer;position:relative;" title="Add photo">
-            <div id="photo-preview" style="
-              width:80px;height:80px;border-radius:50%;
-              background:var(--cell-bg);border:2px dashed var(--border);
-              display:flex;align-items:center;justify-content:center;
-              font-size:28px;font-weight:800;color:var(--muted);
-              overflow:hidden;transition:border-color .15s;
-            ">📷</div>
-            <div style="
-              position:absolute;bottom:2px;right:2px;
-              width:22px;height:22px;border-radius:50%;
-              background:var(--blue);display:flex;align-items:center;justify-content:center;
-              font-size:12px;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.4);
-            ">＋</div>
-            <input id="photo-input" type="file" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
-          </label>
-        </div>
-
         <div class="field-group">
           <label class="field-label" for="user-name">Your name <span style="color:#e53935;">*</span></label>
           <input id="user-name" class="field-input" type="text" placeholder="First name"
@@ -494,7 +474,37 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip — I'll set this up later</span>
       <div class="wizard-nav" style="margin-top:18px;">
         <button class="btn btn-outline btn-sm" onclick="workBack()">← Back</button>
-        <button class="btn btn-primary" onclick="saveAndFinish()">Save &amp; finish →</button>
+        <button class="btn btn-primary" onclick="goStep('photo')">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step photo: profile photo upload -->
+    <div class="wizard-step" id="step-photo">
+      <div class="wizard-title" style="text-align:center;">Add a profile photo</div>
+      <p class="wizard-sub" style="text-align:center;">So your connections can recognise you. You can skip this for now.</p>
+
+      <div style="display:flex;justify-content:center;margin:28px 0 32px;">
+        <label for="photo-input" style="cursor:pointer;position:relative;" title="Add photo">
+          <div id="photo-preview" style="
+            width:110px;height:110px;border-radius:50%;
+            background:var(--cell-bg);border:3px dashed var(--border);
+            display:flex;align-items:center;justify-content:center;
+            font-size:40px;font-weight:800;color:var(--muted);
+            overflow:hidden;transition:border-color .15s;
+          ">📷</div>
+          <div style="
+            position:absolute;bottom:4px;right:4px;
+            width:28px;height:28px;border-radius:50%;
+            background:var(--blue);display:flex;align-items:center;justify-content:center;
+            font-size:16px;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.5);
+          ">＋</div>
+          <input id="photo-input" type="file" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+        </label>
+      </div>
+
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep('work')">← Back</button>
+        <button class="btn btn-primary" id="photo-finish-btn" onclick="saveAndFinish()">Finish →</button>
       </div>
     </div>
 
@@ -628,7 +638,7 @@ let skipWork      = false;
 let currentStep   = 0;
 
 // ── Progress ──────────────────────────────────────────────────────────────────
-const STEP_PROGRESS = { '0':0, '1':8, 'mirror':22, 'parent':32, '2':48, '3':64, 'work':80, 'done':100 };
+const STEP_PROGRESS = { '0':0, '1':8, 'mirror':22, 'parent':32, '2':48, '3':64, 'work':80, 'photo':92, 'done':100 };
 
 // ── Navigation ─────────────────────────────────────────────────────────────────
 function goStep(n) {
@@ -639,6 +649,7 @@ function goStep(n) {
   document.getElementById('progress').style.width = (STEP_PROGRESS[String(n)] ?? 50) + '%';
   if (String(n) === '2') ensureWeekInit();
   if (String(n) === 'work') { renderWorkDayGrid(); initTimeSlider(); }
+  if (String(n) === 'photo') updatePhotoPreviewInitial();
   window.scrollTo(0, 0);
 }
 
@@ -757,7 +768,7 @@ function workBack() {
 
 function skipWorkSchedule() {
   skipWork = true;
-  saveAndFinish();
+  goStep('photo');
 }
 
 function getWorkSchedulePayload() {

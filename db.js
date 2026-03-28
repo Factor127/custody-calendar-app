@@ -359,6 +359,8 @@ const q = {
     WHERE oi.user_id = ?
     ORDER BY o.date ASC
   `),
+  deleteOutingInvitees:  db.prepare('DELETE FROM outing_invitees WHERE outing_id = ?'),
+  deleteOuting:          db.prepare('DELETE FROM outings WHERE id = ?'),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────
