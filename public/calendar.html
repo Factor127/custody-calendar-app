@@ -190,17 +190,7 @@ td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.6) !import
 .cal-show-bar { background: var(--surface) !important; border-color: var(--border) !important; }
 .cal-show-item { color: var(--muted) !important; }
 
-/* Notif / Suggestion panels */
-#notif-panel { background: var(--surface) !important; border-color: var(--border) !important; }
-#notif-tab { background: var(--cell-bg) !important; color: var(--muted) !important; border-right-color: var(--border) !important; }
-#notif-tab:hover { background: rgba(124,92,191,0.15) !important; }
-#notif-content-header { border-bottom-color: var(--border) !important; }
-#notif-content-header strong { color: var(--text) !important; }
-#notif-close-btn { color: var(--muted) !important; }
-#notif-close-btn:hover { background: rgba(255,255,255,0.06) !important; color: var(--text) !important; }
-.notif-item { border-bottom-color: var(--border) !important; }
-.notif-item-title { color: var(--text) !important; }
-.notif-item-sub { color: var(--muted) !important; }
+/* Suggestion panel */
 #suggestion-panel { background: var(--surface) !important; border-color: var(--border) !important; }
 .sugg-panel-header { border-bottom-color: var(--border) !important; }
 .sugg-panel-header h3 { color: var(--text) !important; }
@@ -489,59 +479,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .sugg-panel-footer .btn { flex:1; }
     .sugg-highlight { border-left:3px solid var(--blue); background:#f0f4ff; border-radius:0 6px 6px 0; padding:2px 0; }
-
-    /* ── Notification / Activity panel ──────────────────────────────────── */
-    #notif-panel {
-      position:fixed; top:50%; right:-240px; transform:translateY(-50%);
-      width:280px; max-height:70vh;
-      background:white; border:1.5px solid var(--border);
-      border-radius:16px 0 0 16px;
-      box-shadow:-4px 0 24px rgba(0,0,0,0.13);
-      display:flex; flex-direction:row;
-      transition:right 0.25s cubic-bezier(0.4,0,0.2,1);
-      z-index:700;
-    }
-    #notif-panel:hover, #notif-panel.open { right:0; }
-    #notif-tab {
-      writing-mode:vertical-lr; transform:rotate(180deg);
-      padding:16px 10px; font-size:10px; font-weight:700;
-      color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;
-      cursor:pointer; border-right:1px solid var(--border);
-      flex-shrink:0; display:flex; align-items:center; justify-content:center;
-      gap:6px; background:var(--surface);
-      border-radius:16px 0 0 16px;
-      min-height:80px;
-    }
-    #notif-tab:hover { background:#f0f4ff; }
-    #notif-tab .tab-count {
-      display:inline-flex; align-items:center; justify-content:center;
-      min-width:16px; height:16px; border-radius:8px;
-      background:#e53935; color:white; font-size:10px; font-weight:700;
-      padding:0 3px; writing-mode:horizontal-tb; transform:none;
-    }
-    #notif-tab .tab-count.hidden { display:none; }
-    #notif-content {
-      flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden;
-    }
-    #notif-content-header {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:12px 14px 8px; border-bottom:1px solid var(--border); flex-shrink:0;
-    }
-    #notif-content-header strong { font-size:13px; }
-    #notif-close-btn {
-      background:none; border:none; cursor:pointer; color:var(--muted);
-      font-size:15px; padding:2px 4px; border-radius:4px; line-height:1;
-    }
-    #notif-close-btn:hover { background:#f3f4f6; color:var(--text); }
-    #notif-list { overflow-y:auto; flex:1; padding:8px 0; }
-    .notif-item {
-      padding:10px 14px; border-bottom:1px solid #f3f4f6; font-size:12px;
-    }
-    .notif-item:last-child { border-bottom:none; }
-    .notif-item-title { font-weight:700; font-size:13px; margin-bottom:2px; color:var(--text); }
-    .notif-item-sub { color:var(--muted); font-size:11px; margin-bottom:6px; line-height:1.4; }
-    .notif-item-actions { display:flex; gap:6px; flex-wrap:wrap; }
-    .notif-item-actions .btn { font-size:11px; padding:4px 10px; }
 
     /* ── Activity modal ──────────────────────────────────────────────────── */
     #activity-modal {
@@ -869,79 +806,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .ctg-arrow-btn:hover { background: rgba(255,255,255,0.22); }
 
-    /* ── Plans screen ────────────────────────────────────────────────────── */
-    #plans-screen {
-      position: fixed; inset: 0; bottom: 64px;
-      background: var(--bg); z-index: 600;
-      display: none; flex-direction: column;
-      overflow-y: auto;
-      animation: plans-slide-in 0.22s cubic-bezier(0.4,0,0.2,1);
-    }
-    @keyframes plans-slide-in {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .plans-inner {
-      max-width: 520px; margin: 0 auto; padding: 20px 16px 32px;
-    }
-    .plans-screen-title {
-      font-size: 28px; font-weight: 900; color: var(--text);
-      letter-spacing: -0.02em; margin-bottom: 24px;
-    }
-    .plans-section-label {
-      font-size: 10px; font-weight: 800; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.1em;
-      margin: 20px 0 10px; display: flex; align-items: center; gap: 8px;
-    }
-    .plans-section-label::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
-    }
-    .plan-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
-      position: relative; overflow: hidden;
-    }
-    .plan-card::before {
-      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-      width: 3px; border-radius: 3px 0 0 3px;
-    }
-    .plan-card.plan-pending::before  { background: var(--accent); }
-    .plan-card.plan-accepted::before { background: var(--green); }
-    .plan-card.plan-waiting::before  { background: var(--orange); }
-    .plan-card.plan-declined::before { background: rgba(255,255,255,0.15); }
-    .plan-card-date {
-      font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 3px;
-    }
-    .plan-card-who { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
-    .plan-card-detail { font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 4px; }
-    .plan-card-status {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.07em; position: absolute; top: 14px; right: 14px;
-    }
-    .plan-card-status.pending  { color: var(--accent); }
-    .plan-card-status.accepted { color: var(--green); }
-    .plan-card-status.waiting  { color: var(--orange); }
-    .plan-card-status.declined { color: rgba(238,238,248,0.25); }
-    .plan-card-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .plan-action-btn {
-      flex: 1; padding: 8px 0; border: none; border-radius: 8px;
-      font-size: 12px; font-weight: 700; cursor: pointer;
-      font-family: inherit; transition: opacity 0.15s;
-    }
-    .plan-action-btn:hover { opacity: 0.85; }
-    .plan-action-yes { background: rgba(74,222,128,0.15); color: var(--green); }
-    .plan-action-no  { background: rgba(255,255,255,0.06); color: var(--muted); }
-    .plan-venue-row {
-      display: flex; align-items: center; gap: 8px; margin-top: 8px;
-      background: rgba(255,255,255,0.04); border-radius: 8px;
-      padding: 6px 10px; font-size: 12px; color: var(--muted);
-    }
-    .plans-empty {
-      text-align: center; padding: 60px 20px 40px;
-      color: var(--muted); font-size: 14px; line-height: 1.7;
-    }
-    .plans-empty-icon { font-size: 40px; margin-bottom: 12px; }
-
     /* ── Bottom nav bar ───────────────────────────────────────────────── */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 650;
@@ -1085,23 +949,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <span class="bal-name">Co-parent</span>
     <span class="bal-count" style="color:#1967d2;" id="z-count">—</span>
     <span class="bal-diff" id="difference"></span>
-  </div>
-</div>
-
-<!-- Notification / Activity side panel -->
-<div id="notif-panel">
-  <div id="notif-tab" onclick="toggleNotifPanel()">
-    <span>✨ Plans</span>
-    <span id="notif-tab-count" class="tab-count hidden">0</span>
-  </div>
-  <div id="notif-content">
-    <div id="notif-content-header">
-      <strong>Activity Plans</strong>
-      <button id="notif-close-btn" onclick="closeNotifPanel()" title="Close">✕</button>
-    </div>
-    <div id="notif-list">
-      <div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet</div>
-    </div>
   </div>
 </div>
 
@@ -1367,19 +1214,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 </div>
 
-<!-- ── Plans screen (shown when Plans nav tab tapped) ── -->
-<div id="plans-screen">
-  <div class="plans-inner">
-    <div class="plans-screen-title">🎉 Plans</div>
-    <div id="plans-screen-content">
-      <div class="plans-empty">
-        <div class="plans-empty-icon">🗓️</div>
-        Loading…
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ── Coordinate Together section ── -->
 <section id="coordinate-section" style="display:none;padding:24px 16px 12px;max-width:680px;margin:0 auto;">
   <div class="coordinate-title"><span class="ctg-star">✦✦</span> Coordinate Together</div>
@@ -1620,10 +1454,6 @@ function nextMonth() {
   const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
   const totalBadge = pendingConnections.length + pendingSuggestions.length + pendingActs.length;
   document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
-
-  if (new URLSearchParams(location.search).get('notifications') === 'open') {
-    document.getElementById('notif-panel').classList.add('open');
-  }
 
   const splash = document.getElementById('splash');
   if (sessionStorage.getItem('splashSeen')) {
@@ -3067,10 +2897,9 @@ function markInviteWaSent(userId) {
 
 function saveOutingAndClose() {
   // Outing was already saved when the WhatsApp queue was built (step 3).
-  // This button just closes the modal and surfaces the plans panel.
+  // This button just closes the modal.
   closeModal('social-invite-modal');
-  showToast('✓ Plans panel updated!');
-  document.getElementById('notif-panel').classList.add('open');
+  showToast('✓ Plan saved!');
 }
 
 // ── Load outings ───────────────────────────────────────────────────────────
@@ -3088,10 +2917,7 @@ async function loadOutings() {
       if (!outingsByDate[o.date]) outingsByDate[o.date] = [];
       if (!outingsByDate[o.date].find(x => x.id === o.id)) outingsByDate[o.date].push(o);
     });
-    renderNotifPanel();
     renderCalendar(); // refresh so event pills appear in cells
-    // Refresh Plans screen if it's currently visible
-    if (document.getElementById('plans-screen')?.style.display === 'flex') renderPlansScreen();
     updateBnBadges();
   } catch(e) {}
 }
@@ -3273,17 +3099,12 @@ async function loadActivities() {
     const data = await res.json();
     myActivities = data.activities;
     buildActivitiesByDate();
-    renderNotifPanel();
     renderCalendar();
     renderStrip();
     // Update profile notif dot
     const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
     const totalBadge = pendingConnections.length + pendingSuggestions.length + pendingActs.length;
     document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
-    const tabCount = document.getElementById('notif-tab-count');
-    const panelCount = pendingActs.length;
-    tabCount.textContent = panelCount;
-    tabCount.classList.toggle('hidden', panelCount === 0);
   } catch(e) {}
 }
 
@@ -3296,150 +3117,6 @@ function buildActivitiesByDate() {
       }
     }
   }
-}
-
-function renderNotifPanel() {
-  const list = document.getElementById('notif-list');
-  if (!list) return;
-  updateBnBadges();
-
-  const relevant = myActivities.filter(a => a.status !== 'cancelled');
-  if (relevant.length === 0 && myOutings.length === 0 && myIncomingOutings.length === 0) {
-    list.innerHTML = '<div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet.<br>Tap a day in the social calendar to invite someone!</div>';
-    return;
-  }
-
-  // ── Incoming plan invites (sent to me by others) ─────────────────────────
-  const incomingHtml = myIncomingOutings.length === 0 ? '' : `
-    <div style="padding:10px 14px 4px;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">
-      Invites for you
-    </div>
-    ${myIncomingOutings.map(o => {
-      const dateLabel = conversationalDate(o.date);
-      const statusColour = o.my_invitee_status === 'accepted' ? '#2e7d32' : o.my_invitee_status === 'declined' ? '#c62828' : '#e65100';
-      const statusLabel  = o.my_invitee_status === 'accepted' ? '✓ Going' : o.my_invitee_status === 'declined' ? '✗ Declined' : '⏳ Pending';
-      const actions = o.my_invitee_status === 'pending' ? `
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <button class="btn btn-sm" style="flex:1;background:#e8f5e9;color:#2e7d32;border:none;border-radius:8px;padding:5px 0;font-size:12px;font-weight:700;cursor:pointer;"
-            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','accepted')">✓ I'm in!</button>
-          <button class="btn btn-sm" style="flex:1;background:#fce4ec;color:#c62828;border:none;border-radius:8px;padding:5px 0;font-size:12px;font-weight:700;cursor:pointer;"
-            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','declined')">Can't make it</button>
-        </div>` : '';
-      return `<div class="notif-item notif-outing" style="border-left:3px solid ${statusColour};">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-          <div class="notif-item-title">🗓 ${o.creator_name} → ${dateLabel}</div>
-          <span style="font-size:10px;font-weight:700;color:${statusColour};">${statusLabel}</span>
-        </div>
-        ${o.message ? `<div style="font-size:12px;color:var(--muted);margin-top:3px;">"${o.message}"</div>` : ''}
-        ${actions}
-      </div>`;
-    }).join('')}
-    <div style="height:1px;background:var(--border);margin:6px 0 2px;"></div>
-  `;
-
-  const outingHtml = myOutings.length === 0 ? '' : myOutings.map(o => {
-    const dateLabel = conversationalDate(o.date);
-    const hasAccepted = o.invitees.some(i => i.status === 'accepted');
-    const inviteesHtml = o.invitees.map(i =>
-      `<div class="outing-invitee-row">
-        <span style="font-weight:600;font-size:11px;">${i.name}</span>
-        <span class="status-pill ${i.status}">${i.status === 'pending' ? 'waiting' : i.status === 'accepted' ? '✓ yes!' : '✗ no'}</span>
-        <div style="margin-left:auto;display:flex;gap:4px;">
-          ${i.status !== 'accepted' ? `<button class="btn btn-sm" style="padding:1px 7px;font-size:10px;background:#e8f5e9;color:#2e7d32;border:none;border-radius:6px;cursor:pointer;" onclick="setInviteeStatus('${o.id}','${i.id}','accepted')">Yes</button>` : ''}
-          ${i.status !== 'declined' ? `<button class="btn btn-sm" style="padding:1px 7px;font-size:10px;background:#fce4ec;color:#c62828;border:none;border-radius:6px;cursor:pointer;" onclick="setInviteeStatus('${o.id}','${i.id}','declined')">No</button>` : ''}
-        </div>
-      </div>`
-    ).join('');
-
-    // Pre-populate time picker state for already-saved times
-    if (hasAccepted && o.event_time) _timePickerSelected[o.id] = o.event_time;
-
-    const planItHtml = hasAccepted ? `
-      <div class="plan-it-wrap" id="plan-wrap-${o.id}">
-        <div style="font-size:12px;font-weight:700;color:#e65100;">🎉 Someone said yes! Firm it up:</div>
-        <div class="plan-it-fields">
-          <div class="venue-ac-wrap" id="venue-wrap-${o.id}">
-            <input id="venue-${o.id}" placeholder="📍 Where?" value="${o.venue || ''}"
-                   autocomplete="off"
-                   oninput="venueAcInput('${o.id}', this.value)"
-                   onblur="setTimeout(()=>venueAcClose('${o.id}'),180)">
-            <div class="venue-ac-dropdown" id="venue-ac-${o.id}"></div>
-          </div>
-          <div class="time-pick-wrap" id="time-wrap-${o.id}">
-            <button class="time-pick-btn" id="time-btn-${o.id}"
-                    onclick="timePickerToggle('${o.id}')">
-              🕐 <span id="time-lbl-${o.id}" class="${o.event_time ? '' : 'tp-placeholder'}">${o.event_time || 'What time?'}</span>
-            </button>
-            <div class="time-pick-dropdown" id="time-drop-${o.id}"></div>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveOutingPlan('${o.id}')">Save plan</button>
-      </div>` : '';
-
-    return `<div class="notif-item notif-outing">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-        <div class="notif-item-title">🎉 Outing ${dateLabel}</div>
-        <span class="status-pill ${o.status}" style="font-size:10px;">${o.status}</span>
-      </div>
-      ${inviteesHtml}
-      ${planItHtml}
-    </div>`;
-  }).join('');
-
-  const activityHtml = relevant.map(a => {
-    const isMine = a.from_user_id === myUserId;
-    const otherName = isMine ? a.to_name : a.from_name;
-    const dateStr = a.dates.map(d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})).join(', ');
-    const linkHtml = a.link ? `<a href="${a.link}" target="_blank" rel="noopener" style="font-size:10px;color:var(--blue);word-break:break-all;">🔗 ${a.link}</a><br>` : '';
-
-    let statusBadge = '';
-    let actions = '';
-    if (a.status === 'pending' && !isMine) {
-      statusBadge = '<span style="background:#fff3e0;color:#e65100;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;">New</span>';
-      actions = `<div class="notif-item-actions">
-        <button class="btn btn-primary btn-sm" onclick="acceptActivity('${a.id}')">✓ Accept</button>
-        <button class="btn btn-outline btn-sm" onclick="declineActivity('${a.id}')">Decline</button>
-        <button class="btn btn-outline btn-sm" onclick="redateActivity('${a.id}','${encodeURIComponent(a.title)}')">Other date →</button>
-      </div>`;
-    } else if (a.status === 'pending' && isMine) {
-      statusBadge = '<span style="background:#e8f0fe;color:#1967d2;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;">Waiting</span>';
-      actions = `<div class="notif-item-actions">
-        <button class="btn btn-outline btn-sm" onclick="confirmDeleteActivity('${a.id}',null)">Cancel</button>
-      </div>`;
-    } else if (a.status === 'accepted') {
-      statusBadge = '<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;">✓ Happening!</span>';
-      actions = `<div class="notif-item-actions">
-        <button class="btn btn-outline btn-sm" onclick="confirmDeleteActivity('${a.id}',null)">Remove</button>
-      </div>`;
-    } else if (a.status === 'declined') {
-      statusBadge = '<span style="background:#fce4ec;color:#b71c1c;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;">Declined</span>';
-      actions = `<div class="notif-item-actions">
-        <button class="btn btn-outline btn-sm" onclick="confirmDeleteActivity('${a.id}',null)">Remove</button>
-      </div>`;
-    }
-
-    return `<div class="notif-item">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-        <div class="notif-item-title">✨ ${a.title}</div>
-        ${statusBadge}
-      </div>
-      <div class="notif-item-sub">
-        ${linkHtml}with ${otherName} · ${dateStr}
-      </div>
-      ${actions}
-    </div>`;
-  }).join('');
-
-  list.innerHTML = incomingHtml + outingHtml + activityHtml;
-}
-
-function toggleNotifPanel() {
-  const p = document.getElementById('notif-panel');
-  p.classList.toggle('open');
-}
-
-function closeNotifPanel() {
-  document.getElementById('notif-panel').classList.remove('open');
 }
 
 // ── Activity modal ─────────────────────────────────────────────────────────
@@ -3702,12 +3379,6 @@ function showToast(msg) {
     <div class="bn-label">Calendar</div>
   </button>
 
-  <button class="bn-item" id="bn-plans" onclick="bnTab('plans')">
-    <div class="bn-icon">🎉</div>
-    <div class="bn-label">Plans</div>
-    <div class="bn-badge hidden" id="bn-plans-badge">0</div>
-  </button>
-
   <button class="bn-item bn-fab" onclick="openInviteModal()">
     <div class="bn-fab-inner">＋</div>
   </button>
@@ -3727,149 +3398,15 @@ function showToast(msg) {
 
 <script>
 function bnTab(tab) {
-  ['home','plans','connections','profile'].forEach(t =>
+  ['home','connections','profile'].forEach(t =>
     document.getElementById('bn-' + t)?.classList.toggle('active', t === tab)
   );
-  const plansScreen = document.getElementById('plans-screen');
-  if (tab === 'plans') {
-    if (plansScreen) { plansScreen.style.display = 'flex'; renderPlansScreen(); }
-    document.getElementById('notif-panel')?.classList.remove('open');
-  } else {
-    if (plansScreen) plansScreen.style.display = 'none';
-  }
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
   if (tab === 'profile')     document.getElementById('profile-btn')?.click();
-  if (tab === 'home') {
-    document.getElementById('notif-panel')?.classList.remove('open');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-}
-
-function renderPlansScreen() {
-  const container = document.getElementById('plans-screen-content');
-  if (!container) return;
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  const toDs = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const todayDs = toDs(today);
-
-  // Incoming: plans others sent to me that need a response
-  const incoming = myIncomingOutings.filter(o => o.my_invitee_status === 'pending' && o.date >= todayDs);
-  // Already responded incoming
-  const responded = myIncomingOutings.filter(o => o.my_invitee_status !== 'pending');
-  // My outgoing plans
-  const outgoing = myOutings.filter(o => o.status !== 'cancelled');
-  // Upcoming (accepted by someone)
-  const upcoming = outgoing.filter(o => o.date >= todayDs && o.invitees?.some(i => i.status === 'accepted'));
-  // Waiting for response
-  const waiting  = outgoing.filter(o => o.date >= todayDs && !o.invitees?.some(i => i.status === 'accepted'));
-
-  if (!incoming.length && !outgoing.length && !responded.length) {
-    container.innerHTML = `
-      <div class="plans-empty">
-        <div class="plans-empty-icon">🌟</div>
-        No plans yet.<br>
-        Tap a free day in the calendar to<br>invite someone to do something!
-      </div>`;
-    return;
-  }
-
-  let html = '';
-
-  // ── Respond section ────────────────────────────────────────────────────
-  if (incoming.length) {
-    html += `<div class="plans-section-label">Respond</div>`;
-    html += incoming.map(o => {
-      const d = new Date(o.date + 'T12:00:00');
-      const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
-      const detail = [o.venue, o.message].filter(Boolean).slice(0,1).join(' · ');
-      return `<div class="plan-card plan-pending">
-        <span class="plan-card-status pending">Invited</span>
-        <div class="plan-card-date">${dateStr}</div>
-        <div class="plan-card-who">from ${o.creator_name}</div>
-        ${detail ? `<div class="plan-card-detail">"${detail}"</div>` : ''}
-        <div class="plan-card-actions">
-          <button class="plan-action-btn plan-action-yes"
-            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','accepted');renderPlansScreen()">
-            ✓ I'm in!
-          </button>
-          <button class="plan-action-btn plan-action-no"
-            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','declined');renderPlansScreen()">
-            Can't make it
-          </button>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ── Upcoming confirmed plans ───────────────────────────────────────────
-  if (upcoming.length) {
-    html += `<div class="plans-section-label">Upcoming</div>`;
-    html += upcoming.map(o => {
-      const d = new Date(o.date + 'T12:00:00');
-      const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
-      const who = o.invitees?.map(i => i.name).join(', ') || '';
-      const venueLine = o.venue ? `<div class="plan-venue-row">📍 ${o.venue}${o.event_time ? ' · 🕐 ' + o.event_time : ''}</div>` : '';
-      return `<div class="plan-card plan-accepted">
-        <span class="plan-card-status accepted">Confirmed</span>
-        <div class="plan-card-date">${dateStr}</div>
-        ${who ? `<div class="plan-card-who">with ${who}</div>` : ''}
-        ${o.message ? `<div class="plan-card-detail">"${o.message}"</div>` : ''}
-        ${venueLine}
-      </div>`;
-    }).join('');
-  }
-
-  // ── Waiting for others ─────────────────────────────────────────────────
-  if (waiting.length) {
-    html += `<div class="plans-section-label">Waiting for reply</div>`;
-    html += waiting.map(o => {
-      const d = new Date(o.date + 'T12:00:00');
-      const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
-      const who = o.invitees?.map(i => i.name).join(', ') || '';
-      return `<div class="plan-card plan-waiting">
-        <span class="plan-card-status waiting">Pending</span>
-        <div class="plan-card-date">${dateStr}</div>
-        ${who ? `<div class="plan-card-who">with ${who}</div>` : ''}
-        ${o.message ? `<div class="plan-card-detail">"${o.message}"</div>` : ''}
-      </div>`;
-    }).join('');
-  }
-
-  // ── Already responded (history) ────────────────────────────────────────
-  const past = myIncomingOutings.filter(o => o.date < todayDs);
-  if (responded.length && !past.length) {
-    // filter to future already-responded
-    const futureResponded = responded.filter(o => o.date >= todayDs);
-    if (futureResponded.length) {
-      html += `<div class="plans-section-label">Replied</div>`;
-      html += futureResponded.map(o => {
-        const d = new Date(o.date + 'T12:00:00');
-        const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
-        const isYes = o.my_invitee_status === 'accepted';
-        const cardClass = isYes ? 'plan-accepted' : 'plan-declined';
-        const statusLabel = isYes ? 'Going ✓' : 'Declined';
-        const statusClass = isYes ? 'accepted' : 'declined';
-        return `<div class="plan-card ${cardClass}">
-          <span class="plan-card-status ${statusClass}">${statusLabel}</span>
-          <div class="plan-card-date">${dateStr}</div>
-          <div class="plan-card-who">from ${o.creator_name}</div>
-        </div>`;
-      }).join('');
-    }
-  }
-
-  container.innerHTML = html || `<div class="plans-empty"><div class="plans-empty-icon">✨</div>All plans are in the future — check back soon!</div>`;
+  if (tab === 'home')        window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function updateBnBadges() {
-  const plansPending = (myOutings.filter(o => {
-    const inv = o.invitees || [];
-    return inv.some(i => i.status === 'pending');
-  }).length) + myIncomingOutings.filter(o => o.my_invitee_status === 'pending').length;
-  const pb = document.getElementById('bn-plans-badge');
-  if (pb) { pb.textContent = plansPending; pb.classList.toggle('hidden', plansPending === 0); }
-
   const connPending = document.getElementById('notif-dot')?.classList.contains('hidden') ? 0 : 1;
   const cb = document.getElementById('bn-conn-badge');
   if (cb) { cb.textContent = connPending; cb.classList.toggle('hidden', connPending === 0); }
