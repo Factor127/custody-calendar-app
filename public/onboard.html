@@ -17,6 +17,11 @@ body { background:var(--bg); color:var(--text); }
 /* Cards / form surface */
 .card { background:var(--surface) !important; border-color:var(--border) !important; }
 .modal { background:var(--surface) !important; border-color:var(--border) !important; }
+.wizard-card { background:var(--surface) !important; border-color:var(--border) !important; box-shadow:0 4px 32px rgba(0,0,0,0.4) !important; }
+/* Consistent horizontal padding on every step */
+.wizard-step { padding: 0 28px; }
+.step1-header { margin: 0 -28px 24px; }
+.wizard-nav { padding: 0 28px; }
 /* Inputs */
 .field-input, input[type="text"], input[type="email"], input[type="tel"], textarea {
   background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
@@ -85,11 +90,11 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       letter-spacing: 0.04em;
     }
     .wp-cell.self {
-      background: var(--r);
-      border-color: var(--r-border);
+      background: rgba(52,211,153,0.15);
+      border-color: rgba(52,211,153,0.55);
     }
-    .wp-cell.self .wp-num   { color: #1a6e32; }
-    .wp-cell.self .wp-month { color: #2e7d32; }
+    .wp-cell.self .wp-num   { color: #6ee7b7; }
+    .wp-cell.self .wp-month { color: #34d399; }
 
     .week-section-label {
       font-size: 12px;
@@ -188,12 +193,12 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     .intro-dot   { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: background 0.3s, transform 0.3s; }
     .intro-dot.active { background: white; transform: scale(1.25); }
     .intro-cta {
-      background: #4285f4; color: white; border: none; border-radius: 28px;
+      background: var(--blue); color: white; border: none; border-radius: 28px;
       padding: 16px 36px; font-size: 16px; font-weight: 700; cursor: pointer;
-      font-family: inherit; box-shadow: 0 6px 24px rgba(66,133,244,.45);
+      font-family: inherit; box-shadow: 0 6px 24px rgba(124,92,191,.45);
       transition: transform .12s, box-shadow .12s;
     }
-    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(66,133,244,.3); }
+    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(124,92,191,.3); }
 
     /* ── Wizard hidden until intro done ── */
     #wizard-main { transition: opacity 0.4s ease; }
@@ -210,10 +215,10 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     .rel-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
     .rel-chip {
       padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
-      font-size: 13px; font-weight: 600; cursor: pointer; background: white;
-      color: var(--text); user-select: none; transition: all .13s;
+      font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface);
+      color: var(--muted); user-select: none; transition: all .13s;
     }
-    .rel-chip.on { background: #e8f0fe; border-color: #4285f4; color: #1a73e8; }
+    .rel-chip.on { background: rgba(124,92,191,0.20); border-color: var(--accent); color: var(--accent); }
 
     /* ── Parent question ── */
     .parent-opts-row { display: flex; gap: 14px; margin: 20px 0 28px; }
@@ -224,33 +229,33 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       transition: background .13s, border-color .13s, transform .1s; text-align: center;
     }
     .parent-opt:active { transform: scale(0.96); }
-    .parent-opt.selected { border-color: #1a73e8; background: #e8f0fe; }
+    .parent-opt.selected { border-color: var(--accent); background: rgba(124,92,191,0.18); }
     .parent-opt-emoji  { font-size: 38px; line-height: 1; }
     .parent-opt-label  { font-size: 15px; font-weight: 700; color: var(--text); }
     .parent-opt-sub    { font-size: 11px; color: var(--muted); line-height: 1.4; }
 
     /* ── Work-day grid ── */
-    .wp-cell.work { background: #e8f0fe; border-color: #4285f4; }
-    .wp-cell.work .wp-day-lbl { color: #1a73e8; }
+    .wp-cell.work { background: rgba(99,102,241,0.20); border-color: rgba(129,140,248,0.55); }
+    .wp-cell.work .wp-day-lbl { color: #a5b4fc; }
     .wp-day-lbl  { font-size: 13px; font-weight: 800; color: var(--muted); line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
     .wp-day-full { font-size: 9px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
-    .wp-cell.work .wp-day-full { color: #1565c0; }
+    .wp-cell.work .wp-day-full { color: #818cf8; }
 
     /* ── Time slider ── */
     .ts-section { margin-top: 22px; }
     .ts-section-title { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
     .ts-time-display  { text-align: center; font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 18px; letter-spacing: -.01em; }
-    .ts-time-display .ts-highlight { color: #1a73e8; }
+    .ts-time-display .ts-highlight { color: var(--accent); }
     .ts-track-wrap { position: relative; height: 44px; display: flex; align-items: center; padding: 0 14px; margin-bottom: 4px; touch-action: none; }
     .ts-track  { width: 100%; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
-    .ts-active { position: absolute; height: 6px; background: #1a73e8; border-radius: 3px; top: 0; pointer-events: none; }
+    .ts-active { position: absolute; height: 6px; background: var(--blue); border-radius: 3px; top: 0; pointer-events: none; }
     .ts-handle {
-      position: absolute; width: 26px; height: 26px; background: white;
-      border: 3px solid #1a73e8; border-radius: 50%; top: 50%;
+      position: absolute; width: 26px; height: 26px; background: var(--surface);
+      border: 3px solid var(--accent); border-radius: 50%; top: 50%;
       transform: translate(-50%, -50%); cursor: grab; touch-action: none;
-      box-shadow: 0 2px 6px rgba(0,0,0,.18); z-index: 2;
+      box-shadow: 0 2px 8px rgba(124,92,191,.35); z-index: 2;
     }
-    .ts-handle:active { cursor: grabbing; box-shadow: 0 4px 12px rgba(26,115,232,.35); }
+    .ts-handle:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(124,92,191,.5); }
     .ts-ticks { display: flex; justify-content: space-between; padding: 0 14px; }
     .ts-tick  { font-size: 9px; color: var(--muted); font-weight: 600; }
     .ts-skip-link { display: block; text-align: center; font-size: 12px; color: var(--muted); margin-top: 18px; text-decoration: underline; cursor: pointer; }
@@ -264,7 +269,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
   <!-- Slide 0: direct mode = "Welcome to Spontany" | invite mode = personalised after token validation -->
   <div class="intro-slide active" id="isl-0">
     <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
-      <img src="/logo.svg" alt="" width="32" height="32" style="border-radius:8px;">
+      <img src="/logo.svg" alt="" width="32" height="32" >
       SPONTANY
     </div>
     <div class="intro-loading">Loading…</div>
@@ -303,7 +308,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     <div class="progress-fill" id="progress" style="width:0%"></div>
   </div>
 
-  <div class="wizard-card" style="padding:0 0 24px;overflow:hidden;">
+  <div class="wizard-card" style="padding:0 0 28px;overflow:hidden;">
 
     <!-- Step 0: error placeholder (invite mode only) -->
     <div class="wizard-step" id="step-0" style="padding:24px;">
@@ -318,7 +323,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       <div class="step1-header">
         <div class="step1-header-title">Let's learn<br>about you</div>
       </div>
-      <div style="padding:0 24px;">
+      <div>
 
         <div class="field-group">
           <label class="field-label" for="user-name">Your name <span style="color:#e53935;">*</span></label>
@@ -1199,7 +1204,7 @@ async function validateInvite() {
     inviteRelType = data.relationship_type || 'friend';
     document.getElementById('isl-0').innerHTML = `
       <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
-      <img src="/logo.svg" alt="" width="32" height="32" style="border-radius:8px;">
+      <img src="/logo.svg" alt="" width="32" height="32" >
       SPONTANY
     </div>
       <div class="intro-big">${ownerName}<br>invited you 👋</div>
@@ -1224,7 +1229,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Generic welcome intro
     document.getElementById('isl-0').innerHTML = `
       <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
-      <img src="/logo.svg" alt="" width="32" height="32" style="border-radius:8px;">
+      <img src="/logo.svg" alt="" width="32" height="32" >
       SPONTANY
     </div>
       <div class="intro-big">Welcome to<br>Spontany</div>
