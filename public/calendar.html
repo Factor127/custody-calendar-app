@@ -890,36 +890,42 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       transform: translateX(-50%) translateY(0);
     }
     .fab-action {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 50px; padding: 10px 18px 10px 14px;
-      cursor: pointer; white-space: nowrap; font-size: 14px; font-weight: 700;
+      border-radius: 16px; padding: 10px 18px 10px 14px;
+      cursor: pointer; font-size: 14px; font-weight: 700;
       color: var(--text); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      transition: background .12s, opacity .12s;
-      position: relative;
+      transition: background .12s; text-align: left;
+      min-width: 240px; max-width: 300px;
     }
+    .fab-action > span { white-space: nowrap; flex: 1; }
     .fab-action:hover { background: var(--cell-bg); }
-    .fab-action.disabled {
-      opacity: 0.45; cursor: default;
-    }
+    .fab-action.disabled { cursor: default; border-color: rgba(255,255,255,0.04); }
+    .fab-action.disabled > .fab-action-icon { opacity: 0.45; }
+    .fab-action.disabled > span { opacity: 0.4; }
     .fab-action-icon {
       width: 28px; height: 28px; border-radius: 50%;
       background: rgba(167,139,250,0.15); display: flex; align-items: center;
       justify-content: center; font-size: 14px; flex-shrink: 0;
     }
-    /* Tooltip on disabled items */
-    .fab-action.disabled .fab-tooltip {
-      display: block;
+    /* Inline note on disabled items */
+    .fab-action-note {
+      display: none;
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      line-height: 1.4; margin-top: 4px; padding-left: 38px;
+      white-space: normal; width: 100%;
     }
-    .fab-tooltip {
-      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
-      transform: translateX(-50%);
-      background: #1e1e30; border: 1px solid var(--border);
-      color: var(--muted); font-size: 11px; font-weight: 500; line-height: 1.4;
-      padding: 7px 12px; border-radius: 8px; width: 200px; text-align: center;
-      pointer-events: none; white-space: normal;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    .fab-action-note-cta {
+      display: inline-block; margin-top: 4px;
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      text-decoration: none; cursor: pointer;
+      background: none; border: none; padding: 0;
     }
+    .fab-action-note-cta:hover { text-decoration: underline; }
+    .fab-action.disabled {
+      flex-wrap: wrap; align-items: center;
+    }
+    .fab-action.disabled .fab-action-note { display: block; }
     .fab-backdrop {
       position: fixed; inset: 0; z-index: 1199; background: rgba(0,0,0,0.4);
       opacity: 0; pointer-events: none; transition: opacity .18s;
@@ -3629,22 +3635,34 @@ function showToast(msg) {
 <div id="fab-menu">
   <button class="fab-action" id="fab-connect" onclick="closeFabMenu();goToConnections()">
     <div class="fab-action-icon">🔗</div>
-    Connect with a friend
+    <span>Connect with a friend</span>
   </button>
+
   <button class="fab-action disabled" id="fab-plan" onclick="fabPlanClick()">
     <div class="fab-action-icon">🗓</div>
-    Invite a friend to hang out
-    <span class="fab-tooltip">Invite a friend and wait for them to accept — then you can plan time together.</span>
+    <span>Invite a friend to hang out</span>
+    <div class="fab-action-note">
+      You need at least one accepted connection first.
+      <br><button class="fab-action-note-cta" onclick="event.stopPropagation();closeFabMenu();goToConnections()">Invite a friend →</button>
+    </div>
   </button>
+
   <button class="fab-action disabled" id="fab-group" onclick="fabGroupClick()">
     <div class="fab-action-icon">👥</div>
-    Create a group
-    <span class="fab-tooltip">You need at least 2 accepted connections to create a group.</span>
+    <span>Create a group</span>
+    <div class="fab-action-note">
+      You need at least 2 accepted connections to create a group.
+      <br><button class="fab-action-note-cta" onclick="event.stopPropagation();closeFabMenu();goToConnections()">Add more friends →</button>
+    </div>
   </button>
+
   <button class="fab-action disabled" id="fab-browse" onclick="fabBrowseClick()">
     <div class="fab-action-icon">🎯</div>
-    Browse &amp; choose an event
-    <span class="fab-tooltip">Share your event preferences first — we'll match you with things you'll love.</span>
+    <span>Browse &amp; choose an event</span>
+    <div class="fab-action-note">
+      Tell us what you enjoy — we'll find events you'll love.
+      <br><button class="fab-action-note-cta" onclick="event.stopPropagation();closeFabMenu();">Set my preferences →</button>
+    </div>
   </button>
 </div>
 
@@ -3698,10 +3716,6 @@ function openFabMenu() {
   planBtn.classList.toggle('disabled', !hasApproved);
   groupBtn.classList.toggle('disabled', !hasTwo);
   browseBtn.classList.toggle('disabled', !hasPreferences);
-
-  // Update tooltips to be accurate
-  if (hasApproved) planBtn.querySelector('.fab-tooltip').textContent = 'Plan a day out with one of your connections.';
-  if (hasTwo)      groupBtn.querySelector('.fab-tooltip').textContent = 'Create a shared group with your connections.';
 
   document.getElementById('fab-menu').classList.add('open');
   document.getElementById('fab-backdrop').classList.add('open');
