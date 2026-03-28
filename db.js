@@ -23,6 +23,8 @@ try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch(e) { /* al
 try { db.exec('ALTER TABLE users ADD COLUMN work_schedule TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN age INTEGER'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN relationship_status TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
@@ -344,7 +346,7 @@ const q = {
   createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message) VALUES (?, ?, ?, ?)'),
   getOutingsForUser:     db.prepare('SELECT * FROM outings WHERE created_by = ? ORDER BY date ASC'),
   getOutingById:         db.prepare('SELECT * FROM outings WHERE id = ?'),
-  updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ? WHERE id = ?'),
+  updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ?, venue_place_id = ?, venue_address = ? WHERE id = ?'),
   createOutingInvitee:   db.prepare('INSERT INTO outing_invitees (id, outing_id, user_id, name, phone) VALUES (?, ?, ?, ?, ?)'),
   getOutingInvitees:     db.prepare('SELECT * FROM outing_invitees WHERE outing_id = ?'),
   updateInviteeStatus:   db.prepare('UPDATE outing_invitees SET status = ? WHERE id = ?'),

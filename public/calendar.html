@@ -367,6 +367,26 @@
     .plan-it-fields input { flex:1; min-width:100px; padding:5px 8px; border:1.5px solid var(--border);
       border-radius:6px; font-size:12px; font-family:inherit; }
 
+    /* ── Venue autocomplete ── */
+    .venue-ac-wrap { position:relative; flex:2; min-width:140px; }
+    .venue-ac-wrap input { width:100%; box-sizing:border-box; }
+    .venue-ac-dropdown {
+      position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:500;
+      background:white; border:1.5px solid var(--border); border-radius:8px;
+      box-shadow:0 4px 16px rgba(0,0,0,.12); overflow:hidden;
+      display:none;
+    }
+    .venue-ac-dropdown.open { display:block; }
+    .venue-ac-item {
+      padding:8px 10px; cursor:pointer; border-bottom:1px solid #f0f0f0;
+      transition:background .1s;
+    }
+    .venue-ac-item:last-child { border-bottom:none; }
+    .venue-ac-item:hover { background:#f5f8ff; }
+    .venue-ac-main { font-size:12px; font-weight:700; color:var(--text); }
+    .venue-ac-sub  { font-size:10px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .venue-ac-spinner { padding:8px 10px; font-size:11px; color:var(--muted); text-align:center; }
+
     /* ── Compact custody card ────────────────────────────────────────── */
     .cal-compact-card {
       max-width:680px; margin:0 auto 16px; padding:14px 18px 12px;
@@ -2225,13 +2245,69 @@ async function respondToIncomingOuting(outingId, inviteeRecordId, status) {
   }
 }
 
+// ── Venue autocomplete ──────────────────────────────────────────────────────
+const _venueAcTimers   = {};
+const _venueAcSelected = {}; // outingId → { place_id, address }
+
+async function venueAcInput(outingId, val) {
+  clearTimeout(_venueAcTimers[outingId]);
+  const drop = document.getElementById(`venue-ac-${outingId}`);
+  if (!drop) return;
+
+  // Clear selection if user edits after picking
+  _venueAcSelected[outingId] = null;
+
+  if (!val || val.trim().length < 2) { venueAcClose(outingId); return; }
+
+  drop.innerHTML = '<div class="venue-ac-spinner">Searching…</div>';
+  drop.classList.add('open');
+
+  _venueAcTimers[outingId] = setTimeout(async () => {
+    try {
+      const res  = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(val.trim())}&token=${MY_TOKEN}`);
+      const data = await res.json();
+      if (!data.predictions?.length) {
+        drop.innerHTML = '<div class="venue-ac-spinner">No results</div>';
+        return;
+      }
+      drop.innerHTML = data.predictions.map(p => `
+        <div class="venue-ac-item"
+             onmousedown="venueAcPick('${outingId}', ${JSON.stringify(p.main_text).replace(/'/g,"&#39;")}, ${JSON.stringify(p.description).replace(/'/g,"&#39;")}, '${p.place_id}')">
+          <div class="venue-ac-main">${p.main_text}</div>
+          <div class="venue-ac-sub">${p.secondary_text || ''}</div>
+        </div>`).join('');
+    } catch(e) {
+      drop.classList.remove('open');
+    }
+  }, 320);
+}
+
+function venueAcPick(outingId, mainText, fullDescription, placeId) {
+  const input = document.getElementById(`venue-${outingId}`);
+  if (input) input.value = mainText;
+  _venueAcSelected[outingId] = { place_id: placeId, address: fullDescription };
+  venueAcClose(outingId);
+}
+
+function venueAcClose(outingId) {
+  const drop = document.getElementById(`venue-ac-${outingId}`);
+  if (drop) { drop.classList.remove('open'); drop.innerHTML = ''; }
+}
+
 async function saveOutingPlan(outingId) {
   const venue = document.getElementById(`venue-${outingId}`)?.value.trim() || null;
   const time  = document.getElementById(`time-${outingId}`)?.value.trim() || null;
+  const sel   = _venueAcSelected[outingId] || {};
   const res = await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ venue, event_time: time, status: 'planning' })
+    body: JSON.stringify({
+      venue,
+      event_time:    time,
+      status:        'planning',
+      venue_place_id: sel.place_id   || null,
+      venue_address:  sel.address    || null
+    })
   });
   if (res.ok) { showToast('✓ Plan saved!'); await loadOutings(); }
 }
@@ -2325,7 +2401,13 @@ function renderNotifPanel() {
       <div class="plan-it-wrap" id="plan-wrap-${o.id}">
         <div style="font-size:12px;font-weight:700;color:#e65100;">🎉 Someone said yes! Firm it up:</div>
         <div class="plan-it-fields">
-          <input id="venue-${o.id}" placeholder="📍 Where?" value="${o.venue || ''}">
+          <div class="venue-ac-wrap" id="venue-wrap-${o.id}">
+            <input id="venue-${o.id}" placeholder="📍 Where?" value="${o.venue || ''}"
+                   autocomplete="off"
+                   oninput="venueAcInput('${o.id}', this.value)"
+                   onblur="setTimeout(()=>venueAcClose('${o.id}'),180)">
+            <div class="venue-ac-dropdown" id="venue-ac-${o.id}"></div>
+          </div>
           <input id="time-${o.id}"  placeholder="🕐 What time?" value="${o.event_time || ''}">
         </div>
         <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveOutingPlan('${o.id}')">Save plan</button>

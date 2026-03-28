@@ -1213,6 +1213,39 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
   res.json({ ok: true, status });
 });
 
+// GET /api/places/autocomplete — proxy to Google Places API (keeps key server-side)
+router.get('/places/autocomplete', async (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const input = (req.query.q || '').trim();
+  if (input.length < 2) return res.json({ predictions: [] });
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'Places API not configured' });
+
+  try {
+    const url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      + '?input='  + encodeURIComponent(input)
+      + '&types=establishment|geocode'
+      + '&key='    + apiKey;
+
+    const gData = await fetch(url).then(r => r.json());
+
+    const predictions = (gData.predictions || []).slice(0, 5).map(p => ({
+      place_id:       p.place_id,
+      main_text:      p.structured_formatting?.main_text      || p.description,
+      secondary_text: p.structured_formatting?.secondary_text || '',
+      description:    p.description
+    }));
+
+    res.json({ predictions });
+  } catch (err) {
+    console.error('[places]', err.message);
+    res.status(500).json({ error: 'Places lookup failed' });
+  }
+});
+
 // PUT /api/outings/:id — update outing details (venue, time, status)
 router.put('/outings/:id', (req, res) => {
   const me = requireToken(req, res);
@@ -1221,8 +1254,15 @@ router.put('/outings/:id', (req, res) => {
   const outing = q.getOutingById.get(req.params.id);
   if (!outing || outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
 
-  const { venue, event_time, status } = req.body;
-  q.updateOutingDetails.run(venue || null, event_time || null, status || outing.status, req.params.id);
+  const { venue, event_time, status, venue_place_id, venue_address } = req.body;
+  q.updateOutingDetails.run(
+    venue          || null,
+    event_time     || null,
+    status         || outing.status,
+    venue_place_id || null,
+    venue_address  || null,
+    req.params.id
+  );
   res.json({ ok: true });
 });
 
