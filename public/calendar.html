@@ -2189,25 +2189,26 @@ function closeDaySheet(e) {
 async function cancelOuting(outingId, dateStr) {
   if (!confirm('Cancel this plan? This can\'t be undone.')) return;
 
-  // Optimistic update — remove immediately from local state
-  myOutings = myOutings.filter(o => o.id !== outingId);
+  // Remove from every local array immediately — no re-fetch that can race
+  myOutings         = myOutings.filter(o => o.id !== outingId);
+  myIncomingOutings = myIncomingOutings.filter(o => o.id !== outingId);
   if (dateStr && outingsByDate[dateStr]) {
     outingsByDate[dateStr] = outingsByDate[dateStr].filter(o => o.id !== outingId);
   }
 
-  // Refresh sheet and calendar right away
+  // Refresh sheet in-place and calendar bubbles right away
   const sheet = document.getElementById('day-sheet');
   if (sheet?.classList.contains('open') && dateStr) {
-    const isFree = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
+    const isFree   = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
     const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
     renderDaySheetBody(dateStr, isFree, alsoFree);
   }
   renderCalendar();
+  updateBnBadges();
   showToast('Plan cancelled');
 
-  // Then delete on server and sync
-  await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
-  await loadOutings();
+  // Fire DELETE — no await/re-sync so nothing can race and restore the item
+  fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
 }
 
 function openOutingModal(prefillDate) {
