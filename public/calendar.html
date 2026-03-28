@@ -978,6 +978,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <span class="bal-name">Co-parent</span>
     <span class="bal-count" style="color:#60a5fa;" id="z-count">—</span>
     <span class="bal-diff" id="difference"></span>
+    <span style="color:var(--border);margin:0 2px;">·</span>
+    <span class="bal-swatch" style="background:rgba(15,25,70,0.55);border:1px solid rgba(60,80,160,0.35);"></span>
+    <span class="bal-name" style="color:var(--muted);">Free</span>
     </div><!-- /.custody-balance-bar -->
   </div><!-- /.cal-show-bar -->
 
@@ -1868,7 +1871,7 @@ function renderCalendar() {
       : '';
     const cellDateObj = new Date(y, m, day);
     const isFreeDay = owner !== 'self' && !isWorkDay(cellDateObj);
-    const freeBadge = isFreeDay ? '<span class="cell-free-badge">FREE</span>' : '';
+    const freeBadge = '';
 
     // Plan bubbles for outings on this day
     const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
