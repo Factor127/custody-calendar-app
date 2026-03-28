@@ -21,7 +21,7 @@ body { background:var(--bg); color:var(--text); }
 /* Consistent horizontal padding on every step */
 .wizard-step { padding: 0 28px; }
 .step1-header { margin: 0 -28px 24px; }
-.wizard-nav { padding: 0 28px; }
+.wizard-nav { padding: 0 28px; border-top: none !important; }
 /* Inputs */
 .field-input, input[type="text"], input[type="email"], input[type="tel"], textarea {
   background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
@@ -325,10 +325,30 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       </div>
       <div>
 
+        <!-- Profile photo -->
+        <div style="display:flex;justify-content:center;margin-bottom:20px;">
+          <label for="photo-input" style="cursor:pointer;position:relative;" title="Add photo">
+            <div id="photo-preview" style="
+              width:80px;height:80px;border-radius:50%;
+              background:var(--cell-bg);border:2px dashed var(--border);
+              display:flex;align-items:center;justify-content:center;
+              font-size:28px;font-weight:800;color:var(--muted);
+              overflow:hidden;transition:border-color .15s;
+            ">📷</div>
+            <div style="
+              position:absolute;bottom:2px;right:2px;
+              width:22px;height:22px;border-radius:50%;
+              background:var(--blue);display:flex;align-items:center;justify-content:center;
+              font-size:12px;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.4);
+            ">＋</div>
+            <input id="photo-input" type="file" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+          </label>
+        </div>
+
         <div class="field-group">
           <label class="field-label" for="user-name">Your name <span style="color:#e53935;">*</span></label>
           <input id="user-name" class="field-input" type="text" placeholder="First name"
-                 autocomplete="given-name" oninput="checkStep1Ready()">
+                 autocomplete="given-name" oninput="checkStep1Ready();updatePhotoPreviewInitial()">
         </div>
 
         <!-- Shown in invite mode, hidden in direct mode -->
@@ -450,8 +470,8 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       <div class="wizard-title">When do you work?</div>
       <p class="wizard-sub">Tap your work days, then set your usual hours. We use this to show when you're <em>actually</em> free.</p>
       <div class="wp-legend" style="margin-bottom:10px;">
-        <span><span class="wp-legend-swatch" style="background:#e8f0fe;border-color:#4285f4;"></span>Work day</span>
-        <span><span class="wp-legend-swatch" style="background:white;"></span>Day off</span>
+        <span><span class="wp-legend-swatch" style="background:rgba(99,102,241,0.20);border-color:rgba(129,140,248,0.55);"></span>Work day</span>
+        <span><span class="wp-legend-swatch" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);"></span>Day off</span>
       </div>
       <div class="week-picker-grid" id="work-day-grid"></div>
       <div class="ts-section">
@@ -467,15 +487,6 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
           </div>
           <div class="ts-handle" id="ts-h-start"></div>
           <div class="ts-handle" id="ts-h-end"></div>
-        </div>
-        <div class="ts-ticks">
-          <span class="ts-tick">6 AM</span>
-          <span class="ts-tick">9</span>
-          <span class="ts-tick">12 PM</span>
-          <span class="ts-tick">3</span>
-          <span class="ts-tick">6</span>
-          <span class="ts-tick">9</span>
-          <span class="ts-tick">11 PM</span>
         </div>
       </div>
       <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip — I'll set this up later</span>
@@ -578,6 +589,30 @@ let inviteRelType = 'friend';   // set from invite validation; drives fast-path
 let createdToken  = null;
 let relStatus     = null;
 let isParent      = true;
+let profilePhotoDataUrl = null;
+
+function handlePhotoUpload(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    profilePhotoDataUrl = e.target.result;
+    const preview = document.getElementById('photo-preview');
+    if (preview) {
+      preview.innerHTML = `<img src="${profilePhotoDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+      preview.style.border = '2px solid var(--accent)';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function updatePhotoPreviewInitial() {
+  if (profilePhotoDataUrl) return; // already has a photo
+  const name = document.getElementById('user-name')?.value?.trim() || '';
+  const preview = document.getElementById('photo-preview');
+  if (!preview) return;
+  preview.innerHTML = name ? `<span style="font-size:30px;font-weight:900;color:var(--accent);">${name[0].toUpperCase()}</span>` : '📷';
+}
 let isMirror      = false;
 let isTwoWeek     = false;
 let weekStartDate = null;
@@ -606,7 +641,7 @@ function goStep(n) {
 }
 
 // ── Intro sequence ─────────────────────────────────────────────────────────────
-const INTRO_DURATIONS = [2400, 3000, 3000, null];
+const INTRO_DURATIONS = [2400, 4500, 4500, null];
 let introTimer = null;
 
 function showIntroSlide(n) {
@@ -967,7 +1002,8 @@ async function saveAndFinish() {
       pattern_data:        hasCustody ? patternData : null,
       anchor_date:         hasCustody && weekStartDate ? toDateStr(weekStartDate) : null,
       days:                hasCustody ? generatedDays : [],
-      is_mirror:           isMirror
+      is_mirror:           isMirror,
+      photo:               profilePhotoDataUrl || null
     };
   } else {
     endpoint = '/api/users/setup';
@@ -981,7 +1017,8 @@ async function saveAndFinish() {
       pattern_type:        hasCustody ? patternType : 'none',
       pattern_data:        hasCustody ? patternData : {},
       anchor_date:         weekStartDate ? toDateStr(weekStartDate) : null,
-      days:                hasCustody ? generatedDays : []
+      days:                hasCustody ? generatedDays : [],
+      photo:               profilePhotoDataUrl || null
     };
   }
 

@@ -23,6 +23,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } catch(e) { /* al
 try { db.exec('ALTER TABLE users ADD COLUMN work_schedule TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN age INTEGER'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN relationship_status TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN photo TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }

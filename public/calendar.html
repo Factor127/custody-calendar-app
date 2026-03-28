@@ -966,9 +966,12 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 
   <div class="cal-show-bar">
-    <label class="cal-show-item">
+    <label class="cal-show-item" style="gap:8px;">
       <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
-      <span>Both free</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:13px;height:13px;border-radius:4px;border:2px solid var(--orange);opacity:0.85;flex-shrink:0;"></span>
+        <span>Partner &amp; you are free</span>
+      </span>
     </label>
     <div class="custody-balance-bar">
     <span class="bal-label">Balance:</span>
@@ -1459,8 +1462,13 @@ function nextMonth() {
 
   localStorage.setItem('myToken', MY_TOKEN);
 
-  document.getElementById('profile-initial').textContent = (myName || '?')[0].toUpperCase();
-  document.getElementById('profile-btn').href = `/profile?token=${MY_TOKEN}`;
+  const profileBtn = document.getElementById('profile-btn');
+  profileBtn.href = `/profile?token=${MY_TOKEN}`;
+  if (me.photo) {
+    profileBtn.innerHTML = `<img src="${me.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    document.getElementById('profile-initial').textContent = (myName || '?')[0].toUpperCase();
+  }
   document.getElementById('owner-name-label').textContent = `${myName}:`;
 
   await loadMyCalendar();

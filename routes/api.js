@@ -45,7 +45,7 @@ function requireOwner(req, res) {
 // Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
   const { magic, name, pattern_type, pattern_data, anchor_date, days, google_id,
-          work_schedule, mobile, age, relationship_status } = req.body;
+          work_schedule, mobile, age, relationship_status, photo } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
   if (!magic) return res.status(400).json({ error: 'Email verification required. Please use the link sent to your email.' });
 
@@ -67,6 +67,7 @@ router.post('/users/setup', (req, res) => {
   if (mobile)              db.prepare('UPDATE users SET mobile = ? WHERE id = ?').run(mobile.trim(), id);
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, id);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, id);
+  if (photo)               db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo, id);
 
   // Save pattern for future reference / regeneration
   if (pattern_type && pattern_type !== 'none') {
@@ -110,7 +111,7 @@ router.post('/pattern/generate', (req, res) => {
 // POST /api/users/register — complete partner onboarding
 router.post('/users/register', (req, res) => {
   const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days,
-          age, relationship_status, work_schedule } = req.body;
+          age, relationship_status, work_schedule, photo } = req.body;
 
   if (!invite_token) return res.status(400).json({ error: 'invite_token required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
@@ -138,6 +139,7 @@ router.post('/users/register', (req, res) => {
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, userId);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, userId);
   if (work_schedule)       db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?').run(JSON.stringify(work_schedule), userId);
+  if (photo)               db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo, userId);
 
   // Mark invite as used
   q.claimInvite.run(userId, invite_token);
@@ -700,7 +702,7 @@ function parseHtmlBackup(html) {
 router.get('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null, work_schedule: user.work_schedule || null });
+  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null, work_schedule: user.work_schedule || null, photo: user.photo || null });
 });
 
 // PUT /api/me — update profile (name, mobile, coparent_name, work_schedule)
