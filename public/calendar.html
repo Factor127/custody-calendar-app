@@ -39,14 +39,17 @@ body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 .app-title-strip {
   text-align: left;
   padding: 20px 20px 4px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.month-heading {
   font-size: 42px;
   font-weight: 900;
   letter-spacing: -0.03em;
   line-height: 1;
-  color: var(--text);
-  max-width: 680px;
-  margin: 0 auto;
 }
+.month-heading .month-name { color: var(--text); }
+.month-heading .month-year { color: var(--accent); }
 .month-year-accent { color: var(--accent); }
 
 /* Calendar container */
@@ -103,7 +106,7 @@ td.suggest-proposed { background: rgba(249,115,22,0.12) !important; outline-colo
   padding: 16px;
 }
 .social-cal-title { color: var(--text) !important; font-size: 15px !important; }
-#next-free-banner { background: rgba(249,115,22,0.12) !important; color: var(--orange) !important; }
+#next-free-banner { background: rgba(180,70,10,0.55) !important; color: #fff !important; border-radius: 8px; }
 #social-calendar-locked {
   background: var(--surface) !important;
   border-color: var(--border) !important;
@@ -124,7 +127,7 @@ td.suggest-proposed { background: rgba(249,115,22,0.12) !important; outline-colo
 .day-card .dc-name { color: var(--muted) !important; }
 .day-card .dc-num { color: var(--text) !important; }
 .day-card.match .dc-num { color: var(--orange) !important; }
-.day-card .dc-free { color: #34d399 !important; }
+.day-card .dc-free { color: var(--orange) !important; }
 .day-card .dc-plan-it { color: var(--orange) !important; background: rgba(249,115,22,0.12) !important; }
 .strip-nav { background: var(--cell-bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
 .strip-nav:hover:not(:disabled) { background: rgba(124,92,191,0.2) !important; }
@@ -142,7 +145,7 @@ td.suggest-proposed { background: rgba(249,115,22,0.12) !important; outline-colo
 .mini-num { color: var(--text) !important; }
 .mini-cell.mini-self { background: var(--r) !important; }
 .mini-cell.mini-coparent { background: var(--z) !important; }
-.mini-cell.mini-today { outline-color: var(--accent) !important; }
+.mini-cell.mini-today { outline-color: rgba(238,238,248,0.85) !important; }
 .mini-card-footer { color: var(--muted) !important; border-top-color: var(--border) !important; }
 .custody-balance-bar { background: var(--surface) !important; border-top-color: var(--border) !important; }
 .custody-balance-bar .bal-label { color: var(--muted) !important; }
