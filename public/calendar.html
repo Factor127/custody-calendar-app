@@ -116,6 +116,41 @@ td.today .day-num {
 td.act-accepted { box-shadow: inset 0 0 0 1.5px rgba(52,211,153,0.6) !important; }
 td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.6) !important; }
 
+/* ── Cell hover card ── */
+#cell-hover-card {
+  position: fixed; z-index: 9000; pointer-events: none;
+  background: #1a1a30; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  padding: 14px 16px; width: 230px;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+#cell-hover-card.visible { opacity: 1; transform: translateY(0); }
+.chc-date { font-size: 11px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.chc-row { display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.chc-row:last-child { margin-bottom: 0; }
+.chc-icon { font-size: 13px; flex-shrink: 0; }
+.chc-label { color: var(--text); font-weight: 600; font-size: 12px; }
+.chc-sub { color: var(--muted); font-size: 11px; }
+.chc-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 8px 0; }
+.chc-pill {
+  display: inline-block; font-size: 9px; font-weight: 800;
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 20px; margin-right: 4px;
+}
+.chc-pill-pending { background: rgba(249,115,22,0.18); color: #fb923c; }
+.chc-pill-accepted { background: rgba(52,211,153,0.18); color: #34d399; }
+.chc-pill-mine { background: rgba(167,139,250,0.18); color: var(--accent); }
+.chc-avatars { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+.chc-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: white; flex-shrink: 0;
+}
+.chc-empty { color: var(--muted); font-size: 11px; font-style: italic; }
+
 /* ── Cell top row: day number left, FREE badge right ── */
 .cell-top-row {
   display: flex; justify-content: space-between; align-items: flex-start;
@@ -947,6 +982,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <span class="bal-diff" id="difference"></span>
   </div>
 </div>
+
+<!-- Cell hover card -->
+<div id="cell-hover-card"></div>
 
 <!-- Approve connection modal -->
 <div class="modal-overlay" id="approve-modal">
@@ -1862,7 +1900,7 @@ function renderCalendar() {
     );
     const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
-    html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
+    html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)" onmouseenter="showCellHover(event,'${dateStr}')" onmouseleave="hideCellHover()">
       <div class="cell-top-row">
         <div class="day-num">${day}</div>
         ${freeBadge}
@@ -1884,6 +1922,105 @@ function renderCalendar() {
   html += '</tbody></table></div>';
   container.innerHTML = html;
   calculateCustodyDays();
+}
+
+// ── Cell hover card ───────────────────────────────────────────────────────
+let _hoverHideTimer = null;
+
+function showCellHover(event, dateStr) {
+  clearTimeout(_hoverHideTimer);
+  const card = document.getElementById('cell-hover-card');
+  if (!card) return;
+
+  const d = new Date(dateStr + 'T12:00:00');
+  const dayNames  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateLabel = `${dayNames[d.getDay()]}, ${monthNames[d.getMonth()]} ${d.getDate()}`;
+
+  const cal    = calendarDays[dateStr] || {};
+  const owner  = cal.owner;
+  const isMine = owner === 'self';
+  const tags   = cal.tags || [];
+  const isWork = isWorkBlock(d);
+
+  // Custody line
+  let custodyLine = '';
+  if (isMine)        custodyLine = `<div class="chc-row"><span class="chc-icon">👶</span><span class="chc-label">Kids with you</span></div>`;
+  else if (owner === 'coparent') custodyLine = `<div class="chc-row"><span class="chc-icon">👶</span><span class="chc-label" style="color:var(--muted)">Kids with co-parent</span></div>`;
+
+  // Work
+  const workLine = isWork ? `<div class="chc-row"><span class="chc-icon">💼</span><span class="chc-sub">Work day</span></div>` : '';
+
+  // Tags (holiday/vacation)
+  const tagLine = tags.length ? `<div class="chc-row"><span class="chc-icon">🏖️</span><span class="chc-sub">${tags.join(', ')}</span></div>` : '';
+
+  // Free connections
+  const freeFriends = socialConnections.filter(sc => (sc.days || {})[dateStr]?.owner !== 'self');
+  let friendsSection = '';
+  if (freeFriends.length) {
+    const bubbles = freeFriends.slice(0, 5).map(sc =>
+      `<span class="chc-avatar" style="background:${sc.color}">${sc.initial}</span>`
+    ).join('');
+    const extra = freeFriends.length > 5 ? `<span style="font-size:11px;color:var(--muted);align-self:center;">+${freeFriends.length - 5}</span>` : '';
+    friendsSection = `
+      <div class="chc-divider"></div>
+      <div class="chc-row" style="margin-bottom:4px;"><span class="chc-icon">👥</span><span class="chc-label">Also free</span></div>
+      <div class="chc-avatars">${bubbles}${extra}</div>`;
+  }
+
+  // Plans / outings
+  const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
+  let plansSection = '';
+  if (dayOutings.length) {
+    const rows = dayOutings.map(o => {
+      const isPending  = myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending');
+      const isAccepted = o.status === 'accepted' || (o.invitees || []).some(i => i.status === 'accepted');
+      const isMineOuting = myOutings.some(m => m.id === o.id);
+      const pill = isPending
+        ? `<span class="chc-pill chc-pill-pending">Invite</span>`
+        : isAccepted ? `<span class="chc-pill chc-pill-accepted">Confirmed</span>`
+        : isMineOuting ? `<span class="chc-pill chc-pill-mine">My plan</span>` : '';
+      const lbl = (o.venue || o.message || 'Plan').substring(0, 28);
+      return `<div class="chc-row" style="flex-direction:column;align-items:flex-start;gap:2px;">${pill}<span class="chc-label">${lbl}</span></div>`;
+    }).join('');
+    plansSection = `<div class="chc-divider"></div><div class="chc-row"><span class="chc-icon">🎉</span><span class="chc-label">Plans</span></div>${rows}`;
+  }
+
+  // Empty state
+  const hasContent = custodyLine || workLine || tagLine || freeFriends.length || dayOutings.length;
+  const emptyLine = hasContent ? '' : `<div class="chc-empty">Nothing on this day</div>`;
+
+  card.innerHTML = `
+    <div class="chc-date">${dateLabel}</div>
+    ${custodyLine}${workLine}${tagLine}
+    ${friendsSection}
+    ${plansSection}
+    ${emptyLine}`;
+
+  // Smart positioning — avoid viewport edges
+  const td  = event.currentTarget;
+  const rect = td.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const cardW = 230, cardH = 260;
+
+  let left = rect.right + 8;
+  if (left + cardW > vw - 8) left = rect.left - cardW - 8;
+  if (left < 8) left = 8;
+
+  let top = rect.top;
+  if (top + cardH > vh - 8) top = vh - cardH - 8;
+  if (top < 8) top = 8;
+
+  card.style.left = left + 'px';
+  card.style.top  = top  + 'px';
+  card.classList.add('visible');
+}
+
+function hideCellHover() {
+  _hoverHideTimer = setTimeout(() => {
+    const card = document.getElementById('cell-hover-card');
+    if (card) card.classList.remove('visible');
+  }, 120);
 }
 
 // ── Click handler ─────────────────────────────────────────────────────────
