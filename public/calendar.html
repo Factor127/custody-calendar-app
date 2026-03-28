@@ -367,6 +367,39 @@
     .plan-it-fields input { flex:1; min-width:100px; padding:5px 8px; border:1.5px solid var(--border);
       border-radius:6px; font-size:12px; font-family:inherit; }
 
+    /* ── Time picker ── */
+    .time-pick-wrap { position:relative; flex:1; min-width:110px; }
+    .time-pick-btn {
+      width:100%; padding:5px 8px; border:1.5px solid var(--border); border-radius:6px;
+      font-size:12px; font-family:inherit; background:white; cursor:pointer;
+      text-align:left; color:var(--text); display:flex; align-items:center; gap:5px;
+      transition:border-color .13s;
+    }
+    .time-pick-btn:hover, .time-pick-btn.open { border-color:var(--blue); }
+    .time-pick-btn .tp-placeholder { color:#aaa; }
+    .time-pick-dropdown {
+      position:absolute; top:calc(100% + 3px); left:0; right:0; z-index:500;
+      background:white; border:1.5px solid var(--border); border-radius:10px;
+      box-shadow:0 6px 20px rgba(0,0,0,.13); padding:8px; display:none;
+      width:220px;
+    }
+    .time-pick-dropdown.open { display:block; }
+    .time-pick-grid {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
+    }
+    .tp-chip {
+      padding:6px 4px; border-radius:7px; border:1.5px solid var(--border);
+      font-size:11px; font-weight:700; text-align:center; cursor:pointer;
+      color:var(--text); background:white; transition:all .1s; user-select:none;
+      font-family:inherit;
+    }
+    .tp-chip:hover   { background:#f0f4ff; border-color:var(--blue); color:var(--blue); }
+    .tp-chip.selected { background:var(--blue); border-color:var(--blue); color:white; }
+    .tp-section-label {
+      font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
+      color:var(--muted); margin:8px 0 4px; padding:0 2px;
+    }
+
     /* ── Venue autocomplete ── */
     .venue-ac-wrap { position:relative; flex:2; min-width:140px; }
     .venue-ac-wrap input { width:100%; box-sizing:border-box; }
@@ -2326,6 +2359,72 @@ async function respondToIncomingOuting(outingId, inviteeRecordId, status) {
   }
 }
 
+// ── Time picker ───────────────────────────────────────────────────────────────
+const _timePickerSelected = {}; // outingId → "7:00 PM"
+
+const TIME_SLOTS = {
+  Morning:   ['7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM'],
+  Afternoon: ['12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM'],
+  Evening:   ['6:00 PM','6:30 PM','7:00 PM','7:30 PM','8:00 PM','8:30 PM','9:00 PM','9:30 PM','10:00 PM']
+};
+
+function timePickerToggle(outingId) {
+  const drop = document.getElementById(`time-drop-${outingId}`);
+  const btn  = document.getElementById(`time-btn-${outingId}`);
+  if (!drop) return;
+
+  if (drop.classList.contains('open')) {
+    drop.classList.remove('open');
+    btn.classList.remove('open');
+    return;
+  }
+
+  // Build grid if empty
+  if (!drop.innerHTML) {
+    const current = _timePickerSelected[outingId] || null;
+    let html = '';
+    for (const [section, times] of Object.entries(TIME_SLOTS)) {
+      html += `<div class="tp-section-label">${section}</div><div class="time-pick-grid">`;
+      html += times.map(t =>
+        `<button class="tp-chip${t === current ? ' selected' : ''}"
+                 data-time="${t}" data-outing="${outingId}">${t}</button>`
+      ).join('');
+      html += `</div>`;
+    }
+    drop.innerHTML = html;
+    drop.querySelectorAll('.tp-chip').forEach(el => {
+      el.addEventListener('click', () => timePickerSelect(el.dataset.outing, el.dataset.time));
+    });
+  }
+
+  drop.classList.add('open');
+  btn.classList.add('open');
+
+  // Close when clicking outside
+  const handler = e => {
+    if (!document.getElementById(`time-wrap-${outingId}`)?.contains(e.target)) {
+      drop.classList.remove('open');
+      btn.classList.remove('open');
+      document.removeEventListener('mousedown', handler);
+    }
+  };
+  setTimeout(() => document.addEventListener('mousedown', handler), 0);
+}
+
+function timePickerSelect(outingId, time) {
+  _timePickerSelected[outingId] = time;
+  const lbl  = document.getElementById(`time-lbl-${outingId}`);
+  const drop = document.getElementById(`time-drop-${outingId}`);
+  const btn  = document.getElementById(`time-btn-${outingId}`);
+  if (lbl)  { lbl.textContent = time; lbl.classList.remove('tp-placeholder'); }
+  // Update selected chip highlight
+  drop?.querySelectorAll('.tp-chip').forEach(el =>
+    el.classList.toggle('selected', el.dataset.time === time)
+  );
+  drop?.classList.remove('open');
+  btn?.classList.remove('open');
+}
+
 // ── Venue autocomplete ──────────────────────────────────────────────────────
 const _venueAcTimers      = {};
 const _venueAcSelected    = {}; // outingId → { place_id, address }
@@ -2388,7 +2487,7 @@ function venueAcClose(outingId) {
 
 async function saveOutingPlan(outingId) {
   const venue = document.getElementById(`venue-${outingId}`)?.value.trim() || null;
-  const time  = document.getElementById(`time-${outingId}`)?.value.trim() || null;
+  const time  = _timePickerSelected[outingId] || null;
   const sel   = _venueAcSelected[outingId] || {};
   const res = await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, {
     method: 'PUT',
@@ -2489,6 +2588,9 @@ function renderNotifPanel() {
       </div>`
     ).join('');
 
+    // Pre-populate time picker state for already-saved times
+    if (hasAccepted && o.event_time) _timePickerSelected[o.id] = o.event_time;
+
     const planItHtml = hasAccepted ? `
       <div class="plan-it-wrap" id="plan-wrap-${o.id}">
         <div style="font-size:12px;font-weight:700;color:#e65100;">🎉 Someone said yes! Firm it up:</div>
@@ -2500,7 +2602,13 @@ function renderNotifPanel() {
                    onblur="setTimeout(()=>venueAcClose('${o.id}'),180)">
             <div class="venue-ac-dropdown" id="venue-ac-${o.id}"></div>
           </div>
-          <input id="time-${o.id}"  placeholder="🕐 What time?" value="${o.event_time || ''}">
+          <div class="time-pick-wrap" id="time-wrap-${o.id}">
+            <button class="time-pick-btn" id="time-btn-${o.id}"
+                    onclick="timePickerToggle('${o.id}')">
+              🕐 <span id="time-lbl-${o.id}" class="${o.event_time ? '' : 'tp-placeholder'}">${o.event_time || 'What time?'}</span>
+            </button>
+            <div class="time-pick-dropdown" id="time-drop-${o.id}"></div>
+          </div>
         </div>
         <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="saveOutingPlan('${o.id}')">Save plan</button>
       </div>` : '';
