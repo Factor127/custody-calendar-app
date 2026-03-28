@@ -305,7 +305,11 @@ router.get('/invites/:token', (req, res) => {
   }
   const owner = q.getUserById.get(invite.created_by);
   console.log(`[invite-validate] OK — owner="${owner?.name}", relType="${invite.relationship_type}"`);
-  res.json({ valid: true, owner_name: owner?.name || 'your partner' });
+  res.json({
+    valid:             true,
+    owner_name:        owner?.name || 'your partner',
+    relationship_type: invite.relationship_type || 'friend'
+  });
 });
 
 // ── Connections ───────────────────────────────────────────────────────────────
@@ -1211,6 +1215,55 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
   }
   q.updateInviteeStatus.run(status, req.params.inviteeId);
   res.json({ ok: true, status });
+});
+
+// GET /api/overlap — mutual free days between me and each approved connection
+// "Free" = not a work day AND not a day I have the kids
+router.get('/overlap', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const ahead = new Date(today); ahead.setDate(today.getDate() + 30);
+  const startStr = toDateStr(today);
+  const endStr   = toDateStr(ahead);
+
+  function getFreeDaysForUser(userId) {
+    const user = q.getUserById.get(userId);
+    if (!user) return [];
+    const ws       = user.work_schedule ? JSON.parse(user.work_schedule) : null;
+    const workDays = new Set(ws?.type === 'none' ? [] : (ws?.days ?? [1, 2, 3, 4, 5]));
+    const calRows  = q.getDaysForUserInRange.all(userId, startStr, endStr);
+    const calMap   = Object.fromEntries(calRows.map(r => [r.date, r.owner]));
+    const free = [];
+    for (let d = new Date(today); d <= ahead; d.setDate(d.getDate() + 1)) {
+      const ds  = toDateStr(d);
+      const dow = d.getDay();
+      // Free = not having kids AND not a work day
+      if (calMap[ds] !== 'self' && !workDays.has(dow)) free.push(ds);
+    }
+    return free;
+  }
+
+  const myFreeDays = getFreeDaysForUser(me.id);
+  const myFreeSet  = new Set(myFreeDays);
+
+  const conns = q.getAllConnectionsForUser.all(me.id, me.id, me.id, me.id, me.id)
+    .filter(c => c.status === 'approved');
+
+  const overlap = conns.map(c => {
+    const theirFree   = getFreeDaysForUser(c.other_user_id);
+    const sharedDays  = theirFree.filter(d => myFreeSet.has(d));
+    return {
+      connection_id:     c.id,
+      other_user_id:     c.other_user_id,
+      other_name:        c.other_name,
+      relationship_type: c.relationship_type,
+      overlap_days:      sharedDays.slice(0, 10)
+    };
+  });
+
+  res.json({ overlap, my_free_count: myFreeDays.length });
 });
 
 // GET /api/places/autocomplete — proxy to Google Places API (keeps key server-side)

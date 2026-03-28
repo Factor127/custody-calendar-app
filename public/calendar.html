@@ -434,6 +434,13 @@
 </div>
 
 <div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
+
+  <!-- ── Upcoming together card ── -->
+  <div id="together-card" style="display:none;background:linear-gradient(135deg,#e8f0fe,#f0f4ff);border:1.5px solid #c5d8f8;border-radius:14px;padding:14px 16px;margin-bottom:14px;">
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#5585c8;margin-bottom:10px;">📅 Coming up together</div>
+    <div id="together-rows"></div>
+  </div>
+
   <div class="social-cal-title">Who's free when you're free</div>
   <div id="next-free-banner" style="display:none;font-size:12px;font-weight:700;color:#e65100;background:rgba(230,81,0,0.08);padding:6px 14px;border-radius:8px;margin:0 0 10px;text-align:center;"></div>
 
@@ -991,6 +998,7 @@ function nextMonth() {
 
   // Load social calendars (partner + friends) for the strip
   await loadSocialCalendars();
+  renderTogetherCard();
 
   // Show partner pill toggle in calendar bar
   if (partnerConn) {
@@ -1169,6 +1177,77 @@ async function loadPartnerOverlay() {
   }
 
   renderCalendar();
+}
+
+// ── "Coming up together" card ─────────────────────────────────────────────
+// Computes free-day overlap client-side from already-loaded socialConnections.
+// A day is "my free day" if: I don't have kids (calendarDays[date] !== 'self')
+//   AND it's not a work day (based on MY_WORK_SCHEDULE).
+function renderTogetherCard() {
+  const card = document.getElementById('together-card');
+  const rows = document.getElementById('together-rows');
+  if (!card || !rows) return;
+
+  const DOW   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Build my free day set (next 30 days)
+  const today = new Date(); today.setHours(0,0,0,0);
+  const myFree = new Set();
+  for (let i = 0; i < 30; i++) {
+    const d  = new Date(today); d.setDate(today.getDate() + i);
+    const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const dow = d.getDay();
+    const hasKids  = calendarDays[ds]?.owner === 'self';
+    const workDays = myWorkSchedule?.type === 'none' ? [] : (myWorkSchedule?.days ?? [1,2,3,4,5]);
+    const isWork   = workDays.includes(dow);
+    if (!hasKids && !isWork) myFree.add(ds);
+  }
+
+  if (!socialConnections.length || !myFree.size) { card.style.display = 'none'; return; }
+
+  let html = '';
+  for (const sc of socialConnections) {
+    const shared = Object.entries(sc.days || {})
+      .filter(([ds, v]) => myFree.has(ds) && v.owner !== 'self') // they're also free
+      .map(([ds]) => ds)
+      .sort()
+      .slice(0, 3);
+
+    if (!shared.length) continue;
+
+    shared.forEach(ds => {
+      const d   = new Date(ds + 'T12:00:00');
+      const lbl = `${DOW[d.getDay()]}, ${MONTH[d.getMonth()]} ${d.getDate()}`;
+      html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:8px 10px;background:white;border-radius:9px;
+                    border:1px solid #dce8fb;margin-bottom:7px;">
+          <div>
+            <span style="font-size:13px;font-weight:800;color:#1a3a6e;">${lbl}</span>
+            <span style="font-size:11px;color:#5585c8;margin-left:6px;">with ${sc.name}</span>
+          </div>
+          <button onclick="quickPlanOuting('${ds}','${sc.userId}','${(sc.name||'').replace(/'/g,"\\'")}')"
+                  style="background:#4285f4;color:white;border:none;border-radius:16px;
+                         padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;
+                         font-family:inherit;">Plan →</button>
+        </div>`;
+    });
+  }
+
+  if (!html) { card.style.display = 'none'; return; }
+  rows.innerHTML = html;
+  card.style.display = 'block';
+}
+
+async function quickPlanOuting(date, userId, name) {
+  const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, message: `Let's do something on ${date}!`, invitees: [{ user_id: userId, name }] })
+  });
+  if (res.ok) { showToast(`✓ Plan suggested to ${name}!`); await loadOutings(); }
+  else showToast('Could not create plan — try again');
 }
 
 // ── Load social calendars (partner + friends) for the strip ───────────────
@@ -1742,6 +1821,7 @@ async function approveRequest() {
     coparentConn = allConnections.find(c => c.status === 'approved' && c.relationship_type === 'coparent') || null;
     if (partnerConn) await loadPartnerOverlay();
     await loadSocialCalendars();
+    renderTogetherCard();
     if (partnerConn) {
       document.getElementById('partner-toggle-label').textContent = `Partner · ${partnerConn.other_name}`;
       document.getElementById('partner-pill-wrap').style.display = 'inline-flex';
@@ -1797,6 +1877,7 @@ async function revokeConnection(connId) {
     partnerUserId = null;
     document.getElementById('partner-pill-wrap').style.display = 'none';
     await loadSocialCalendars();
+    renderTogetherCard();
     updateNextTime();
     renderCalendar();
   } else { showToast('Failed to disconnect'); }

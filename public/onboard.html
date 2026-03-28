@@ -531,6 +531,7 @@ const WD_LETTER  = ['S','M','T','W','T','F','S'];
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let ownerName     = 'your co-parent';
+let inviteRelType = 'friend';   // set from invite validation; drives fast-path
 let createdToken  = null;
 let relStatus     = null;
 let isParent      = true;
@@ -627,8 +628,13 @@ function step1Next() {
   if (MODE === 'invite') {
     const email = document.getElementById('user-email')?.value.trim();
     if (!email || !email.includes('@')) return;
-    document.getElementById('mirror-owner-name').textContent = ownerName;
-    goStep('mirror');
+    // Co-parent invites ask about mirror schedule; friends/partners skip straight to parent question
+    if (inviteRelType === 'coparent') {
+      document.getElementById('mirror-owner-name').textContent = ownerName;
+      goStep('mirror');
+    } else {
+      goStep('parent');
+    }
   } else {
     goStep('parent');
   }
@@ -956,19 +962,97 @@ async function saveAndFinish() {
 
 // ── Done screen ────────────────────────────────────────────────────────────────
 async function renderDoneScreen() {
-  renderFreeStrip();
-
   if (MODE === 'invite') {
-    document.getElementById('done-title').textContent = "You're connected!";
-    const box = document.getElementById('done-connected-box');
-    box.style.display = 'block';
-    box.innerHTML = `<strong>${ownerName}</strong> can now see when you're both free at the same time — and can suggest a plan on days that work for you both.`;
+    document.getElementById('done-title').textContent = "You're in! 🎉";
+    document.getElementById('done-sub').textContent   = `Finding days you and ${ownerName} are both free…`;
     document.getElementById('done-footnote').textContent = 'Your schedule is private — only people you approve can see it.';
+    await renderOverlapSection();
   } else {
     document.getElementById('done-title').textContent = 'Your calendar is ready!';
+    document.getElementById('done-sub').textContent   = 'Here are your upcoming free days.';
+    renderFreeStrip();
     document.getElementById('done-invite-section').style.display = 'block';
     document.getElementById('done-footnote').textContent = 'You can invite more people from your calendar any time.';
     await generateInviteLinks(createdToken);
+  }
+}
+
+async function renderOverlapSection() {
+  const container = document.getElementById('done-connected-box');
+  container.style.display = 'block';
+  container.innerHTML = '<p style="font-size:13px;color:#1967d2;text-align:center;margin:0;">Checking schedules…</p>';
+
+  try {
+    const res  = await fetch(`/api/overlap?token=${createdToken}`);
+    if (!res.ok) throw new Error('overlap fetch failed');
+    const data = await res.json();
+
+    const entry = data.overlap?.[0]; // first (and likely only) connection after fresh register
+    if (!entry || entry.overlap_days.length === 0) {
+      container.innerHTML = `
+        <p style="font-size:13px;color:#1967d2;margin:0;">
+          No overlapping free days found in the next 30 days — but that may change as schedules update.
+        </p>`;
+      document.getElementById('done-sub').textContent = `You're connected with ${ownerName}.`;
+      return;
+    }
+
+    const DOW   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const dayCards = entry.overlap_days.map(ds => {
+      const d   = new Date(ds + 'T12:00:00');
+      const dow  = DOW[d.getDay()];
+      const day  = d.getDate();
+      const mon  = MONTH[d.getMonth()];
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:10px 12px;background:white;border-radius:10px;
+                    border:1.5px solid #c5d8f8;margin-bottom:8px;">
+          <div>
+            <span style="font-size:14px;font-weight:800;color:#1a3a6e;">${dow}, ${mon} ${day}</span>
+            <span style="font-size:11px;color:#5585c8;margin-left:8px;">You're both free</span>
+          </div>
+          <button onclick="suggestPlan('${ds}','${entry.other_user_id}','${(entry.other_name||'').replace(/'/g,"\\'")}',this)"
+                  style="background:#4285f4;color:white;border:none;border-radius:20px;
+                         padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;
+                         font-family:inherit;white-space:nowrap;">
+            Plan this →
+          </button>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      <p style="font-size:13px;font-weight:700;color:#1967d2;margin:0 0 10px;">
+        🎉 You and ${entry.other_name} have <strong>${entry.overlap_days.length}</strong> free day${entry.overlap_days.length !== 1 ? 's' : ''} coming up:
+      </p>
+      ${dayCards}`;
+
+    document.getElementById('done-sub').textContent = `Pick a day and make it happen.`;
+  } catch(e) {
+    container.innerHTML = `<p style="font-size:12px;color:#1967d2;margin:0;">Couldn't load overlaps right now — check back in the app.</p>`;
+  }
+}
+
+async function suggestPlan(date, otherUserId, otherName, btn) {
+  btn.textContent = '…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/outings?token=${createdToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, message: `Let's do something on ${date}!`, invitees: [{ user_id: otherUserId, name: otherName }] })
+    });
+    if (res.ok) {
+      btn.textContent = '✓ Sent!';
+      btn.style.background = '#34a853';
+    } else {
+      btn.textContent = 'Plan this →';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = 'Plan this →';
+    btn.disabled = false;
   }
 }
 
@@ -996,10 +1080,18 @@ function renderFreeStrip() {
 }
 
 async function generateInviteLinks(token) {
+  // Fetch my own free day count to personalise the invite message
+  let freeCount = 0;
+  try {
+    const ov = await fetch(`/api/overlap?token=${token}`).then(r => r.json());
+    freeCount = ov.my_free_count || 0;
+  } catch(e) { /* non-critical */ }
+
+  const freeSnippet = freeCount > 0 ? ` I have ${freeCount} free days in the next month.` : '';
   const msgs = {
-    coparent: u => `Hi! I'm using Spontany to manage our custody schedule. Click here to set up your side: ${u}`,
-    partner:  u => `Hey! I'm using Spontany to see when we're both free at the same time. Connect your schedule here: ${u}`,
-    friend:   u => `Hey! I use Spontany for scheduling — it shows when we're both free. Join here: ${u}`
+    coparent: u => `Hi! I'm using Spontany to coordinate our custody schedule and find time to connect.${freeSnippet} Set up your side here: ${u}`,
+    partner:  u => `Hey! I'm using Spontany to find when we're both free at the same time.${freeSnippet} Connect your schedule here: ${u}`,
+    friend:   u => `Hey!${freeSnippet} I use Spontany to find when friends are free — join so we can see our overlap: ${u}`
   };
   for (const type of ['coparent','partner','friend']) {
     try {
@@ -1062,7 +1154,8 @@ async function validateInvite() {
       throw new Error(body.error || 'HTTP ' + res.status);
     }
     const data = await res.json();
-    ownerName = data.owner_name || 'your co-parent';
+    ownerName     = data.owner_name        || 'your co-parent';
+    inviteRelType = data.relationship_type || 'friend';
     document.getElementById('isl-0').innerHTML = `
       <div class="intro-logo">Spontany</div>
       <div class="intro-big">${ownerName}<br>invited you 👋</div>
