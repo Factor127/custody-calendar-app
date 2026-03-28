@@ -89,17 +89,17 @@ th {
 .day-num { color: rgba(238,238,248,0.55); font-size: 13px; font-weight: 600; line-height: 1; }
 .label { color: var(--text); }
 
-/* Ownership: thin left-border stripe instead of cell fill */
+/* Ownership fills */
 td.r {
-  background: var(--cell-bg) !important;
-  border-color: var(--border) !important;
-  border-left: 3px solid rgba(167,139,250,0.45) !important;
+  background: rgba(124,92,191,0.22) !important;   /* warm purple — my custody days */
+  border-color: rgba(167,139,250,0.18) !important;
 }
 td.z {
-  background: var(--cell-bg) !important;
-  border-color: var(--border) !important;
+  background: rgba(15,25,70,0.55) !important;     /* cool dark blue — co-parent custody days */
+  border-color: rgba(60,80,160,0.20) !important;
 }
 td.bothfree { box-shadow: inset 0 0 0 1.5px var(--orange) !important; }
+body.hide-frames td.bothfree { box-shadow: none !important; }
 
 /* Today — bright white ring */
 td.today {
@@ -929,10 +929,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 
   <div class="cal-show-bar">
-    <label class="partner-pill" id="partner-pill-wrap" style="display:none;">
-      <input type="checkbox" id="toggle-partner" checked onchange="togglePartnerOverlay(this.checked)">
-      <span id="partner-toggle-label">Partner</span>
-    </label>
     <label class="cal-show-item">
       <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
       <span>Both free</span>
