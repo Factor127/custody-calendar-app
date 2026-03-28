@@ -278,6 +278,7 @@ const q = {
     WHERE id = ?
   `),
   rejectConnection:  db.prepare("UPDATE connections SET status = 'rejected' WHERE id = ?"),
+  deleteConnection:  db.prepare('DELETE FROM connections WHERE id = ?'),
   updateAutoRenew:   db.prepare('UPDATE connections SET auto_renew = ? WHERE id = ?'),
   getConnectionById: db.prepare('SELECT * FROM connections WHERE id = ?'),
   getAllConnectionsForOwner: db.prepare(`

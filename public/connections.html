@@ -272,7 +272,7 @@ function renderConnectionsList() {
         <button class="btn btn-sm btn-outline" onclick="toggleAutoRenew('${c.id}',${!c.auto_renew})">${arLabel}</button>
         <button class="btn btn-sm btn-danger"  onclick="revokeConnection('${c.id}')">Disconnect</button>`;
     } else if (c.status === 'rejected' || c.status === 'expired') {
-      actions = `<button class="btn btn-sm btn-outline" onclick="revokeConnection('${c.id}')">Remove</button>`;
+      actions = `<button class="btn btn-sm btn-outline" onclick="removeConnection('${c.id}')">Remove</button>`;
     }
 
     return `<div class="connection-row">
@@ -337,6 +337,15 @@ async function revokeConnection(connId) {
   });
   if (res.ok) { showToast('Disconnected'); await loadConnections(); }
   else showToast('Failed to disconnect');
+}
+
+async function removeConnection(connId) {
+  if (!confirm('Remove this connection?')) return;
+  allConnections = allConnections.filter(c => c.id !== connId);
+  renderConnectionsList();
+  fetch(`/api/connections/${connId}?token=${MY_TOKEN}`, { method: 'DELETE' })
+    .then(r => { if (!r.ok) showToast('Failed to remove — try again'); });
+  showToast('Connection removed');
 }
 
 async function toggleAutoRenew(connId, newVal) {

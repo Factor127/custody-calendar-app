@@ -433,6 +433,19 @@ router.post('/connections/reject', (req, res) => {
   res.json({ status: 'rejected' });
 });
 
+// DELETE /api/connections/:id — permanently remove a rejected/expired connection
+router.delete('/connections/:id', (req, res) => {
+  const user = requireToken(req, res);
+  if (!user) return;
+
+  const conn = q.getConnectionById.get(req.params.id);
+  if (!conn || (conn.target_id !== user.id && conn.requester_id !== user.id)) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+  q.deleteConnection.run(req.params.id);
+  res.json({ deleted: true });
+});
+
 // POST /api/connections/auto-renew — connection target toggles auto-renew
 router.post('/connections/auto-renew', (req, res) => {
   const user = requireToken(req, res);
