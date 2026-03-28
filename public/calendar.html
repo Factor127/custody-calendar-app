@@ -220,9 +220,7 @@ td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.6) !import
 .mini-cell.mini-coparent { background: var(--z) !important; }
 .mini-cell.mini-today { outline-color: rgba(238,238,248,0.85) !important; }
 .mini-card-footer { color: var(--muted) !important; border-top-color: var(--border) !important; }
-.custody-balance-bar { background: var(--surface) !important; border-top-color: var(--border) !important; }
 .custody-balance-bar .bal-label { color: var(--muted) !important; }
-.cal-show-bar { background: var(--surface) !important; border-color: var(--border) !important; }
 .cal-show-item { color: var(--muted) !important; }
 
 /* Suggestion panel */
@@ -468,10 +466,16 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .partner-pill input { cursor: pointer; }
 
     /* Custody balance inside calendar frame */
+    /* Merged toggle + balance row */
+    .cal-show-bar {
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      padding: 10px 4px; background: transparent; border: none; margin-bottom: 14px;
+    }
+    .cal-show-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
+    .cal-show-item input { cursor:pointer; }
     .custody-balance-bar {
       display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-      padding: 8px 12px; border-top: 1px solid var(--border);
-      background: rgba(255,255,255,0.04); border-radius: 0 0 10px 10px;
+      background: transparent; border: none; padding: 0;
       font-size: 11px;
     }
     .custody-balance-bar .bal-label { font-weight: 700; color: var(--muted); }
@@ -479,10 +483,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .custody-balance-bar .bal-name { font-weight: 700; }
     .custody-balance-bar .bal-count { font-weight: 800; }
     .custody-balance-bar .bal-diff { color: var(--muted); font-style: italic; margin-left: 4px; }
-
-    .cal-show-bar { display:flex; gap:16px; flex-wrap:wrap; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:0 0 10px 10px; border:1px solid var(--border); border-top:none; margin-bottom:14px; }
-    .cal-show-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
-    .cal-show-item input { cursor:pointer; }
     #edit-dropdown button:hover { background:#f8f9fa; }
 
     /* ── Suggestion side panel ─────────────────────────────────────────── */
@@ -968,20 +968,18 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
       <span>Both free</span>
     </label>
-  </div>
-
-  <div class="custody-balance-bar">
+    <div class="custody-balance-bar">
     <span class="bal-label">Balance:</span>
     <span class="bal-swatch" style="background:var(--r);"></span>
     <span class="bal-name" id="owner-name-label">Me</span>
-    <span class="bal-count" style="color:#1e8e3e;" id="r-count">—</span>
+    <span class="bal-count" style="color:#a78bfa;" id="r-count">—</span>
     <span style="color:var(--border);">·</span>
     <span class="bal-swatch" style="background:var(--z);"></span>
     <span class="bal-name">Co-parent</span>
-    <span class="bal-count" style="color:#1967d2;" id="z-count">—</span>
+    <span class="bal-count" style="color:#60a5fa;" id="z-count">—</span>
     <span class="bal-diff" id="difference"></span>
-  </div>
-</div>
+    </div><!-- /.custody-balance-bar -->
+  </div><!-- /.cal-show-bar -->
 
 <!-- Cell hover card -->
 <div id="cell-hover-card"></div>
