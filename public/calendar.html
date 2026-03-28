@@ -916,9 +916,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     SPONTANY
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
-    <a id="connections-btn" href="#" class="profile-circle" title="Connections"
-       style="background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:17px;">
-      👥
+    <a id="connections-btn" href="#" style="display:none;">
       <span id="notif-dot" class="notif-dot hidden"></span>
     </a>
     <a id="profile-btn" href="#" class="profile-circle" title="My profile">
@@ -3532,16 +3530,11 @@ function showToast(msg) {
     <div class="bn-badge hidden" id="bn-conn-badge">0</div>
   </button>
 
-  <button class="bn-item" id="bn-profile" onclick="bnTab('profile')">
-    <div class="bn-icon" id="bn-profile-initial" style="font-size:24px;">👤</div>
-    <div class="bn-label">Profile</div>
-  </button>
-
 </nav>
 
 <script>
 function bnTab(tab) {
-  ['home','connections','profile'].forEach(t =>
+  ['home','connections'].forEach(t =>
     document.getElementById('bn-' + t)?.classList.toggle('active', t === tab)
   );
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
