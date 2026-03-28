@@ -1437,11 +1437,6 @@ function nextMonth() {
   await loadSocialCalendars();
   renderTogetherCard();
 
-  // Show partner pill toggle in calendar bar
-  if (partnerConn) {
-    document.getElementById('partner-toggle-label').textContent = `Partner · ${partnerConn.other_name}`;
-    document.getElementById('partner-pill-wrap').style.display = 'inline-flex';
-  }
 
   updateNextTime();
   await Promise.all([loadActivities(), loadOutings()]);
