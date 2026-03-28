@@ -6,6 +6,41 @@
   <title>Spontany — Set Up Your Profile</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
+/* ══ Dark theme ══════════════════════════════════════════════════════════ */
+:root {
+  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
+  --border:rgba(255,255,255,0.07); --text:#eeeef8;
+  --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
+  --r:rgba(124,92,191,0.20); --r-border:rgba(167,139,250,0.35);
+}
+body { background:var(--bg); color:var(--text); }
+/* Cards / form surface */
+.card { background:var(--surface) !important; border-color:var(--border) !important; }
+.modal { background:var(--surface) !important; border-color:var(--border) !important; }
+/* Inputs */
+.field-input, input[type="text"], input[type="email"], input[type="tel"], textarea {
+  background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
+}
+input::placeholder, textarea::placeholder { color:var(--muted); }
+select { background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important; }
+/* Radio options */
+.radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text) !important; }
+.radio-option.selected { border-color:var(--blue) !important; background:rgba(124,92,191,0.15) !important; }
+/* Invite tabs */
+.inv-type-tabs { background:#1a1a2e !important; }
+.inv-type-tab { color:var(--muted) !important; }
+.inv-type-tab.active { background:var(--surface) !important; color:var(--text) !important; box-shadow:0 1px 4px rgba(0,0,0,0.5) !important; }
+/* Invite url box */
+.inv-url-box { background:#1a1a2e !important; border-color:var(--border) !important; }
+/* Week picker selected */
+.wp-cell.self .wp-num   { color:#81c784 !important; }
+.wp-cell.self .wp-month { color:#a5d6a7 !important; }
+/* Expand btn */
+.expand-btn:hover { background:rgba(124,92,191,0.15) !important; border-color:var(--blue) !important; }
+/* Time picker */
+.time-section-label { color:var(--muted) !important; }
+.time-option:hover, .time-option.selected { background:rgba(124,92,191,0.20) !important; border-color:var(--blue) !important; color:var(--text) !important; }
+/* ─────────────────────────────────────────────────────────────────────── */
     /* ── Week picker ── */
     .week-picker-grid {
       display: grid;
@@ -228,7 +263,10 @@
 <div id="intro-overlay" class="intro-overlay">
   <!-- Slide 0: direct mode = "Welcome to Spontany" | invite mode = personalised after token validation -->
   <div class="intro-slide active" id="isl-0">
-    <div class="intro-logo">Spontany</div>
+    <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <img src="/logo.svg" alt="" width="32" height="32" style="border-radius:8px;">
+      SPONTANY
+    </div>
     <div class="intro-loading">Loading…</div>
   </div>
   <!-- Slide 1 -->
@@ -1160,7 +1198,10 @@ async function validateInvite() {
     ownerName     = data.owner_name        || 'your co-parent';
     inviteRelType = data.relationship_type || 'friend';
     document.getElementById('isl-0').innerHTML = `
-      <div class="intro-logo">Spontany</div>
+      <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <img src="/logo.svg" alt="" width="32" height="32" style="border-radius:8px;">
+      SPONTANY
+    </div>
       <div class="intro-big">${ownerName}<br>invited you 👋</div>
       <div class="intro-sub" style="margin-top:10px;">You're joining ${ownerName} on Spontany.</div>
     `;
@@ -1182,7 +1223,10 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('email-group').style.display = 'none';
     // Generic welcome intro
     document.getElementById('isl-0').innerHTML = `
-      <div class="intro-logo">Spontany</div>
+      <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <img src="/logo.svg" alt="" width="32" height="32" style="border-radius:8px;">
+      SPONTANY
+    </div>
       <div class="intro-big">Welcome to<br>Spontany</div>
     `;
     showIntroSlide(0);

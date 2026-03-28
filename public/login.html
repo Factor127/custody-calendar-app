@@ -6,6 +6,18 @@
   <title>Spontany — Custody Calendar</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
+/* ══ Dark theme ══════════════════════════════════════════════════════════ */
+:root {
+  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
+  --border:rgba(255,255,255,0.07); --text:#eeeef8;
+  --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
+}
+.field-input, input[type="email"] {
+  background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
+}
+input::placeholder { color:var(--muted); }
+.error-box { background:rgba(183,28,28,0.18) !important; border-color:rgba(239,83,80,0.30) !important; color:#ef9a9a !important; }
+/* ─────────────────────────────────────────────────────────────────────── */
     body { margin: 0; padding: 0; }
 
     .login-wrap {
@@ -14,16 +26,17 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
-      background: linear-gradient(145deg, #f0fdf4 0%, #e8f0fe 60%, #fce4ec 100%);
+      background: #0c0c15;
     }
 
     .login-card {
-      background: white;
+      background: #131321;
+      border: 1px solid rgba(255,255,255,0.07);
       border-radius: 20px;
       padding: 44px 40px 36px;
       max-width: 400px;
       width: 100%;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+      box-shadow: 0 8px 60px rgba(0,0,0,0.50);
     }
 
     .app-logo { font-size: 40px; text-align: center; margin-bottom: 8px; }
@@ -72,9 +85,11 @@
 <div class="login-wrap">
   <div class="login-card">
 
-    <div class="app-logo">📅</div>
-    <h1 class="app-name">Spontany</h1>
-    <p class="app-tag">Shared custody calendar for co-parents</p>
+    <div style="text-align:center;margin-bottom:16px;">
+      <img src="/logo.svg" alt="Spontany" width="64" height="64" style="border-radius:16px;">
+    </div>
+    <h1 class="app-name" style="color:#eeeef8;font-weight:900;letter-spacing:-0.02em;">SPONTANY</h1>
+    <p class="app-tag">Finds your moments — before they slip away.</p>
 
     <!-- ── Auto-login spinner ── -->
     <div id="loading-state">

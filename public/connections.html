@@ -6,6 +6,28 @@
   <title>Connections — Spontany</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
+/* ══ Dark theme ══════════════════════════════════════════════════════════ */
+:root {
+  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
+  --border:rgba(255,255,255,0.07); --text:#eeeef8;
+  --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
+  --orange:#f97316;
+}
+body { background:var(--bg); color:var(--text); }
+.app-header { background:var(--bg) !important; border-color:var(--border) !important; }
+.modal { background:var(--surface) !important; border-color:var(--border) !important; }
+.modal h2 { color:var(--text); }
+.radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text); }
+.radio-option.selected { border-color:var(--blue) !important; background:rgba(124,92,191,0.15) !important; }
+.field-input, input[type="text"], input[type="email"], input[readonly] {
+  background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
+}
+input::placeholder { color:var(--muted); }
+.conn-status.approved { background:rgba(46,125,50,0.18) !important; color:#81c784 !important; }
+.conn-status.pending  { background:rgba(230,81,0,0.18) !important;  color:#ffb74d !important; }
+.conn-status.rejected { background:rgba(198,40,40,0.18) !important; color:#ef9a9a !important; }
+.conn-status.expired  { background:rgba(117,117,117,0.18) !important; color:#9e9e9e !important; }
+/* ─────────────────────────────────────────────────────────────────────── */
     .profile-circle {
       position:relative; width:38px; height:38px; border-radius:50%;
       background:var(--blue); color:white; display:flex; align-items:center;
@@ -38,7 +60,10 @@
 
   <div class="app-header">
     <a id="calendar-btn" href="#" style="font-size:13px;color:var(--blue);text-decoration:none;font-weight:600;">← Calendar</a>
-    <div class="app-header-brand">Connections</div>
+    <div class="app-header-brand">
+      <img src="/logo.svg" alt="" width="28" height="28" style="border-radius:7px;flex-shrink:0;">
+      SPONTANY
+    </div>
     <a id="profile-btn" href="#" class="profile-circle" title="My profile">
       <span id="profile-initial">?</span>
     </a>
