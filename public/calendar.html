@@ -8,21 +8,21 @@
   <style>
 /* ══ Dark theme ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:       #07070f;
-  --surface:  #0d0d1b;
-  --cell-bg:  #111120;
-  --border:   rgba(255,255,255,0.06);
+  --bg:       #0c0c15;
+  --surface:  #131321;
+  --cell-bg:  #19192a;
+  --border:   rgba(255,255,255,0.07);
   --text:     #eeeef8;
-  --muted:    rgba(238,238,248,0.38);
+  --muted:    rgba(238,238,248,0.40);
   --blue:     #7c5cbf;
   --accent:   #a78bfa;
   --orange:   #f97316;
   --tagbg:    rgba(249,115,22,0.15);
   --tagbd:    rgba(249,115,22,0.35);
-  --r:        rgba(124,92,191,0.20);
-  --r-border: rgba(167,139,250,0.22);
-  --z:        rgba(255,255,255,0.025);
-  --z-border: rgba(255,255,255,0.06);
+  --r:        #19192a;
+  --r-border: rgba(167,139,250,0.0);
+  --z:        #19192a;
+  --z-border: rgba(255,255,255,0.0);
 }
 body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 
@@ -62,47 +62,64 @@ body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 .cal-section { padding: 0 12px; }
 
 /* ── Calendar table cells ── */
-table.month-table { border-collapse: separate !important; border-spacing: 4px !important; }
+table.month-table { border-collapse: separate !important; border-spacing: 5px !important; }
 td {
   background: var(--cell-bg) !important;
   border-radius: 16px !important;
   border: 1px solid var(--border) !important;
   height: 112px;
-  padding: 9px 9px 7px;
+  padding: 10px 10px 8px;
   vertical-align: top;
+  position: relative;
 }
 td.empty { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
 th {
-  color: rgba(238,238,248,0.28);
-  border-bottom: 1px solid var(--border);
-  font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase;
-  padding-bottom: 6px;
+  color: rgba(238,238,248,0.30);
+  border-bottom: none;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding-bottom: 8px; font-weight: 700;
 }
-.day-num { color: rgba(238,238,248,0.45); font-size: 12px; font-weight: 600; }
+.day-num { color: rgba(238,238,248,0.55); font-size: 13px; font-weight: 600; line-height: 1; }
 .label { color: var(--text); }
-td.r { background: var(--r) !important; border-color: var(--r-border) !important; }
-td.z { background: var(--z) !important; border-color: var(--z-border) !important; }
+
+/* Ownership: thin left-border stripe instead of cell fill */
+td.r {
+  background: var(--cell-bg) !important;
+  border-color: var(--border) !important;
+  border-left: 3px solid rgba(167,139,250,0.45) !important;
+}
+td.z {
+  background: var(--cell-bg) !important;
+  border-color: var(--border) !important;
+}
 td.bothfree { box-shadow: inset 0 0 0 1.5px var(--orange) !important; }
+
+/* Today — bright white ring */
 td.today {
-  box-shadow: inset 0 0 0 1.5px rgba(238,238,248,0.55) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.75) !important;
 }
 td.today .day-num {
   background: white;
-  color: #07070f;
+  color: #0c0c15;
   border-radius: 50%;
   width: 22px; height: 22px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 12px;
 }
-td.act-accepted { box-shadow: inset 0 0 0 1.5px #34a853 !important; }
-td.suggest-proposed { background: rgba(249,115,22,0.10) !important; box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.5) !important; }
+td.act-accepted { box-shadow: inset 0 0 0 1.5px rgba(52,211,153,0.6) !important; }
+td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.6) !important; }
 
-/* ── FREE badge on calendar cells ── */
+/* ── Cell top row: day number left, FREE badge right ── */
+.cell-top-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 6px;
+}
+/* ── FREE badge ── */
 .cell-free-badge {
-  display: inline-block;
-  font-size: 7px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: rgba(238,238,248,0.42); background: rgba(255,255,255,0.08);
-  border-radius: 4px; padding: 2px 5px; margin-top: 2px;
+  font-size: 8px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  color: rgba(238,238,248,0.35); background: none; padding: 1px 0;
+  flex-shrink: 0; margin-left: 4px; line-height: 1;
+  margin-top: 2px;
 }
 
 /* Activity label on cell */
@@ -677,15 +694,15 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Cell event pills ─────────────────────────────────────────────── */
     .cell-event {
-      font-size: 9px; font-weight: 600;
-      background: rgba(255,255,255,0.07); color: rgba(238,238,248,0.75);
-      border-radius: 5px; padding: 2px 6px; margin-top: 4px;
+      font-size: 10px; font-weight: 500;
+      background: none; color: rgba(238,238,248,0.72);
+      padding: 0; margin-top: 5px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 100%; display: block; line-height: 1.4;
+      max-width: 100%; display: block; line-height: 1.35;
     }
-    .cell-event.cell-event-done {
-      background: rgba(167,139,250,0.15); color: var(--accent);
-    }
+    .cell-event::before { content: '• '; color: rgba(238,238,248,0.30); }
+    .cell-event.cell-event-done { color: var(--accent); }
+    .cell-event.cell-event-done::before { color: var(--accent); opacity: 0.5; }
 
     /* ── Cell avatar bubbles ──────────────────────────────────────────── */
     .cell-avatars {
@@ -1936,9 +1953,11 @@ function renderCalendar() {
     const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
     html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
-      <div class="day-num">${day}</div>
+      <div class="cell-top-row">
+        <div class="day-num">${day}</div>
+        ${freeBadge}
+      </div>
       ${tagHtml ? `<div class="label">${tagHtml}</div>` : ''}
-      ${freeBadge}
       ${actMarker}
       ${outingHtml}
       ${avatarHtml}
