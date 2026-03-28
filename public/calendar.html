@@ -363,18 +363,18 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* Social calendar section */
     #social-calendar-section {
-      background: linear-gradient(135deg, #fff8f0 0%, #fef3e2 100%);
-      border: 1.5px solid #ffcc80;
+      background: linear-gradient(135deg, #13131f 0%, #1a1030 100%);
+      border: 1.5px solid rgba(167,139,250,0.20);
       border-radius: 16px;
       padding: 20px 18px 18px;
-      box-shadow: 0 4px 24px rgba(255,152,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      box-shadow: 0 4px 24px rgba(124,92,191,0.15);
       margin-bottom: 24px;
       max-width: 680px;
       margin-left: auto;
       margin-right: auto;
     }
     .social-cal-title {
-      font-size: 18px; font-weight: 900; color: #bf360c; margin: 0 0 12px;
+      font-size: 18px; font-weight: 900; color: #a78bfa; margin: 0 0 12px;
       letter-spacing: -0.01em; text-align: center;
     }
 
@@ -405,7 +405,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .custody-balance-bar {
       display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
       padding: 8px 12px; border-top: 1px solid var(--border);
-      background: #f8f9fa; border-radius: 0 0 10px 10px;
+      background: rgba(255,255,255,0.04); border-radius: 0 0 10px 10px;
       font-size: 11px;
     }
     .custody-balance-bar .bal-label { font-weight: 700; color: var(--muted); }
@@ -414,7 +414,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .custody-balance-bar .bal-count { font-weight: 800; }
     .custody-balance-bar .bal-diff { color: var(--muted); font-style: italic; margin-left: 4px; }
 
-    .cal-show-bar { display:flex; gap:16px; flex-wrap:wrap; padding:8px 12px; background:#f8f9fa; border-radius:0 0 10px 10px; border:1px solid var(--border); border-top:none; margin-bottom:14px; }
+    .cal-show-bar { display:flex; gap:16px; flex-wrap:wrap; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:0 0 10px 10px; border:1px solid var(--border); border-top:none; margin-bottom:14px; }
     .cal-show-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
     .cal-show-item input { cursor:pointer; }
     #edit-dropdown button:hover { background:#f8f9fa; }
@@ -684,6 +684,72 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .cell-avatar-more { background: #444 !important; font-size: 6px; }
 
+    /* ── Pending invite pulse on cell ────────────────────────────────── */
+    .cell-pending-ring {
+      position: absolute; top: 6px; right: 6px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      animation: cell-pulse 2s ease-in-out infinite;
+    }
+    @keyframes cell-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(167,139,250,0.5); }
+      50% { opacity: 0.8; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+    }
+
+    /* ── Coordinate Together section ─────────────────────────────────── */
+    .coordinate-title {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--muted); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .coordinate-scroll {
+      display: flex; gap: 12px; overflow-x: auto;
+      scrollbar-width: none; padding-bottom: 8px;
+    }
+    .coordinate-scroll::-webkit-scrollbar { display: none; }
+    .ctg-card {
+      flex-shrink: 0; width: 148px; border-radius: 18px;
+      padding: 16px 14px 14px; cursor: pointer; position: relative;
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: transform .15s, box-shadow .15s;
+      overflow: hidden;
+    }
+    .ctg-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(255,255,255,0.04);
+      border-radius: inherit; pointer-events: none;
+    }
+    .ctg-card:active { transform: scale(0.96); }
+    .ctg-card-dow {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; color: rgba(255,255,255,0.45); margin-bottom: 2px;
+    }
+    .ctg-card-date {
+      font-size: 22px; font-weight: 900; color: white; line-height: 1.1;
+      letter-spacing: -.02em; margin-bottom: 4px;
+    }
+    .ctg-card-with {
+      font-size: 11px; color: rgba(255,255,255,0.5);
+      font-weight: 600; margin-bottom: 24px;
+    }
+    .ctg-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ctg-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: white;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .ctg-arrow-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); border: none;
+      cursor: pointer; color: white; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .13s; font-family: inherit;
+    }
+    .ctg-arrow-btn:hover { background: rgba(255,255,255,0.28); }
+
     /* ── Bottom nav bar ───────────────────────────────────────────────── */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 650;
@@ -768,12 +834,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 <div class="app-title-strip" id="app-title-strip"></div>
 
 <div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
-
-  <!-- ── Upcoming together card ── -->
-  <div id="together-card" style="display:none;background:linear-gradient(135deg,#e8f0fe,#f0f4ff);border:1.5px solid #c5d8f8;border-radius:14px;padding:14px 16px;margin-bottom:14px;">
-    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#5585c8;margin-bottom:10px;">📅 Coming up together</div>
-    <div id="together-rows"></div>
-  </div>
 
   <div class="social-cal-title">Who's free when you're free</div>
   <div id="next-free-banner" style="display:none;font-size:12px;font-weight:700;color:#e65100;background:rgba(230,81,0,0.08);padding:6px 14px;border-radius:8px;margin:0 0 10px;text-align:center;"></div>
@@ -1087,9 +1147,15 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 </div>
 
-<footer class="brand-footer">
-  <p><em>Spontany finds your moments—before they slip away.</em></p>
-  <p>Questions? <a href="mailto:info@Spontany.club">info@Spontany.club</a> · <a href="/privacy">Privacy Policy</a></p>
+<!-- ── Coordinate Together section ── -->
+<section id="coordinate-section" style="display:none;padding:20px 16px 8px;max-width:680px;margin:0 auto;">
+  <div class="coordinate-title">✦ Coordinate Together</div>
+  <div class="coordinate-scroll" id="coordinate-scroll"></div>
+</section>
+
+<footer class="brand-footer" style="border-top:1px solid var(--border);margin-top:24px;">
+  <p style="color:var(--muted);font-size:11px;">Spontany — finds your moments before they slip away.</p>
+  <p style="color:var(--muted);font-size:11px;">Questions? <a href="mailto:info@Spontany.club" style="color:var(--muted)">info@Spontany.club</a> · <a href="/privacy" style="color:var(--muted)">Privacy Policy</a></p>
 </footer>
 
 <script>
@@ -1519,9 +1585,9 @@ async function loadPartnerOverlay() {
 // A day is "my free day" if: I don't have kids (calendarDays[date] !== 'self')
 //   AND it's not a work day (based on MY_WORK_SCHEDULE).
 function renderTogetherCard() {
-  const card = document.getElementById('together-card');
-  const rows = document.getElementById('together-rows');
-  if (!card || !rows) return;
+  const section = document.getElementById('coordinate-section');
+  const scroll  = document.getElementById('coordinate-scroll');
+  if (!section || !scroll) return;
 
   const DOW   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1539,41 +1605,51 @@ function renderTogetherCard() {
     if (!hasKids && !isWork) myFree.add(ds);
   }
 
-  if (!socialConnections.length || !myFree.size) { card.style.display = 'none'; return; }
+  if (!socialConnections.length || !myFree.size) { section.style.display = 'none'; return; }
 
-  let html = '';
+  // Card gradient palette — cycles per card
+  const GRADIENTS = [
+    'linear-gradient(135deg,#2d1b69,#1a1040)',
+    'linear-gradient(135deg,#0d3060,#091a40)',
+    'linear-gradient(135deg,#4a1942,#1a0d2e)',
+    'linear-gradient(135deg,#0d4a3a,#072e20)',
+    'linear-gradient(135deg,#4a3010,#2e1a04)',
+  ];
+
+  let cards = '';
+  let cardIdx = 0;
+
   for (const sc of socialConnections) {
     const shared = Object.entries(sc.days || {})
-      .filter(([ds, v]) => myFree.has(ds) && v.owner !== 'self') // they're also free
-      .map(([ds]) => ds)
-      .sort()
-      .slice(0, 3);
-
-    if (!shared.length) continue;
+      .filter(([ds, v]) => myFree.has(ds) && v.owner !== 'self')
+      .map(([ds]) => ds).sort().slice(0, 4);
 
     shared.forEach(ds => {
-      const d   = new Date(ds + 'T12:00:00');
-      const lbl = `${DOW[d.getDay()]}, ${MONTH[d.getMonth()]} ${d.getDate()}`;
-      html += `
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:8px 10px;background:white;border-radius:9px;
-                    border:1px solid #dce8fb;margin-bottom:7px;">
-          <div>
-            <span style="font-size:13px;font-weight:800;color:#1a3a6e;">${lbl}</span>
-            <span style="font-size:11px;color:#5585c8;margin-left:6px;">with ${sc.name}</span>
+      const d    = new Date(ds + 'T12:00:00');
+      const grad = GRADIENTS[cardIdx % GRADIENTS.length];
+      cardIdx++;
+      const safeName = (sc.name || '').replace(/'/g, "\\'");
+      cards += `
+        <div class="ctg-card" style="background:${grad};">
+          <div class="ctg-card-dow">${DOW[d.getDay()]}</div>
+          <div class="ctg-card-date">${MONTH[d.getMonth()]} ${d.getDate()}</div>
+          <div class="ctg-card-with">with ${sc.name}</div>
+          <div class="ctg-card-footer">
+            <div class="ctg-avatar" style="background:${sc.color}">${sc.initial}</div>
+            <button class="ctg-arrow-btn"
+                    onclick="quickPlanOuting('${ds}','${sc.userId}','${safeName}')">→</button>
           </div>
-          <button onclick="quickPlanOuting('${ds}','${sc.userId}','${(sc.name||'').replace(/'/g,"\\'")}')"
-                  style="background:#4285f4;color:white;border:none;border-radius:16px;
-                         padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;
-                         font-family:inherit;">Plan →</button>
         </div>`;
     });
   }
 
-  if (!html) { card.style.display = 'none'; return; }
-  rows.innerHTML = html;
-  card.style.display = 'block';
+  if (!cards) { section.style.display = 'none'; return; }
+  scroll.innerHTML = cards;
+  section.style.display = 'block';
 }
+
+// Alias
+function renderTogetherSection() { renderTogetherCard(); }
 
 async function quickPlanOuting(date, userId, name) {
   const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
@@ -1741,6 +1817,12 @@ function renderCalendar() {
       (freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 3}</span>` : '')
     }</div>` : '';
 
+    // Pulsing dot for incoming outings I haven't responded to
+    const hasPendingInvite = (outingsByDate[dateStr] || []).some(o =>
+      myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending')
+    );
+    const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
+
     html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
       <div class="day-num">${day}</div>
       ${tagHtml ? `<div class="label">${tagHtml}</div>` : ''}
@@ -1748,6 +1830,7 @@ function renderCalendar() {
       ${actMarker}
       ${outingHtml}
       ${avatarHtml}
+      ${pendingRing}
     </td>`;
 
     cellCount++;
