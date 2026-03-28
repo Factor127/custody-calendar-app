@@ -2327,15 +2327,15 @@ async function respondToIncomingOuting(outingId, inviteeRecordId, status) {
 }
 
 // ── Venue autocomplete ──────────────────────────────────────────────────────
-const _venueAcTimers   = {};
-const _venueAcSelected = {}; // outingId → { place_id, address }
+const _venueAcTimers      = {};
+const _venueAcSelected    = {}; // outingId → { place_id, address }
+const _venueAcPredictions = {}; // outingId → array of prediction objects (avoids inline string escaping)
 
 async function venueAcInput(outingId, val) {
   clearTimeout(_venueAcTimers[outingId]);
   const drop = document.getElementById(`venue-ac-${outingId}`);
   if (!drop) return;
 
-  // Clear selection if user edits after picking
   _venueAcSelected[outingId] = null;
 
   if (!val || val.trim().length < 2) { venueAcClose(outingId); return; }
@@ -2351,12 +2351,23 @@ async function venueAcInput(outingId, val) {
         drop.innerHTML = '<div class="venue-ac-spinner">No results</div>';
         return;
       }
-      drop.innerHTML = data.predictions.map(p => `
-        <div class="venue-ac-item"
-             onmousedown="venueAcPick('${outingId}', ${JSON.stringify(p.main_text).replace(/'/g,"&#39;")}, ${JSON.stringify(p.description).replace(/'/g,"&#39;")}, '${p.place_id}')">
+      // Store predictions by index — avoids embedding arbitrary strings in HTML attributes
+      _venueAcPredictions[outingId] = data.predictions;
+      drop.innerHTML = data.predictions.map((p, i) => `
+        <div class="venue-ac-item" data-outing="${outingId}" data-idx="${i}">
           <div class="venue-ac-main">${p.main_text}</div>
           <div class="venue-ac-sub">${p.secondary_text || ''}</div>
         </div>`).join('');
+
+      // Attach click handlers directly (no inline attribute escaping issues)
+      drop.querySelectorAll('.venue-ac-item').forEach(el => {
+        el.addEventListener('mousedown', e => {
+          e.preventDefault(); // prevent input blur from firing first
+          const idx = parseInt(el.dataset.idx, 10);
+          const p   = _venueAcPredictions[outingId]?.[idx];
+          if (p) venueAcPick(outingId, p.main_text, p.description, p.place_id);
+        });
+      });
     } catch(e) {
       drop.classList.remove('open');
     }
