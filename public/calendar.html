@@ -58,8 +58,15 @@ body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 .month-heading .month-year { color: var(--accent); }
 .month-year-accent { color: var(--accent); }
 
-/* ── Calendar container ── */
+/* ── Calendar container — kill all white backgrounds from styles.css ── */
 .cal-section { padding: 0 12px; }
+.calendar-container { background: transparent !important; gap: 0 !important; }
+.month {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.month-title { background: transparent !important; border-bottom: none !important; color: var(--muted) !important; }
 
 /* ── Calendar table cells ── */
 table.month-table { border-collapse: separate !important; border-spacing: 5px !important; }
