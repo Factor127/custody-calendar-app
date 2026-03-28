@@ -875,6 +875,56 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       font-size: 24px; color: white; transition: transform .12s, box-shadow .12s;
     }
     .bn-item.bn-fab:active .bn-fab-inner { transform: scale(0.93); box-shadow: 0 2px 10px rgba(124,92,191,0.4); }
+    .bn-item.bn-fab.open .bn-fab-inner { transform: rotate(45deg); }
+
+    /* ── FAB action menu ─────────────────────────────────────────────── */
+    #fab-menu {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: 10px; align-items: center;
+      z-index: 1200; pointer-events: none; opacity: 0;
+      transition: opacity .18s, transform .18s;
+      transform: translateX(-50%) translateY(12px);
+    }
+    #fab-menu.open {
+      opacity: 1; pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .fab-action {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 50px; padding: 10px 18px 10px 14px;
+      cursor: pointer; white-space: nowrap; font-size: 14px; font-weight: 700;
+      color: var(--text); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transition: background .12s, opacity .12s;
+      position: relative;
+    }
+    .fab-action:hover { background: var(--cell-bg); }
+    .fab-action.disabled {
+      opacity: 0.45; cursor: default;
+    }
+    .fab-action-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(167,139,250,0.15); display: flex; align-items: center;
+      justify-content: center; font-size: 14px; flex-shrink: 0;
+    }
+    /* Tooltip on disabled items */
+    .fab-action.disabled .fab-tooltip {
+      display: block;
+    }
+    .fab-tooltip {
+      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e30; border: 1px solid var(--border);
+      color: var(--muted); font-size: 11px; font-weight: 500; line-height: 1.4;
+      padding: 7px 12px; border-radius: 8px; width: 200px; text-align: center;
+      pointer-events: none; white-space: normal;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    }
+    .fab-backdrop {
+      position: fixed; inset: 0; z-index: 1199; background: rgba(0,0,0,0.4);
+      opacity: 0; pointer-events: none; transition: opacity .18s;
+    }
+    .fab-backdrop.open { opacity: 1; pointer-events: auto; }
 
     /* ── Compact custody card ────────────────────────────────────────── */
     .cal-compact-card {
@@ -3572,6 +3622,32 @@ function showToast(msg) {
   </div>
 </div>
 
+<!-- ── FAB backdrop ── -->
+<div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
+
+<!-- ── FAB action menu ── -->
+<div id="fab-menu">
+  <button class="fab-action" id="fab-connect" onclick="closeFabMenu();goToConnections()">
+    <div class="fab-action-icon">🔗</div>
+    Connect with a friend
+  </button>
+  <button class="fab-action disabled" id="fab-plan" onclick="fabPlanClick()">
+    <div class="fab-action-icon">🗓</div>
+    Invite a friend to hang out
+    <span class="fab-tooltip">Invite a friend and wait for them to accept — then you can plan time together.</span>
+  </button>
+  <button class="fab-action disabled" id="fab-group" onclick="fabGroupClick()">
+    <div class="fab-action-icon">👥</div>
+    Create a group
+    <span class="fab-tooltip">You need at least 2 accepted connections to create a group.</span>
+  </button>
+  <button class="fab-action disabled" id="fab-browse" onclick="fabBrowseClick()">
+    <div class="fab-action-icon">🎯</div>
+    Browse &amp; choose an event
+    <span class="fab-tooltip">Share your event preferences first — we'll match you with things you'll love.</span>
+  </button>
+</div>
+
 <!-- ── Bottom navigation bar ── -->
 <nav class="bottom-nav" id="bottom-nav">
 
@@ -3580,7 +3656,7 @@ function showToast(msg) {
     <div class="bn-label">Calendar</div>
   </button>
 
-  <button class="bn-item bn-fab" onclick="openInviteModal()">
+  <button class="bn-item bn-fab" id="bn-fab-btn" onclick="toggleFabMenu()">
     <div class="bn-fab-inner">＋</div>
   </button>
 
@@ -3600,6 +3676,64 @@ function bnTab(tab) {
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
   if (tab === 'profile')     document.getElementById('profile-btn')?.click();
   if (tab === 'home')        window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── FAB menu ────────────────────────────────────────────────────────────────
+function toggleFabMenu() {
+  const isOpen = document.getElementById('fab-menu').classList.contains('open');
+  if (isOpen) closeFabMenu(); else openFabMenu();
+}
+
+function openFabMenu() {
+  // Recompute enabled state based on current connections
+  const approved = (allConnections || []).filter(c => c.status === 'approved');
+  const hasApproved    = approved.length >= 1;
+  const hasTwo         = approved.length >= 2;
+  const hasPreferences = false; // not yet implemented
+
+  const planBtn  = document.getElementById('fab-plan');
+  const groupBtn = document.getElementById('fab-group');
+  const browseBtn= document.getElementById('fab-browse');
+
+  planBtn.classList.toggle('disabled', !hasApproved);
+  groupBtn.classList.toggle('disabled', !hasTwo);
+  browseBtn.classList.toggle('disabled', !hasPreferences);
+
+  // Update tooltips to be accurate
+  if (hasApproved) planBtn.querySelector('.fab-tooltip').textContent = 'Plan a day out with one of your connections.';
+  if (hasTwo)      groupBtn.querySelector('.fab-tooltip').textContent = 'Create a shared group with your connections.';
+
+  document.getElementById('fab-menu').classList.add('open');
+  document.getElementById('fab-backdrop').classList.add('open');
+  document.getElementById('bn-fab-btn').classList.add('open');
+}
+
+function closeFabMenu() {
+  document.getElementById('fab-menu').classList.remove('open');
+  document.getElementById('fab-backdrop').classList.remove('open');
+  document.getElementById('bn-fab-btn').classList.remove('open');
+}
+
+function goToConnections() {
+  window.location.href = `/connections?token=${MY_TOKEN}`;
+}
+
+function fabPlanClick() {
+  const approved = (allConnections || []).filter(c => c.status === 'approved');
+  if (!approved.length) return; // disabled
+  closeFabMenu();
+  openInviteModal();
+}
+
+function fabGroupClick() {
+  const approved = (allConnections || []).filter(c => c.status === 'approved');
+  if (approved.length < 2) return; // disabled
+  closeFabMenu();
+  showToast('Groups coming soon!');
+}
+
+function fabBrowseClick() {
+  // Not yet implemented — tooltip handles the explanation
 }
 
 function updateBnBadges() {

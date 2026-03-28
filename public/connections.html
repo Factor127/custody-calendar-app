@@ -490,7 +490,7 @@ function renderConnectionsList() {
       return `<div class="conn-card pending-card">
         <button class="conn-menu-btn" onclick="openConnMenu('${c.id}',this)">⋮</button>
         <div class="conn-avatar-wrap">
-          <div class="conn-avatar">${avatarHtml(c.other_name, c.photo)}</div>
+          <div class="conn-avatar">${avatarHtml(c.other_name, c.other_photo)}</div>
           <div class="conn-status-dot pending"></div>
         </div>
         <div class="conn-name">${c.other_name}</div>
@@ -510,7 +510,7 @@ function renderConnectionsList() {
     return `<div class="conn-card">
       <button class="conn-menu-btn" onclick="openConnMenu('${c.id}',this)">⋮</button>
       <div class="conn-avatar-wrap">
-        <div class="conn-avatar">${avatarHtml(c.other_name, c.photo)}</div>
+        <div class="conn-avatar">${avatarHtml(c.other_name, c.other_photo)}</div>
         <div class="conn-status-dot ${dotClass}"></div>
       </div>
       <div class="conn-name">${c.other_name}</div>
@@ -542,7 +542,7 @@ function renderConnectionsList() {
     const shown = approved.slice(0, 3);
     const extra = approved.length - shown.length;
     memberRow.innerHTML = shown.map(c =>
-      `<div class="group-member-avatar">${c.photo ? `<img src="${c.photo}" style="width:100%;height:100%;object-fit:cover;">` : (c.other_name||'?')[0].toUpperCase()}</div>`
+      `<div class="group-member-avatar">${c.other_photo ? `<img src="${c.other_photo}" style="width:100%;height:100%;object-fit:cover;">` : (c.other_name||'?')[0].toUpperCase()}</div>`
     ).join('') + (extra > 0 ? `<span class="group-member-count">+${extra}</span>` : '');
   }
 }
