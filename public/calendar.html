@@ -658,6 +658,68 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .venue-ac-sub  { font-size:10px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .venue-ac-spinner { padding:8px 10px; font-size:11px; color:var(--muted); text-align:center; }
 
+    /* ── Cell event pills ─────────────────────────────────────────────── */
+    .cell-event {
+      font-size: 9px; font-weight: 700;
+      background: rgba(249,115,22,0.18); color: var(--orange);
+      border-radius: 4px; padding: 2px 5px; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 100%; display: block; line-height: 1.3;
+    }
+    .cell-event.cell-event-done {
+      background: rgba(52,211,153,0.15); color: #34d399;
+    }
+
+    /* ── Cell avatar bubbles ──────────────────────────────────────────── */
+    .cell-avatars {
+      position: absolute; bottom: 5px; right: 5px;
+      display: flex; flex-direction: row-reverse; align-items: center;
+    }
+    .cell-avatar {
+      width: 15px; height: 15px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 900; color: white;
+      border: 1.5px solid var(--cell-bg);
+      margin-left: -4px; flex-shrink: 0;
+    }
+    .cell-avatar-more { background: #444 !important; font-size: 6px; }
+
+    /* ── Bottom nav bar ───────────────────────────────────────────────── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 650;
+      background: var(--surface); border-top: 1px solid var(--border);
+      display: flex; padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    }
+    .bn-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px; padding: 6px 4px;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); transition: color .15s; font-family: inherit;
+      position: relative;
+    }
+    .bn-item:hover { color: var(--text); }
+    .bn-item.active { color: var(--accent); }
+    .bn-icon { font-size: 20px; line-height: 1; }
+    .bn-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .bn-badge {
+      position: absolute; top: 4px; right: calc(50% - 14px);
+      min-width: 14px; height: 14px; border-radius: 7px;
+      background: #ef4444; color: white; font-size: 8px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; padding: 0 3px;
+    }
+    .bn-badge.hidden { display: none; }
+    /* FAB-style center button */
+    .bn-item.bn-fab {
+      position: relative; top: -10px;
+    }
+    .bn-fab-inner {
+      width: 50px; height: 50px; border-radius: 50%;
+      background: var(--blue); display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(124,92,191,0.5);
+      font-size: 24px; color: white; transition: transform .12s, box-shadow .12s;
+    }
+    .bn-item.bn-fab:active .bn-fab-inner { transform: scale(0.93); box-shadow: 0 2px 10px rgba(124,92,191,0.4); }
+
     /* ── Compact custody card ────────────────────────────────────────── */
     .cal-compact-card {
       max-width:680px; margin:0 auto 16px; padding:14px 18px 12px;
@@ -1081,6 +1143,7 @@ let friendColorIndex = 0;
 // Outings
 let myOutings = [];
 let myIncomingOutings = [];
+const outingsByDate = {}; // date → outing[]
 let inviteSelectedDate = null;
 let inviteSelectedPeople = new Set(); // set of connection userIds
 let inviteWaSentFlags = {};           // userId → true/false
@@ -1660,11 +1723,31 @@ function renderCalendar() {
     const cellDateObj = new Date(y, m, day);
     const isFreeDay = owner !== 'self' && !isWorkDay(cellDateObj);
     const freeBadge = isFreeDay ? '<span class="cell-free-badge">FREE</span>' : '';
+
+    // Event pills for outings on this day
+    const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
+    const outingHtml = dayOutings.slice(0, 2).map(o => {
+      const lbl   = (o.venue || o.message || 'Plan').substring(0, 18);
+      const isDone = o.status === 'accepted' || o.status === 'planning';
+      return `<div class="cell-event${isDone ? ' cell-event-done' : ''}">${lbl}</div>`;
+    }).join('');
+
+    // Avatar bubbles: connections also free on this day
+    const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
+    const avatarHtml = freeFriends.length ? `<div class="cell-avatars">${
+      freeFriends.slice(0, 3).map(sc =>
+        `<span class="cell-avatar" style="background:${sc.color}">${sc.initial}</span>`
+      ).join('') +
+      (freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 3}</span>` : '')
+    }</div>` : '';
+
     html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)">
       <div class="day-num">${day}</div>
-      <div class="label">${ownerLabel} ${tagHtml}</div>
+      ${tagHtml ? `<div class="label">${tagHtml}</div>` : ''}
       ${freeBadge}
       ${actMarker}
+      ${outingHtml}
+      ${avatarHtml}
     </td>`;
 
     cellCount++;
@@ -2576,7 +2659,14 @@ async function loadOutings() {
     ]);
     if (myRes.ok) { const d = await myRes.json(); myOutings = d.outings || []; }
     if (inRes.ok) { const d = await inRes.json(); myIncomingOutings = d.outings || []; }
+    // Rebuild date-keyed map
+    Object.keys(outingsByDate).forEach(k => delete outingsByDate[k]);
+    [...myOutings, ...myIncomingOutings].forEach(o => {
+      if (!outingsByDate[o.date]) outingsByDate[o.date] = [];
+      if (!outingsByDate[o.date].find(x => x.id === o.id)) outingsByDate[o.date].push(o);
+    });
     renderNotifPanel();
+    renderCalendar(); // refresh so event pills appear in cells
   } catch(e) {}
 }
 
@@ -2785,6 +2875,7 @@ function buildActivitiesByDate() {
 function renderNotifPanel() {
   const list = document.getElementById('notif-list');
   if (!list) return;
+  updateBnBadges();
 
   const relevant = myActivities.filter(a => a.status !== 'cancelled');
   if (relevant.length === 0 && myOutings.length === 0 && myIncomingOutings.length === 0) {
@@ -3243,6 +3334,69 @@ function showToast(msg) {
     </div><!-- /.cal-section -->
   </div>
 </div>
+
+<!-- ── Bottom navigation bar ── -->
+<nav class="bottom-nav" id="bottom-nav">
+
+  <button class="bn-item active" id="bn-home" onclick="bnTab('home')">
+    <div class="bn-icon">📅</div>
+    <div class="bn-label">Calendar</div>
+  </button>
+
+  <button class="bn-item" id="bn-plans" onclick="bnTab('plans')">
+    <div class="bn-icon">🎉</div>
+    <div class="bn-label">Plans</div>
+    <div class="bn-badge hidden" id="bn-plans-badge">0</div>
+  </button>
+
+  <button class="bn-item bn-fab" onclick="openInviteModal()">
+    <div class="bn-fab-inner">＋</div>
+  </button>
+
+  <button class="bn-item" id="bn-connections" onclick="bnTab('connections')">
+    <div class="bn-icon">👥</div>
+    <div class="bn-label">People</div>
+    <div class="bn-badge hidden" id="bn-conn-badge">0</div>
+  </button>
+
+  <button class="bn-item" id="bn-profile" onclick="bnTab('profile')">
+    <div class="bn-icon" id="bn-profile-initial" style="font-size:24px;">👤</div>
+    <div class="bn-label">Profile</div>
+  </button>
+
+</nav>
+
+<script>
+function bnTab(tab) {
+  ['home','plans','connections','profile'].forEach(t =>
+    document.getElementById('bn-' + t)?.classList.toggle('active', t === tab)
+  );
+  if (tab === 'plans')       document.getElementById('notif-panel')?.classList.add('open');
+  if (tab === 'connections') document.getElementById('connections-btn')?.click();
+  if (tab === 'profile')     document.getElementById('profile-btn')?.click();
+  if (tab === 'home') {
+    document.getElementById('notif-panel')?.classList.remove('open');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function updateBnBadges() {
+  const plansPending = (myOutings.filter(o => {
+    const inv = o.invitees || [];
+    return inv.some(i => i.status === 'pending');
+  }).length) + myIncomingOutings.filter(o => o.my_invitee_status === 'pending').length;
+  const pb = document.getElementById('bn-plans-badge');
+  if (pb) { pb.textContent = plansPending; pb.classList.toggle('hidden', plansPending === 0); }
+
+  const connPending = document.getElementById('notif-dot')?.classList.contains('hidden') ? 0 : 1;
+  const cb = document.getElementById('bn-conn-badge');
+  if (cb) { cb.textContent = connPending; cb.classList.toggle('hidden', connPending === 0); }
+
+  const initial = document.getElementById('profile-initial')?.textContent || '?';
+  const bnPi = document.getElementById('bn-profile-initial');
+  if (bnPi && initial !== '?') bnPi.textContent = initial;
+}
+</script>
 
 </body>
 </html>
