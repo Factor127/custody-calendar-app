@@ -23,11 +23,6 @@ body { background:var(--bg); color:var(--text); }
 }
 input::placeholder { color:var(--muted); }
 select { background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important; }
-.status-chip.approved { background:rgba(46,125,50,0.18) !important; color:#81c784 !important; }
-.status-chip.pending  { background:rgba(230,81,0,0.18) !important;  color:#ffb74d !important; }
-.status-chip.expired  { background:rgba(198,40,40,0.18) !important; color:#ef9a9a !important; }
-.role-chip.partner    { background:rgba(194,24,91,0.18) !important;  color:#f48fb1 !important; }
-.role-chip.coparent   { background:rgba(25,103,210,0.18) !important; color:#90caf9 !important; }
 .day-btn { background:var(--surface) !important; color:var(--muted) !important; border-color:var(--border) !important; }
 .day-btn.selected { background:var(--blue) !important; border-color:var(--blue) !important; color:white !important; }
 .week-option { background:var(--surface) !important; color:var(--text) !important; border-color:var(--border) !important; }
@@ -38,16 +33,6 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     .profile-page { max-width:520px; margin:0 auto; padding-bottom:40px; }
     .section-card { background:white; border:1.5px solid var(--border); border-radius:14px; padding:22px 24px; margin-bottom:16px; }
     .section-title { font-size:15px; font-weight:800; margin:0 0 18px; }
-    .conn-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
-    .conn-row:last-child { border-bottom:none; }
-    .conn-name { font-weight:700; font-size:14px; flex:1; }
-    .status-chip { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
-    .status-chip.approved { background:#e8f5e9; color:#2e7d32; }
-    .status-chip.pending  { background:#fff3e0; color:#e65100; }
-    .status-chip.expired  { background:#fce4ec; color:#c62828; }
-    .role-chip { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
-    .role-chip.partner  { background:#fce4ec; color:#c2185b; }
-    .role-chip.coparent { background:#e8f0fe; color:#1967d2; }
     .page-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
     .back-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); padding:4px; }
     .back-btn:hover { color:var(--text); }
@@ -245,13 +230,6 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     <div id="ical-import-status" style="margin-top:8px;font-size:12px;color:var(--muted);display:none;"></div>
   </div>
 
-  <!-- Connections -->
-  <div class="section-card">
-    <div class="section-title">My connections</div>
-    <div id="connections-list">
-      <p style="color:var(--muted);font-size:13px;margin:0;">Loading…</p>
-    </div>
-  </div>
 
 </div>
 
@@ -279,7 +257,6 @@ if (!MY_TOKEN) { window.location.href = '/login'; }
     try { loadWorkSchedule(JSON.parse(user.work_schedule)); } catch(e) {}
   }
 
-  await loadConnections();
   await loadSchedule();
 })();
 
@@ -472,65 +449,6 @@ async function importIcal() {
   } else {
     statusEl.textContent = 'Import fetched but failed to save — try again';
     statusEl.style.color = '#c62828';
-  }
-}
-
-async function loadConnections() {
-  const list = document.getElementById('connections-list');
-
-  // For owners: fetch their outgoing connections
-  // For partners: fetch their inbound connection status
-  try {
-    let connections = [];
-
-    if (userRole === 'owner') {
-      const res = await fetch(`/api/connections/all?token=${MY_TOKEN}`);
-      if (res.ok) {
-        const data = await res.json();
-        connections = data.connections || [];
-      }
-    } else {
-      // Partner: show their one connection to the owner
-      const res = await fetch(`/api/connections/status?token=${MY_TOKEN}`);
-      if (res.ok) {
-        const conn = await res.json();
-        if (conn.owner_name) {
-          connections = [{
-            requester_name: conn.owner_name,
-            relationship_type: conn.relationship_type || 'coparent',
-            status: conn.status,
-            approved_until: conn.approved_until,
-            auto_renew: conn.auto_renew
-          }];
-        }
-      }
-    }
-
-    if (connections.length === 0) {
-      list.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:0;">No connections yet.</p>';
-      return;
-    }
-
-    list.innerHTML = connections.map(c => {
-      const relLabel = c.relationship_type === 'partner' ? 'Partner' : 'Co-parent';
-      const relClass = c.relationship_type === 'partner' ? 'partner' : 'coparent';
-      const statusLabel = c.status === 'approved' ? 'Approved'
-                        : c.status === 'pending'  ? 'Pending'
-                        : c.status === 'expired'  ? 'Expired'
-                        : c.status;
-      const until = c.approved_until
-        ? `<span style="font-size:12px;color:var(--muted);">Until ${new Date(c.approved_until + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>`
-        : '';
-      const ar = c.auto_renew ? `<span class="status-chip" style="background:#e8f5e9;color:#2e7d32;font-size:10px;">Auto-renews</span>` : '';
-      return `<div class="conn-row">
-        <span class="conn-name">${c.requester_name || 'Unknown'}</span>
-        <span class="role-chip ${relClass}">${relLabel}</span>
-        <span class="status-chip ${c.status}">${statusLabel}</span>
-        ${until}${ar}
-      </div>`;
-    }).join('');
-  } catch(e) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:13px;margin:0;">Could not load connections.</p>';
   }
 }
 
