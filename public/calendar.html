@@ -750,6 +750,79 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .ctg-arrow-btn:hover { background: rgba(255,255,255,0.28); }
 
+    /* ── Plans screen ────────────────────────────────────────────────────── */
+    #plans-screen {
+      position: fixed; inset: 0; bottom: 64px;
+      background: var(--bg); z-index: 600;
+      display: none; flex-direction: column;
+      overflow-y: auto;
+      animation: plans-slide-in 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+    @keyframes plans-slide-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .plans-inner {
+      max-width: 520px; margin: 0 auto; padding: 20px 16px 32px;
+    }
+    .plans-screen-title {
+      font-size: 28px; font-weight: 900; color: var(--text);
+      letter-spacing: -0.02em; margin-bottom: 24px;
+    }
+    .plans-section-label {
+      font-size: 10px; font-weight: 800; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin: 20px 0 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .plans-section-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .plan-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+      position: relative; overflow: hidden;
+    }
+    .plan-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; border-radius: 3px 0 0 3px;
+    }
+    .plan-card.plan-pending::before  { background: var(--accent); }
+    .plan-card.plan-accepted::before { background: var(--green); }
+    .plan-card.plan-waiting::before  { background: var(--orange); }
+    .plan-card.plan-declined::before { background: rgba(255,255,255,0.15); }
+    .plan-card-date {
+      font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 3px;
+    }
+    .plan-card-who { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .plan-card-detail { font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 4px; }
+    .plan-card-status {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; position: absolute; top: 14px; right: 14px;
+    }
+    .plan-card-status.pending  { color: var(--accent); }
+    .plan-card-status.accepted { color: var(--green); }
+    .plan-card-status.waiting  { color: var(--orange); }
+    .plan-card-status.declined { color: rgba(238,238,248,0.25); }
+    .plan-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .plan-action-btn {
+      flex: 1; padding: 8px 0; border: none; border-radius: 8px;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: opacity 0.15s;
+    }
+    .plan-action-btn:hover { opacity: 0.85; }
+    .plan-action-yes { background: rgba(74,222,128,0.15); color: var(--green); }
+    .plan-action-no  { background: rgba(255,255,255,0.06); color: var(--muted); }
+    .plan-venue-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 8px;
+      background: rgba(255,255,255,0.04); border-radius: 8px;
+      padding: 6px 10px; font-size: 12px; color: var(--muted);
+    }
+    .plans-empty {
+      text-align: center; padding: 60px 20px 40px;
+      color: var(--muted); font-size: 14px; line-height: 1.7;
+    }
+    .plans-empty-icon { font-size: 40px; margin-bottom: 12px; }
+
     /* ── Bottom nav bar ───────────────────────────────────────────────── */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 650;
@@ -847,13 +920,12 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- Locked: show when no social connections -->
-<div id="social-calendar-locked" style="max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
+<div id="social-calendar-locked" style="max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#13131f,#1a1030);border:1.5px solid rgba(167,139,250,0.20);border-radius:16px;text-align:center;box-shadow:0 4px 24px rgba(124,92,191,0.15);">
   <div class="social-cal-title" style="margin-bottom:6px;">Who's free when you're free</div>
-  <div class="social-cal-sub" style="margin-bottom:16px;">Invite a friend or partner to see when you match</div>
-  <div style="font-size:13px;color:#6d4c41;margin-bottom:14px;">Invite a friend or partner to see your matching free time</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Invite a friend or partner to see your matching free days</div>
   <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
     <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">❤️ Invite partner</button>
-    <button class="btn btn-outline btn-sm" onclick="openInviteModal();selectInviteType('friend')" style="border-color:#ffcc80;color:#bf360c;">👋 Invite friend</button>
+    <button class="btn btn-outline btn-sm" onclick="openInviteModal();selectInviteType('friend')" style="border-color:rgba(167,139,250,0.4);color:var(--accent);">👋 Invite friend</button>
   </div>
 </div>
 
@@ -1143,6 +1215,19 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         style="background:#25D366;border-color:#25D366;color:white;text-decoration:none;display:none;">
         📱 Send WhatsApp
       </a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Plans screen (shown when Plans nav tab tapped) ── -->
+<div id="plans-screen">
+  <div class="plans-inner">
+    <div class="plans-screen-title">🎉 Plans</div>
+    <div id="plans-screen-content">
+      <div class="plans-empty">
+        <div class="plans-empty-icon">🗓️</div>
+        Loading…
+      </div>
     </div>
   </div>
 </div>
@@ -1756,7 +1841,7 @@ function renderCalendar() {
   const compactMonth = document.getElementById('compact-month-label');
   if (compactMonth) compactMonth.textContent = monthYear;
   const titleStrip = document.getElementById('app-title-strip');
-  if (titleStrip) titleStrip.innerHTML = '<span>' + monthName + '</span> <span class="month-year-accent">' + y + '</span>';
+  if (titleStrip) titleStrip.innerHTML = '<div class="month-heading"><span class="month-name">' + monthName + '</span><span class="month-year">' + y + '</span></div>';
 
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const firstDow = new Date(y, m, 1).getDay();
@@ -2750,6 +2835,9 @@ async function loadOutings() {
     });
     renderNotifPanel();
     renderCalendar(); // refresh so event pills appear in cells
+    // Refresh Plans screen if it's currently visible
+    if (document.getElementById('plans-screen')?.style.display === 'flex') renderPlansScreen();
+    updateBnBadges();
   } catch(e) {}
 }
 
@@ -3379,7 +3467,8 @@ function showToast(msg) {
           <div id="edit-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.13);z-index:200;min-width:190px;overflow:hidden;">
             <button onclick="startHolidayEdit()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">🏖️ Edit Holidays</button>
             <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">💡 Suggest Changes</button>
-            <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">📅 Change days</button>
+            <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);">📅 Change days</button>
+            <button onclick="openKidsExport()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;">🖨️ Kids schedule</button>
           </div>
         </div>
       </div>
@@ -3454,13 +3543,136 @@ function bnTab(tab) {
   ['home','plans','connections','profile'].forEach(t =>
     document.getElementById('bn-' + t)?.classList.toggle('active', t === tab)
   );
-  if (tab === 'plans')       document.getElementById('notif-panel')?.classList.add('open');
+  const plansScreen = document.getElementById('plans-screen');
+  if (tab === 'plans') {
+    if (plansScreen) { plansScreen.style.display = 'flex'; renderPlansScreen(); }
+    document.getElementById('notif-panel')?.classList.remove('open');
+  } else {
+    if (plansScreen) plansScreen.style.display = 'none';
+  }
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
   if (tab === 'profile')     document.getElementById('profile-btn')?.click();
   if (tab === 'home') {
     document.getElementById('notif-panel')?.classList.remove('open');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+}
+
+function renderPlansScreen() {
+  const container = document.getElementById('plans-screen-content');
+  if (!container) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const toDs = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayDs = toDs(today);
+
+  // Incoming: plans others sent to me that need a response
+  const incoming = myIncomingOutings.filter(o => o.my_invitee_status === 'pending' && o.date >= todayDs);
+  // Already responded incoming
+  const responded = myIncomingOutings.filter(o => o.my_invitee_status !== 'pending');
+  // My outgoing plans
+  const outgoing = myOutings.filter(o => o.status !== 'cancelled');
+  // Upcoming (accepted by someone)
+  const upcoming = outgoing.filter(o => o.date >= todayDs && o.invitees?.some(i => i.status === 'accepted'));
+  // Waiting for response
+  const waiting  = outgoing.filter(o => o.date >= todayDs && !o.invitees?.some(i => i.status === 'accepted'));
+
+  if (!incoming.length && !outgoing.length && !responded.length) {
+    container.innerHTML = `
+      <div class="plans-empty">
+        <div class="plans-empty-icon">🌟</div>
+        No plans yet.<br>
+        Tap a free day in the calendar to<br>invite someone to do something!
+      </div>`;
+    return;
+  }
+
+  let html = '';
+
+  // ── Respond section ────────────────────────────────────────────────────
+  if (incoming.length) {
+    html += `<div class="plans-section-label">Respond</div>`;
+    html += incoming.map(o => {
+      const d = new Date(o.date + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+      const detail = [o.venue, o.message].filter(Boolean).slice(0,1).join(' · ');
+      return `<div class="plan-card plan-pending">
+        <span class="plan-card-status pending">Invited</span>
+        <div class="plan-card-date">${dateStr}</div>
+        <div class="plan-card-who">from ${o.creator_name}</div>
+        ${detail ? `<div class="plan-card-detail">"${detail}"</div>` : ''}
+        <div class="plan-card-actions">
+          <button class="plan-action-btn plan-action-yes"
+            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','accepted');renderPlansScreen()">
+            ✓ I'm in!
+          </button>
+          <button class="plan-action-btn plan-action-no"
+            onclick="respondToIncomingOuting('${o.id}','${o.invitee_record_id}','declined');renderPlansScreen()">
+            Can't make it
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Upcoming confirmed plans ───────────────────────────────────────────
+  if (upcoming.length) {
+    html += `<div class="plans-section-label">Upcoming</div>`;
+    html += upcoming.map(o => {
+      const d = new Date(o.date + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+      const who = o.invitees?.map(i => i.name).join(', ') || '';
+      const venueLine = o.venue ? `<div class="plan-venue-row">📍 ${o.venue}${o.event_time ? ' · 🕐 ' + o.event_time : ''}</div>` : '';
+      return `<div class="plan-card plan-accepted">
+        <span class="plan-card-status accepted">Confirmed</span>
+        <div class="plan-card-date">${dateStr}</div>
+        ${who ? `<div class="plan-card-who">with ${who}</div>` : ''}
+        ${o.message ? `<div class="plan-card-detail">"${o.message}"</div>` : ''}
+        ${venueLine}
+      </div>`;
+    }).join('');
+  }
+
+  // ── Waiting for others ─────────────────────────────────────────────────
+  if (waiting.length) {
+    html += `<div class="plans-section-label">Waiting for reply</div>`;
+    html += waiting.map(o => {
+      const d = new Date(o.date + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+      const who = o.invitees?.map(i => i.name).join(', ') || '';
+      return `<div class="plan-card plan-waiting">
+        <span class="plan-card-status waiting">Pending</span>
+        <div class="plan-card-date">${dateStr}</div>
+        ${who ? `<div class="plan-card-who">with ${who}</div>` : ''}
+        ${o.message ? `<div class="plan-card-detail">"${o.message}"</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ── Already responded (history) ────────────────────────────────────────
+  const past = myIncomingOutings.filter(o => o.date < todayDs);
+  if (responded.length && !past.length) {
+    // filter to future already-responded
+    const futureResponded = responded.filter(o => o.date >= todayDs);
+    if (futureResponded.length) {
+      html += `<div class="plans-section-label">Replied</div>`;
+      html += futureResponded.map(o => {
+        const d = new Date(o.date + 'T12:00:00');
+        const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+        const isYes = o.my_invitee_status === 'accepted';
+        const cardClass = isYes ? 'plan-accepted' : 'plan-declined';
+        const statusLabel = isYes ? 'Going ✓' : 'Declined';
+        const statusClass = isYes ? 'accepted' : 'declined';
+        return `<div class="plan-card ${cardClass}">
+          <span class="plan-card-status ${statusClass}">${statusLabel}</span>
+          <div class="plan-card-date">${dateStr}</div>
+          <div class="plan-card-who">from ${o.creator_name}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  container.innerHTML = html || `<div class="plans-empty"><div class="plans-empty-icon">✨</div>All plans are in the future — check back soon!</div>`;
 }
 
 function updateBnBadges() {
