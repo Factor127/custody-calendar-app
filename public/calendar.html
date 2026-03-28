@@ -2157,7 +2157,7 @@ function renderDaySheetBody(dateStr, isFree, alsoFree) {
         // My own plan
         actions = `<div class="dpc-actions">
           <button class="dpc-btn dpc-btn-cancel"
-            onclick="cancelOuting('${o.id}');closeDaySheet()">Cancel plan</button>
+            onclick="cancelOuting('${o.id}','${dateStr}')">Cancel plan</button>
         </div>`;
       }
 
@@ -2186,10 +2186,18 @@ function closeDaySheet(e) {
   document.getElementById('day-sheet').classList.remove('open');
 }
 
-async function cancelOuting(outingId) {
+async function cancelOuting(outingId, dateStr) {
+  if (!confirm('Cancel this plan? This can\'t be undone.')) return;
   await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
   await loadOutings();
   showToast('Plan cancelled');
+  // Refresh sheet if still open
+  const sheet = document.getElementById('day-sheet');
+  if (sheet?.classList.contains('open') && dateStr) {
+    const isFree = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
+    const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
+    renderDaySheetBody(dateStr, isFree, alsoFree);
+  }
 }
 
 function openOutingModal(prefillDate) {
