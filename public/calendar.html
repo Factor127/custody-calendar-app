@@ -1005,6 +1005,17 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .browse-empty   { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
     .browse-loading { text-align:center; padding:30px 20px; color:var(--muted); font-size:14px; }
+    .opp-date-row {
+      padding:13px 14px; border-radius:10px; margin-bottom:6px; cursor:pointer;
+      border:1.5px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
+      font-size:14px; color:var(--text); transition:all .15s;
+    }
+    .opp-date-row:hover   { background:rgba(255,255,255,0.07); border-color:rgba(167,139,250,0.3); }
+    .opp-date-row.selected { background:rgba(124,92,191,0.25); border-color:var(--accent); color:var(--accent); font-weight:700; }
+    .plan-dot {
+      width:5px; height:5px; border-radius:50%; background:var(--accent);
+      margin:1px auto 0; display:block;
+    }
     .browse-submit-status { font-size:12px; color:var(--muted); padding:6px 16px; min-height:20px; }
 
     /* ── Plan wizard (bottom-sheet) ─────────────────────────────────── */
@@ -1570,6 +1581,7 @@ let inviteWaSentFlags = {};           // userId → true/false
 let myActivities = [];
 let activitiesByDate = {};
 let activityModalDates = [];
+let planDates = {};  // date → count of plans
 
 function isWorkBlock(date) {
   const dow = date.getDay();
@@ -1732,7 +1744,7 @@ function nextMonth() {
 
 
   updateNextTime();
-  await Promise.all([loadActivities(), loadOutings()]);
+  await Promise.all([loadActivities(), loadOutings(), loadPlanDots()]);
 
   // Check for pending suggestions (notifications dot)
   const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
@@ -2154,6 +2166,9 @@ function renderCalendar() {
     );
     const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
+    // Plan dot — purple bar if this date has a saved plan
+    const planDot = planDates[dateStr] ? '<span class="plan-dot"></span>' : '';
+
     html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)" onmouseenter="showCellHover(event,'${dateStr}')" onmouseleave="hideCellHover()">
       <div class="cell-top-row">
         <div class="day-num">${day}</div>
@@ -2164,6 +2179,7 @@ function renderCalendar() {
       ${outingHtml}
       ${avatarHtml}
       ${pendingRing}
+      ${planDot}
     </td>`;
 
     cellCount++;
@@ -3522,6 +3538,16 @@ async function saveOutingPlan(outingId) {
 }
 
 // ── Activity plans ─────────────────────────────────────────────────────────
+async function loadPlanDots() {
+  try {
+    const res = await fetch(`/api/plans/dates?token=${MY_TOKEN}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    planDates = data.dates || {};
+    renderCalendar();
+  } catch(e) { /* non-critical */ }
+}
+
 async function loadActivities() {
   try {
     const res = await fetch(`/api/activities?token=${MY_TOKEN}`);
@@ -3821,6 +3847,39 @@ function showToast(msg) {
     <div class="browse-submit-bar">
       <input class="browse-url-input" id="browse-url-input" type="url" placeholder="Paste an event/venue link to add it…">
       <button class="btn btn-primary btn-sm" onclick="submitBrowseUrl()" id="browse-submit-btn">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Opp action sheet (Plan this / Open link) ── -->
+<div class="modal-overlay" id="opp-action-sheet">
+  <div class="browse-inner" style="max-height:auto;">
+    <div class="browse-header">
+      <div class="browse-title" id="opp-action-title">Choose an action</div>
+      <button class="plan-sheet-close" onclick="closeOppAction()">✕</button>
+    </div>
+    <div style="padding:12px 16px 20px; display:flex; flex-direction:column; gap:10px;">
+      <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="oppPlanThis()">📅 Plan this on a date</button>
+      <button class="btn btn-secondary" style="width:100%;padding:14px;" id="opp-open-link-btn" onclick="oppOpenLink()">🔗 Open link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Opp date picker sheet ── -->
+<div class="modal-overlay" id="opp-datepicker-sheet">
+  <div class="browse-inner">
+    <div class="browse-header">
+      <div class="browse-title">Pick a date</div>
+      <button class="plan-sheet-close" onclick="closeOppDatepicker()">✕</button>
+    </div>
+    <div style="padding:0 16px 8px; font-size:12px; color:var(--muted);" id="opp-datepicker-hint">
+      Choose a day to plan this activity
+    </div>
+    <div style="padding:0 16px 16px; overflow-y:auto; max-height:55vh;">
+      <div id="opp-date-list"></div>
+    </div>
+    <div style="padding:12px 16px 20px; border-top:1px solid rgba(255,255,255,0.07);">
+      <button class="btn btn-primary" style="width:100%;padding:13px;" id="opp-confirm-date-btn" onclick="confirmOppDate()" disabled>Confirm date</button>
     </div>
   </div>
 </div>
@@ -4323,7 +4382,7 @@ function renderBrowseMatches() {
     const price  = PRICE_LABEL[o.price_tier] || '';
     const tags   = (Array.isArray(o.tags) ? o.tags : []).slice(0,4);
 
-    return `<div class="opp-card" onclick="oppCardClick('${o.id}','${(o.source_url||'').replace(/'/g,'%27')}')">
+    return `<div class="opp-card" onclick="oppCardClick('${o.id}','${(o.source_url||'').replace(/'/g,'%27')}','${o.title.replace(/'/g,'')}')">
       <div class="opp-card-top">
         <div>
           <div class="opp-card-title">${icon} ${o.title}</div>
@@ -4337,9 +4396,83 @@ function renderBrowseMatches() {
   }).join('');
 }
 
-function oppCardClick(oppId, sourceUrl) {
-  if (sourceUrl && sourceUrl !== 'undefined') {
-    window.open(sourceUrl, '_blank', 'noopener');
+// ── Opp action sheet ─────────────────────────────────────────────────────────
+let _oppActionId  = null;
+let _oppActionUrl = null;
+let _oppActionTitle = '';
+let _oppPickedDate = null;
+
+function oppCardClick(oppId, sourceUrl, title) {
+  _oppActionId    = oppId;
+  _oppActionUrl   = (sourceUrl && sourceUrl !== 'undefined') ? decodeURIComponent(sourceUrl) : null;
+  _oppActionTitle = title || 'this activity';
+  document.getElementById('opp-action-title').textContent = _oppActionTitle;
+  const linkBtn = document.getElementById('opp-open-link-btn');
+  linkBtn.style.display = _oppActionUrl ? '' : 'none';
+  document.getElementById('opp-action-sheet').classList.add('open');
+}
+function closeOppAction() {
+  document.getElementById('opp-action-sheet').classList.remove('open');
+}
+function oppOpenLink() {
+  if (_oppActionUrl) window.open(_oppActionUrl, '_blank', 'noopener');
+  closeOppAction();
+}
+
+async function oppPlanThis() {
+  closeOppAction();
+  // Build a list of upcoming free days (next 60) from the loaded calendar data
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days  = [];
+  for (let i = 0; i < 60; i++) {
+    const d  = new Date(today); d.setDate(today.getDate() + i);
+    const ds = d.toISOString().slice(0,10);
+    days.push({ date: ds, d });
+  }
+
+  _oppPickedDate = null;
+  document.getElementById('opp-confirm-date-btn').disabled = true;
+  document.getElementById('opp-datepicker-hint').textContent = `Plan: ${_oppActionTitle}`;
+
+  const list = document.getElementById('opp-date-list');
+  list.innerHTML = days.map(({ date, d }) => {
+    const label = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+    return `<div class="opp-date-row" id="odr-${date}" onclick="pickOppDate('${date}',this)">${label}</div>`;
+  }).join('');
+
+  document.getElementById('opp-datepicker-sheet').classList.add('open');
+}
+
+function closeOppDatepicker() {
+  document.getElementById('opp-datepicker-sheet').classList.remove('open');
+}
+
+function pickOppDate(date, el) {
+  _oppPickedDate = date;
+  document.querySelectorAll('.opp-date-row').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('opp-confirm-date-btn').disabled = false;
+}
+
+async function confirmOppDate() {
+  if (!_oppPickedDate) return;
+  const btn = document.getElementById('opp-confirm-date-btn');
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const res = await fetch(`/api/plans?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: _oppPickedDate, opportunity_id: _oppActionId })
+    });
+    if (!res.ok) throw new Error('Failed to save plan');
+    closeOppDatepicker();
+    await loadPlanDots();
+    showToast(`Planned for ${new Date(_oppPickedDate + 'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}!`);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Confirm date';
+    showToast('Could not save plan — try again');
   }
 }
 

@@ -13,26 +13,50 @@ const CHIP_TO_CAT = {
   notsure:     []
 };
 
+// ── Guess type from signals ───────────────────────────────────────────────
+function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
+  // JSON-LD @type is most reliable
+  if (jsonLdType) {
+    const t = jsonLdType.toLowerCase();
+    if (/restaurant|food|cafe|coffee|bar|pub|nightclub|lodging|localbusiness/.test(t)) return 'venue';
+    if (/event|concert|festival|musicev|socialev/.test(t)) return 'event';
+  }
+  // A specific date/time → almost certainly an event
+  if (hasSpecificTime) return 'event';
+  // Keyword signals in URL + title + desc
+  const text = `${url} ${title} ${desc}`.toLowerCase();
+  if (/restaurant|cafe|coffee|bistro|\bbar\b|\bpub\b|\bclub\b|nightclub|lounge|rooftop|eatery|diner/.test(text)) return 'venue';
+  if (/festival|concert|\bgig\b|\bshow\b|party|happening|exhibition|class|workshop/.test(text)) return 'event';
+  // No time + no event keyword → treat as venue/place
+  return 'venue';
+}
+
 // ── Metadata extraction from HTML ─────────────────────────────────────────
 function extractMetadata(html, url) {
   const get = (pattern) => { const m = html.match(pattern); return m ? m[1] : null; };
 
-  // JSON-LD
+  // JSON-LD — handle both Event and Venue/Business types
   let jsonLd = null;
+  let jsonLdType = null;
   const ldMatch = html.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
   if (ldMatch) {
     try {
       const parsed = JSON.parse(ldMatch[1]);
       const ev = Array.isArray(parsed) ? parsed[0] : parsed;
-      if (ev['@type'] === 'Event' || ev['@type'] === 'MusicEvent' || ev['@type'] === 'SocialEvent') {
+      jsonLdType = ev['@type'] || null;
+      const isEvent   = /Event/.test(jsonLdType || '');
+      const isVenue   = /Restaurant|FoodEstablishment|CafeOrCoffeeShop|BarOrPub|NightClub|LocalBusiness|LodgingBusiness|Store/.test(jsonLdType || '');
+      if (isEvent || isVenue) {
         jsonLd = {
           title:        ev.name,
           start_time:   ev.startDate || null,
-          end_time:     ev.endDate || null,
-          location_name:ev.location?.name || ev.location?.address?.streetAddress || null,
+          end_time:     ev.endDate   || null,
+          location_name: isVenue
+            ? (ev.address?.streetAddress || ev.address?.addressLocality || null)
+            : (ev.location?.name || ev.location?.address?.streetAddress || null),
           description:  ev.description || null,
           price:        ev.offers?.price || null,
-          currency:     ev.offers?.priceCurrency || 'GBP'
+          currency:     ev.offers?.priceCurrency || 'ILS'
         };
       }
     } catch(e) {}
@@ -57,6 +81,7 @@ function extractMetadata(html, url) {
     price_raw:    jsonLd?.price || null,
     source_url:   url,
     source_domain:domain,
+    jsonLdType,
     confidence_score: jsonLd ? 0.80 : 0.40
   };
 }
@@ -138,7 +163,7 @@ async function fetchAndParse(url) {
 
   const result = {
     title:         (enriched?.title  || raw.title).slice(0, 200),
-    type:           enriched?.type   || 'event',
+    type:           enriched?.type   || guessType(url, raw.title, raw.description, !!raw.start_time, raw.jsonLdType),
     category:       enriched?.category || guessCategory(raw.title, raw.description),
     tags:           enriched?.tags   || [],
     start_time:     enriched?.start_time || raw.start_time || null,

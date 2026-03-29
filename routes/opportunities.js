@@ -103,4 +103,40 @@ router.post('/opportunities/sync', async (req, res) => {
   }
 });
 
+// ── POST /api/plans — save a plan for a date ──────────────────────────────
+router.post('/plans', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const { date, opportunity_id, note } = req.body;
+  if (!date) return res.status(400).json({ error: 'date required' });
+  const { randomUUID } = require('crypto');
+  const id = randomUUID();
+  db.createPlan(id, user.id, date, opportunity_id || null, note || null);
+  res.json({ ok: true, plan_id: id });
+});
+
+// ── DELETE /api/plans/:id — remove a plan ────────────────────────────────
+router.delete('/plans/:id', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  db.deletePlan(req.params.id, user.id);
+  res.json({ ok: true });
+});
+
+// ── GET /api/plans — plans for a date range ───────────────────────────────
+router.get('/plans', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const { from, to } = req.query;
+  if (!from || !to) return res.status(400).json({ error: 'from and to required' });
+  const plans = db.getPlansForUser(user.id, from, to);
+  res.json({ plans });
+});
+
+// ── GET /api/plans/dates — date → count map (for calendar dots) ───────────
+router.get('/plans/dates', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const rows = db.getPlansDateCounts(user.id);
+  const map = {};
+  for (const r of rows) map[r.date] = r.count;
+  res.json({ dates: map });
+});
+
 module.exports = router;

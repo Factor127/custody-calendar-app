@@ -234,6 +234,16 @@ db.exec(`CREATE TABLE IF NOT EXISTS opportunity_submissions (
   created_at     TEXT DEFAULT (datetime('now'))
 )`);
 
+db.exec(`CREATE TABLE IF NOT EXISTS plans (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  date           TEXT NOT NULL,
+  opportunity_id TEXT,
+  note           TEXT,
+  created_at     TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+)`);
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
@@ -486,6 +496,24 @@ const q = {
     SELECT activity_types FROM connection_preferences
     WHERE user_id=? AND confidence>0
   `),
+
+  // Plans
+  createPlan: db.prepare(`
+    INSERT INTO plans (id, user_id, date, opportunity_id, note)
+    VALUES (?, ?, ?, ?, ?)
+  `),
+  deletePlan: db.prepare('DELETE FROM plans WHERE id=? AND user_id=?'),
+  getPlansForUser: db.prepare(`
+    SELECT p.*, o.title AS opp_title, o.type AS opp_type, o.source_url AS opp_url,
+           o.location_name AS opp_location, o.price_tier AS opp_price_tier
+    FROM plans p
+    LEFT JOIN opportunities o ON o.id = p.opportunity_id
+    WHERE p.user_id=? AND p.date >= ? AND p.date <= ?
+    ORDER BY p.date ASC
+  `),
+  getPlansForUserAllDates: db.prepare(`
+    SELECT p.date, COUNT(*) as count FROM plans p WHERE p.user_id=? GROUP BY p.date
+  `),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────
@@ -636,6 +664,22 @@ function getUserActivityPrefs(userId) {
   return q.getUserActivityPrefs.all(userId);
 }
 
+function createPlan(id, userId, date, opportunityId, note) {
+  return q.createPlan.run(id, userId, date, opportunityId || null, note || null);
+}
+
+function deletePlan(id, userId) {
+  return q.deletePlan.run(id, userId);
+}
+
+function getPlansForUser(userId, from, to) {
+  return q.getPlansForUser.all(userId, from, to);
+}
+
+function getPlansDateCounts(userId) {
+  return q.getPlansForUserAllDates.all(userId);
+}
+
 module.exports = {
   db, q,
   generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr,
@@ -645,6 +689,8 @@ module.exports = {
   findDuplicateByUrl, findDuplicateByTitleDate,
   createSubmission, updateSubmission, getSubmissionsByUser,
   getUserActivityPrefs,
+  // Plan helpers
+  createPlan, deletePlan, getPlansForUser, getPlansDateCounts,
   // Re-export core user/calendar helpers for convenience in services
   getDaysForUserInRange: (userId, from, to) => q.getDaysForUserInRange.all(userId, from, to),
   getUserByToken: (token) => q.getUserByToken.get(token),
