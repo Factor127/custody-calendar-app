@@ -1117,6 +1117,12 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       background:rgba(124,92,191,0.2); color:var(--accent); white-space:nowrap;
     }
     .ss-avail-badge.full { background:rgba(34,197,94,0.18); color:#4ade80; }
+    .ss-date-avatars { display:flex; gap:-2px; align-items:center; flex-shrink:0; }
+    .ss-date-avatar  { width:24px; height:24px; border-radius:50%; border:2px solid var(--surface);
+                       display:flex; align-items:center; justify-content:center; font-size:10px;
+                       font-weight:800; color:#fff; margin-left:-4px; flex-shrink:0; }
+    .ss-date-avatar:first-child { margin-left:0; }
+    .ss-date-avatar.busy { opacity:0.22; filter:grayscale(1); }
     .ss-date-tooltip {
       display:none; position:absolute; bottom:calc(100% + 6px); left:0; right:0;
       background:rgba(20,20,32,0.98); border:1px solid rgba(255,255,255,0.12);
@@ -4369,9 +4375,12 @@ function _ssRebuildDateList() {
   const list = document.getElementById('ss-date-list');
   if (!list) return;
 
-  // Build a map: date → { name, isFree }[] for selected contacts
-  const scMap = {};
-  for (const sc of (socialConnections || [])) scMap[sc.id] = sc;
+  // Resolve socialConnection objects for the people we want to display.
+  // socialConnections[].id === conn.id (connection ID, NOT user ID).
+  // Before anyone is selected → show everyone; after → show selected only.
+  const displaySCs = _ssContacts.length > 0
+    ? _ssContacts.map(c => (socialConnections||[]).find(s => s.id === c.id)).filter(Boolean)
+    : (socialConnections||[]).slice(); // all friends/partners
 
   const today = new Date(); today.setHours(0,0,0,0);
   const rows  = [];
@@ -4381,51 +4390,51 @@ function _ssRebuildDateList() {
     const ds  = d.toISOString().slice(0,10);
     const lbl = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
 
-    // Who is free on this date among selected contacts
-    const freeNames = _ssContacts
-      .filter(c => {
-        const sc = (socialConnections||[]).find(s => s.id === c.other_user_id || s.connId === c.id);
-        if (!sc) return false;
-        return sc.days?.[ds]?.owner !== 'self'; // they don't have kids
-      })
-      .map(c => c.other_name);
+    // For each person determine free (no kids that day) vs busy
+    const annotated = displaySCs.map(sc => ({
+      sc,
+      free: sc.days?.[ds]?.owner !== 'self'  // 'self' means they have kids
+    }));
 
-    const allFree  = _ssContacts.length > 0 && freeNames.length === _ssContacts.length;
-    const someFree = freeNames.length > 0 && !allFree;
+    const freeOnes = annotated.filter(a => a.free);
+    const busyOnes = annotated.filter(a => !a.free);
+    const anyFree  = freeOnes.length > 0;
+    const allFree  = displaySCs.length > 0 && busyOnes.length === 0;
     const isSelected = ds === _ssSelectedDate;
 
-    let badge = '';
-    let tooltip = '';
-    if (_ssContacts.length > 0) {
-      if (allFree) {
-        badge   = `<span class="ss-avail-badge full">🟢 All free</span>`;
-        tooltip = `${freeNames.join(' & ')} ${freeNames.length > 1 ? 'are' : 'is'} free`;
-      } else if (someFree) {
-        badge   = `<span class="ss-avail-badge">${freeNames.length}/${_ssContacts.length} free</span>`;
-        tooltip = `Free: ${freeNames.join(', ')}`;
-      } else if (_ssContacts.length > 0) {
-        tooltip = 'No one free this day';
-      }
-    }
+    // Avatar bubbles: free = full colour, busy = greyed out
+    const avatarBubbles = annotated.map(({ sc, free }) => {
+      const bg  = sc.color || '#7c5cbf';
+      const cls = free ? 'ss-date-avatar' : 'ss-date-avatar busy';
+      const img = sc.photo
+        ? `<img src="${sc.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+        : sc.initial || '?';
+      return `<div class="${cls}" style="background:${bg};" title="${sc.name}">${img}</div>`;
+    }).join('');
 
-    const cls = ['ss-date-row', allFree||someFree?'match':'', isSelected?'selected':''].filter(Boolean).join(' ');
+    // Tooltip
+    const freeNames = freeOnes.map(a => a.sc.name);
+    const busyNames = busyOnes.map(a => a.sc.name);
+    let tooltip = '';
+    if (freeNames.length) tooltip += `✅ ${freeNames.join(', ')}`;
+    if (busyNames.length) tooltip += (tooltip ? '  ·  ' : '') + `⛔ ${busyNames.join(', ')}`;
+
+    const cls = ['ss-date-row', anyFree ? 'match' : '', isSelected ? 'selected' : ''].filter(Boolean).join(' ');
     rows.push(`<div class="${cls}" id="ssdate-${ds}" onclick="selectSSDate('${ds}',this)">
       <span class="ss-date-label">${lbl}</span>
-      ${badge}
+      <div class="ss-date-avatars">${avatarBubbles}</div>
       ${tooltip ? `<div class="ss-date-tooltip">${tooltip}</div>` : ''}
     </div>`);
   }
 
   list.innerHTML = rows.join('');
 
-  // Scroll to pre-selected if any
   if (_ssSelectedDate) {
     setTimeout(() => {
       document.getElementById(`ssdate-${_ssSelectedDate}`)?.scrollIntoView({ block:'nearest' });
     }, 50);
   }
 
-  // Show/hide time row
   const timeRow = document.getElementById('ss-time-row');
   if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
 }
