@@ -6,164 +6,491 @@
   <title>Spontany Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: #f8f9fa; color: #202124; }
-    h1 { font-size: 20px; margin: 0 0 4px; }
-    .sub { color: #5f6368; font-size: 13px; margin: 0 0 24px; }
-    .stats { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
-    .stat-card { background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 14px 20px; min-width: 120px; }
-    .stat-num { font-size: 28px; font-weight: 700; }
-    .stat-label { font-size: 12px; color: #5f6368; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #dadce0; font-size: 13px; }
-    th { text-align: left; padding: 10px 14px; background: #f8f9fa; font-size: 12px; color: #5f6368; font-weight: 700; border-bottom: 1px solid #dadce0; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f3f4f6; color: #111827; }
+
+    .topbar { background: #111827; color: white; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+    .topbar h1 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: .5px; }
+    .topbar .version { font-size: 11px; color: #6b7280; margin-left: auto; }
+
+    .tabs { display: flex; gap: 2px; background: #e5e7eb; padding: 4px; border-radius: 10px; margin: 20px 24px 0; max-width: 360px; }
+    .tab { flex: 1; padding: 8px 12px; text-align: center; font-size: 13px; font-weight: 600; border-radius: 7px; cursor: pointer; color: #6b7280; transition: all .15s; border: none; background: transparent; }
+    .tab.active { background: white; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+    .panel { display: none; padding: 20px 24px 40px; }
+    .panel.active { display: block; }
+
+    .stats { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 20px; min-width: 110px; }
+    .stat-num { font-size: 26px; font-weight: 800; color: #111827; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .toolbar select, .toolbar input { padding: 6px 10px; border: 1.5px solid #e5e7eb; border-radius: 7px; font-size: 13px; background: white; }
+    .btn { padding: 7px 14px; border-radius: 7px; border: 1.5px solid #e5e7eb; background: white; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: #f9fafb; }
+    .btn-primary { background: #111827; color: white; border-color: #111827; }
+    .btn-primary:hover { background: #1f2937; }
+
+    .tbl-wrap { background: white; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+    th { text-align: left; padding: 10px 14px; background: #f9fafb; font-size: 11px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
     td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f8f9fa; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-    .badge-owner { background: #e8f0fe; color: #1967d2; }
-    .badge-partner { background: #e8f5e9; color: #2e7d32; }
-    .badge-approved { background: #e8f5e9; color: #2e7d32; }
-    .badge-pending  { background: #fff3e0; color: #e65100; }
-    .badge-none     { background: #f3f4f6; color: #5f6368; }
-    .btn-delete { padding: 5px 12px; border-radius: 5px; border: 1.5px solid #d93025; background: white; color: #d93025; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .btn-delete:hover { background: #d93025; color: white; }
-    .muted { color: #5f6368; }
-    #error { color: #d93025; margin-bottom: 16px; font-size: 13px; display: none; }
-    .refresh { padding: 7px 14px; border-radius: 6px; border: 1.5px solid #dadce0; background: white; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
-    .refresh:hover { background: #f8f9fa; }
+    tr:hover td { background: #fafafa; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .b-event    { background: #ede9fe; color: #5b21b6; }
+    .b-venue    { background: #d1fae5; color: #065f46; }
+    .b-activity { background: #fef3c7; color: #92400e; }
+    .b-owner    { background: #dbeafe; color: #1e40af; }
+    .b-partner  { background: #d1fae5; color: #065f46; }
+    .b-approved { background: #d1fae5; color: #065f46; }
+    .b-pending  { background: #fef3c7; color: #92400e; }
+    .b-failed   { background: #fee2e2; color: #991b1b; }
+    .b-done     { background: #d1fae5; color: #065f46; }
+    .b-none     { background: #f3f4f6; color: #6b7280; }
+    .b-free     { background: #d1fae5; color: #065f46; }
+    .b-paid     { background: #fef3c7; color: #92400e; }
+
+    .conf-high   { color: #059669; font-weight: 700; }
+    .conf-mid    { color: #d97706; font-weight: 700; }
+    .conf-low    { color: #dc2626; font-weight: 700; }
+
+    .url-link { color: #6366f1; text-decoration: none; font-size: 12px; }
+    .url-link:hover { text-decoration: underline; }
+    .muted { color: #9ca3af; }
+
+    .btn-del { padding: 4px 10px; border-radius: 5px; border: 1.5px solid #fca5a5; background: white; color: #dc2626; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-del:hover { background: #fee2e2; }
+
+    .inline-sel { padding: 3px 6px; border: 1.5px solid #e5e7eb; border-radius: 5px; font-size: 12px; background: white; cursor: pointer; }
+    .inline-sel:focus { outline: none; border-color: #6366f1; }
+
+    .tag-pill { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; background: #ede9fe; color: #5b21b6; margin: 1px; }
+
+    #error { color: #dc2626; margin-bottom: 12px; font-size: 13px; display: none; background: #fee2e2; padding: 10px 14px; border-radius: 8px; }
+
+    .empty { padding: 32px; text-align: center; color: #9ca3af; font-size: 13px; }
+
+    .parsed-cell { font-size: 11px; line-height: 1.6; }
+    .parsed-cell strong { color: #374151; }
+
+    .breakdown { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .breakdown-item { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 14px; font-size: 12px; }
+    .breakdown-item span { font-weight: 700; font-size: 15px; display: block; }
   </style>
 </head>
 <body>
 
-<h1>Spontany Admin</h1>
-<p class="sub">User management — handle with care.</p>
+<div class="topbar">
+  <h1>⚡ Spontany Admin</h1>
+  <span class="version" id="env-label">loading…</span>
+</div>
 
 <div id="error"></div>
 
-<div class="stats" id="stats"></div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('opportunities')">Opportunities</button>
+  <button class="tab" onclick="switchTab('submissions')">Submissions</button>
+  <button class="tab" onclick="switchTab('users')">Users</button>
+</div>
 
-<button class="refresh" onclick="load()">↺ Refresh</button>
+<!-- ── Opportunities panel ── -->
+<div class="panel active" id="panel-opportunities">
+  <div class="stats" id="opp-stats"></div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Role</th>
-      <th>Connection</th>
-      <th>Days saved</th>
-      <th>Joined</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody id="user-rows">
-    <tr><td colspan="7" class="muted">Loading…</td></tr>
-  </tbody>
-</table>
+  <div class="toolbar">
+    <select id="filter-type" onchange="renderOpps()">
+      <option value="">All types</option>
+      <option value="event">Events</option>
+      <option value="venue">Venues</option>
+      <option value="activity">Activities</option>
+    </select>
+    <select id="filter-cat" onchange="renderOpps()">
+      <option value="">All categories</option>
+    </select>
+    <input type="search" id="filter-q" placeholder="Search title…" oninput="renderOpps()" style="width:180px;">
+    <button class="btn" onclick="loadOpps()">↺ Refresh</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Category</th>
+          <th>Location</th>
+          <th>Price</th>
+          <th>Tags</th>
+          <th>Conf.</th>
+          <th>Added by</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="opp-rows"><tr><td colspan="10" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Submissions panel ── -->
+<div class="panel" id="panel-submissions">
+  <div class="stats" id="sub-stats"></div>
+
+  <div class="toolbar">
+    <select id="filter-sub-status" onchange="renderSubs()">
+      <option value="">All statuses</option>
+      <option value="done">Done</option>
+      <option value="pending">Pending</option>
+      <option value="failed">Failed</option>
+    </select>
+    <button class="btn" onclick="loadSubs()">↺ Refresh</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>URL</th>
+          <th>Status</th>
+          <th>Parsed data</th>
+          <th>Submitted by</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="sub-rows"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Users panel ── -->
+<div class="panel" id="panel-users">
+  <div class="stats" id="user-stats"></div>
+
+  <div class="toolbar">
+    <button class="btn" onclick="loadUsers()">↺ Refresh</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Connection</th>
+          <th>Days saved</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="user-rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
 
 <script>
-const params = new URLSearchParams(location.search);
+const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
+let _opps = [], _subs = [], _users = [];
 
-if (!ADMIN_TOKEN) {
-  document.querySelector('.sub').textContent = 'Missing ?token= in URL.';
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const idx = { opportunities: 0, submissions: 1, users: 2 }[name];
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'opportunities' && _opps.length === 0) loadOpps();
+  if (name === 'submissions'   && _subs.length === 0) loadSubs();
+  if (name === 'users'         && _users.length === 0) loadUsers();
 }
 
-async function load() {
-  document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="muted">Loading…</td></tr>';
-  document.getElementById('error').style.display = 'none';
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
 
-  const res = await fetch(`/api/admin/users?token=${ADMIN_TOKEN}`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const el = document.getElementById('error');
-    el.textContent = err.error || `Error ${res.status}`;
-    el.style.display = 'block';
-    document.getElementById('user-rows').innerHTML = '';
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+// ── Opportunities ──────────────────────────────────────────────────────────
+async function loadOpps() {
+  document.getElementById('opp-rows').innerHTML = '<tr><td colspan="10" class="empty">Loading…</td></tr>';
+  const [oppsRes, statsRes] = await Promise.all([
+    fetch(`/api/admin/opportunities?token=${ADMIN_TOKEN}`),
+    fetch(`/api/admin/stats?token=${ADMIN_TOKEN}`)
+  ]);
+  if (!oppsRes.ok) { showError('Failed to load opportunities'); return; }
+  const { opportunities } = await oppsRes.json();
+  _opps = opportunities;
+
+  // Populate category filter
+  const cats = [...new Set(_opps.map(o => o.category).filter(Boolean))].sort();
+  const catSel = document.getElementById('filter-cat');
+  catSel.innerHTML = '<option value="">All categories</option>' +
+    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+  // Stats
+  if (statsRes.ok) {
+    const s = await statsRes.json();
+    const byType = Object.fromEntries(s.byType.map(r => [r.type, r.c]));
+    document.getElementById('opp-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${s.oppCount}</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-num">${byType.event||0}</div><div class="stat-label">Events</div></div>
+      <div class="stat-card"><div class="stat-num">${byType.venue||0}</div><div class="stat-label">Venues</div></div>
+      <div class="stat-card"><div class="stat-num">${byType.activity||0}</div><div class="stat-label">Activities</div></div>
+      <div class="stat-card"><div class="stat-num">${s.planCount}</div><div class="stat-label">Plans made</div></div>
+    `;
+    // Category breakdown
+    if (s.byCat.length) {
+      document.getElementById('opp-stats').innerHTML += `
+        <div style="width:100%;margin-top:4px;">
+          <div style="font-size:11px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">By category</div>
+          <div class="breakdown">${s.byCat.map(r => `
+            <div class="breakdown-item"><span>${r.c}</span>${esc(r.category||'(none)')}</div>`).join('')}
+          </div>
+        </div>`;
+    }
+  }
+
+  document.getElementById('env-label').textContent = `${_opps.length} opportunities`;
+  renderOpps();
+}
+
+function renderOpps() {
+  const typeF = document.getElementById('filter-type').value;
+  const catF  = document.getElementById('filter-cat').value;
+  const q     = (document.getElementById('filter-q').value || '').toLowerCase();
+
+  const filtered = _opps.filter(o =>
+    (!typeF || o.type === typeF) &&
+    (!catF  || o.category === catF) &&
+    (!q     || (o.title||'').toLowerCase().includes(q))
+  );
+
+  if (filtered.length === 0) {
+    document.getElementById('opp-rows').innerHTML = '<tr><td colspan="10" class="empty">No opportunities match this filter.</td></tr>';
     return;
   }
 
-  const { users } = await res.json();
+  document.getElementById('opp-rows').innerHTML = filtered.map(o => {
+    const tags = JSON.parse(o.tags || '[]');
+    const tagHtml = tags.map(t => `<span class="tag-pill">${esc(t)}</span>`).join('');
+    const confCls = o.confidence_score >= 0.8 ? 'conf-high' : o.confidence_score >= 0.5 ? 'conf-mid' : 'conf-low';
+    const confVal = o.confidence_score != null ? (o.confidence_score * 100).toFixed(0) + '%' : '—';
+    const typeCls = o.type === 'event' ? 'b-event' : o.type === 'venue' ? 'b-venue' : 'b-activity';
+    const priceCls = o.price_tier === 'free' ? 'b-free' : o.price_tier ? 'b-paid' : 'b-none';
 
-  // Stats
-  const owners = users.filter(u => u.role === 'owner').length;
-  const partners = users.filter(u => u.role === 'partner').length;
+    return `<tr>
+      <td>
+        <strong style="font-size:13px;">${esc(o.title || '—')}</strong>
+        ${o.source_url ? `<br><a class="url-link" href="${esc(o.source_url)}" target="_blank">${esc(o.source_url.replace(/https?:\/\/(www\.)?/,'').slice(0,50))}…</a>` : ''}
+      </td>
+      <td>
+        <select class="inline-sel" onchange="updateOpp('${o.id}','type',this.value)">
+          <option value="event"    ${o.type==='event'   ?'selected':''}>event</option>
+          <option value="venue"    ${o.type==='venue'   ?'selected':''}>venue</option>
+          <option value="activity" ${o.type==='activity'?'selected':''}>activity</option>
+        </select>
+      </td>
+      <td>
+        <select class="inline-sel" onchange="updateOpp('${o.id}','category',this.value)">
+          ${['','food & drink','music','arts','sports','outdoors','nightlife','family','wellness','culture','community']
+            .map(c => `<option value="${c}" ${o.category===c?'selected':''}>${c||'—'}</option>`).join('')}
+        </select>
+      </td>
+      <td class="muted" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.location_name||'—')}</td>
+      <td><span class="badge ${priceCls}">${esc(o.price_tier||'—')}</span></td>
+      <td style="max-width:120px;">${tagHtml || '<span class="muted">—</span>'}</td>
+      <td><span class="${confCls}">${confVal}</span></td>
+      <td class="muted">${esc(o.submitter_name||'—')}</td>
+      <td class="muted" style="white-space:nowrap;">${fmtDate(o.created_at)}</td>
+      <td><button class="btn-del" onclick="deleteOpp('${o.id}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateOpp(id, field, value) {
+  const res = await fetch(`/api/admin/opportunities/${id}?token=${ADMIN_TOKEN}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ [field]: value })
+  });
+  if (!res.ok) { showError('Update failed'); loadOpps(); }
+  else {
+    const o = _opps.find(x => x.id === id);
+    if (o) o[field] = value;
+  }
+}
+
+async function deleteOpp(id) {
+  const o = _opps.find(x => x.id === id);
+  if (!confirm(`Delete "${o?.title || id}"? This also removes any plans linked to it.`)) return;
+  const res = await fetch(`/api/admin/opportunities/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+  if (res.ok) { _opps = _opps.filter(x => x.id !== id); renderOpps(); loadOpps(); }
+  else showError('Delete failed');
+}
+
+// ── Submissions ────────────────────────────────────────────────────────────
+async function loadSubs() {
+  document.getElementById('sub-rows').innerHTML = '<tr><td colspan="6" class="empty">Loading…</td></tr>';
+  const [subsRes, statsRes] = await Promise.all([
+    fetch(`/api/admin/submissions?token=${ADMIN_TOKEN}`),
+    fetch(`/api/admin/stats?token=${ADMIN_TOKEN}`)
+  ]);
+  if (!subsRes.ok) { showError('Failed to load submissions'); return; }
+  const { submissions } = await subsRes.json();
+  _subs = submissions;
+
+  if (statsRes.ok) {
+    const s = await statsRes.json();
+    const byStatus = Object.fromEntries(s.byStatus.map(r => [r.status, r.c]));
+    document.getElementById('sub-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${s.subCount}</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-num">${byStatus.done||0}</div><div class="stat-label">Processed</div></div>
+      <div class="stat-card"><div class="stat-num">${byStatus.pending||0}</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card"><div class="stat-num">${byStatus.failed||0}</div><div class="stat-label">Failed</div></div>
+    `;
+  }
+  renderSubs();
+}
+
+function renderSubs() {
+  const statusF = document.getElementById('filter-sub-status').value;
+  const filtered = _subs.filter(s => !statusF || s.status === statusF);
+
+  if (filtered.length === 0) {
+    document.getElementById('sub-rows').innerHTML = '<tr><td colspan="6" class="empty">No submissions yet.</td></tr>';
+    return;
+  }
+
+  document.getElementById('sub-rows').innerHTML = filtered.map(s => {
+    const statusCls = s.status === 'done' ? 'b-done' : s.status === 'failed' ? 'b-failed' : 'b-pending';
+    const pd = s.parsed_data || {};
+    const parsedHtml = pd.title ? `
+      <div class="parsed-cell">
+        <strong>${esc(pd.title)}</strong><br>
+        ${pd.type      ? `type: ${esc(pd.type)}` : ''}
+        ${pd.category  ? ` · cat: ${esc(pd.category)}` : ''}
+        ${pd.location_name ? `<br>📍 ${esc(pd.location_name)}` : ''}
+        ${pd.price_tier    ? ` · ${esc(pd.price_tier)}` : ''}
+        ${(pd.tags||[]).length ? `<br>${pd.tags.map(t=>`<span class="tag-pill">${esc(t)}</span>`).join('')}` : ''}
+        ${pd.description   ? `<br><span class="muted" style="font-size:10px;">${esc(pd.description.slice(0,120))}…</span>` : ''}
+      </div>` : `<span class="muted">—</span>`;
+
+    const urlDisplay = (s.url||'').replace(/https?:\/\/(www\.)?/,'').slice(0,60);
+
+    return `<tr>
+      <td style="max-width:200px;word-break:break-all;">
+        <a class="url-link" href="${esc(s.url||'')}" target="_blank">${esc(urlDisplay)}</a>
+      </td>
+      <td><span class="badge ${statusCls}">${esc(s.status||'—')}</span></td>
+      <td>${parsedHtml}</td>
+      <td class="muted">${esc(s.submitter_name||'—')}</td>
+      <td class="muted" style="white-space:nowrap;">${fmtDate(s.created_at)}</td>
+      <td><button class="btn-del" onclick="deleteSub('${s.id}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteSub(id) {
+  if (!confirm('Remove this submission record?')) return;
+  const res = await fetch(`/api/admin/submissions/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+  if (res.ok) { _subs = _subs.filter(x => x.id !== id); renderSubs(); }
+  else showError('Delete failed');
+}
+
+// ── Users ──────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="empty">Loading…</td></tr>';
+  const res = await fetch(`/api/admin/users?token=${ADMIN_TOKEN}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showError(err.error || `Error ${res.status}`);
+    document.getElementById('user-rows').innerHTML = '';
+    return;
+  }
+  const { users } = await res.json();
+  _users = users;
+
+  const owners    = users.filter(u => u.role === 'owner').length;
+  const partners  = users.filter(u => u.role === 'partner').length;
   const connected = users.filter(u => u.conn_status === 'approved').length;
-  document.getElementById('stats').innerHTML = `
+  document.getElementById('user-stats').innerHTML = `
     <div class="stat-card"><div class="stat-num">${users.length}</div><div class="stat-label">Total users</div></div>
     <div class="stat-card"><div class="stat-num">${owners}</div><div class="stat-label">Owners</div></div>
     <div class="stat-card"><div class="stat-num">${partners}</div><div class="stat-label">Partners</div></div>
-    <div class="stat-card"><div class="stat-num">${connected}</div><div class="stat-label">Connected pairs</div></div>
+    <div class="stat-card"><div class="stat-num">${connected}</div><div class="stat-label">Connected</div></div>
   `;
 
   if (users.length === 0) {
-    document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="muted">No users yet.</td></tr>';
+    document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="empty">No users yet.</td></tr>';
     return;
   }
 
   document.getElementById('user-rows').innerHTML = users.map(u => {
-    const joined = new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const connBadge = u.conn_status === 'approved' ? 'approved'
-                    : u.conn_status === 'pending'  ? 'pending'
-                    : 'none';
-    const connLabel = u.conn_status || 'none';
-
-    // Role column: owners show "owner"; connected users show their relationship type (3-way cycle)
+    const connBadge = u.conn_status === 'approved' ? 'b-approved' : u.conn_status === 'pending' ? 'b-pending' : 'b-none';
     let roleCell;
     if (u.role === 'owner') {
-      roleCell = `<span class="badge badge-owner">owner</span>`;
+      roleCell = `<span class="badge b-owner">owner</span>`;
     } else if (u.conn_id) {
       const rel  = u.relationship_type || 'coparent';
       const next = rel === 'coparent' ? 'partner' : rel === 'partner' ? 'friend' : 'coparent';
-      const bg    = rel === 'partner' ? '#fce4ec' : rel === 'friend' ? '#e8f5e9' : '#e8f0fe';
-      const color = rel === 'partner' ? '#c2185b' : rel === 'friend' ? '#2e7d32' : '#1967d2';
+      const bg    = rel === 'partner' ? '#fce4ec' : rel === 'friend' ? '#d1fae5' : '#dbeafe';
+      const color = rel === 'partner' ? '#c2185b' : rel === 'friend' ? '#065f46' : '#1e40af';
       const label = rel === 'partner' ? '❤️ partner' : rel === 'friend' ? '👋 friend' : '👨‍👩‍👧 co-parent';
       roleCell = `<button onclick="setRole('${u.conn_id}','${next}')"
         title="Click to cycle role" style="background:${bg};color:${color};border:none;
-        padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">${label}</button>`;
+        padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;">${label}</button>`;
     } else {
-      roleCell = `<span class="badge badge-partner">partner (no connection)</span>`;
+      roleCell = `<span class="badge b-partner">partner</span>`;
     }
 
     return `<tr>
       <td><strong>${esc(u.name)}</strong></td>
       <td class="muted">${esc(u.email || '—')}</td>
       <td>${roleCell}</td>
-      <td><span class="badge badge-${connBadge}">${connLabel}</span></td>
+      <td><span class="badge ${connBadge}">${esc(u.conn_status || 'none')}</span></td>
       <td class="muted">${u.day_count}</td>
-      <td class="muted">${joined}</td>
-      <td><button class="btn-delete" onclick="deleteUser('${u.id}','${esc(u.name)}')">Delete</button></td>
+      <td class="muted" style="white-space:nowrap;">${fmtDate(u.created_at)}</td>
+      <td><button class="btn-del" onclick="deleteUser('${u.id}','${esc(u.name)}')">Delete</button></td>
     </tr>`;
   }).join('');
 }
 
 async function setRole(connId, newRole) {
-  const label = newRole === 'partner' ? '❤️ partner' : newRole === 'friend' ? '👋 friend' : '👨‍👩‍👧 co-parent';
   const res = await fetch(`/api/admin/connections/${connId}/role?token=${ADMIN_TOKEN}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ relationship_type: newRole })
   });
-  if (res.ok) { await loadUsers(); }
-  else { alert('Failed to update role'); }
+  if (res.ok) loadUsers();
+  else showError('Failed to update role');
 }
 
 async function deleteUser(id, name) {
   if (!confirm(`Delete "${name}" and all their data? This cannot be undone.`)) return;
-
   const res = await fetch(`/api/admin/users/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
-  if (res.ok) {
-    load();
-  } else {
+  if (res.ok) loadUsers();
+  else {
     const err = await res.json().catch(() => ({}));
-    alert(err.error || 'Delete failed');
+    showError(err.error || 'Delete failed');
   }
 }
 
-function esc(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-load();
+// ── Init ───────────────────────────────────────────────────────────────────
+loadOpps();
 </script>
 </body>
 </html>

@@ -61,6 +61,92 @@ router.put('/admin/connections/:id/role', (req, res) => {
   res.json({ relationship_type });
 });
 
+// ── Opportunities ─────────────────────────────────────────────────────────
+
+// GET /api/admin/opportunities — all opportunities with submitter name
+router.get('/admin/opportunities', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const opps = db.prepare(`
+    SELECT o.*, u.name AS submitter_name
+    FROM opportunities o
+    LEFT JOIN users u ON u.id = o.created_by
+    ORDER BY o.created_at DESC
+  `).all();
+  res.json({ opportunities: opps });
+});
+
+// PUT /api/admin/opportunities/:id — update type / category / visibility / title
+router.put('/admin/opportunities/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { id } = req.params;
+  const opp = db.prepare('SELECT * FROM opportunities WHERE id = ?').get(id);
+  if (!opp) return res.status(404).json({ error: 'not found' });
+  const { title, type, category, visibility } = req.body;
+  db.prepare(`
+    UPDATE opportunities
+    SET title = ?, type = ?, category = ?, visibility = ?
+    WHERE id = ?
+  `).run(
+    title      ?? opp.title,
+    type       ?? opp.type,
+    category   ?? opp.category,
+    visibility ?? opp.visibility,
+    id
+  );
+  res.json({ ok: true });
+});
+
+// DELETE /api/admin/opportunities/:id — hard delete any opportunity
+router.delete('/admin/opportunities/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const result = db.prepare('DELETE FROM opportunities WHERE id = ?').run(req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'not found' });
+  // Also remove any plans referencing this opportunity
+  db.prepare('DELETE FROM plans WHERE opportunity_id = ?').run(req.params.id);
+  res.json({ deleted: true });
+});
+
+// ── Submissions ────────────────────────────────────────────────────────────
+
+// GET /api/admin/submissions — all URL submissions with submitter name
+router.get('/admin/submissions', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const subs = db.prepare(`
+    SELECT s.*, u.name AS submitter_name
+    FROM opportunity_submissions s
+    LEFT JOIN users u ON u.id = s.submitted_by
+    ORDER BY s.created_at DESC
+  `).all();
+  res.json({ submissions: subs.map(s => ({
+    ...s,
+    parsed_data: s.parsed_data ? JSON.parse(s.parsed_data) : null
+  })) });
+});
+
+// DELETE /api/admin/submissions/:id — remove a submission record
+router.delete('/admin/submissions/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const result = db.prepare('DELETE FROM opportunity_submissions WHERE id = ?').run(req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'not found' });
+  res.json({ deleted: true });
+});
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+
+// GET /api/admin/stats — aggregate counts
+router.get('/admin/stats', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const oppCount   = db.prepare('SELECT COUNT(*) AS c FROM opportunities').get().c;
+  const subCount   = db.prepare('SELECT COUNT(*) AS c FROM opportunity_submissions').get().c;
+  const planCount  = db.prepare('SELECT COUNT(*) AS c FROM plans').get().c;
+  const byType     = db.prepare('SELECT type, COUNT(*) AS c FROM opportunities GROUP BY type').all();
+  const byCat      = db.prepare('SELECT category, COUNT(*) AS c FROM opportunities GROUP BY category ORDER BY c DESC').all();
+  const byStatus   = db.prepare('SELECT status, COUNT(*) AS c FROM opportunity_submissions GROUP BY status').all();
+  res.json({ oppCount, subCount, planCount, byType, byCat, byStatus });
+});
+
+// ── Users ──────────────────────────────────────────────────────────────────
+
 // DELETE /api/admin/users/:id — delete user + all their data (cascade)
 router.delete('/admin/users/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
