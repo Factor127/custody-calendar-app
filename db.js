@@ -27,6 +27,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN photo TEXT'); } catch(e) { /* alread
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
@@ -408,9 +409,20 @@ const q = {
   getOutingsForUser:     db.prepare('SELECT * FROM outings WHERE created_by = ? ORDER BY date ASC'),
   getOutingById:         db.prepare('SELECT * FROM outings WHERE id = ?'),
   updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ?, venue_place_id = ?, venue_address = ? WHERE id = ?'),
-  createOutingInvitee:   db.prepare('INSERT INTO outing_invitees (id, outing_id, user_id, name, phone) VALUES (?, ?, ?, ?, ?)'),
-  getOutingInvitees:     db.prepare('SELECT * FROM outing_invitees WHERE outing_id = ?'),
+  createOutingInvitee:   db.prepare('INSERT INTO outing_invitees (id, outing_id, user_id, name, phone, rsvp_token) VALUES (?, ?, ?, ?, ?, ?)'),
+  getInviteeByRsvpToken: db.prepare(`
+    SELECT oi.*, o.date, o.message, o.venue, o.event_time, o.venue_address,
+           o.opportunity_id, u.name AS inviter_name,
+           opp.title AS opp_title, opp.location_name AS opp_location,
+           opp.source_url AS opp_url, opp.start_time AS opp_start_time
+    FROM outing_invitees oi
+    JOIN outings o ON o.id = oi.outing_id
+    JOIN users u ON u.id = o.created_by
+    LEFT JOIN opportunities opp ON opp.id = o.opportunity_id
+    WHERE oi.rsvp_token = ?
+  `),
   updateInviteeStatus:   db.prepare('UPDATE outing_invitees SET status = ? WHERE id = ?'),
+  getOutingInvitees:     db.prepare('SELECT * FROM outing_invitees WHERE outing_id = ?'),
   getOutingsAsInvitee:   db.prepare(`
     SELECT o.*, oi.id AS invitee_record_id, oi.status AS my_invitee_status
     FROM outings o

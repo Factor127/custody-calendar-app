@@ -1162,6 +1162,37 @@ router.post('/calendar/notify-change', async (req, res) => {
   res.json({ ok: true, notified: !!other?.email });
 });
 
+// ── RSVP (public — rsvp_token is the credential) ──────────────────────────
+
+// GET /api/rsvp/:token — fetch event details for RSVP landing page
+router.get('/rsvp/:token', (req, res) => {
+  const inv = q.getInviteeByRsvpToken.get(req.params.token);
+  if (!inv) return res.status(404).json({ error: 'not found' });
+  res.json({
+    name:        inv.name,
+    inviterName: inv.inviter_name,
+    venue:       inv.venue || inv.opp_title || null,
+    date:        inv.date,
+    time:        inv.event_time || null,
+    location:    inv.venue_address || inv.opp_location || null,
+    link:        inv.opp_url || null,
+    startTime:   inv.opp_start_time || null,
+    status:      inv.status
+  });
+});
+
+// POST /api/rsvp/:token — submit accept/decline
+router.post('/rsvp/:token', (req, res) => {
+  const { status } = req.body;
+  if (!['accepted', 'declined'].includes(status)) {
+    return res.status(400).json({ error: 'status must be accepted or declined' });
+  }
+  const inv = q.getInviteeByRsvpToken.get(req.params.token);
+  if (!inv) return res.status(404).json({ error: 'not found' });
+  q.updateInviteeStatus.run(status, inv.id);
+  res.json({ ok: true, inviterName: inv.inviter_name });
+});
+
 // ── Outings ───────────────────────────────────────────────────────────────
 
 // POST /api/outings — create a new outing with invitees
@@ -1169,13 +1200,13 @@ router.post('/outings', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
-  const { date, message, invitees,
+  const { id: pregenId, date, message, invitees,
           venue, venue_address, venue_place_id, opportunity_id } = req.body;
   if (!date || !Array.isArray(invitees) || invitees.length === 0) {
     return res.status(400).json({ error: 'date and invitees required' });
   }
 
-  const outingId = uuidv4();
+  const outingId = pregenId || uuidv4();
   q.createOuting.run(
     outingId, me.id, date, message || null,
     venue || null, venue_address || null, venue_place_id || null, opportunity_id || null
@@ -1183,7 +1214,7 @@ router.post('/outings', (req, res) => {
 
   for (const inv of invitees) {
     const invId = uuidv4();
-    q.createOutingInvitee.run(invId, outingId, inv.userId || null, inv.name, inv.phone || null);
+    q.createOutingInvitee.run(invId, outingId, inv.userId || null, inv.name, inv.phone || null, inv.rsvpToken || null);
   }
 
   // If there's a linked opportunity and a date, create a plan for the creator

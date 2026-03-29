@@ -86,6 +86,11 @@ router.get('/partner', (req, res) => {
   return res.redirect(token ? `/calendar?token=${token}` : '/');
 });
 
+// RSVP landing page — no auth required, rsvp_token in URL
+router.get('/rsvp/:token', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'rsvp.html'));
+});
+
 router.get('/privacy', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'privacy.html'));
 });

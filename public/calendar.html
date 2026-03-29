@@ -1071,6 +1071,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .ss-who-item.checked .ss-who-check { background:var(--accent); border-color:var(--accent); color:#fff; }
     .ss-who-name  { font-size:14px; color:var(--text); flex:1; }
+    .ss-who-avail { font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; flex-shrink:0; }
+    .ss-who-avail.free { background:rgba(52,211,153,0.15); color:#34d399; }
+    .ss-who-avail.busy { background:rgba(255,255,255,0.05); color:rgba(238,238,248,0.3); }
     .ss-rel-badge {
       font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px;
       background:rgba(124,92,191,0.18); color:var(--accent); border:1px solid rgba(124,92,191,0.3);
@@ -4568,6 +4571,11 @@ async function ssAnalyzeLink() {
     // Brief pause so user sees the preview, then advance
     await new Promise(r => setTimeout(r, 1500));
     ssGoTo('main', '✨ Start something');
+    if (_ssSelectedDate) {
+      setTimeout(() => {
+        document.getElementById(`ssdate-${_ssSelectedDate}`)?.scrollIntoView({ block:'center', behavior:'smooth' });
+      }, 150);
+    }
 
   } catch(e) {
     _ssSetLinkStatus('error', '✗ ' + (e.message || 'Could not read that link — try another URL'));
@@ -4657,10 +4665,19 @@ function _ssRebuildWhoDropdown() {
       const badge   = t === 'partner'
         ? `<span class="ss-rel-badge partner">Partner</span>`
         : t === 'coparent' ? `<span class="ss-rel-badge">Co-parent</span>` : '';
+      // Availability badge when a date is selected
+      const sc = (socialConnections||[]).find(s => s.id === c.id);
+      const freeOnDate = _ssSelectedDate && sc?.days
+        ? sc.days[_ssSelectedDate]?.owner !== 'self'
+        : null;
+      const availBadge = freeOnDate === true  ? `<span class="ss-who-avail free">Free ✓</span>`
+                       : freeOnDate === false ? `<span class="ss-who-avail busy">Busy</span>`
+                       : '';
       html += `<div class="ss-who-item${checked?' checked':''}" id="sswho-${c.id}" onclick="toggleSSContact('${c.id}')">
         <div class="ss-who-check">${checked?'✓':''}</div>
         <span class="ss-who-name">${c.other_name}</span>
         ${badge}
+        ${availBadge}
       </div>`;
     }
   }
@@ -4761,7 +4778,7 @@ function _ssRebuildDateList() {
 
   if (_ssSelectedDate) {
     setTimeout(() => {
-      document.getElementById(`ssdate-${_ssSelectedDate}`)?.scrollIntoView({ block:'nearest' });
+      document.getElementById(`ssdate-${_ssSelectedDate}`)?.scrollIntoView({ block:'center', behavior:'smooth' });
     }, 50);
   }
 
@@ -4775,11 +4792,14 @@ function selectSSDate(date, el) {
   if (_ssSelectedDate) el.classList.add('selected');
   const timeRow = document.getElementById('ss-time-row');
   if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
+  _ssRebuildWhoDropdown(); // refresh free/busy badges
 }
 
 // ── What / linked event — autocomplete ───────────────────────────────────────
 let _ssAcTimer = null;
 let _ssAcPlaces = [];   // stores latest Places predictions by index — avoids embedding strings in HTML attrs
+let _ssPregenOutingId  = null;  // pre-generated before review so RSVP URLs can be included in WhatsApp messages
+let _ssPregenInvitees  = [];    // [{ contactId, rsvpToken }]
 
 function onSSWhatInput() {
   if (_ssLinkedOpp) { _ssLinkedOpp = null; document.getElementById('ss-linked-card').style.display = 'none'; }
@@ -4944,6 +4964,10 @@ let _browseCalledFromSS = false;
 function openSSReview() {
   if (_ssContacts.length === 0) return;
 
+  // Pre-generate outing ID + per-invitee RSVP tokens so they can go in WhatsApp messages
+  _ssPregenOutingId = crypto.randomUUID();
+  _ssPregenInvitees = _ssContacts.map(c => ({ contactId: c.id, rsvpToken: crypto.randomUUID() }));
+
   const what    = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
   const dateStr = _ssSelectedDate;
   const timeVal = document.getElementById('ss-time-input')?.value || null;
@@ -4972,7 +4996,8 @@ function openSSReview() {
   // Per-person blocks
   let peopleHtml = '';
   for (const c of _ssContacts) {
-    const msg     = _ssPersonMessage(c, what, dateStr, timeVal, link);
+    const draft   = _ssPregenInvitees.find(d => d.contactId === c.id);
+    const msg     = _ssPersonMessage(c, what, dateStr, timeVal, link, draft?.rsvpToken);
     const mobile  = c.i_am_target ? c.requester_mobile : c.target_mobile;
     const num     = mobile ? mobile.replace(/[^0-9]/g,'') : null;
     const waHref  = num
@@ -4990,31 +5015,33 @@ function openSSReview() {
   document.getElementById('ss-review-sheet').classList.add('open');
 }
 
-function _ssPersonMessage(conn, what, dateStr, timeVal, link) {
+function _ssPersonMessage(conn, what, dateStr, timeVal, link, rsvpToken = null) {
   const name  = conn.other_name;
   const when  = dateStr
     ? new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + (timeVal ? ` at ${timeVal}` : '')
     : null;
 
+  let msg;
   if (_ssLinkedOpp?.type === 'event') {
     const t = _ssLinkedOpp.title;
-    let msg = `Hey ${name}! Want to come to ${t}`;
+    msg = `Hey ${name}! Want to come to ${t}`;
     if (when) msg += ` on ${when}`;
     msg += `? 🎉`;
     if (link) msg += `\n${link}`;
-    return msg;
-  }
-  if (_ssLinkedOpp?.type === 'venue' || what) {
+  } else if (_ssLinkedOpp?.type === 'venue' || what) {
     const place = what || 'hang out';
-    let msg = `Hey ${name}! How about ${place}`;
+    msg = `Hey ${name}! How about ${place}`;
     if (when) msg += ` on ${when}`;
     msg += `? 😊`;
     if (link) msg += `\n${link}`;
-    return msg;
+  } else {
+    msg = `Hey ${name}, want to hang out`;
+    if (when) msg += ` on ${when}`;
+    msg += `? 😊`;
   }
-  let msg = `Hey ${name}, want to hang out`;
-  if (when) msg += ` on ${when}`;
-  msg += `? 😊`;
+  if (rsvpToken) {
+    msg += `\n\nRSVP here → ${window.location.origin}/rsvp/${rsvpToken}`;
+  }
   return msg;
 }
 
@@ -5026,8 +5053,11 @@ async function sendSSInvite() {
   const what     = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
   const timeVal  = document.getElementById('ss-time-input')?.value || null;
   const date     = _ssSelectedDate || null;
-  const invitees = _ssContacts.map(c => ({ userId: c.other_user_id, name: c.other_name }));
-  const link     = _ssLinkedOpp?.source_url || null;
+  const invitees = _ssContacts.map(c => {
+    const draft = _ssPregenInvitees.find(d => d.contactId === c.id);
+    return { userId: c.other_user_id, name: c.other_name, rsvpToken: draft?.rsvpToken || null };
+  });
+  const link = _ssLinkedOpp?.source_url || null;
 
   // Step 1: If linked opp isn't in DB yet (Google Places or plain text), save it first
   let opportunityId = _ssLinkedOpp?.id || null;
@@ -5063,6 +5093,7 @@ async function sendSSInvite() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        id:             _ssPregenOutingId || undefined,
         date,
         message:        msg,
         invitees,
@@ -5085,7 +5116,8 @@ function copySSAllMessages() {
   const msgs = _ssContacts.map(c => {
     const what   = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
     const time   = document.getElementById('ss-time-input')?.value || null;
-    return `${c.other_name}:\n${_ssPersonMessage(c, what, _ssSelectedDate, time, _ssLinkedOpp?.source_url||null)}`;
+    const draft  = _ssPregenInvitees?.find(d => d.contactId === c.id);
+    return `${c.other_name}:\n${_ssPersonMessage(c, what, _ssSelectedDate, time, _ssLinkedOpp?.source_url||null, draft?.rsvpToken)}`;
   }).join('\n\n');
   navigator.clipboard.writeText(msgs).then(() => showToast('✓ Copied!'));
 }
