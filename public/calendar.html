@@ -3856,8 +3856,7 @@ function showToast(msg) {
     <div class="fab-action-icon">🎯</div>
     <span>Browse &amp; choose an event</span>
     <div class="fab-action-note">
-      Tell us what you enjoy — we'll find events you'll love.
-      <br><button class="fab-action-note-cta" onclick="event.stopPropagation();closeFabMenu();">Set my preferences →</button>
+      Coming soon — we'll match you with events you'll love.
     </div>
   </button>
 </div>
@@ -3914,7 +3913,7 @@ function openFabMenu() {
 
   planBtn.classList.toggle('disabled', !hasApproved);
   groupBtn.classList.toggle('disabled', !hasTwo);
-  browseBtn.classList.toggle('disabled', !hasPreferences);
+  browseBtn.classList.add('disabled'); // always grayed — not yet built
 
   document.getElementById('fab-menu').classList.add('open');
   document.getElementById('fab-backdrop').classList.add('open');
