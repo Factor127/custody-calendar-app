@@ -5037,22 +5037,36 @@ async function openSSReview() {
   } catch(e) {}
   // ── Outing is now in DB — render WhatsApp buttons ──────────────────────
 
+  // Build hrefs separately so they are NEVER passed through innerHTML HTML parsing.
+  // (innerHTML decodes/re-encodes href attribute values which can corrupt encoded URLs)
+  const _waHrefs = [];
   let peopleHtml = '';
-  for (const c of _ssContacts) {
+  for (let i = 0; i < _ssContacts.length; i++) {
+    const c      = _ssContacts[i];
     const draft  = _ssPregenInvitees.find(d => d.contactId === c.id);
     const msg    = _ssPersonMessage(c, what, dateStr, timeVal, link, draft?.rsvpToken);
     const mobile = c.i_am_target ? c.requester_mobile : c.target_mobile;
-    const num    = mobile ? mobile.replace(/[^0-9]/g,'') : null;
+    // Normalise to international digits: strip non-digits, remove leading 0 if present
+    let num = mobile ? mobile.replace(/[^0-9]/g, '') : null;
+    if (num && num.startsWith('0')) num = num.slice(1); // e.g. 052… → 52…
     const waHref = num
       ? `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    _waHrefs.push(waHref);
+    // Use data-wa-i index only — href is set via DOM after innerHTML (avoids HTML-attribute corruption)
+    const safeName    = c.other_name.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const safePreview = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
     peopleHtml += `<div class="ss-person-row">
-      <span class="ss-person-name">${c.other_name}</span>
-      <a class="ss-wa-btn" href="${waHref}" target="_blank" rel="noopener">${WA_SVG} WhatsApp</a>
+      <span class="ss-person-name">${safeName}</span>
+      <a class="ss-wa-btn" data-wa-i="${i}" target="_blank" rel="noopener">${WA_SVG} WhatsApp</a>
     </div>
-    <div class="ss-msg-preview">${msg}</div>`;
+    <div class="ss-msg-preview">${safePreview}</div>`;
   }
   document.getElementById('ss-review-body').innerHTML = summaryHtml + peopleHtml;
+  // Assign hrefs via DOM property — this is the only safe way to set complex encoded URLs
+  document.querySelectorAll('#ss-review-body .ss-wa-btn[data-wa-i]').forEach(a => {
+    a.href = _waHrefs[parseInt(a.dataset.waI)];
+  });
 }
 
 function _ssPersonMessage(conn, what, dateStr, timeVal, link, rsvpToken = null) {
