@@ -32,6 +32,8 @@ app.use('/api', authRouter);   // magic link endpoints at /api/auth/...
 app.use('/', authRouter);      // Google OAuth at /auth/google, /auth/google/callback
 app.use('/api', adminRouter);
 app.use('/api', apiRouter);
+const opportunitiesRouter = require('./routes/opportunities');
+app.use('/api', opportunitiesRouter);
 app.use('/', pagesRouter);
 
 // ── Root: serve login/home page directly ──────────────────────────────────────

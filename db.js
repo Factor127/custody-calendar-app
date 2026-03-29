@@ -200,6 +200,40 @@ db.exec(`CREATE TABLE IF NOT EXISTS connection_preferences (
   FOREIGN KEY (connection_id) REFERENCES connections(id)
 )`);
 
+db.exec(`CREATE TABLE IF NOT EXISTS opportunities (
+  id             TEXT PRIMARY KEY,
+  title          TEXT NOT NULL,
+  type           TEXT NOT NULL CHECK(type IN ('event','venue','activity_template')),
+  category       TEXT,
+  tags           TEXT NOT NULL DEFAULT '[]',
+  start_time     TEXT,
+  end_time       TEXT,
+  location_name  TEXT,
+  location_lat   REAL,
+  location_lng   REAL,
+  price_tier     TEXT CHECK(price_tier IN ('free','low','medium','high')),
+  source_type    TEXT NOT NULL CHECK(source_type IN ('api','user_submitted','manual')),
+  source_domain  TEXT,
+  source_url     TEXT,
+  confidence_score REAL NOT NULL DEFAULT 0.5,
+  visibility     TEXT NOT NULL DEFAULT 'public' CHECK(visibility IN ('private','group','public')),
+  created_by     TEXT,
+  created_at     TEXT DEFAULT (datetime('now'))
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS opportunity_submissions (
+  id             TEXT PRIMARY KEY,
+  opportunity_id TEXT,
+  submitted_by   TEXT NOT NULL,
+  raw_url        TEXT,
+  raw_html       TEXT,
+  parsed_data    TEXT,
+  status         TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending','parsed','accepted','rejected','duplicate')),
+  duplicate_of   TEXT,
+  created_at     TEXT DEFAULT (datetime('now'))
+)`);
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
@@ -395,6 +429,63 @@ const q = {
   `),
   getConnectionPrefs:     db.prepare('SELECT * FROM connection_preferences WHERE user_id = ? AND connection_id = ?'),
   getAllPrefsForUser:      db.prepare('SELECT * FROM connection_preferences WHERE user_id = ?'),
+
+  // Opportunities
+  createOpportunity: db.prepare(`
+    INSERT INTO opportunities
+      (id,title,type,category,tags,start_time,end_time,
+       location_name,location_lat,location_lng,
+       price_tier,source_type,source_domain,source_url,
+       confidence_score,visibility,created_by)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `),
+  updateOpportunity: db.prepare(`
+    UPDATE opportunities SET
+      title=?,type=?,category=?,tags=?,start_time=?,end_time=?,
+      location_name=?,location_lat=?,location_lng=?,
+      price_tier=?,confidence_score=?,visibility=?
+    WHERE id=?
+  `),
+  getOpportunityById: db.prepare('SELECT * FROM opportunities WHERE id=?'),
+  searchOpportunities: db.prepare(`
+    SELECT * FROM opportunities
+    WHERE visibility='public'
+      AND (:category IS NULL OR category=:category)
+      AND (:type IS NULL OR type=:type)
+    ORDER BY start_time ASC, created_at DESC
+    LIMIT 50
+  `),
+  getOpportunitiesForMatching: db.prepare(`
+    SELECT * FROM opportunities WHERE visibility='public'
+    AND (start_time IS NULL OR start_time >= :from_date)
+    ORDER BY start_time ASC
+    LIMIT 200
+  `),
+  findDuplicateByUrl: db.prepare('SELECT id FROM opportunities WHERE source_url=? LIMIT 1'),
+  findDuplicateByTitleDate: db.prepare(`
+    SELECT id FROM opportunities
+    WHERE title LIKE ? AND DATE(start_time)=DATE(?) LIMIT 1
+  `),
+  createSubmission: db.prepare(`
+    INSERT INTO opportunity_submissions
+      (id,opportunity_id,submitted_by,raw_url,parsed_data,status)
+    VALUES (?,?,?,?,?,?)
+  `),
+  updateSubmission: db.prepare(`
+    UPDATE opportunity_submissions
+    SET opportunity_id=?,status=?,duplicate_of=? WHERE id=?
+  `),
+  getSubmissionsByUser: db.prepare(`
+    SELECT s.*, o.title AS opp_title
+    FROM opportunity_submissions s
+    LEFT JOIN opportunities o ON o.id=s.opportunity_id
+    WHERE s.submitted_by=?
+    ORDER BY s.created_at DESC
+  `),
+  getUserActivityPrefs: db.prepare(`
+    SELECT activity_types FROM connection_preferences
+    WHERE user_id=? AND confidence>0
+  `),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────
@@ -493,4 +584,68 @@ function upsertManyDays(userId, days) {
   }
 }
 
-module.exports = { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr };
+// ── Opportunity convenience wrappers (used by services/) ─────────────────────
+
+function createOpportunity(id, title, type, category, tags, start_time, end_time,
+    location_name, location_lat, location_lng, price_tier, source_type,
+    source_domain, source_url, confidence_score, visibility, created_by) {
+  return q.createOpportunity.run(id, title, type, category, tags, start_time, end_time,
+    location_name, location_lat, location_lng, price_tier, source_type,
+    source_domain, source_url, confidence_score, visibility, created_by);
+}
+
+function updateOpportunity(title, type, category, tags, start_time, end_time,
+    location_name, location_lat, location_lng, price_tier, confidence_score, visibility, id) {
+  return q.updateOpportunity.run(title, type, category, tags, start_time, end_time,
+    location_name, location_lat, location_lng, price_tier, confidence_score, visibility, id);
+}
+
+function getOpportunityById(id) {
+  return q.getOpportunityById.get(id);
+}
+
+function searchOpportunities({ category, type } = {}) {
+  return q.searchOpportunities.all({ category: category || null, type: type || null });
+}
+
+function getOpportunitiesForMatching({ from_date } = {}) {
+  return q.getOpportunitiesForMatching.all({ from_date: from_date || new Date().toISOString().slice(0,10) });
+}
+
+function findDuplicateByUrl(url) {
+  return q.findDuplicateByUrl.get(url);
+}
+
+function findDuplicateByTitleDate(titleLike, date) {
+  return q.findDuplicateByTitleDate.get(titleLike, date);
+}
+
+function createSubmission(id, opportunity_id, submitted_by, raw_url, parsed_data, status) {
+  return q.createSubmission.run(id, opportunity_id, submitted_by, raw_url, parsed_data, status);
+}
+
+function updateSubmission(opportunity_id, status, duplicate_of, id) {
+  return q.updateSubmission.run(opportunity_id, status, duplicate_of, id);
+}
+
+function getSubmissionsByUser(userId) {
+  return q.getSubmissionsByUser.all(userId);
+}
+
+function getUserActivityPrefs(userId) {
+  return q.getUserActivityPrefs.all(userId);
+}
+
+module.exports = {
+  db, q,
+  generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr,
+  // Opportunity helpers
+  createOpportunity, updateOpportunity, getOpportunityById,
+  searchOpportunities, getOpportunitiesForMatching,
+  findDuplicateByUrl, findDuplicateByTitleDate,
+  createSubmission, updateSubmission, getSubmissionsByUser,
+  getUserActivityPrefs,
+  // Re-export core user/calendar helpers for convenience in services
+  getDaysForUserInRange: (userId, from, to) => q.getDaysForUserInRange.all(userId, from, to),
+  getUserByToken: (token) => q.getUserByToken.get(token),
+};

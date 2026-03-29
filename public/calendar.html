@@ -947,6 +947,66 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .fab-backdrop.open { opacity: 1; pointer-events: auto; }
 
+    /* ── Browse sheet ────────────────────────────────────────────────── */
+    #browse-sheet { z-index:2000; align-items:flex-end; padding:0; }
+    .browse-inner {
+      background:var(--surface); border-radius:20px 20px 0 0;
+      width:100%; max-width:540px; margin:0 auto;
+      display:flex; flex-direction:column; max-height:88vh; overflow:hidden;
+      box-shadow:0 -8px 40px rgba(0,0,0,0.5);
+    }
+    .browse-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px 12px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
+    }
+    .browse-title { font-size:18px; font-weight:900; color:var(--text); }
+    .browse-body  { flex:1; overflow-y:auto; padding:0 16px 16px; }
+    .browse-tabs  {
+      display:flex; gap:6px; padding:12px 16px 0; flex-shrink:0; overflow-x:auto;
+      scrollbar-width:none;
+    }
+    .browse-tab {
+      padding:6px 16px; border-radius:20px; font-size:12px; font-weight:700;
+      border:1.5px solid rgba(255,255,255,0.12); background:transparent;
+      color:var(--muted); cursor:pointer; white-space:nowrap; transition:all .15s;
+    }
+    .browse-tab.active { background:rgba(124,92,191,0.25); border-color:var(--accent); color:var(--accent); }
+    .browse-submit-bar {
+      padding:12px 16px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0;
+      display:flex; gap:8px;
+    }
+    .browse-url-input {
+      flex:1; background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.12);
+      border-radius:10px; padding:10px 14px; color:var(--text); font-size:14px;
+      font-family:inherit; transition:border-color .15s;
+    }
+    .browse-url-input:focus { outline:none; border-color:var(--accent); }
+    .browse-url-input::placeholder { color:var(--muted); }
+    .opp-card {
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+      border-radius:14px; padding:14px 16px; margin-top:10px; cursor:pointer;
+      transition:all .15s;
+    }
+    .opp-card:hover { background:rgba(255,255,255,0.06); border-color:rgba(167,139,250,0.25); }
+    .opp-card-top    { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .opp-card-title  { font-size:15px; font-weight:800; color:var(--text); margin:0 0 4px; }
+    .opp-card-meta   { font-size:12px; color:var(--muted); margin:0; }
+    .opp-score-ring  {
+      min-width:36px; height:36px; border-radius:50%;
+      background:rgba(124,92,191,0.20); border:2px solid var(--accent);
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:900; color:var(--accent);
+    }
+    .opp-reason     { font-size:11px; color:rgba(167,139,250,0.7); margin-top:6px; }
+    .opp-chips      { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+    .opp-chip       {
+      font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;
+      background:rgba(255,255,255,0.06); color:var(--muted); border:1px solid rgba(255,255,255,0.08);
+    }
+    .browse-empty   { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
+    .browse-loading { text-align:center; padding:30px 20px; color:var(--muted); font-size:14px; }
+    .browse-submit-status { font-size:12px; color:var(--muted); padding:6px 16px; min-height:20px; }
+
     /* ── Plan wizard (bottom-sheet) ─────────────────────────────────── */
     #plan-wizard { z-index:2000; align-items:flex-end; padding:0; }
     .plan-sheet {
@@ -3741,6 +3801,30 @@ function showToast(msg) {
   </div>
 </div>
 
+<!-- ── Browse sheet ── -->
+<div class="modal-overlay" id="browse-sheet">
+  <div class="browse-inner">
+    <div class="browse-header">
+      <div class="browse-title">🎯 Browse &amp; Choose</div>
+      <button class="plan-sheet-close" onclick="closeBrowseSheet()">✕</button>
+    </div>
+    <div class="browse-tabs" id="browse-tabs">
+      <button class="browse-tab active" onclick="setBrowseTab('all',this)">All</button>
+      <button class="browse-tab" onclick="setBrowseTab('event',this)">Events</button>
+      <button class="browse-tab" onclick="setBrowseTab('venue',this)">Venues</button>
+      <button class="browse-tab" onclick="setBrowseTab('activity_template',this)">Activities</button>
+    </div>
+    <div class="browse-body" id="browse-body">
+      <div class="browse-loading">Finding your matches…</div>
+    </div>
+    <div class="browse-submit-status" id="browse-submit-status"></div>
+    <div class="browse-submit-bar">
+      <input class="browse-url-input" id="browse-url-input" type="url" placeholder="Paste an event/venue link to add it…">
+      <button class="btn btn-primary btn-sm" onclick="submitBrowseUrl()" id="browse-submit-btn">Add</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Plan wizard ── -->
 <div class="modal-overlay" id="plan-wizard">
   <div class="plan-sheet">
@@ -3909,7 +3993,7 @@ function openFabMenu() {
 
   planBtn.classList.toggle('disabled', !hasApproved);
   groupBtn.classList.toggle('disabled', !hasTwo);
-  browseBtn.classList.add('disabled'); // always grayed — not yet built
+  browseBtn.classList.remove('disabled'); // Browse is now live
 
   document.getElementById('fab-menu').classList.add('open');
   document.getElementById('fab-backdrop').classList.add('open');
@@ -3960,7 +4044,8 @@ function fabGroupClick() {
 }
 
 function fabBrowseClick() {
-  // Not yet implemented — tooltip handles the explanation
+  closeFabMenu();
+  openBrowseSheet();
 }
 
 // ── Plan wizard ───────────────────────────────────────────────────────────────
@@ -4182,6 +4267,116 @@ async function skipPrefInterstitial() {
   connPrefs[prefInterstitialConnId] = { activity_types: [], confidence: 0, skipped_at: new Date().toISOString() };
   document.getElementById('pref-interstitial').classList.remove('open');
   openPlanWizard();
+}
+
+// ── Browse sheet ─────────────────────────────────────────────────────────────
+let _browseTab = 'all';
+let _browseMatches = [];
+
+async function openBrowseSheet() {
+  document.getElementById('browse-sheet').classList.add('open');
+  await loadBrowseMatches();
+}
+function closeBrowseSheet() {
+  document.getElementById('browse-sheet').classList.remove('open');
+}
+
+function setBrowseTab(tab, el) {
+  _browseTab = tab;
+  document.querySelectorAll('.browse-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderBrowseMatches();
+}
+
+async function loadBrowseMatches() {
+  const body = document.getElementById('browse-body');
+  body.innerHTML = '<div class="browse-loading">Finding your matches…</div>';
+  try {
+    const res  = await fetch(`/api/opportunities/matches?token=${MY_TOKEN}&limit=40`);
+    if (!res.ok) throw new Error('Failed to load');
+    const data = await res.json();
+    _browseMatches = data.matches || [];
+    renderBrowseMatches();
+  } catch(e) {
+    body.innerHTML = `<div class="browse-empty">Could not load opportunities.<br>Try adding one with the link box below.</div>`;
+  }
+}
+
+function renderBrowseMatches() {
+  const body = document.getElementById('browse-body');
+  let list = _browseMatches;
+  if (_browseTab !== 'all') list = list.filter(o => o.type === _browseTab);
+
+  if (!list.length) {
+    body.innerHTML = `<div class="browse-empty">No ${_browseTab === 'all' ? '' : _browseTab + ' '}matches yet.<br><span style="font-size:12px;">Paste a link below to add an event or venue.</span></div>`;
+    return;
+  }
+
+  const TYPE_ICON = { event:'🗓', venue:'📍', activity_template:'✨' };
+  const PRICE_LABEL = { free:'Free', low:'£', medium:'££', high:'£££' };
+
+  body.innerHTML = list.map(o => {
+    const score  = Math.round((o.match_score || 0) * 100);
+    const icon   = TYPE_ICON[o.type] || '🎯';
+    const when   = o.start_time ? new Date(o.start_time).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) : o.type === 'venue' ? 'Any time' : 'Flexible';
+    const where  = o.location_name ? o.location_name.split(',')[0] : '';
+    const price  = PRICE_LABEL[o.price_tier] || '';
+    const tags   = (Array.isArray(o.tags) ? o.tags : []).slice(0,4);
+
+    return `<div class="opp-card" onclick="oppCardClick('${o.id}','${(o.source_url||'').replace(/'/g,'%27')}')">
+      <div class="opp-card-top">
+        <div>
+          <div class="opp-card-title">${icon} ${o.title}</div>
+          <div class="opp-card-meta">${[when, where, price].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div class="opp-score-ring">${score}%</div>
+      </div>
+      ${o.relevance_reason ? `<div class="opp-reason">✦ ${o.relevance_reason}</div>` : ''}
+      ${tags.length ? `<div class="opp-chips">${tags.map(t=>`<span class="opp-chip">${t}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function oppCardClick(oppId, sourceUrl) {
+  if (sourceUrl && sourceUrl !== 'undefined') {
+    window.open(sourceUrl, '_blank', 'noopener');
+  }
+}
+
+async function submitBrowseUrl() {
+  const input  = document.getElementById('browse-url-input');
+  const status = document.getElementById('browse-submit-status');
+  const btn    = document.getElementById('browse-submit-btn');
+  const url    = input.value.trim();
+  if (!url) return;
+
+  btn.disabled = true;
+  btn.textContent = '…';
+  status.textContent = 'Fetching & parsing…';
+
+  try {
+    const res  = await fetch(`/api/opportunities/submit?token=${MY_TOKEN}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+
+    if (data.duplicate) {
+      status.textContent = '✓ Already in the system — added to your list';
+    } else {
+      status.textContent = `✓ "${data.draft?.title || 'Event'}" added!`;
+    }
+
+    input.value = '';
+    await loadBrowseMatches();
+  } catch(e) {
+    status.textContent = `✗ ${e.message}`;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Add';
+    setTimeout(() => { status.textContent = ''; }, 4000);
+  }
 }
 
 function updateBnBadges() {
