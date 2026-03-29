@@ -1013,6 +1013,157 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       transition:all .15s; flex-shrink:0;
     }
     .opp-delete-btn:hover { background:rgba(239,68,68,0.2); color:#ef4444; }
+    /* ── Start Something sheet ───────────────────────────────────────── */
+    #plan-wizard    { z-index:2000; align-items:flex-end; padding:0; }
+    #ss-review-sheet{ z-index:2100; align-items:flex-end; padding:0; }
+    .ss-sheet {
+      background:var(--surface); border-radius:20px 20px 0 0;
+      width:100%; max-width:540px; margin:0 auto;
+      display:flex; flex-direction:column; max-height:92vh; overflow:hidden;
+      box-shadow:0 -8px 40px rgba(0,0,0,0.5);
+    }
+    .ss-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px 12px; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
+    }
+    .ss-title  { font-size:18px; font-weight:900; color:var(--text); }
+    .ss-back   { background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:4px 8px; font-family:inherit; }
+    .ss-back:hover { color:var(--text); }
+    .ss-body   { flex:1; overflow-y:auto; padding:16px 16px 0; display:flex; flex-direction:column; gap:20px; }
+    .ss-footer { padding:12px 16px 20px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
+    .ss-section-label {
+      font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.07em; margin-bottom:8px; display:flex; align-items:center; gap:6px;
+    }
+    .ss-required { color:var(--accent); font-size:13px; }
+    .ss-optional { font-size:10px; font-weight:600; color:rgba(255,255,255,0.25); text-transform:none; letter-spacing:0; }
+    /* Who trigger */
+    .ss-who-trigger {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 14px; border-radius:12px; border:1.5px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04); cursor:pointer; transition:border-color .15s;
+    }
+    .ss-who-trigger:hover, .ss-who-trigger.open { border-color:var(--accent); }
+    .ss-who-trigger-label { font-size:14px; color:var(--muted); }
+    .ss-who-trigger-label.has-sel { color:var(--text); font-weight:700; }
+    .ss-who-chevron { font-size:11px; color:var(--muted); transition:transform .2s; }
+    .ss-who-trigger.open .ss-who-chevron { transform:rotate(180deg); }
+    /* Who dropdown */
+    .ss-who-dropdown {
+      margin-top:6px; border-radius:14px; border:1.5px solid rgba(255,255,255,0.10);
+      background:rgba(20,20,32,0.98); overflow:hidden;
+      max-height:0; transition:max-height .25s ease; overflow-y:auto;
+    }
+    .ss-who-dropdown.open { max-height:260px; }
+    .ss-who-group-label {
+      font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.07em; padding:10px 14px 4px;
+    }
+    .ss-who-item {
+      display:flex; align-items:center; gap:10px; padding:10px 14px;
+      cursor:pointer; transition:background .12s;
+    }
+    .ss-who-item:hover { background:rgba(255,255,255,0.05); }
+    .ss-who-check {
+      width:18px; height:18px; border-radius:5px; border:1.5px solid rgba(255,255,255,0.2);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      font-size:11px; color:transparent; transition:all .15s;
+    }
+    .ss-who-item.checked .ss-who-check { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .ss-who-name  { font-size:14px; color:var(--text); flex:1; }
+    .ss-rel-badge {
+      font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px;
+      background:rgba(124,92,191,0.18); color:var(--accent); border:1px solid rgba(124,92,191,0.3);
+    }
+    .ss-rel-badge.partner { background:rgba(0,188,212,0.15); color:#00e5ff; border-color:rgba(0,188,212,0.3); }
+    /* What input */
+    .ss-input {
+      width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05);
+      border:1.5px solid rgba(255,255,255,0.12); border-radius:12px;
+      padding:12px 14px; color:var(--text); font-size:14px; font-family:inherit;
+      transition:border-color .15s;
+    }
+    .ss-input:focus { outline:none; border-color:var(--accent); }
+    .ss-input::placeholder { color:var(--muted); }
+    .ss-browse-link {
+      display:inline-flex; align-items:center; gap:6px; margin-top:8px;
+      background:none; border:none; color:var(--accent); font-size:13px;
+      cursor:pointer; font-family:inherit; font-weight:600; padding:0;
+    }
+    .ss-browse-link:hover { text-decoration:underline; }
+    .ss-linked-card {
+      margin-top:8px; padding:10px 13px; border-radius:12px;
+      background:rgba(124,92,191,0.12); border:1.5px solid rgba(124,92,191,0.35);
+      display:flex; align-items:center; gap:10px;
+    }
+    .ss-linked-title { font-size:13px; font-weight:700; color:var(--text); flex:1; }
+    .ss-linked-meta  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .ss-linked-remove { background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; padding:0 4px; }
+    /* Date list */
+    .ss-date-list { display:flex; flex-direction:column; gap:5px; max-height:220px; overflow-y:auto; }
+    .ss-date-row {
+      display:flex; align-items:center; gap:10px; padding:10px 13px;
+      border-radius:11px; border:1.5px solid rgba(255,255,255,0.07);
+      background:rgba(255,255,255,0.03); cursor:pointer; transition:all .12s;
+      position:relative;
+    }
+    .ss-date-row:hover  { border-color:rgba(255,255,255,0.18); background:rgba(255,255,255,0.06); }
+    .ss-date-row.match  { border-color:rgba(124,92,191,0.4); background:rgba(124,92,191,0.10); }
+    .ss-date-row.selected { border-color:var(--accent); background:rgba(124,92,191,0.22); }
+    .ss-date-label { font-size:14px; color:var(--text); flex:1; }
+    .ss-date-row.match .ss-date-label { font-weight:700; }
+    .ss-avail-badge {
+      font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px;
+      background:rgba(124,92,191,0.2); color:var(--accent); white-space:nowrap;
+    }
+    .ss-avail-badge.full { background:rgba(34,197,94,0.18); color:#4ade80; }
+    .ss-date-tooltip {
+      display:none; position:absolute; bottom:calc(100% + 6px); left:0; right:0;
+      background:rgba(20,20,32,0.98); border:1px solid rgba(255,255,255,0.12);
+      border-radius:10px; padding:8px 12px; font-size:12px; color:var(--text);
+      z-index:10; pointer-events:none;
+    }
+    .ss-date-row:hover .ss-date-tooltip { display:block; }
+    /* Time row */
+    .ss-time-row { display:flex; align-items:center; gap:10px; margin-top:8px; }
+    .ss-time-input {
+      padding:10px 13px; border-radius:10px; border:1.5px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.05); color:var(--text); font-size:14px;
+      font-family:inherit; cursor:pointer;
+    }
+    .ss-time-input:focus { outline:none; border-color:var(--accent); }
+    .ss-time-hint { font-size:11px; color:var(--muted); }
+    /* Review */
+    .ss-review-summary {
+      padding:14px 16px; border-radius:14px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      margin-bottom:4px;
+    }
+    .ss-review-row { display:flex; gap:10px; align-items:flex-start; font-size:14px; color:var(--text); margin-bottom:8px; }
+    .ss-review-row:last-child { margin-bottom:0; }
+    .ss-review-icon { font-size:16px; flex-shrink:0; width:22px; }
+    .ss-review-link { color:var(--accent); text-decoration:none; word-break:break-all; font-size:12px; }
+    .ss-review-link:hover { text-decoration:underline; }
+    .ss-person-row {
+      display:flex; align-items:center; gap:10px; padding:12px 14px;
+      border-radius:12px; border:1px solid rgba(255,255,255,0.07);
+      background:rgba(255,255,255,0.03); margin-bottom:6px;
+    }
+    .ss-person-name  { font-size:14px; font-weight:700; color:var(--text); flex:1; }
+    .ss-wa-btn {
+      display:flex; align-items:center; gap:6px; padding:8px 14px;
+      border-radius:10px; background:rgba(37,211,102,0.18); border:1.5px solid rgba(37,211,102,0.35);
+      color:#25d366; font-size:13px; font-weight:700; cursor:pointer;
+      text-decoration:none; white-space:nowrap; font-family:inherit;
+      transition:all .15s;
+    }
+    .ss-wa-btn:hover { background:rgba(37,211,102,0.28); }
+    .ss-msg-preview {
+      font-size:12px; color:var(--muted); margin-top:6px; padding:0 14px 10px;
+      line-height:1.5; border-bottom:1px solid rgba(255,255,255,0.05);
+    }
+    .ss-msg-preview:last-child { border-bottom:none; }
+
     .opp-date-row {
       padding:13px 14px; border-radius:10px; margin-bottom:6px; cursor:pointer;
       border:1.5px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
@@ -2448,11 +2599,8 @@ async function cancelOuting(outingId, dateStr) {
 }
 
 function openOutingModal(prefillDate) {
-  // Open the existing outing/plan modal prefilled with a date
-  // Look for the new-plan button and trigger it, or open inline plan modal
-  const planBtn = document.getElementById('bn-fab') || document.querySelector('.bn-fab');
-  if (prefillDate) _prefillOutingDate = prefillDate;
-  openInviteModal(); // falls back to invite modal which has plan tab
+  _ssPrefillDate = prefillDate || null;
+  openPlanWizard(prefillDate);
 }
 let _prefillOutingDate = null;
 
@@ -3895,72 +4043,66 @@ function showToast(msg) {
 </div>
 
 <!-- ── Plan wizard ── -->
+<!-- ── Start Something sheet ── -->
 <div class="modal-overlay" id="plan-wizard">
-  <div class="plan-sheet">
-
-    <div class="plan-sheet-header">
+  <div class="ss-sheet">
+    <div class="ss-header">
       <button class="plan-sheet-close" onclick="closePlanWizard()">✕</button>
-      <div class="plan-step-dots">
-        <div class="plan-dot" id="pdot-0"></div>
-        <div class="plan-dot" id="pdot-1"></div>
-        <div class="plan-dot" id="pdot-2"></div>
-        <div class="plan-dot" id="pdot-3"></div>
-      </div>
-      <div style="width:32px;"></div>
+      <div class="ss-title">✨ Start something</div>
+      <div style="width:32px"></div>
     </div>
+    <div class="ss-body" id="ss-body">
 
-    <!-- Step 0: Who -->
-    <div class="plan-step active" id="plan-step-0">
-      <div class="plan-step-title">Who do you want to hang out with?</div>
-      <div class="plan-contact-list" id="plan-contact-list"></div>
-      <div class="plan-sheet-footer">
-        <button class="btn btn-primary" id="plan-next-0" onclick="planGoStep(1)" disabled>Next →</button>
+      <!-- WHO -->
+      <div>
+        <div class="ss-section-label">Who <span class="ss-required">*</span></div>
+        <div class="ss-who-trigger" id="ss-who-trigger" onclick="toggleSSWhoDropdown()">
+          <span class="ss-who-trigger-label" id="ss-who-label">Choose people…</span>
+          <span class="ss-who-chevron">▾</span>
+        </div>
+        <div class="ss-who-dropdown" id="ss-who-dropdown"></div>
       </div>
+
+      <!-- WHERE / WHAT -->
+      <div>
+        <div class="ss-section-label">Where / What <span class="ss-optional">optional</span></div>
+        <input class="ss-input" id="ss-what-input" placeholder="e.g. coffee, beach walk, dinner…" oninput="onSSWhatInput()">
+        <button class="ss-browse-link" onclick="openBrowseFromSS()">📎 Pick from saved events &amp; venues</button>
+        <div id="ss-linked-card" style="display:none"></div>
+      </div>
+
+      <!-- WHEN -->
+      <div id="ss-when-section">
+        <div class="ss-section-label">When <span class="ss-optional">optional</span></div>
+        <div class="ss-date-list" id="ss-date-list"></div>
+        <div class="ss-time-row" id="ss-time-row" style="display:none">
+          <input type="time" class="ss-time-input" id="ss-time-input">
+          <span class="ss-time-hint" id="ss-time-hint">add a time</span>
+        </div>
+      </div>
+
     </div>
-
-    <!-- Step 1: Activity (optional) -->
-    <div class="plan-step" id="plan-step-1">
-      <div class="plan-step-title">What do you have in mind?</div>
-      <div class="plan-step-sub">Optional — you can sort it out on the day</div>
-      <div class="chip-row" id="plan-activity-chips"></div>
-      <div class="plan-sheet-footer">
-        <button class="btn btn-outline" onclick="planGoStep(2)">Skip</button>
-        <button class="btn btn-primary" onclick="planGoStep(2)">Next →</button>
-      </div>
+    <div class="ss-footer">
+      <button class="btn btn-primary" style="width:100%;padding:14px;" id="ss-submit-btn" onclick="openSSReview()" disabled>
+        Review invite →
+      </button>
     </div>
+  </div>
+</div>
 
-    <!-- Step 2: When (optional) -->
-    <div class="plan-step" id="plan-step-2">
-      <div class="plan-step-title">When are you thinking?</div>
-      <div class="plan-step-sub">Optional — figure it out over chat</div>
-      <div class="plan-when-chips">
-        <button class="plan-when-chip" onclick="selectPlanWhen('this_weekend',this)">This weekend</button>
-        <button class="plan-when-chip" onclick="selectPlanWhen('next_weekend',this)">Next weekend</button>
-        <button class="plan-when-chip" onclick="selectPlanWhen('this_week',this)">This week</button>
-        <button class="plan-when-chip" onclick="selectPlanWhen('next_week',this)">Next week</button>
-        <button class="plan-when-chip" onclick="selectPlanWhen('soon',this)">Anytime soon</button>
-      </div>
-      <div class="plan-sheet-footer">
-        <button class="btn btn-outline" onclick="planGoStep(3)">Skip</button>
-        <button class="btn btn-primary" onclick="planGoStep(3)">Next →</button>
-      </div>
+<!-- ── Start Something: Review sheet ── -->
+<div class="modal-overlay" id="ss-review-sheet">
+  <div class="ss-sheet">
+    <div class="ss-header">
+      <button class="ss-back" onclick="closeSSReview()">← Back</button>
+      <div class="ss-title">Review &amp; send</div>
+      <div style="width:52px"></div>
     </div>
-
-    <!-- Step 3: Message & send -->
-    <div class="plan-step" id="plan-step-3">
-      <div class="plan-step-title">Send your invite</div>
-      <div class="plan-step-sub">Edit the message or send as-is</div>
-      <textarea class="plan-msg-area" id="plan-msg-txt" rows="4"></textarea>
-      <div class="plan-msg-hint" id="plan-msg-hint"></div>
-      <div class="plan-sheet-footer">
-        <button class="btn btn-outline btn-sm" onclick="copyPlanMsg()">Copy</button>
-        <a class="plan-wa-btn" id="plan-wa-btn" href="#" target="_blank" rel="noopener" onclick="onPlanSend()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.85L0 24l6.335-1.498A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.36-.213-3.73.881.933-3.618-.234-.374A9.818 9.818 0 1112 21.818z"/></svg>
-          Send via WhatsApp
-        </a>
-      </div>
+    <div class="ss-body" id="ss-review-body"></div>
+    <div class="ss-footer" style="display:flex;gap:8px;">
+      <button class="btn btn-outline" style="flex:1;padding:13px;" onclick="copySSAllMessages()">Copy all</button>
+      <button class="btn btn-primary" style="flex:1;padding:13px;" onclick="sendSSInvite()">Done ✓</button>
     </div>
-
   </div>
 </div>
 
@@ -3988,8 +4130,8 @@ function showToast(msg) {
   </button>
 
   <button class="fab-action disabled" id="fab-plan" onclick="fabPlanClick()">
-    <div class="fab-action-icon">🗓</div>
-    <span>Invite a friend to hang out</span>
+    <div class="fab-action-icon">✨</div>
+    <span>Start something</span>
     <div class="fab-action-note">
       You need at least one accepted connection first.
     </div>
@@ -4107,40 +4249,47 @@ function fabGroupClick() {
 }
 
 
-// ── Plan wizard ───────────────────────────────────────────────────────────────
-let _planContacts  = [];   // selected allConnections items
-let _planActivity  = null; // chip id e.g. 'coffee'
-let _planWhen      = null; // 'this_weekend' | 'next_weekend' | 'this_week' | 'next_week' | 'soon'
+// ── Start Something wizard ────────────────────────────────────────────────────
+let _ssContacts    = [];    // selected connection objects
+let _ssLinkedOpp   = null;  // { id, title, type, start_time, location_name, source_url }
+let _ssSelectedDate= null;  // 'YYYY-MM-DD'
+let _ssPrefillDate = null;  // pre-filled from day sheet tap
+let _ssWhoOpen     = false;
 
-const PLAN_ACT_LABELS = {
-  coffee:'coffee', drinks:'drinks', restaurants:'dinner',
-  walks:'a walk', events:'an event', sports:'some sports', notsure:'something fun'
-};
-const PLAN_WHEN_LABELS = {
-  this_weekend:'this weekend', next_weekend:'next weekend',
-  this_week:'this week', next_week:'next week', soon:'soon'
-};
+// Sort order for relationship types
+const SS_REL_ORDER = { partner:0, friend:1, coparent:2 };
 
-function openPlanWizard() {
-  _planContacts = [];
-  _planActivity = null;
-  _planWhen     = null;
+function _ssSortedConnections() {
+  return (allConnections || [])
+    .filter(c => c.status === 'approved')
+    .sort((a,b) => {
+      const ao = SS_REL_ORDER[a.relationship_type] ?? 9;
+      const bo = SS_REL_ORDER[b.relationship_type] ?? 9;
+      return ao !== bo ? ao - bo : (a.other_name||'').localeCompare(b.other_name||'');
+    });
+}
 
-  // Populate contact list
-  const approved = (allConnections || []).filter(c => c.status === 'approved');
-  const list = document.getElementById('plan-contact-list');
-  if (list) {
-    list.innerHTML = approved.map(c => {
-      const av = scAvatar({ photo: c.other_photo || null, initial: (c.other_name||'?')[0].toUpperCase(), color: '#7c5cbf' }, 36);
-      return `<div class="plan-contact-item" id="pc-${c.id}" data-id="${c.id}" data-name="${c.other_name}" onclick="togglePlanContact(this,'${c.id}')">
-        ${av}
-        <span class="plan-contact-name">${c.other_name}</span>
-        <span class="plan-contact-check">✓</span>
-      </div>`;
-    }).join('');
-  }
+function openPlanWizard(prefillDate) {
+  _ssContacts     = [];
+  _ssLinkedOpp    = null;
+  _ssSelectedDate = prefillDate || _ssPrefillDate || null;
+  _ssPrefillDate  = null;
+  _ssWhoOpen      = false;
 
-  showPlanStep(0);
+  // Build who dropdown
+  _ssRebuildWhoDropdown();
+  _ssUpdateWhoLabel();
+
+  // Build date list
+  _ssRebuildDateList();
+
+  // Reset what
+  const wi = document.getElementById('ss-what-input');
+  if (wi) wi.value = '';
+  document.getElementById('ss-linked-card').style.display = 'none';
+  document.getElementById('ss-time-row').style.display = 'none';
+  document.getElementById('ss-submit-btn').disabled = true;
+
   document.getElementById('plan-wizard').classList.add('open');
 }
 
@@ -4148,126 +4297,308 @@ function closePlanWizard() {
   document.getElementById('plan-wizard').classList.remove('open');
 }
 
-function togglePlanContact(el, connId) {
-  const c = (allConnections || []).find(x => x.id === connId);
-  if (!c) return;
-  const idx = _planContacts.findIndex(x => x.id === connId);
-  if (idx >= 0) { _planContacts.splice(idx, 1); el.classList.remove('selected'); }
-  else          { _planContacts.push(c);          el.classList.add('selected'); }
-  const nextBtn = document.getElementById('plan-next-0');
-  if (nextBtn) nextBtn.disabled = _planContacts.length === 0;
-}
+// ── Who dropdown ──────────────────────────────────────────────────────────────
+function _ssRebuildWhoDropdown() {
+  const conns = _ssSortedConnections();
+  const dd = document.getElementById('ss-who-dropdown');
+  if (!dd) return;
 
-function showPlanStep(n) {
-  for (let i = 0; i < 4; i++) {
-    document.getElementById(`plan-step-${i}`)?.classList.toggle('active', i === n);
-    const dot = document.getElementById(`pdot-${i}`);
-    if (dot) dot.classList.toggle('active', i === n);
+  // Group by relationship type
+  const groups = {};
+  for (const c of conns) {
+    const t = c.relationship_type || 'friend';
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(c);
   }
-  if (n === 1) _buildPlanActivityChips();
-  if (n === 3) _buildPlanMessage();
+
+  const GROUP_LABELS = { partner:'Partner', friend:'Friends', coparent:'Co-parent' };
+  let html = '';
+  for (const t of ['partner','friend','coparent']) {
+    if (!groups[t]?.length) continue;
+    html += `<div class="ss-who-group-label">${GROUP_LABELS[t]}</div>`;
+    for (const c of groups[t]) {
+      const checked = _ssContacts.some(x => x.id === c.id);
+      const badge   = t === 'partner'
+        ? `<span class="ss-rel-badge partner">Partner</span>`
+        : t === 'coparent' ? `<span class="ss-rel-badge">Co-parent</span>` : '';
+      html += `<div class="ss-who-item${checked?' checked':''}" id="sswho-${c.id}" onclick="toggleSSContact('${c.id}')">
+        <div class="ss-who-check">${checked?'✓':''}</div>
+        <span class="ss-who-name">${c.other_name}</span>
+        ${badge}
+      </div>`;
+    }
+  }
+  // Groups stub
+  html += `<div class="ss-who-group-label" style="margin-top:4px;">Groups</div>
+    <div style="padding:8px 14px 10px;font-size:13px;color:var(--muted);">No groups yet — <button class="fab-action-note-cta" onclick="event.stopPropagation();closePlanWizard();fabGroupClick()">create one →</button></div>`;
+  dd.innerHTML = html;
 }
 
-function planGoStep(n) {
-  showPlanStep(n);
+function toggleSSWhoDropdown() {
+  _ssWhoOpen = !_ssWhoOpen;
+  document.getElementById('ss-who-dropdown').classList.toggle('open', _ssWhoOpen);
+  document.getElementById('ss-who-trigger').classList.toggle('open', _ssWhoOpen);
 }
 
-function selectPlanWhen(val, el) {
-  _planWhen = val;
-  document.querySelectorAll('.plan-when-chip').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
+function toggleSSContact(connId) {
+  const c = _ssSortedConnections().find(x => x.id === connId);
+  if (!c) return;
+  const idx = _ssContacts.findIndex(x => x.id === connId);
+  if (idx >= 0) _ssContacts.splice(idx, 1);
+  else          _ssContacts.push(c);
+  _ssRebuildWhoDropdown();
+  _ssUpdateWhoLabel();
+  _ssRebuildDateList();        // refresh availability
+  document.getElementById('ss-submit-btn').disabled = _ssContacts.length === 0;
 }
 
-function _buildPlanActivityChips() {
-  // Show union of prefs from selected contacts, fallback to defaults
-  const prefIds = new Set();
-  _planContacts.forEach(c => {
-    const p = connPrefs[c.id];
-    if (p?.activity_types?.length) p.activity_types.forEach(id => prefIds.add(id));
-  });
-  const chips = prefIds.size ? [...prefIds] : ACTIVITY_CHIPS_CAL.map(ch => ch.id);
-  const row = document.getElementById('plan-activity-chips');
-  if (!row) return;
-  row.innerHTML = ACTIVITY_CHIPS_CAL.filter(ch => chips.includes(ch.id)).map(ch =>
-    `<button class="pref-chip${_planActivity === ch.id ? ' selected' : ''}" onclick="selectPlanActivity('${ch.id}',this)">${ch.label}</button>`
-  ).join('');
+function _ssUpdateWhoLabel() {
+  const lbl = document.getElementById('ss-who-label');
+  if (!lbl) return;
+  if (_ssContacts.length === 0) {
+    lbl.textContent = 'Choose people…';
+    lbl.classList.remove('has-sel');
+  } else {
+    lbl.textContent = _ssContacts.map(c => c.other_name).join(', ');
+    lbl.classList.add('has-sel');
+  }
 }
 
-function selectPlanActivity(id, el) {
-  _planActivity = _planActivity === id ? null : id;
-  document.querySelectorAll('#plan-activity-chips .pref-chip').forEach(b => b.classList.remove('selected'));
-  if (_planActivity) el.classList.add('selected');
-}
+// ── Date list with availability ───────────────────────────────────────────────
+function _ssRebuildDateList() {
+  const list = document.getElementById('ss-date-list');
+  if (!list) return;
 
-function _buildPlanMessage() {
-  const names  = _planContacts.map(c => c.other_name).join(' & ');
-  const act    = _planActivity ? PLAN_ACT_LABELS[_planActivity] : 'something';
-  const when   = _planWhen    ? ' ' + PLAN_WHEN_LABELS[_planWhen] : '';
-  const msg    = `Hey ${names}, do you fancy ${act}${when}? 😊`;
-  const txt    = document.getElementById('plan-msg-txt');
-  if (txt) txt.value = msg;
+  // Build a map: date → { name, isFree }[] for selected contacts
+  const scMap = {};
+  for (const sc of (socialConnections || [])) scMap[sc.id] = sc;
 
-  // WhatsApp link — direct if one contact has a mobile, else share
-  const wa   = document.getElementById('plan-wa-btn');
-  const hint = document.getElementById('plan-msg-hint');
-  if (wa) {
-    let waHref = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    if (_planContacts.length === 1) {
-      const c = _planContacts[0];
-      const mobile = c.i_am_target ? c.requester_mobile : c.target_mobile;
-      if (mobile) {
-        const num = mobile.replace(/[^0-9]/g, '');
-        waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rows  = [];
+
+  for (let i = 0; i < 60; i++) {
+    const d   = new Date(today); d.setDate(today.getDate() + i);
+    const ds  = d.toISOString().slice(0,10);
+    const lbl = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+
+    // Who is free on this date among selected contacts
+    const freeNames = _ssContacts
+      .filter(c => {
+        const sc = (socialConnections||[]).find(s => s.id === c.other_user_id || s.connId === c.id);
+        if (!sc) return false;
+        return sc.days?.[ds]?.owner !== 'self'; // they don't have kids
+      })
+      .map(c => c.other_name);
+
+    const allFree  = _ssContacts.length > 0 && freeNames.length === _ssContacts.length;
+    const someFree = freeNames.length > 0 && !allFree;
+    const isSelected = ds === _ssSelectedDate;
+
+    let badge = '';
+    let tooltip = '';
+    if (_ssContacts.length > 0) {
+      if (allFree) {
+        badge   = `<span class="ss-avail-badge full">🟢 All free</span>`;
+        tooltip = `${freeNames.join(' & ')} ${freeNames.length > 1 ? 'are' : 'is'} free`;
+      } else if (someFree) {
+        badge   = `<span class="ss-avail-badge">${freeNames.length}/${_ssContacts.length} free</span>`;
+        tooltip = `Free: ${freeNames.join(', ')}`;
+      } else if (_ssContacts.length > 0) {
+        tooltip = 'No one free this day';
       }
     }
-    wa.href = waHref;
-    if (hint) hint.textContent = _planContacts.length > 1
-      ? 'WhatsApp will open — pick your group chat or send to each person.'
-      : '';
+
+    const cls = ['ss-date-row', allFree||someFree?'match':'', isSelected?'selected':''].filter(Boolean).join(' ');
+    rows.push(`<div class="${cls}" id="ssdate-${ds}" onclick="selectSSDate('${ds}',this)">
+      <span class="ss-date-label">${lbl}</span>
+      ${badge}
+      ${tooltip ? `<div class="ss-date-tooltip">${tooltip}</div>` : ''}
+    </div>`);
   }
+
+  list.innerHTML = rows.join('');
+
+  // Scroll to pre-selected if any
+  if (_ssSelectedDate) {
+    setTimeout(() => {
+      document.getElementById(`ssdate-${_ssSelectedDate}`)?.scrollIntoView({ block:'nearest' });
+    }, 50);
+  }
+
+  // Show/hide time row
+  const timeRow = document.getElementById('ss-time-row');
+  if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
 }
 
-async function onPlanSend() {
-  // Save outing to DB in the background
-  const msg  = document.getElementById('plan-msg-txt')?.value || '';
-  const date = _resolvePlanDate(_planWhen);
-  const invitees = _planContacts.map(c => ({ user_id: c.other_user_id, name: c.other_name }));
+function selectSSDate(date, el) {
+  _ssSelectedDate = _ssSelectedDate === date ? null : date;
+  document.querySelectorAll('.ss-date-row').forEach(r => r.classList.remove('selected'));
+  if (_ssSelectedDate) el.classList.add('selected');
+  const timeRow = document.getElementById('ss-time-row');
+  if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
+}
+
+// ── What / linked event ───────────────────────────────────────────────────────
+function onSSWhatInput() {
+  // Clear linked event if user types manually
+  if (_ssLinkedOpp) { _ssLinkedOpp = null; document.getElementById('ss-linked-card').style.display = 'none'; }
+}
+
+function linkSSOpportunity(opp) {
+  _ssLinkedOpp = opp;
+  const card   = document.getElementById('ss-linked-card');
+  const wi     = document.getElementById('ss-what-input');
+  if (wi) wi.value = opp.title;
+
+  // Auto-fill date+time from event
+  if (opp.start_time) {
+    const dt = new Date(opp.start_time);
+    if (!isNaN(dt)) {
+      _ssSelectedDate = dt.toISOString().slice(0,10);
+      _ssRebuildDateList();
+      const ti = document.getElementById('ss-time-input');
+      const th = document.getElementById('ss-time-hint');
+      if (ti) ti.value = dt.toTimeString().slice(0,5);
+      if (th) th.textContent = 'auto-filled from event';
+      document.getElementById('ss-time-row').style.display = 'flex';
+    }
+  }
+
+  const TYPE_ICON = { event:'🗓', venue:'📍', activity_template:'✨' };
+  const meta = [opp.location_name?.split(',')[0], opp.start_time ? new Date(opp.start_time).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) : null].filter(Boolean).join(' · ');
+  card.style.display = 'flex';
+  card.innerHTML = `<div class="ss-linked-card">
+    <div style="flex:1">
+      <div class="ss-linked-title">${TYPE_ICON[opp.type]||'🎯'} ${opp.title}</div>
+      ${meta ? `<div class="ss-linked-meta">${meta}</div>` : ''}
+    </div>
+    <button class="ss-linked-remove" onclick="ssUnlinkOpp()">✕</button>
+  </div>`;
+
+  closeBrowseSheet();
+}
+
+function ssUnlinkOpp() {
+  _ssLinkedOpp = null;
+  document.getElementById('ss-linked-card').style.display = 'none';
+  const wi = document.getElementById('ss-what-input');
+  if (wi) wi.value = '';
+}
+
+function openBrowseFromSS() {
+  // Set a flag so Browse cards call linkSSOpportunity instead of oppCardClick
+  _browseCalledFromSS = true;
+  openBrowseSheet();
+}
+let _browseCalledFromSS = false;
+
+// ── Review sheet ──────────────────────────────────────────────────────────────
+function openSSReview() {
+  if (_ssContacts.length === 0) return;
+
+  const what    = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
+  const dateStr = _ssSelectedDate;
+  const timeVal = document.getElementById('ss-time-input')?.value || null;
+  const link    = _ssLinkedOpp?.source_url || null;
+
+  // Build summary block
+  let summaryHtml = '<div class="ss-review-summary">';
+  if (_ssContacts.length) {
+    const names = _ssContacts.map(c => c.other_name).join(', ');
+    summaryHtml += `<div class="ss-review-row"><span class="ss-review-icon">👥</span><span>${names}</span></div>`;
+  }
+  if (what) {
+    summaryHtml += `<div class="ss-review-row"><span class="ss-review-icon">✨</span><span>${what}</span></div>`;
+  }
+  if (dateStr) {
+    const d   = new Date(dateStr + 'T12:00:00');
+    const lbl = d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+    const time = timeVal ? ` at ${timeVal}` : '';
+    summaryHtml += `<div class="ss-review-row"><span class="ss-review-icon">📅</span><span>${lbl}${time}</span></div>`;
+  }
+  if (link) {
+    summaryHtml += `<div class="ss-review-row"><span class="ss-review-icon">🔗</span><a class="ss-review-link" href="${link}" target="_blank" rel="noopener">${link}</a></div>`;
+  }
+  summaryHtml += '</div>';
+
+  // Per-person blocks
+  let peopleHtml = '';
+  for (const c of _ssContacts) {
+    const msg     = _ssPersonMessage(c, what, dateStr, timeVal, link);
+    const mobile  = c.i_am_target ? c.requester_mobile : c.target_mobile;
+    const num     = mobile ? mobile.replace(/[^0-9]/g,'') : null;
+    const waHref  = num
+      ? `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    const WA_SVG  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.85L0 24l6.335-1.498A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.36-.213-3.73.881.933-3.618-.234-.374A9.818 9.818 0 1112 21.818z"/></svg>`;
+    peopleHtml += `<div class="ss-person-row">
+      <span class="ss-person-name">${c.other_name}</span>
+      <a class="ss-wa-btn" href="${waHref}" target="_blank" rel="noopener">${WA_SVG} WhatsApp</a>
+    </div>
+    <div class="ss-msg-preview">${msg}</div>`;
+  }
+
+  document.getElementById('ss-review-body').innerHTML = summaryHtml + peopleHtml;
+  document.getElementById('ss-review-sheet').classList.add('open');
+}
+
+function _ssPersonMessage(conn, what, dateStr, timeVal, link) {
+  const name  = conn.other_name;
+  const when  = dateStr
+    ? new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + (timeVal ? ` at ${timeVal}` : '')
+    : null;
+
+  if (_ssLinkedOpp?.type === 'event') {
+    const t = _ssLinkedOpp.title;
+    let msg = `Hey ${name}! Want to come to ${t}`;
+    if (when) msg += ` on ${when}`;
+    msg += `? 🎉`;
+    if (link) msg += `\n${link}`;
+    return msg;
+  }
+  if (_ssLinkedOpp?.type === 'venue' || what) {
+    const place = what || 'hang out';
+    let msg = `Hey ${name}! How about ${place}`;
+    if (when) msg += ` on ${when}`;
+    msg += `? 😊`;
+    if (link) msg += `\n${link}`;
+    return msg;
+  }
+  let msg = `Hey ${name}, want to hang out`;
+  if (when) msg += ` on ${when}`;
+  msg += `? 😊`;
+  return msg;
+}
+
+function closeSSReview() {
+  document.getElementById('ss-review-sheet').classList.remove('open');
+}
+
+async function sendSSInvite() {
+  const what     = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
+  const timeVal  = document.getElementById('ss-time-input')?.value || null;
+  const date     = _ssSelectedDate || null;
+  const invitees = _ssContacts.map(c => ({ user_id: c.other_user_id, name: c.other_name }));
+  const msg      = _ssContacts.map(c => _ssPersonMessage(c, what, date, timeVal, _ssLinkedOpp?.source_url || null)).join('\n\n');
   try {
     await fetch(`/api/outings?token=${MY_TOKEN}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ date, message: msg, invitees })
     });
     await loadOutings();
   } catch(_) {}
+  closeSSReview();
   closePlanWizard();
-  showToast('✓ Invite sent!');
+  showToast('✓ Invite saved!');
 }
 
-function copyPlanMsg() {
-  const txt = document.getElementById('plan-msg-txt')?.value || '';
-  navigator.clipboard.writeText(txt).then(() => showToast('✓ Copied!'));
-}
-
-function _resolvePlanDate(when) {
-  const d   = new Date();
-  const dow = d.getDay(); // 0=Sun
-  const next = (target, extra = 0) => {
-    const diff = (target - dow + 7) % 7 || 7;
-    const r = new Date(d); r.setDate(r.getDate() + diff + extra);
-    return r.toISOString().slice(0, 10);
-  };
-  if (when === 'this_weekend')  return next(6);
-  if (when === 'next_weekend')  return next(6, 7);
-  if (when === 'this_week') {
-    // Next weekday (Mon–Fri), not same day
-    const r = new Date(d); r.setDate(r.getDate() + 1);
-    while (r.getDay() === 0 || r.getDay() === 6) r.setDate(r.getDate() + 1);
-    return r.toISOString().slice(0, 10);
-  }
-  if (when === 'next_week')     return next(1, 7);
-  // soon / null — 7 days out
-  const r = new Date(d); r.setDate(r.getDate() + 7);
-  return r.toISOString().slice(0, 10);
+function copySSAllMessages() {
+  const msgs = _ssContacts.map(c => {
+    const what   = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
+    const time   = document.getElementById('ss-time-input')?.value || null;
+    return `${c.other_name}:\n${_ssPersonMessage(c, what, _ssSelectedDate, time, _ssLinkedOpp?.source_url||null)}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(msgs).then(() => showToast('✓ Copied!'));
 }
 
 // ── Connection preferences ─────────────────────────────────────────────────
@@ -4406,6 +4737,12 @@ let _oppActionTitle = '';
 let _oppPickedDate = null;
 
 function oppCardClick(oppId, sourceUrl, title) {
+  // If Browse was opened from Start Something, link the opp back instead
+  if (_browseCalledFromSS) {
+    _browseCalledFromSS = false;
+    const opp = _browseMatches.find(o => o.id === oppId);
+    if (opp) { linkSSOpportunity(opp); return; }
+  }
   _oppActionId    = oppId;
   _oppActionUrl   = (sourceUrl && sourceUrl !== 'undefined') ? decodeURIComponent(sourceUrl) : null;
   _oppActionTitle = title || 'this activity';
