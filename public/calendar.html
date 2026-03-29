@@ -1202,6 +1202,52 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Plan wizard (bottom-sheet) ─────────────────────────────────── */
     #plan-wizard { z-index:2000; align-items:flex-end; padding:0; }
+
+    /* SS page system */
+    .ss-page { display:none; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
+    .ss-page.active { display:flex; }
+
+    /* Landing choices */
+    .ss-choices { display:flex; flex-direction:column; gap:10px; padding:16px; flex:1; }
+    .ss-choice-card {
+      display:flex; align-items:center; gap:14px; padding:16px;
+      background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08);
+      border-radius:14px; cursor:pointer; text-align:left;
+      transition:all .15s; font-family:inherit; width:100%;
+    }
+    .ss-choice-card:hover, .ss-choice-card:active { background:rgba(167,139,250,0.10); border-color:rgba(167,139,250,0.4); }
+    .ss-choice-icon { font-size:22px; flex-shrink:0; width:32px; text-align:center; }
+    .ss-choice-text { flex:1; min-width:0; }
+    .ss-choice-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:2px; }
+    .ss-choice-sub { font-size:12px; color:var(--muted); line-height:1.4; }
+    .ss-choice-arrow { font-size:20px; color:var(--muted); flex-shrink:0; margin-left:4px; }
+    .ss-choice-skip {
+      background:none; border:none; color:var(--muted); font-size:13px;
+      cursor:pointer; padding:14px 16px 20px; text-align:center;
+      font-family:inherit; width:100%; text-decoration:underline;
+      text-decoration-color:rgba(255,255,255,0.15); flex-shrink:0;
+    }
+    .ss-choice-skip:hover { color:var(--text); }
+
+    /* Link analysis page */
+    .ss-link-sub { font-size:13px; color:var(--muted); margin:0 16px 14px; line-height:1.5; }
+    .ss-link-textarea {
+      display:block; margin:0 16px; width:calc(100% - 32px);
+      background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1);
+      border-radius:12px; padding:12px 14px; font-size:14px; color:var(--text);
+      font-family:inherit; resize:none; min-height:72px;
+    }
+    .ss-link-textarea:focus { outline:none; border-color:var(--accent); }
+    .ss-link-status { margin:10px 16px 0; font-size:13px; min-height:22px; color:var(--muted); }
+    .ss-link-status.success { color:#34d399; }
+    .ss-link-status.error   { color:#f87171; }
+    .ss-link-preview {
+      margin:14px 16px 0; background:rgba(255,255,255,0.04);
+      border:1.5px solid rgba(167,139,250,0.3); border-radius:12px; padding:14px;
+    }
+    .ss-link-preview-title { font-weight:700; font-size:14px; color:var(--text); margin-bottom:6px; }
+    .ss-link-preview-row { font-size:12px; color:var(--muted); margin-bottom:2px; }
+    .ss-link-preview-row b { color:var(--text); font-weight:600; }
     .plan-sheet {
       background:var(--surface); border-radius:20px 20px 0 0;
       width:100%; max-width:520px; margin:0 auto;
@@ -4119,51 +4165,101 @@ function showToast(msg) {
 <!-- ── Start Something sheet ── -->
 <div class="modal-overlay" id="plan-wizard">
   <div class="ss-sheet">
+
+    <!-- Dynamic header -->
     <div class="ss-header">
-      <button class="plan-sheet-close" onclick="closePlanWizard()">✕</button>
-      <div class="ss-title">✨ Start something</div>
+      <button class="plan-sheet-close" id="ss-header-left" onclick="ssHeaderLeft()">✕</button>
+      <div class="ss-title" id="ss-header-title">✨ Start something</div>
       <div style="width:32px"></div>
     </div>
-    <div class="ss-body" id="ss-body">
 
-      <!-- WHO -->
-      <div>
-        <div class="ss-section-label">Who <span class="ss-required">*</span></div>
-        <div class="ss-who-trigger" id="ss-who-trigger" onclick="toggleSSWhoDropdown()">
-          <span class="ss-who-trigger-label" id="ss-who-label">Choose people…</span>
-          <span class="ss-who-chevron">▾</span>
-        </div>
-        <div class="ss-who-dropdown" id="ss-who-dropdown"></div>
+    <!-- ── Page 0: Landing ── -->
+    <div class="ss-page active" id="ss-page-0">
+      <div class="ss-choices">
+        <button class="ss-choice-card" onclick="ssChoose('link')">
+          <span class="ss-choice-icon">🔗</span>
+          <div class="ss-choice-text">
+            <div class="ss-choice-title">Got a link to an event?</div>
+            <div class="ss-choice-sub">Paste it — we'll pull the date, time &amp; location</div>
+          </div>
+          <span class="ss-choice-arrow">›</span>
+        </button>
+        <button class="ss-choice-card" onclick="ssChoose('place')">
+          <span class="ss-choice-icon">📍</span>
+          <div class="ss-choice-text">
+            <div class="ss-choice-title">Got a place in mind?</div>
+            <div class="ss-choice-sub">Search venues, bars &amp; restaurants</div>
+          </div>
+          <span class="ss-choice-arrow">›</span>
+        </button>
+        <button class="ss-choice-card" onclick="ssChoose('person')">
+          <span class="ss-choice-icon">👤</span>
+          <div class="ss-choice-text">
+            <div class="ss-choice-title">Got someone in mind?</div>
+            <div class="ss-choice-sub">Pick who first — we'll sort the details after</div>
+          </div>
+          <span class="ss-choice-arrow">›</span>
+        </button>
       </div>
-
-      <!-- WHERE / WHAT -->
-      <div>
-        <div class="ss-section-label">Where / What <span class="ss-optional">optional</span></div>
-        <div class="ss-ac-wrap">
-          <input class="ss-input" id="ss-what-input" placeholder="e.g. coffee, beach walk, dinner…"
-            oninput="onSSWhatInput()" onblur="ssAcHide()" autocomplete="off">
-          <div class="ss-ac-dropdown" id="ss-ac-dropdown"></div>
-        </div>
-        <button class="ss-browse-link" onclick="openBrowseFromSS()">📎 Pick from saved events &amp; venues</button>
-        <div id="ss-linked-card" style="display:none"></div>
-      </div>
-
-      <!-- WHEN -->
-      <div id="ss-when-section">
-        <div class="ss-section-label">When <span class="ss-optional">optional</span></div>
-        <div class="ss-date-list" id="ss-date-list"></div>
-        <div class="ss-time-row" id="ss-time-row" style="display:none">
-          <input type="time" class="ss-time-input" id="ss-time-input">
-          <span class="ss-time-hint" id="ss-time-hint">add a time</span>
-        </div>
-      </div>
-
+      <button class="ss-choice-skip" onclick="ssChoose('skip')">Not sure yet — start from scratch →</button>
     </div>
-    <div class="ss-footer">
-      <button class="btn btn-primary" style="width:100%;padding:14px;" id="ss-submit-btn" onclick="openSSReview()" disabled>
-        Review invite →
-      </button>
+
+    <!-- ── Page 1: Link analysis ── -->
+    <div class="ss-page" id="ss-page-link">
+      <p class="ss-link-sub">Paste any event URL — Eventbrite, Facebook, a venue site, anything.<br>We'll extract the details automatically.</p>
+      <textarea id="ss-link-input" class="ss-link-textarea" placeholder="https://…"></textarea>
+      <div id="ss-link-status" class="ss-link-status"></div>
+      <div id="ss-link-preview" style="display:none"></div>
+      <div style="flex:1"></div>
+      <div class="ss-footer">
+        <button class="btn btn-primary" style="width:100%;padding:14px;" id="ss-link-btn" onclick="ssAnalyzeLink()">Analyze →</button>
+      </div>
     </div>
+
+    <!-- ── Page 2: Main form (WHO / WHERE / WHEN) ── -->
+    <div class="ss-page" id="ss-page-main">
+      <div class="ss-body" id="ss-body">
+
+        <!-- WHO -->
+        <div>
+          <div class="ss-section-label">Who <span class="ss-required">*</span></div>
+          <div class="ss-who-trigger" id="ss-who-trigger" onclick="toggleSSWhoDropdown()">
+            <span class="ss-who-trigger-label" id="ss-who-label">Choose people…</span>
+            <span class="ss-who-chevron">▾</span>
+          </div>
+          <div class="ss-who-dropdown" id="ss-who-dropdown"></div>
+        </div>
+
+        <!-- WHERE / WHAT -->
+        <div>
+          <div class="ss-section-label">Where / What <span class="ss-optional">optional</span></div>
+          <div class="ss-ac-wrap">
+            <input class="ss-input" id="ss-what-input" placeholder="e.g. coffee, beach walk, dinner…"
+              oninput="onSSWhatInput()" onblur="ssAcHide()" autocomplete="off">
+            <div class="ss-ac-dropdown" id="ss-ac-dropdown"></div>
+          </div>
+          <button class="ss-browse-link" onclick="openBrowseFromSS()">📎 Pick from saved events &amp; venues</button>
+          <div id="ss-linked-card" style="display:none"></div>
+        </div>
+
+        <!-- WHEN -->
+        <div id="ss-when-section">
+          <div class="ss-section-label">When <span class="ss-optional">optional</span></div>
+          <div class="ss-date-list" id="ss-date-list"></div>
+          <div class="ss-time-row" id="ss-time-row" style="display:none">
+            <input type="time" class="ss-time-input" id="ss-time-input">
+            <span class="ss-time-hint" id="ss-time-hint">add a time</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="ss-footer">
+        <button class="btn btn-primary" style="width:100%;padding:14px;" id="ss-submit-btn" onclick="openSSReview()" disabled>
+          Review invite →
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -4353,25 +4449,188 @@ function openPlanWizard(prefillDate) {
   _ssPrefillDate  = null;
   _ssWhoOpen      = false;
 
-  // Build who dropdown
-  _ssRebuildWhoDropdown();
-  _ssUpdateWhoLabel();
-
-  // Build date list
-  _ssRebuildDateList();
-
-  // Reset what
+  // Reset form fields
   const wi = document.getElementById('ss-what-input');
   if (wi) wi.value = '';
   document.getElementById('ss-linked-card').style.display = 'none';
   document.getElementById('ss-time-row').style.display = 'none';
   document.getElementById('ss-submit-btn').disabled = true;
+  document.getElementById('ss-link-input').value = '';
+  document.getElementById('ss-link-status').className = 'ss-link-status';
+  document.getElementById('ss-link-status').textContent = '';
+  document.getElementById('ss-link-preview').style.display = 'none';
+  const linkBtn = document.getElementById('ss-link-btn');
+  if (linkBtn) { linkBtn.disabled = false; linkBtn.textContent = 'Analyze →'; }
+
+  // Build who dropdown & date list
+  _ssRebuildWhoDropdown();
+  _ssUpdateWhoLabel();
+  _ssRebuildDateList();
+
+  // Start on landing page (unless prefill date given — skip straight to main)
+  if (prefillDate) {
+    ssGoTo('main', '✨ Start something');
+  } else {
+    ssGoTo('0', '✨ Start something');
+  }
 
   document.getElementById('plan-wizard').classList.add('open');
 }
 
 function closePlanWizard() {
   document.getElementById('plan-wizard').classList.remove('open');
+}
+
+// ── SS wizard page system ──────────────────────────────────────────────────
+function ssGoTo(pageId, title) {
+  document.querySelectorAll('#plan-wizard .ss-page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('ss-page-' + pageId);
+  if (page) page.classList.add('active');
+
+  const leftBtn = document.getElementById('ss-header-left');
+  const titleEl = document.getElementById('ss-header-title');
+  if (titleEl) titleEl.textContent = title || '✨ Start something';
+  if (leftBtn) {
+    if (pageId === '0') {
+      leftBtn.textContent = '✕';
+      leftBtn._dest = null;
+    } else {
+      leftBtn.textContent = '←';
+      leftBtn._dest = '0';
+    }
+  }
+}
+
+function ssHeaderLeft() {
+  const btn = document.getElementById('ss-header-left');
+  if (btn?._dest) {
+    ssGoTo(btn._dest, '✨ Start something');
+  } else {
+    closePlanWizard();
+  }
+}
+
+function ssChoose(type) {
+  if (type === 'link') {
+    ssGoTo('link', '🔗 Paste a link');
+    setTimeout(() => document.getElementById('ss-link-input')?.focus(), 80);
+
+  } else if (type === 'place') {
+    ssGoTo('main', '📍 Find a place');
+    setTimeout(() => document.getElementById('ss-what-input')?.focus(), 100);
+
+  } else if (type === 'person') {
+    ssGoTo('main', '✨ Start something');
+    setTimeout(() => {
+      if (!_ssWhoOpen) toggleSSWhoDropdown();
+    }, 100);
+
+  } else {
+    // skip — straight to blank form
+    ssGoTo('main', '✨ Start something');
+  }
+}
+
+// ── Link analysis ──────────────────────────────────────────────────────────
+async function ssAnalyzeLink() {
+  const url = (document.getElementById('ss-link-input')?.value || '').trim();
+  if (!url || !url.startsWith('http')) {
+    _ssSetLinkStatus('error', 'Please paste a valid URL starting with http');
+    return;
+  }
+
+  const btn = document.getElementById('ss-link-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Analyzing…'; }
+  _ssSetLinkStatus('', '⏳ Fetching page details…');
+  document.getElementById('ss-link-preview').style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/opportunities/submit?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Could not read that page');
+    }
+    const data = await res.json();
+    const draft = data.draft || {};
+    const oppId = data.opportunity_id;
+
+    // Show extracted preview
+    _ssShowLinkPreview(draft);
+    _ssSetLinkStatus('success', data.duplicate ? '✓ Already in your library — details loaded' : '✓ Details extracted');
+
+    // Pre-populate the main form
+    ssPrefillFromDraft({ id: oppId, ...draft });
+
+    // Brief pause so user sees the preview, then advance
+    await new Promise(r => setTimeout(r, 1500));
+    ssGoTo('main', '✨ Start something');
+
+  } catch(e) {
+    _ssSetLinkStatus('error', '✗ ' + (e.message || 'Could not read that link — try another URL'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
+  }
+}
+
+function _ssSetLinkStatus(cls, text) {
+  const el = document.getElementById('ss-link-status');
+  if (!el) return;
+  el.className = 'ss-link-status' + (cls ? ' ' + cls : '');
+  el.textContent = text;
+}
+
+function _ssShowLinkPreview(draft) {
+  const el = document.getElementById('ss-link-preview');
+  if (!el) return;
+  const icon = draft.type === 'venue' ? '📍' : '🎯';
+  const rows = [];
+  if (draft.type)          rows.push(`<div class="ss-link-preview-row">${draft.type === 'venue' ? 'Venue' : 'Event'}</div>`);
+  if (draft.location_name) rows.push(`<div class="ss-link-preview-row">📍 <b>${draft.location_name}</b></div>`);
+  if (draft.start_time) {
+    const d = new Date(draft.start_time);
+    const lbl = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+    const t   = draft.start_time.length >= 16 ? draft.start_time.slice(11,16) : '';
+    rows.push(`<div class="ss-link-preview-row">📅 <b>${lbl}${t && t !== '00:00' ? ' · ' + t : ''}</b></div>`);
+  }
+  if (draft.price_tier) rows.push(`<div class="ss-link-preview-row">💰 <b>${draft.price_tier}</b></div>`);
+  el.innerHTML = `<div class="ss-link-preview-title">${icon} ${draft.title || 'Untitled'}</div>${rows.join('')}`;
+  el.style.display = 'block';
+}
+
+function ssPrefillFromDraft(opp) {
+  _ssLinkedOpp = {
+    id:            opp.id            || null,
+    title:         opp.title         || '',
+    type:          opp.type          || 'event',
+    source_url:    opp.source_url    || null,
+    location_name: opp.location_name || null,
+    start_time:    opp.start_time    || null,
+  };
+
+  // Fill What input & linked card via existing helper
+  const wi = document.getElementById('ss-what-input');
+  if (wi) wi.value = opp.title || '';
+  linkSSOpportunity(_ssLinkedOpp);
+
+  // Pre-select date if available
+  if (opp.start_time) {
+    const dateStr = opp.start_time.slice(0, 10);
+    _ssSelectedDate = dateStr;
+
+    const t = opp.start_time.length >= 16 ? opp.start_time.slice(11, 16) : '';
+    if (t && t !== '00:00') {
+      const ti = document.getElementById('ss-time-input');
+      const th = document.getElementById('ss-time-hint');
+      if (ti) ti.value = t;
+      if (th) th.textContent = t;
+      const tr = document.getElementById('ss-time-row');
+      if (tr) tr.style.display = 'flex';
+    }
+    _ssRebuildDateList(); // rebuilds with _ssSelectedDate pre-marked
+  }
 }
 
 // ── Who dropdown ──────────────────────────────────────────────────────────────
