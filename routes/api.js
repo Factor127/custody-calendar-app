@@ -1202,8 +1202,8 @@ router.post('/outings', (req, res) => {
 
   const { id: pregenId, date, message, invitees,
           venue, venue_address, venue_place_id, opportunity_id } = req.body;
-  if (!date || !Array.isArray(invitees) || invitees.length === 0) {
-    return res.status(400).json({ error: 'date and invitees required' });
+  if (!Array.isArray(invitees) || invitees.length === 0) {
+    return res.status(400).json({ error: 'invitees required' });
   }
 
   const outingId = pregenId || uuidv4();

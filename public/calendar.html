@@ -5017,8 +5017,9 @@ async function openSSReview() {
     return { userId: c.other_user_id, name: c.other_name, rsvpToken: draft?.rsvpToken || null };
   });
 
+  let outingSaved = false;
   try {
-    await fetch(`/api/outings?token=${MY_TOKEN}`, {
+    const outingRes = await fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: _ssPregenOutingId, date: dateStr,
@@ -5032,9 +5033,11 @@ async function openSSReview() {
         opportunity_id: opportunityId || null
       })
     });
+    outingSaved = outingRes.ok;
+    if (!outingRes.ok) console.error('Outing save failed:', outingRes.status, await outingRes.text());
     loadOutings();
     if (dateStr && opportunityId) loadPlanDots();
-  } catch(e) {}
+  } catch(e) { console.error('Outing save error:', e); }
   // ── Outing is now in DB — render WhatsApp buttons ──────────────────────
 
   // Build hrefs separately so they are NEVER passed through innerHTML HTML parsing.
@@ -5044,7 +5047,8 @@ async function openSSReview() {
   for (let i = 0; i < _ssContacts.length; i++) {
     const c      = _ssContacts[i];
     const draft  = _ssPregenInvitees.find(d => d.contactId === c.id);
-    const msg    = _ssPersonMessage(c, what, dateStr, timeVal, link, draft?.rsvpToken);
+    // Only include RSVP token if the outing was actually saved to DB
+    const msg    = _ssPersonMessage(c, what, dateStr, timeVal, link, outingSaved ? draft?.rsvpToken : null);
     const mobile = c.i_am_target ? c.requester_mobile : c.target_mobile;
     // Normalise to international digits: strip non-digits, remove leading 0 if present
     let num = mobile ? mobile.replace(/[^0-9]/g, '') : null;
