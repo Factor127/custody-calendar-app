@@ -1169,17 +1169,41 @@ router.post('/outings', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
-  const { date, message, invitees } = req.body;
+  const { date, message, invitees,
+          venue, venue_address, venue_place_id, opportunity_id } = req.body;
   if (!date || !Array.isArray(invitees) || invitees.length === 0) {
     return res.status(400).json({ error: 'date and invitees required' });
   }
 
   const outingId = uuidv4();
-  q.createOuting.run(outingId, me.id, date, message || null);
+  q.createOuting.run(
+    outingId, me.id, date, message || null,
+    venue || null, venue_address || null, venue_place_id || null, opportunity_id || null
+  );
 
   for (const inv of invitees) {
     const invId = uuidv4();
     q.createOutingInvitee.run(invId, outingId, inv.userId || null, inv.name, inv.phone || null);
+  }
+
+  // If there's a linked opportunity and a date, create a plan for the creator
+  if (opportunity_id && date) {
+    try {
+      const planId = uuidv4();
+      q.createPlan.run(planId, me.id, date, opportunity_id, null);
+    } catch(e) { /* plan may already exist for this date+opp — not critical */ }
+  }
+
+  // Also create plans for any invitees who are registered app users
+  if (opportunity_id && date) {
+    for (const inv of invitees) {
+      if (inv.userId) {
+        try {
+          const planId = uuidv4();
+          q.createPlan.run(planId, inv.userId, date, opportunity_id, null);
+        } catch(e) { /* non-critical */ }
+      }
+    }
   }
 
   res.json({ id: outingId, status: 'pending' });

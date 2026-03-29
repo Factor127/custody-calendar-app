@@ -26,6 +26,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN relationship_status TEXT'); } catch(
 try { db.exec('ALTER TABLE users ADD COLUMN photo TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
@@ -403,7 +404,7 @@ const q = {
   ),
   deleteActivity: db.prepare('DELETE FROM activities WHERE id = ?'),
 
-  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message) VALUES (?, ?, ?, ?)'),
+  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message, venue, venue_address, venue_place_id, opportunity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
   getOutingsForUser:     db.prepare('SELECT * FROM outings WHERE created_by = ? ORDER BY date ASC'),
   getOutingById:         db.prepare('SELECT * FROM outings WHERE id = ?'),
   updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ?, venue_place_id = ?, venue_address = ? WHERE id = ?'),

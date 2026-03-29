@@ -4767,15 +4767,56 @@ async function sendSSInvite() {
   const what     = _ssLinkedOpp?.title || document.getElementById('ss-what-input')?.value?.trim() || null;
   const timeVal  = document.getElementById('ss-time-input')?.value || null;
   const date     = _ssSelectedDate || null;
-  const invitees = _ssContacts.map(c => ({ user_id: c.other_user_id, name: c.other_name }));
-  const msg      = _ssContacts.map(c => _ssPersonMessage(c, what, date, timeVal, _ssLinkedOpp?.source_url || null)).join('\n\n');
+  const invitees = _ssContacts.map(c => ({ userId: c.other_user_id, name: c.other_name }));
+  const link     = _ssLinkedOpp?.source_url || null;
+
+  // Step 1: If linked opp isn't in DB yet (Google Places or plain text), save it first
+  let opportunityId = _ssLinkedOpp?.id || null;
+  if (_ssLinkedOpp && !opportunityId && what) {
+    try {
+      const saveRes = await fetch(`/api/opportunities/direct?token=${MY_TOKEN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:         _ssLinkedOpp.title || what,
+          type:          _ssLinkedOpp.type || 'venue',
+          location_name: _ssLinkedOpp.location_name || null,
+          source_url:    _ssLinkedOpp.source_url || null,
+          place_id:      _ssLinkedOpp._placeId || null,
+          tags:          [],
+          confidence_score: 0.70
+        })
+      });
+      if (saveRes.ok) {
+        const saved = await saveRes.json();
+        opportunityId = saved.id;
+        _ssLinkedOpp.id = opportunityId;
+      }
+    } catch(e) { /* non-critical — outing still saved without opp link */ }
+  }
+
+  // Step 2: Build per-person WhatsApp messages
+  const msg = _ssContacts.map(c => _ssPersonMessage(c, what, date, timeVal, link)).join('\n\n');
+
+  // Step 3: Create the outing with full venue + opportunity data
   try {
     await fetch(`/api/outings?token=${MY_TOKEN}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ date, message: msg, invitees })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date,
+        message:        msg,
+        invitees,
+        venue:          what || null,
+        venue_address:  _ssLinkedOpp?.location_name || null,
+        venue_place_id: _ssLinkedOpp?._placeId || null,
+        opportunity_id: opportunityId || null
+      })
     });
     await loadOutings();
-  } catch(_) {}
+    if (date && opportunityId) await loadPlanDots();
+  } catch(e) {}
+
   closeSSReview();
   closePlanWizard();
   showToast('✓ Invite saved!');

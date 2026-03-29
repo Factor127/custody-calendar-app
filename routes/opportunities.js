@@ -74,6 +74,44 @@ router.get('/opportunities', (req, res) => {
   }
 });
 
+// ── POST /api/opportunities/direct — save a venue/event directly (no URL fetch) ──
+// Used when a user picks a Google Places result or types a plain venue name
+router.post('/opportunities/direct', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const { title, type, category, location_name, location_lat, location_lng,
+          price_tier, tags, start_time, end_time, source_url, place_id, confidence_score } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+
+  // Check for duplicate by place_id (Google Place) or by title+location
+  if (place_id) {
+    const existing = db.q.db.prepare(
+      "SELECT id FROM opportunities WHERE source_url LIKE ? OR location_name = ?"
+    ).get(`%${place_id}%`, location_name || '');
+    if (existing) return res.json({ id: existing.id, ok: true, duplicate: true });
+  }
+
+  const { randomUUID } = require('crypto');
+  const id = randomUUID();
+  createOpportunity(
+    id,
+    title.slice(0, 200),
+    type || 'venue',
+    category || null,
+    JSON.stringify(tags || []),
+    start_time || null,
+    end_time   || null,
+    location_name  || null,
+    location_lat   || null,
+    location_lng   || null,
+    price_tier || null,
+    confidence_score ?? 0.70,
+    'public',
+    source_url || null,
+    user.id
+  );
+  res.json({ id, ok: true });
+});
+
 // ── POST /api/opportunities/submit — submit a URL ─────────────────────────
 router.post('/opportunities/submit', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
