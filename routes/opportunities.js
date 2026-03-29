@@ -14,6 +14,40 @@ function requireToken(req, res) {
   return user;
 }
 
+// ── GET /api/opportunities/search?q= — text search internal DB ───────────
+router.get('/opportunities/search', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json({ results: [] });
+  const rows = db.textSearchOpportunities(q);
+  res.json({ results: rows.map(o => ({ ...o, tags: JSON.parse(o.tags || '[]') })) });
+});
+
+// ── GET /api/places/autocomplete?q= — Google Places proxy ────────────────
+router.get('/places/autocomplete', async (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json({ predictions: [] });
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key) return res.json({ predictions: [], error: 'no_key' });
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(q)}&types=establishment&key=${key}`;
+    const r   = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return res.json({ predictions: [] });
+    const data = await r.json();
+    const predictions = (data.predictions || []).slice(0, 5).map(p => ({
+      place_id:    p.place_id,
+      name:        p.structured_formatting?.main_text || p.description,
+      address:     p.structured_formatting?.secondary_text || '',
+      description: p.description,
+      types:       p.types || []
+    }));
+    res.json({ predictions });
+  } catch(e) {
+    res.json({ predictions: [] });
+  }
+});
+
 // ── GET /api/opportunities/matches — personalized matches ─────────────────
 router.get('/opportunities/matches', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
@@ -51,6 +85,14 @@ router.post('/opportunities/submit', async (req, res) => {
   } catch(e) {
     res.status(422).json({ error: e.message });
   }
+});
+
+// ── GET /api/opportunities/:id — fetch single opportunity ────────────────
+router.get('/opportunities/:id', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const opp  = db.getOpportunityById(req.params.id);
+  if (!opp) return res.status(404).json({ error: 'not found' });
+  res.json({ ...opp, tags: JSON.parse(opp.tags || '[]') });
 });
 
 // ── PUT /api/opportunities/:id — edit an opportunity ──────────────────────

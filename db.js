@@ -471,6 +471,13 @@ const q = {
     ORDER BY start_time ASC
     LIMIT 200
   `),
+  textSearchOpportunities: db.prepare(`
+    SELECT * FROM opportunities
+    WHERE visibility='public'
+      AND (title LIKE ? OR location_name LIKE ? OR category LIKE ?)
+    ORDER BY confidence_score DESC, created_at DESC
+    LIMIT 8
+  `),
   findDuplicateByUrl: db.prepare('SELECT id FROM opportunities WHERE source_url=? LIMIT 1'),
   findDuplicateByTitleDate: db.prepare(`
     SELECT id FROM opportunities
@@ -637,6 +644,11 @@ function searchOpportunities({ category, type } = {}) {
   return q.searchOpportunities.all({ category: category || null, type: type || null });
 }
 
+function textSearchOpportunities(q_text) {
+  const like = `%${q_text}%`;
+  return q.textSearchOpportunities.all(like, like, like);
+}
+
 function getOpportunitiesForMatching({ from_date } = {}) {
   return q.getOpportunitiesForMatching.all({ from_date: from_date || new Date().toISOString().slice(0,10) });
 }
@@ -690,7 +702,7 @@ module.exports = {
   generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr,
   // Opportunity helpers
   createOpportunity, updateOpportunity, getOpportunityById,
-  searchOpportunities, getOpportunitiesForMatching,
+  searchOpportunities, textSearchOpportunities, getOpportunitiesForMatching,
   findDuplicateByUrl, findDuplicateByTitleDate,
   createSubmission, updateSubmission, getSubmissionsByUser,
   getUserActivityPrefs,

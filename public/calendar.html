@@ -1085,6 +1085,23 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .ss-input:focus { outline:none; border-color:var(--accent); }
     .ss-input::placeholder { color:var(--muted); }
+    /* Autocomplete */
+    .ss-ac-wrap { position:relative; }
+    .ss-ac-dropdown {
+      position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:400;
+      background:rgba(18,18,30,0.99); border:1.5px solid rgba(255,255,255,0.12);
+      border-radius:14px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);
+      display:none; max-height:280px; overflow-y:auto;
+    }
+    .ss-ac-dropdown.open { display:block; }
+    .ss-ac-group  { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; padding:10px 14px 4px; }
+    .ss-ac-item   { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; transition:background .12s; }
+    .ss-ac-item:hover { background:rgba(255,255,255,0.07); }
+    .ss-ac-icon   { font-size:15px; flex-shrink:0; width:20px; text-align:center; }
+    .ss-ac-text   { min-width:0; }
+    .ss-ac-main   { font-size:14px; color:var(--text); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ss-ac-sub    { font-size:11px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ss-ac-divider{ height:1px; background:rgba(255,255,255,0.06); margin:2px 0; }
     .ss-browse-link {
       display:inline-flex; align-items:center; gap:6px; margin-top:8px;
       background:none; border:none; color:var(--accent); font-size:13px;
@@ -4072,7 +4089,11 @@ function showToast(msg) {
       <!-- WHERE / WHAT -->
       <div>
         <div class="ss-section-label">Where / What <span class="ss-optional">optional</span></div>
-        <input class="ss-input" id="ss-what-input" placeholder="e.g. coffee, beach walk, dinner…" oninput="onSSWhatInput()">
+        <div class="ss-ac-wrap">
+          <input class="ss-input" id="ss-what-input" placeholder="e.g. coffee, beach walk, dinner…"
+            oninput="onSSWhatInput()" onblur="ssAcHide()" autocomplete="off">
+          <div class="ss-ac-dropdown" id="ss-ac-dropdown"></div>
+        </div>
         <button class="ss-browse-link" onclick="openBrowseFromSS()">📎 Pick from saved events &amp; venues</button>
         <div id="ss-linked-card" style="display:none"></div>
       </div>
@@ -4447,10 +4468,106 @@ function selectSSDate(date, el) {
   if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
 }
 
-// ── What / linked event ───────────────────────────────────────────────────────
+// ── What / linked event — autocomplete ───────────────────────────────────────
+let _ssAcTimer = null;
+
 function onSSWhatInput() {
-  // Clear linked event if user types manually
   if (_ssLinkedOpp) { _ssLinkedOpp = null; document.getElementById('ss-linked-card').style.display = 'none'; }
+  clearTimeout(_ssAcTimer);
+  const q = document.getElementById('ss-what-input')?.value.trim();
+  if (!q || q.length < 2) { ssAcHide(); return; }
+  _ssAcTimer = setTimeout(() => ssAcSearch(q), 300);
+}
+
+function ssAcHide() {
+  // Small delay so clicks on dropdown items register first
+  setTimeout(() => {
+    const dd = document.getElementById('ss-ac-dropdown');
+    if (dd) { dd.classList.remove('open'); dd.innerHTML = ''; }
+  }, 150);
+}
+
+async function ssAcSearch(q) {
+  const TYPE_ICON = { event:'🗓', venue:'📍', activity_template:'✨' };
+
+  // Run both in parallel
+  const [internalRes, placesRes] = await Promise.allSettled([
+    fetch(`/api/opportunities/search?q=${encodeURIComponent(q)}&token=${MY_TOKEN}`).then(r => r.json()),
+    fetch(`/api/places/autocomplete?q=${encodeURIComponent(q)}&token=${MY_TOKEN}`).then(r => r.json())
+  ]);
+
+  const internal    = internalRes.status === 'fulfilled' ? (internalRes.value.results || []) : [];
+  const predictions = placesRes.status  === 'fulfilled' ? (placesRes.value.predictions  || []) : [];
+
+  let html = '';
+
+  if (internal.length) {
+    html += `<div class="ss-ac-group">From your list</div>`;
+    html += internal.map(o => {
+      const icon = TYPE_ICON[o.type] || '🎯';
+      const meta = [o.location_name?.split(',')[0], o.start_time ? new Date(o.start_time).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : null].filter(Boolean).join(' · ');
+      return `<div class="ss-ac-item" onmousedown="ssAcSelectInternal('${o.id}')">
+        <span class="ss-ac-icon">${icon}</span>
+        <div class="ss-ac-text">
+          <div class="ss-ac-main">${o.title}</div>
+          ${meta ? `<div class="ss-ac-sub">${meta}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if (predictions.length) {
+    if (internal.length) html += `<div class="ss-ac-divider"></div>`;
+    html += `<div class="ss-ac-group">Places</div>`;
+    html += predictions.map(p => {
+      const icon = p.types?.includes('restaurant')||p.types?.includes('cafe') ? '🍽' : p.types?.includes('bar')||p.types?.includes('night_club') ? '🍸' : '📍';
+      return `<div class="ss-ac-item" onmousedown="ssAcSelectPlace('${p.place_id}','${(p.name||'').replace(/'/g,'')}','${(p.address||'').replace(/'/g,'')}')">
+        <span class="ss-ac-icon">${icon}</span>
+        <div class="ss-ac-text">
+          <div class="ss-ac-main">${p.name}</div>
+          ${p.address ? `<div class="ss-ac-sub">${p.address}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const dd = document.getElementById('ss-ac-dropdown');
+  if (!dd) return;
+  if (!html) { dd.classList.remove('open'); return; }
+  dd.innerHTML = html;
+  dd.classList.add('open');
+}
+
+function ssAcSelectInternal(oppId) {
+  const opp = _browseMatches.find(o => o.id === oppId);
+  if (opp) { linkSSOpportunity(opp); ssAcHide(); return; }
+  // Fetch from server if not in cache
+  fetch(`/api/opportunities/${oppId}?token=${MY_TOKEN}`)
+    .then(r => r.json()).then(data => {
+      if (data.id) { linkSSOpportunity({ ...data, tags: JSON.parse(data.tags||'[]') }); }
+    }).catch(() => {});
+  ssAcHide();
+}
+
+function ssAcSelectPlace(placeId, name, address) {
+  // Fill the text input and create a minimal linked card (no DB entry yet — created on send)
+  const wi = document.getElementById('ss-what-input');
+  if (wi) wi.value = name;
+  _ssLinkedOpp = { id: null, title: name, type: 'venue', source_url: null,
+                   location_name: address, start_time: null, _placeId: placeId };
+  // Show linked card
+  const card = document.getElementById('ss-linked-card');
+  if (card) {
+    card.style.display = 'flex';
+    card.innerHTML = `<div class="ss-linked-card">
+      <div style="flex:1">
+        <div class="ss-linked-title">📍 ${name}</div>
+        ${address ? `<div class="ss-linked-meta">${address}</div>` : ''}
+      </div>
+      <button class="ss-linked-remove" onclick="ssUnlinkOpp()">✕</button>
+    </div>`;
+  }
+  ssAcHide();
 }
 
 function linkSSOpportunity(opp) {
