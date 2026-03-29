@@ -121,11 +121,12 @@
           <th>Type</th>
           <th>Category</th>
           <th>Location</th>
+          <th>When</th>
           <th>Price</th>
           <th>Tags</th>
           <th>Conf.</th>
           <th>Added by</th>
-          <th>Date</th>
+          <th>Submitted</th>
           <th></th>
         </tr>
       </thead>
@@ -224,9 +225,23 @@ function fmtDate(s) {
   return new Date(s).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
 }
 
+function fmtEventTime(s) {
+  if (!s) return '<span class="muted">—</span>';
+  try {
+    const d = new Date(s);
+    // If time component is midnight exactly, show date only
+    const hasTime = d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0;
+    const datePart = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const timePart = hasTime ? d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
+    return `<span style="white-space:nowrap;font-size:12px;">${datePart}${timePart ? '<br><span style="color:#6b7280">'+timePart+'</span>' : ''}</span>`;
+  } catch(e) {
+    return `<span class="muted" style="font-size:11px;">${esc(s)}</span>`;
+  }
+}
+
 // ── Opportunities ──────────────────────────────────────────────────────────
 async function loadOpps() {
-  document.getElementById('opp-rows').innerHTML = '<tr><td colspan="10" class="empty">Loading…</td></tr>';
+  document.getElementById('opp-rows').innerHTML = '<tr><td colspan="11" class="empty">Loading…</td></tr>';
   const [oppsRes, statsRes] = await Promise.all([
     fetch(`/api/admin/opportunities?token=${ADMIN_TOKEN}`),
     fetch(`/api/admin/stats?token=${ADMIN_TOKEN}`)
@@ -280,7 +295,7 @@ function renderOpps() {
   );
 
   if (filtered.length === 0) {
-    document.getElementById('opp-rows').innerHTML = '<tr><td colspan="10" class="empty">No opportunities match this filter.</td></tr>';
+    document.getElementById('opp-rows').innerHTML = '<tr><td colspan="11" class="empty">No opportunities match this filter.</td></tr>';
     return;
   }
 
@@ -311,6 +326,7 @@ function renderOpps() {
         </select>
       </td>
       <td class="muted" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.location_name||'—')}</td>
+      <td>${fmtEventTime(o.start_time)}</td>
       <td><span class="badge ${priceCls}">${esc(o.price_tier||'—')}</span></td>
       <td style="max-width:120px;">${tagHtml || '<span class="muted">—</span>'}</td>
       <td><span class="${confCls}">${confVal}</span></td>

@@ -112,26 +112,48 @@ function priceTier(priceVal) {
   return 'high';
 }
 
+// ── Strip HTML tags to extract dense readable text ────────────────────────
+function htmlToText(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // ── Optional Claude enrichment via REST API ───────────────────────────────
 async function enrichWithClaude(rawMeta, htmlSnippet) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   try {
-    const prompt = `Extract structured event data from this web content and return ONLY valid JSON with these fields:
+    // Strip tags so Claude gets dense readable text — much better date detection
+    const pageText = htmlToText(htmlSnippet).slice(0, 3000);
+    const prompt = `Extract structured event/venue data from this web page content and return ONLY valid JSON with these exact fields:
 {
   "title": string,
   "type": "event" | "venue" | "activity_template",
-  "category": one of: music|food|outdoors|sports|arts|nightlife|entertainment|wellness|education|community,
+  "category": one of: music|food & drink|outdoors|sports|arts|nightlife|entertainment|wellness|education|community,
   "tags": [string, ...],
-  "start_time": ISO8601 or null,
-  "end_time": ISO8601 or null,
+  "start_time": ISO8601 datetime or null,
+  "end_time": ISO8601 datetime or null,
   "location_name": string or null,
   "price_tier": "free"|"low"|"medium"|"high" or null
 }
 
+Rules:
+- If the page is for a specific event/concert/show, set type "event" and extract the date/time as start_time in ISO8601 (e.g. "2026-01-30T21:00:00"). The current year is 2026.
+- If the page is a venue, bar, restaurant, or club homepage, set type "venue" and start_time null.
+- For dates written as DD.MM or DD/MM (e.g. "30.1", "30/1"), parse as the nearest future date in 2026.
+- location_name should be the venue name or city, not a full address.
+
 Title hint: ${rawMeta.title}
-Description: ${(rawMeta.description || '').slice(0, 500)}
-HTML snippet: ${htmlSnippet.slice(0, 2000)}`;
+Description: ${(rawMeta.description || '').slice(0, 400)}
+Page text: ${pageText}`;
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
