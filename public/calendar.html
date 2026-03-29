@@ -769,12 +769,13 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .dpc-btn-decline { background: rgba(239,68,68,0.14); color: #f87171; }
     .dpc-btn-cancel  { background: rgba(255,255,255,0.07); color: rgba(238,238,248,0.60); }
     .day-sheet-add-btn {
-      margin: 6px 16px 16px; padding: 13px; border: 1.5px dashed rgba(167,139,250,0.35);
+      margin: 6px 8px 6px; padding: 13px; border: 1.5px dashed rgba(167,139,250,0.35);
       border-radius: 14px; background: none; color: rgba(167,139,250,0.80);
-      font-size: 13px; font-weight: 700; width: calc(100% - 32px);
+      font-size: 13px; font-weight: 700; flex: 1;
       cursor: pointer; font-family: inherit;
     }
     .day-sheet-add-btn:hover { background: rgba(124,92,191,0.10); }
+    .day-sheet-add-row { display: flex; gap: 0; padding: 6px 16px 16px; }
     .day-sheet-free-banner {
       margin: 10px 16px 4px; padding: 10px 14px; border-radius: 12px;
       background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.20);
@@ -2408,8 +2409,10 @@ function renderDaySheetBody(dateStr, isFree, alsoFree) {
   html += '</div>';
 
   // Add plan button
-  html += `<button class="day-sheet-add-btn"
-    onclick="closeDaySheet();openOutingModal('${dateStr}')">＋ Plan something here</button>`;
+  html += `<div class="day-sheet-add-row">
+    <button class="day-sheet-add-btn" onclick="closeDaySheet();openOutingModal('${dateStr}')">🗓 Plan with a friend</button>
+    <button class="day-sheet-add-btn" onclick="closeDaySheet();openBrowseSheet()">🎯 Browse events</button>
+  </div>`;
 
   document.getElementById('day-sheet-body').innerHTML = html;
 }
@@ -4001,10 +4004,6 @@ function showToast(msg) {
     </div>
   </button>
 
-  <button class="fab-action disabled" id="fab-browse" onclick="fabBrowseClick()">
-    <div class="fab-action-icon">🎯</div>
-    <span>Browse &amp; choose an event</span>
-  </button>
 </div>
 
 <!-- ── Bottom navigation bar ── -->
@@ -4055,11 +4054,9 @@ function openFabMenu() {
 
   const planBtn  = document.getElementById('fab-plan');
   const groupBtn = document.getElementById('fab-group');
-  const browseBtn= document.getElementById('fab-browse');
 
   planBtn.classList.toggle('disabled', !hasApproved);
   groupBtn.classList.toggle('disabled', !hasTwo);
-  browseBtn.classList.remove('disabled'); // Browse is now live
 
   document.getElementById('fab-menu').classList.add('open');
   document.getElementById('fab-backdrop').classList.add('open');
@@ -4109,10 +4106,6 @@ function fabGroupClick() {
   showToast('Groups coming soon!');
 }
 
-function fabBrowseClick() {
-  closeFabMenu();
-  openBrowseSheet();
-}
 
 // ── Plan wizard ───────────────────────────────────────────────────────────────
 let _planContacts  = [];   // selected allConnections items
