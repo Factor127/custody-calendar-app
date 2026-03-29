@@ -4520,6 +4520,7 @@ function selectSSDate(date, el) {
 
 // ── What / linked event — autocomplete ───────────────────────────────────────
 let _ssAcTimer = null;
+let _ssAcPlaces = [];   // stores latest Places predictions by index — avoids embedding strings in HTML attrs
 
 function onSSWhatInput() {
   if (_ssLinkedOpp) { _ssLinkedOpp = null; document.getElementById('ss-linked-card').style.display = 'none'; }
@@ -4549,6 +4550,9 @@ async function ssAcSearch(q) {
   const internal    = internalRes.status === 'fulfilled' ? (internalRes.value.results || []) : [];
   const predictions = placesRes.status  === 'fulfilled' ? (placesRes.value.predictions  || []) : [];
 
+  // Store places by index — safe for any characters including Hebrew
+  _ssAcPlaces = predictions;
+
   let html = '';
 
   if (internal.length) {
@@ -4569,12 +4573,15 @@ async function ssAcSearch(q) {
   if (predictions.length) {
     if (internal.length) html += `<div class="ss-ac-divider"></div>`;
     html += `<div class="ss-ac-group">Places</div>`;
-    html += predictions.map(p => {
-      const icon = p.types?.includes('restaurant')||p.types?.includes('cafe') ? '🍽' : p.types?.includes('bar')||p.types?.includes('night_club') ? '🍸' : '📍';
-      return `<div class="ss-ac-item" onmousedown="ssAcSelectPlace('${p.place_id}','${(p.name||'').replace(/'/g,'')}','${(p.address||'').replace(/'/g,'')}')">
+    html += predictions.map((p, idx) => {
+      const name = p.name || p.description || 'Unknown place';
+      const icon = p.types?.includes('restaurant') || p.types?.includes('cafe') ? '🍽'
+                 : p.types?.includes('bar') || p.types?.includes('night_club') ? '🍸'
+                 : '📍';
+      return `<div class="ss-ac-item" onmousedown="ssAcSelectPlace(${idx})">
         <span class="ss-ac-icon">${icon}</span>
         <div class="ss-ac-text">
-          <div class="ss-ac-main">${p.name}</div>
+          <div class="ss-ac-main">${name}</div>
           ${p.address ? `<div class="ss-ac-sub">${p.address}</div>` : ''}
         </div>
       </div>`;
@@ -4599,7 +4606,13 @@ function ssAcSelectInternal(oppId) {
   ssAcHide();
 }
 
-function ssAcSelectPlace(placeId, name, address) {
+function ssAcSelectPlace(idx) {
+  const p = _ssAcPlaces[idx];
+  if (!p) return;
+  const name    = p.name || p.description || 'Unknown place';
+  const address = p.address || '';
+  const placeId = p.place_id || null;
+
   // Fill the text input and create a minimal linked card (no DB entry yet — created on send)
   const wi = document.getElementById('ss-what-input');
   if (wi) wi.value = name;
