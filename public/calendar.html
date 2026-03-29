@@ -2497,7 +2497,7 @@ function handleDayClick(cell) {
 }
 
 // ── Day management sheet ───────────────────────────────────────────────────
-function openDaySheet(dateStr) {
+async function openDaySheet(dateStr) {
   const d    = new Date(dateStr + 'T12:00:00');
   const DOW  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2518,11 +2518,20 @@ function openDaySheet(dateStr) {
   document.getElementById('day-sheet-date').textContent = dateLabel;
   document.getElementById('day-sheet-sub').textContent  = subParts.join(' · ');
 
-  renderDaySheetBody(dateStr, isFree, alsoFree);
+  renderDaySheetBody(dateStr, isFree, alsoFree, []);
   document.getElementById('day-sheet').classList.add('open');
+
+  // Fetch saved opportunity plans for this date
+  try {
+    const res = await fetch(`/api/plans?from=${dateStr}&to=${dateStr}&token=${MY_TOKEN}`);
+    if (res.ok) {
+      const data = await res.json();
+      renderDaySheetBody(dateStr, isFree, alsoFree, data.plans || []);
+    }
+  } catch(e) { /* non-critical */ }
 }
 
-function renderDaySheetBody(dateStr, isFree, alsoFree) {
+function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
   const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
   let html = '';
 
@@ -2534,7 +2543,25 @@ function renderDaySheetBody(dateStr, isFree, alsoFree) {
 
   html += '<div class="day-sheet-plans">';
 
-  if (dayOutings.length === 0) {
+  // Opportunity-based plans
+  for (const p of dayPlans) {
+    const icon = p.opp_type === 'venue' ? '📍' : '🎯';
+    const metaParts = [p.opp_location, p.opp_price_tier === 'free' ? 'Free entry' : p.opp_price_tier].filter(Boolean);
+    html += `<div class="day-plan-card" style="border-color:rgba(167,139,250,0.35);">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:15px;">${icon}</span>
+        <span class="dpc-title">${p.opp_title || p.note || 'Saved plan'}</span>
+        ${p.opp_type ? `<span class="dpc-status planning">${p.opp_type}</span>` : ''}
+      </div>
+      ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
+      <div class="dpc-actions">
+        ${p.opp_url ? `<a href="${p.opp_url}" target="_blank" class="dpc-btn dpc-btn-accept" style="text-decoration:none;">Open link ↗</a>` : ''}
+        <button class="dpc-btn dpc-btn-cancel" onclick="removePlan('${p.id}','${dateStr}')">Remove</button>
+      </div>
+    </div>`;
+  }
+
+  if (dayOutings.length === 0 && dayPlans.length === 0) {
     html += `<div style="padding:12px 0 4px;font-size:13px;color:rgba(238,238,248,0.40);text-align:center;">No plans yet for this day</div>`;
   } else {
     for (const o of dayOutings) {
@@ -2594,6 +2621,29 @@ function renderDaySheetBody(dateStr, isFree, alsoFree) {
 function closeDaySheet(e) {
   if (e && e.target !== document.getElementById('day-sheet')) return;
   document.getElementById('day-sheet').classList.remove('open');
+}
+
+async function removePlan(planId, dateStr) {
+  try {
+    await fetch(`/api/plans/${planId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+    // Update dot count locally
+    if (planDates[dateStr]) {
+      planDates[dateStr] = Math.max(0, planDates[dateStr] - 1);
+      if (!planDates[dateStr]) delete planDates[dateStr];
+    }
+    renderCalendar();
+    showToast('Plan removed');
+    // Refresh the day sheet body
+    const isFree   = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
+    const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
+    try {
+      const res2 = await fetch(`/api/plans?from=${dateStr}&to=${dateStr}&token=${MY_TOKEN}`);
+      const data2 = res2.ok ? await res2.json() : { plans: [] };
+      renderDaySheetBody(dateStr, isFree, alsoFree, data2.plans || []);
+    } catch(e2) { renderDaySheetBody(dateStr, isFree, alsoFree, []); }
+  } catch(e) {
+    showToast('Could not remove — try again');
+  }
 }
 
 async function cancelOuting(outingId, dateStr) {
