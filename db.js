@@ -187,6 +187,19 @@ db.exec(`CREATE TABLE IF NOT EXISTS outing_invitees (
 // Ensure email index exists on the (possibly just-created) users table
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) { /* ignore */ }
 
+db.exec(`CREATE TABLE IF NOT EXISTS connection_preferences (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  connection_id  TEXT NOT NULL,
+  activity_types TEXT NOT NULL DEFAULT '[]',
+  confidence     INTEGER DEFAULT 0,
+  skipped_at     TEXT,
+  last_updated   TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, connection_id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (connection_id) REFERENCES connections(id)
+)`);
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
@@ -362,6 +375,26 @@ const q = {
   `),
   deleteOutingInvitees:  db.prepare('DELETE FROM outing_invitees WHERE outing_id = ?'),
   deleteOuting:          db.prepare('DELETE FROM outings WHERE id = ?'),
+
+  // ── Connection preferences ──────────────────────────────────────────────
+  upsertConnectionPrefs: db.prepare(`
+    INSERT INTO connection_preferences (id, user_id, connection_id, activity_types, confidence, skipped_at, last_updated)
+    VALUES (?, ?, ?, ?, 1, NULL, datetime('now'))
+    ON CONFLICT(user_id, connection_id) DO UPDATE SET
+      activity_types = excluded.activity_types,
+      confidence     = 1,
+      skipped_at     = NULL,
+      last_updated   = datetime('now')
+  `),
+  skipConnectionPrefs: db.prepare(`
+    INSERT INTO connection_preferences (id, user_id, connection_id, activity_types, confidence, skipped_at, last_updated)
+    VALUES (?, ?, ?, '[]', 0, datetime('now'), datetime('now'))
+    ON CONFLICT(user_id, connection_id) DO UPDATE SET
+      skipped_at   = datetime('now'),
+      last_updated = datetime('now')
+  `),
+  getConnectionPrefs:     db.prepare('SELECT * FROM connection_preferences WHERE user_id = ? AND connection_id = ?'),
+  getAllPrefsForUser:      db.prepare('SELECT * FROM connection_preferences WHERE user_id = ?'),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────

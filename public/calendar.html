@@ -403,15 +403,29 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Mobile overrides ────────────────────────────────────────────────── */
     @media (max-width:520px) {
+      /* Day cells — shorter so more fits on screen */
+      td { height: 72px !important; padding: 7px 7px 5px !important; }
+      /* Strip-view day cards */
       .day-card      { padding:8px 3px 7px; min-height:72px; border-radius:9px; }
       .day-card .dc-name { font-size:9px; }
       .day-card .dc-num  { font-size:22px; }
       .day-card .dc-free { font-size:8px; }
       .day-card .dc-plan-it { font-size:7px; padding:1px 5px; }
+      /* Avatars */
       .person-bubble { width:13px; height:13px; font-size:7px; }
+      /* Social strip */
       #social-calendar-section { padding:14px 10px 12px; }
       .social-cal-title { font-size:15px; }
       .strip-nav { width:22px; height:22px; font-size:12px; }
+      /* Legend: hide balance+swatches, keep the free-days toggle */
+      .custody-balance-bar { display: none !important; }
+      .cal-show-bar { justify-content: center; padding: 8px 16px; }
+      /* CTG cards — more compact */
+      .ctg-card { width: 160px; }
+      .ctg-img  { height: 80px; font-size: 22px; }
+      .ctg-body { padding: 10px 10px 9px; }
+      .ctg-card-date { font-size: 20px; }
+      .ctg-card-with { margin-bottom: 10px; }
     }
 
     td.suggest-proposed { outline: 2.5px dashed var(--orange) !important; background: #fff8e1 !important; }
@@ -884,6 +898,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       z-index: 1200; pointer-events: none; opacity: 0;
       transition: opacity .18s, transform .18s;
       transform: translateX(-50%) translateY(12px);
+      max-height: calc(100svh - 120px); overflow-y: auto;
+      padding: 4px 0; overscroll-behavior: contain;
     }
     #fab-menu.open {
       opacity: 1; pointer-events: auto;
@@ -931,6 +947,90 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       opacity: 0; pointer-events: none; transition: opacity .18s;
     }
     .fab-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    /* ── Plan wizard (bottom-sheet) ─────────────────────────────────── */
+    #plan-wizard { z-index:2000; align-items:flex-end; padding:0; }
+    .plan-sheet {
+      background:var(--surface); border-radius:20px 20px 0 0;
+      width:100%; max-width:520px; margin:0 auto;
+      display:flex; flex-direction:column; max-height:88vh; overflow:hidden;
+      box-shadow:0 -8px 40px rgba(0,0,0,0.5);
+    }
+    .plan-sheet-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 20px 12px; border-bottom:1px solid rgba(255,255,255,0.07);
+      flex-shrink:0;
+    }
+    .plan-sheet-close {
+      background:none; border:none; color:var(--muted); font-size:20px;
+      cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1;
+      transition:color .15s;
+    }
+    .plan-sheet-close:hover { color:var(--text); }
+    .plan-step-dots { display:flex; gap:6px; }
+    .plan-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.18); transition:background .2s; }
+    .plan-dot.active { background:var(--accent); width:18px; border-radius:3px; }
+    .plan-step { display:none; flex-direction:column; gap:14px; padding:20px; flex:1; overflow-y:auto; }
+    .plan-step.active { display:flex; }
+    .plan-step-title { font-size:18px; font-weight:800; color:var(--text); margin:0; }
+    .plan-step-sub   { font-size:13px; color:var(--muted); margin:-6px 0 0; }
+    .plan-contact-list { display:flex; flex-direction:column; gap:8px; }
+    .plan-contact-item {
+      display:flex; align-items:center; gap:12px; padding:12px 14px;
+      border-radius:12px; border:1.5px solid rgba(255,255,255,0.07);
+      cursor:pointer; transition:all .15s; user-select:none;
+      background:rgba(255,255,255,0.02);
+    }
+    .plan-contact-item:hover  { border-color:rgba(167,139,250,0.3); background:rgba(124,92,191,0.06); }
+    .plan-contact-item.selected { border-color:var(--accent); background:rgba(124,92,191,0.15); }
+    .plan-contact-name  { flex:1; font-size:15px; font-weight:700; color:var(--text); }
+    .plan-contact-check { font-size:16px; color:var(--accent); opacity:0; transition:opacity .15s; }
+    .plan-contact-item.selected .plan-contact-check { opacity:1; }
+    .plan-sheet-footer {
+      display:flex; gap:8px; justify-content:flex-end; align-items:center;
+      padding:14px 20px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0;
+    }
+    .plan-when-chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .plan-when-chip {
+      background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.12);
+      border-radius:20px; padding:9px 18px; font-size:14px; font-weight:600;
+      color:var(--muted); cursor:pointer; transition:all .15s; user-select:none;
+    }
+    .plan-when-chip:hover   { border-color:rgba(167,139,250,0.4); color:var(--text); }
+    .plan-when-chip.selected { background:rgba(124,92,191,0.25); border-color:var(--accent); color:var(--accent); }
+    .plan-msg-area {
+      width:100%; min-height:90px; background:rgba(255,255,255,0.04);
+      border:1.5px solid rgba(255,255,255,0.12); border-radius:12px;
+      color:var(--text); font-size:15px; line-height:1.55; padding:14px;
+      resize:none; font-family:inherit; transition:border-color .15s;
+    }
+    .plan-msg-area:focus { outline:none; border-color:var(--accent); }
+    .plan-wa-btn {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 20px; border-radius:8px; font-size:14px; font-weight:700;
+      background:#25d366; color:white; text-decoration:none; cursor:pointer;
+      transition:opacity .15s;
+    }
+    .plan-wa-btn:hover { opacity:.88; }
+    .plan-msg-hint { font-size:12px; color:var(--muted); margin:-6px 0 0; }
+
+    /* ── Pref interstitial modal ─────────────────────────────────────── */
+    #pref-interstitial { z-index:2100; }
+    #pref-interstitial .pref-modal {
+      background:white; border-radius:18px; padding:28px 24px 24px;
+      max-width:420px; width:calc(100% - 32px); box-shadow:0 12px 48px rgba(0,0,0,0.18);
+    }
+    .pref-modal-title { font-size:17px; font-weight:800; color:#1a1a2e; margin:0 0 6px; }
+    .pref-modal-sub   { font-size:13px; color:#7c7c9e; margin:0 0 18px; }
+    .pref-modal .chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+    .pref-modal .pref-chip {
+      background:#f4f4f8; border:1.5px solid #e0e0ef; border-radius:20px;
+      padding:7px 14px; font-size:13px; font-weight:600; color:#555577;
+      cursor:pointer; transition:all .15s; user-select:none;
+    }
+    .pref-modal .pref-chip:hover { border-color:#a78bfa; color:#7c5cbf; }
+    .pref-modal .pref-chip.selected { background:rgba(124,92,191,0.12); border-color:#7c5cbf; color:#7c5cbf; }
+    .pref-modal-actions { display:flex; gap:8px; justify-content:flex-end; }
 
     /* ── Compact custody card ────────────────────────────────────────── */
     .cal-compact-card {
@@ -1342,6 +1442,19 @@ let partnerMobile = null;
 
 // Connections — unified (both sides)
 let allConnections = [];
+let connPrefs = {};  // { [connection_id]: { activity_types, confidence, skipped_at } }
+let prefInterstitialConnId   = null;
+let prefInterstitialSelected = new Set();
+
+const ACTIVITY_CHIPS_CAL = [
+  { id:'coffee',      label:'☕ Coffee'      },
+  { id:'drinks',      label:'🍺 Drinks'      },
+  { id:'restaurants', label:'🍽 Restaurants' },
+  { id:'walks',       label:'🌳 Walks'       },
+  { id:'events',      label:'🎶 Events'      },
+  { id:'sports',      label:'⚽ Sports'      },
+  { id:'notsure',     label:'🤷 Not sure'    },
+];
 let partnerConn = null;    // approved PARTNER-type connection
 let coparentConn = null;   // approved COPARENT-type connection
 let pendingConnections = [];
@@ -1556,6 +1669,7 @@ function nextMonth() {
   // Load social calendars (partner + friends) for the strip
   await loadSocialCalendars();
   renderTogetherCard();
+  loadConnPrefs(); // fire-and-forget, used for pref interstitial
 
 
   updateNextTime();
@@ -3628,6 +3742,89 @@ function showToast(msg) {
   </div>
 </div>
 
+<!-- ── Plan wizard ── -->
+<div class="modal-overlay" id="plan-wizard">
+  <div class="plan-sheet">
+
+    <div class="plan-sheet-header">
+      <button class="plan-sheet-close" onclick="closePlanWizard()">✕</button>
+      <div class="plan-step-dots">
+        <div class="plan-dot" id="pdot-0"></div>
+        <div class="plan-dot" id="pdot-1"></div>
+        <div class="plan-dot" id="pdot-2"></div>
+        <div class="plan-dot" id="pdot-3"></div>
+      </div>
+      <div style="width:32px;"></div>
+    </div>
+
+    <!-- Step 0: Who -->
+    <div class="plan-step active" id="plan-step-0">
+      <div class="plan-step-title">Who do you want to hang out with?</div>
+      <div class="plan-contact-list" id="plan-contact-list"></div>
+      <div class="plan-sheet-footer">
+        <button class="btn btn-primary" id="plan-next-0" onclick="planGoStep(1)" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 1: Activity (optional) -->
+    <div class="plan-step" id="plan-step-1">
+      <div class="plan-step-title">What do you have in mind?</div>
+      <div class="plan-step-sub">Optional — you can sort it out on the day</div>
+      <div class="chip-row" id="plan-activity-chips"></div>
+      <div class="plan-sheet-footer">
+        <button class="btn btn-outline" onclick="planGoStep(2)">Skip</button>
+        <button class="btn btn-primary" onclick="planGoStep(2)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: When (optional) -->
+    <div class="plan-step" id="plan-step-2">
+      <div class="plan-step-title">When are you thinking?</div>
+      <div class="plan-step-sub">Optional — figure it out over chat</div>
+      <div class="plan-when-chips">
+        <button class="plan-when-chip" onclick="selectPlanWhen('this_weekend',this)">This weekend</button>
+        <button class="plan-when-chip" onclick="selectPlanWhen('next_weekend',this)">Next weekend</button>
+        <button class="plan-when-chip" onclick="selectPlanWhen('this_week',this)">This week</button>
+        <button class="plan-when-chip" onclick="selectPlanWhen('next_week',this)">Next week</button>
+        <button class="plan-when-chip" onclick="selectPlanWhen('soon',this)">Anytime soon</button>
+      </div>
+      <div class="plan-sheet-footer">
+        <button class="btn btn-outline" onclick="planGoStep(3)">Skip</button>
+        <button class="btn btn-primary" onclick="planGoStep(3)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Message & send -->
+    <div class="plan-step" id="plan-step-3">
+      <div class="plan-step-title">Send your invite</div>
+      <div class="plan-step-sub">Edit the message or send as-is</div>
+      <textarea class="plan-msg-area" id="plan-msg-txt" rows="4"></textarea>
+      <div class="plan-msg-hint" id="plan-msg-hint"></div>
+      <div class="plan-sheet-footer">
+        <button class="btn btn-outline btn-sm" onclick="copyPlanMsg()">Copy</button>
+        <a class="plan-wa-btn" id="plan-wa-btn" href="#" target="_blank" rel="noopener" onclick="onPlanSend()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.85L0 24l6.335-1.498A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.36-.213-3.73.881.933-3.618-.234-.374A9.818 9.818 0 1112 21.818z"/></svg>
+          Send via WhatsApp
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Pref interstitial modal ── -->
+<div class="modal-overlay" id="pref-interstitial">
+  <div class="pref-modal">
+    <div class="pref-modal-title" id="pref-interstitial-title">Quick question before you plan</div>
+    <div class="pref-modal-sub" id="pref-interstitial-sub">What do you usually do together?</div>
+    <div class="chip-row" id="pref-interstitial-chips"></div>
+    <div class="pref-modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="skipPrefInterstitial()">Skip</button>
+      <button class="btn btn-primary btn-sm" onclick="savePrefInterstitial()">Save & continue</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── FAB backdrop ── -->
 <div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
 
@@ -3643,7 +3840,6 @@ function showToast(msg) {
     <span>Invite a friend to hang out</span>
     <div class="fab-action-note">
       You need at least one accepted connection first.
-      <br><button class="fab-action-note-cta" onclick="event.stopPropagation();closeFabMenu();goToConnections()">Invite a friend →</button>
     </div>
   </button>
 
@@ -3707,7 +3903,10 @@ function openFabMenu() {
   const approved = (allConnections || []).filter(c => c.status === 'approved');
   const hasApproved    = approved.length >= 1;
   const hasTwo         = approved.length >= 2;
-  const hasPreferences = false; // not yet implemented
+  const hasPreferences = approved.some(c => {
+    const p = connPrefs[c.id];
+    return p && (p.activity_types?.length > 0);
+  });
 
   const planBtn  = document.getElementById('fab-plan');
   const groupBtn = document.getElementById('fab-group');
@@ -3736,7 +3935,26 @@ function fabPlanClick() {
   const approved = (allConnections || []).filter(c => c.status === 'approved');
   if (!approved.length) return; // disabled
   closeFabMenu();
-  openInviteModal();
+
+  // Check if any approved connection needs preference collection
+  const now = Date.now();
+  const SKIP_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const needsPrefs = approved.find(c => {
+    const p = connPrefs[c.id];
+    if (!p) return true; // never asked
+    if (p.confidence > 0) return false; // already set
+    if (p.skipped_at) {
+      const skippedMs = new Date(p.skipped_at).getTime();
+      if ((now - skippedMs) < SKIP_COOLDOWN_MS) return false; // skipped recently
+    }
+    return true;
+  });
+
+  if (needsPrefs) {
+    showPrefInterstitial(needsPrefs.id, needsPrefs.other_name);
+  } else {
+    openPlanWizard();
+  }
 }
 
 function fabGroupClick() {
@@ -3748,6 +3966,227 @@ function fabGroupClick() {
 
 function fabBrowseClick() {
   // Not yet implemented — tooltip handles the explanation
+}
+
+// ── Plan wizard ───────────────────────────────────────────────────────────────
+let _planContacts  = [];   // selected allConnections items
+let _planActivity  = null; // chip id e.g. 'coffee'
+let _planWhen      = null; // 'this_weekend' | 'next_weekend' | 'this_week' | 'next_week' | 'soon'
+
+const PLAN_ACT_LABELS = {
+  coffee:'coffee', drinks:'drinks', restaurants:'dinner',
+  walks:'a walk', events:'an event', sports:'some sports', notsure:'something fun'
+};
+const PLAN_WHEN_LABELS = {
+  this_weekend:'this weekend', next_weekend:'next weekend',
+  this_week:'this week', next_week:'next week', soon:'soon'
+};
+
+function openPlanWizard() {
+  _planContacts = [];
+  _planActivity = null;
+  _planWhen     = null;
+
+  // Populate contact list
+  const approved = (allConnections || []).filter(c => c.status === 'approved');
+  const list = document.getElementById('plan-contact-list');
+  if (list) {
+    list.innerHTML = approved.map(c => {
+      const av = scAvatar({ photo: c.other_photo || null, initial: (c.other_name||'?')[0].toUpperCase(), color: '#7c5cbf' }, 36);
+      return `<div class="plan-contact-item" id="pc-${c.id}" data-id="${c.id}" data-name="${c.other_name}" onclick="togglePlanContact(this,'${c.id}')">
+        ${av}
+        <span class="plan-contact-name">${c.other_name}</span>
+        <span class="plan-contact-check">✓</span>
+      </div>`;
+    }).join('');
+  }
+
+  showPlanStep(0);
+  document.getElementById('plan-wizard').classList.add('open');
+}
+
+function closePlanWizard() {
+  document.getElementById('plan-wizard').classList.remove('open');
+}
+
+function togglePlanContact(el, connId) {
+  const c = (allConnections || []).find(x => x.id === connId);
+  if (!c) return;
+  const idx = _planContacts.findIndex(x => x.id === connId);
+  if (idx >= 0) { _planContacts.splice(idx, 1); el.classList.remove('selected'); }
+  else          { _planContacts.push(c);          el.classList.add('selected'); }
+  const nextBtn = document.getElementById('plan-next-0');
+  if (nextBtn) nextBtn.disabled = _planContacts.length === 0;
+}
+
+function showPlanStep(n) {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`plan-step-${i}`)?.classList.toggle('active', i === n);
+    const dot = document.getElementById(`pdot-${i}`);
+    if (dot) dot.classList.toggle('active', i === n);
+  }
+  if (n === 1) _buildPlanActivityChips();
+  if (n === 3) _buildPlanMessage();
+}
+
+function planGoStep(n) {
+  showPlanStep(n);
+}
+
+function selectPlanWhen(val, el) {
+  _planWhen = val;
+  document.querySelectorAll('.plan-when-chip').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function _buildPlanActivityChips() {
+  // Show union of prefs from selected contacts, fallback to defaults
+  const prefIds = new Set();
+  _planContacts.forEach(c => {
+    const p = connPrefs[c.id];
+    if (p?.activity_types?.length) p.activity_types.forEach(id => prefIds.add(id));
+  });
+  const chips = prefIds.size ? [...prefIds] : ACTIVITY_CHIPS_CAL.map(ch => ch.id);
+  const row = document.getElementById('plan-activity-chips');
+  if (!row) return;
+  row.innerHTML = ACTIVITY_CHIPS_CAL.filter(ch => chips.includes(ch.id)).map(ch =>
+    `<button class="pref-chip${_planActivity === ch.id ? ' selected' : ''}" onclick="selectPlanActivity('${ch.id}',this)">${ch.label}</button>`
+  ).join('');
+}
+
+function selectPlanActivity(id, el) {
+  _planActivity = _planActivity === id ? null : id;
+  document.querySelectorAll('#plan-activity-chips .pref-chip').forEach(b => b.classList.remove('selected'));
+  if (_planActivity) el.classList.add('selected');
+}
+
+function _buildPlanMessage() {
+  const names  = _planContacts.map(c => c.other_name).join(' & ');
+  const act    = _planActivity ? PLAN_ACT_LABELS[_planActivity] : 'something';
+  const when   = _planWhen    ? ' ' + PLAN_WHEN_LABELS[_planWhen] : '';
+  const msg    = `Hey ${names}, do you fancy ${act}${when}? 😊`;
+  const txt    = document.getElementById('plan-msg-txt');
+  if (txt) txt.value = msg;
+
+  // WhatsApp link — direct if one contact has a mobile, else share
+  const wa   = document.getElementById('plan-wa-btn');
+  const hint = document.getElementById('plan-msg-hint');
+  if (wa) {
+    let waHref = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    if (_planContacts.length === 1) {
+      const c = _planContacts[0];
+      const mobile = c.i_am_target ? c.requester_mobile : c.target_mobile;
+      if (mobile) {
+        const num = mobile.replace(/[^0-9]/g, '');
+        waHref = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+      }
+    }
+    wa.href = waHref;
+    if (hint) hint.textContent = _planContacts.length > 1
+      ? 'WhatsApp will open — pick your group chat or send to each person.'
+      : '';
+  }
+}
+
+async function onPlanSend() {
+  // Save outing to DB in the background
+  const msg  = document.getElementById('plan-msg-txt')?.value || '';
+  const date = _resolvePlanDate(_planWhen);
+  const invitees = _planContacts.map(c => ({ user_id: c.other_user_id, name: c.other_name }));
+  try {
+    await fetch(`/api/outings?token=${MY_TOKEN}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, message: msg, invitees })
+    });
+    await loadOutings();
+  } catch(_) {}
+  closePlanWizard();
+  showToast('✓ Invite sent!');
+}
+
+function copyPlanMsg() {
+  const txt = document.getElementById('plan-msg-txt')?.value || '';
+  navigator.clipboard.writeText(txt).then(() => showToast('✓ Copied!'));
+}
+
+function _resolvePlanDate(when) {
+  const d   = new Date();
+  const dow = d.getDay(); // 0=Sun
+  const next = (target, extra = 0) => {
+    const diff = (target - dow + 7) % 7 || 7;
+    const r = new Date(d); r.setDate(r.getDate() + diff + extra);
+    return r.toISOString().slice(0, 10);
+  };
+  if (when === 'this_weekend')  return next(6);
+  if (when === 'next_weekend')  return next(6, 7);
+  if (when === 'this_week') {
+    // Next weekday (Mon–Fri), not same day
+    const r = new Date(d); r.setDate(r.getDate() + 1);
+    while (r.getDay() === 0 || r.getDay() === 6) r.setDate(r.getDate() + 1);
+    return r.toISOString().slice(0, 10);
+  }
+  if (when === 'next_week')     return next(1, 7);
+  // soon / null — 7 days out
+  const r = new Date(d); r.setDate(r.getDate() + 7);
+  return r.toISOString().slice(0, 10);
+}
+
+// ── Connection preferences ─────────────────────────────────────────────────
+async function loadConnPrefs() {
+  try {
+    const res = await fetch(`/api/preferences?token=${MY_TOKEN}`);
+    if (res.ok) { const d = await res.json(); connPrefs = d.preferences || {}; }
+  } catch (_) {}
+}
+
+function showPrefInterstitial(connId, name) {
+  prefInterstitialConnId   = connId;
+  prefInterstitialSelected = new Set();
+
+  document.getElementById('pref-interstitial-title').textContent =
+    `Quick question about ${name}`;
+  document.getElementById('pref-interstitial-sub').textContent =
+    'What do you usually do together?';
+
+  const chipRow = document.getElementById('pref-interstitial-chips');
+  chipRow.innerHTML = ACTIVITY_CHIPS_CAL.map(ch =>
+    `<button class="pref-chip" data-id="${ch.id}" onclick="togglePrefInterstitialChip(this,'${ch.id}')">${ch.label}</button>`
+  ).join('');
+
+  document.getElementById('pref-interstitial').classList.add('open');
+}
+
+function togglePrefInterstitialChip(el, id) {
+  if (prefInterstitialSelected.has(id)) {
+    prefInterstitialSelected.delete(id);
+    el.classList.remove('selected');
+  } else {
+    prefInterstitialSelected.add(id);
+    el.classList.add('selected');
+  }
+}
+
+async function savePrefInterstitial() {
+  if (!prefInterstitialConnId) return;
+  const chips = [...prefInterstitialSelected];
+  await fetch(`/api/connections/${prefInterstitialConnId}/preferences?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activity_types: chips })
+  });
+  if (chips.length) connPrefs[prefInterstitialConnId] = { activity_types: chips, confidence: 1 };
+  document.getElementById('pref-interstitial').classList.remove('open');
+  openPlanWizard();
+}
+
+async function skipPrefInterstitial() {
+  if (!prefInterstitialConnId) return;
+  await fetch(`/api/connections/${prefInterstitialConnId}/preferences?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skip: true })
+  });
+  connPrefs[prefInterstitialConnId] = { activity_types: [], confidence: 0, skipped_at: new Date().toISOString() };
+  document.getElementById('pref-interstitial').classList.remove('open');
+  openPlanWizard();
 }
 
 function updateBnBadges() {

@@ -1351,4 +1351,52 @@ router.delete('/outings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Connection preferences ─────────────────────────────────────────────────
+
+// GET /api/connections/:id/preferences
+router.get('/connections/:id/preferences', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const prefs = q.getConnectionPrefs.get(me.id, req.params.id);
+  res.json({
+    activity_types: prefs ? JSON.parse(prefs.activity_types || '[]') : [],
+    confidence:  prefs?.confidence  || 0,
+    skipped_at:  prefs?.skipped_at  || null,
+    last_updated:prefs?.last_updated|| null
+  });
+});
+
+// GET /api/preferences — all prefs for the authed user (bulk, for client-side use)
+router.get('/preferences', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const rows = q.getAllPrefsForUser.all(me.id);
+  const map = {};
+  for (const r of rows) {
+    map[r.connection_id] = {
+      activity_types: JSON.parse(r.activity_types || '[]'),
+      confidence:  r.confidence,
+      skipped_at:  r.skipped_at,
+      last_updated:r.last_updated
+    };
+  }
+  res.json({ preferences: map });
+});
+
+// POST /api/connections/:id/preferences
+router.post('/connections/:id/preferences', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+  const { activity_types, skip } = req.body;
+  const newId = require('crypto').randomUUID();
+
+  if (skip) {
+    q.skipConnectionPrefs.run(newId, me.id, req.params.id);
+  } else {
+    const types = Array.isArray(activity_types) ? activity_types : [];
+    q.upsertConnectionPrefs.run(newId, me.id, req.params.id, JSON.stringify(types));
+  }
+  res.json({ ok: true });
+});
+
 module.exports = router;

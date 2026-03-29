@@ -212,6 +212,34 @@ body { background:var(--bg); color:var(--text); font-family:inherit; margin:0; }
 input::placeholder { color:var(--muted); }
 .text-muted { color:var(--muted); font-size:13px; }
 
+/* ── Preference card ─────────────────────────────────────────────────── */
+#pref-card {
+  display:none;
+  grid-column:1 / -1;
+  background:linear-gradient(135deg, rgba(124,92,191,0.13), rgba(167,139,250,0.05));
+  border:1.5px solid rgba(167,139,250,0.35);
+  border-radius:16px; padding:20px;
+  flex-direction:column; gap:14px;
+  animation:prefSlide .25s ease;
+}
+#pref-card.visible { display:flex; }
+@keyframes prefSlide {
+  from { opacity:0; transform:translateY(-8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.pref-card-title { font-size:15px; font-weight:800; color:var(--text); margin:0; }
+.pref-card-sub   { font-size:13px; color:var(--muted); margin:-6px 0 2px; }
+.chip-row { display:flex; flex-wrap:wrap; gap:8px; }
+.pref-chip {
+  background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.12);
+  border-radius:20px; padding:7px 14px;
+  font-size:13px; font-weight:600; color:var(--muted);
+  cursor:pointer; transition:all .15s; user-select:none;
+}
+.pref-chip:hover { border-color:rgba(167,139,250,0.4); color:var(--text); }
+.pref-chip.selected { background:rgba(124,92,191,0.25); border-color:var(--accent); color:var(--accent); }
+.pref-card-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:2px; }
+
 /* ── Context menu ────────────────────────────────────────────────────── */
 .ctx-menu {
   position:fixed; background:var(--card); border:1px solid var(--border);
@@ -243,7 +271,8 @@ input::placeholder { color:var(--muted); }
   </div>
 
   <div class="conn-grid" id="connections-list">
-    <p class="text-muted">Loading…</p>
+    <div id="pref-card"></div>
+    <p class="text-muted" id="connections-loading">Loading…</p>
   </div>
 
   <!-- Groups section (visual placeholder) -->
@@ -387,11 +416,26 @@ const params   = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token');
 if (!MY_TOKEN) location.replace('/');
 
-let allConnections       = [];
-let pendingConnectionId  = null;
-let selectedDurationDays = 30;
-let myShareConnId        = null;
-let myShareDays          = 30;
+let allConnections        = [];
+let connPrefs             = {};
+let prefCardShownThisSession = false;
+let pendingConnectionId   = null;
+let pendingConnectionName = null;
+let selectedDurationDays  = 30;
+let myShareConnId         = null;
+let myShareDays           = 30;
+let prefCardConnId        = null;
+let selectedPrefChips     = new Set();
+
+const ACTIVITY_CHIPS = [
+  { id:'coffee',      label:'☕ Coffee'      },
+  { id:'drinks',      label:'🍺 Drinks'      },
+  { id:'restaurants', label:'🍽 Restaurants' },
+  { id:'walks',       label:'🌳 Walks'       },
+  { id:'events',      label:'🎶 Events'      },
+  { id:'sports',      label:'⚽ Sports'      },
+  { id:'notsure',     label:'🤷 Not sure'    },
+];
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 function showToast(msg) {
@@ -469,23 +513,32 @@ function renderConnectionsList() {
   const container = document.getElementById('connections-list');
   if (!container) return;
 
+  // Preserve the pref-card element
+  const prefCardEl = document.getElementById('pref-card');
+  const loadingEl  = document.getElementById('connections-loading');
+  if (loadingEl) loadingEl.remove();
+
+  // Remove all card children except pref-card
+  [...container.children].forEach(el => { if (el.id !== 'pref-card') el.remove(); });
+
   if (allConnections.length === 0) {
-    container.innerHTML = `<div class="conn-empty">
-      <div class="conn-empty-icon">👋</div>
+    const empty = document.createElement('div');
+    empty.className = 'conn-empty';
+    empty.innerHTML = `<div class="conn-empty-icon">👋</div>
       <div>No connections yet.</div>
-      <div style="font-size:13px;margin-top:6px;">Invite your co-parent or partner to get started.</div>
-    </div>`;
+      <div style="font-size:13px;margin-top:6px;">Invite your co-parent or partner to get started.</div>`;
+    container.appendChild(empty);
+    updateGroupMembers();
     return;
   }
 
-  container.innerHTML = allConnections.map(c => {
+  const cardsHtml = allConnections.map(c => {
     const relType  = c.relationship_type || 'coparent';
     const relLabel = relType === 'partner' ? '❤ PARTNER' : relType === 'friend' ? '👤 FRIEND' : '🛡 CO-PARENT';
     const dotClass = c.status === 'approved' ? 'active' : c.status === 'pending' ? 'pending' : 'inactive';
     const theirUntil = c.their_share_until || c.approved_until;
     const myUntil    = c.my_share_until    || c.approved_until;
 
-    // Pending card (needs review)
     if (c.i_am_target && c.status === 'pending') {
       return `<div class="conn-card pending-card">
         <button class="conn-menu-btn" onclick="openConnMenu('${c.id}',this)">⋮</button>
@@ -535,7 +588,14 @@ function renderConnectionsList() {
     </div>`;
   }).join('');
 
-  // Populate family hub member avatars
+  // Insert cards after pref-card
+  const frag = document.createRange().createContextualFragment(cardsHtml);
+  container.appendChild(frag);
+
+  updateGroupMembers();
+}
+
+function updateGroupMembers() {
   const approved = allConnections.filter(c => c.status === 'approved');
   const memberRow = document.getElementById('group-members-row');
   if (memberRow && approved.length > 0) {
@@ -545,6 +605,92 @@ function renderConnectionsList() {
       `<div class="group-member-avatar">${c.other_photo ? `<img src="${c.other_photo}" style="width:100%;height:100%;object-fit:cover;">` : (c.other_name||'?')[0].toUpperCase()}</div>`
     ).join('') + (extra > 0 ? `<span class="group-member-count">+${extra}</span>` : '');
   }
+}
+
+// ── Prefs: load + auto-show on page load (handles requester side) ─────────
+async function loadConnPrefs() {
+  try {
+    const res = await fetch(`/api/preferences?token=${MY_TOKEN}`);
+    if (res.ok) { const d = await res.json(); connPrefs = d.preferences || {}; }
+  } catch(_) {}
+}
+
+function checkShowPrefCard() {
+  if (prefCardShownThisSession) return;
+  const now = Date.now();
+  const SKIP_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
+  const approved = allConnections.filter(c => c.status === 'approved');
+  const target = approved.find(c => {
+    const p = connPrefs[c.id];
+    if (!p) return true; // never asked
+    if (p.confidence > 0) return false; // already answered
+    if (p.skipped_at && (now - new Date(p.skipped_at).getTime()) < SKIP_COOLDOWN) return false;
+    return true;
+  });
+  if (!target) return;
+  prefCardShownThisSession = true;
+  showPrefCard(target.id, target.other_name);
+}
+
+// ── Activity preferences (Entry A — post-approval) ────────────────────────
+function showPrefCard(connId, name) {
+  prefCardConnId    = connId;
+  selectedPrefChips = new Set();
+
+  const card = document.getElementById('pref-card');
+  if (!card) return;
+
+  card.innerHTML = `
+    <div>
+      <div class="pref-card-title">You're now connected with ${name} ✓</div>
+      <div class="pref-card-sub">What do you usually do together?</div>
+    </div>
+    <div class="chip-row" id="pref-chip-row">
+      ${ACTIVITY_CHIPS.map(ch =>
+        `<button class="pref-chip" data-id="${ch.id}" onclick="togglePrefChip(this,'${ch.id}')">${ch.label}</button>`
+      ).join('')}
+    </div>
+    <div class="pref-card-actions">
+      <button class="btn btn-outline btn-sm" onclick="skipPrefCard()">Skip for now</button>
+      <button class="btn btn-primary btn-sm" id="pref-save-btn" onclick="savePrefCard()">Save</button>
+    </div>
+  `;
+  card.classList.add('visible');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function togglePrefChip(el, id) {
+  if (selectedPrefChips.has(id)) {
+    selectedPrefChips.delete(id);
+    el.classList.remove('selected');
+  } else {
+    selectedPrefChips.add(id);
+    el.classList.add('selected');
+  }
+}
+
+async function savePrefCard() {
+  if (!prefCardConnId) return;
+  const chips = [...selectedPrefChips];
+  const res = await fetch(`/api/connections/${prefCardConnId}/preferences?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activity_types: chips })
+  });
+  if (res.ok) {
+    document.getElementById('pref-card').classList.remove('visible');
+    showToast(chips.length ? '✓ Preferences saved' : '✓ Saved');
+  } else {
+    showToast('Failed to save — try again');
+  }
+}
+
+async function skipPrefCard() {
+  if (!prefCardConnId) return;
+  await fetch(`/api/connections/${prefCardConnId}/preferences?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skip: true })
+  });
+  document.getElementById('pref-card').classList.remove('visible');
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────
@@ -559,8 +705,9 @@ async function loadConnections() {
 
 // ── Approve modal ─────────────────────────────────────────────────────────
 function openApproveModal(connId, name, desiredDays) {
-  pendingConnectionId  = connId;
-  selectedDurationDays = desiredDays || 30;
+  pendingConnectionId   = connId;
+  pendingConnectionName = name;
+  selectedDurationDays  = desiredDays || 30;
   document.getElementById('approve-title').textContent = `${name} wants to connect`;
   document.getElementById('approve-desc').textContent  = `Choose how long to share your calendar with ${name}.`;
   document.querySelectorAll('#duration-radios .radio-option').forEach(o => {
@@ -583,8 +730,14 @@ async function approveRequest() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ connection_id: pendingConnectionId, duration_days: selectedDurationDays, auto_renew: autoRenew })
   });
-  if (res.ok) { closeModal('approve-modal'); showToast('✓ Connection approved'); await loadConnections(); }
-  else showToast('Failed to approve');
+  if (res.ok) {
+    closeModal('approve-modal');
+    showToast('✓ Connection approved');
+    const approvedId   = pendingConnectionId;
+    const approvedName = pendingConnectionName;
+    await loadConnections();
+    showPrefCard(approvedId, approvedName);
+  } else showToast('Failed to approve');
 }
 
 async function rejectRequest() {
@@ -718,6 +871,8 @@ async function init() {
   document.getElementById('ical-url').value    = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
 
   await loadConnections();
+  await loadConnPrefs();
+  checkShowPrefCard();
 }
 
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
