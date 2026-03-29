@@ -1005,6 +1005,13 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .browse-empty   { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
     .browse-loading { text-align:center; padding:30px 20px; color:var(--muted); font-size:14px; }
+    .opp-delete-btn {
+      width:26px; height:26px; border-radius:50%; border:none;
+      background:rgba(255,255,255,0.06); color:var(--muted);
+      font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all .15s; flex-shrink:0;
+    }
+    .opp-delete-btn:hover { background:rgba(239,68,68,0.2); color:#ef4444; }
     .opp-date-row {
       padding:13px 14px; border-radius:10px; margin-bottom:6px; cursor:pointer;
       border:1.5px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
@@ -4384,11 +4391,14 @@ function renderBrowseMatches() {
 
     return `<div class="opp-card" onclick="oppCardClick('${o.id}','${(o.source_url||'').replace(/'/g,'%27')}','${o.title.replace(/'/g,'')}')">
       <div class="opp-card-top">
-        <div>
+        <div style="flex:1;min-width:0;">
           <div class="opp-card-title">${icon} ${o.title}</div>
           <div class="opp-card-meta">${[when, where, price].filter(Boolean).join(' · ')}</div>
         </div>
-        <div class="opp-score-ring">${score}%</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <div class="opp-score-ring">${score}%</div>
+          <button class="opp-delete-btn" onclick="deleteOpportunity(event,'${o.id}')" title="Remove">✕</button>
+        </div>
       </div>
       ${o.relevance_reason ? `<div class="opp-reason">✦ ${o.relevance_reason}</div>` : ''}
       ${tags.length ? `<div class="opp-chips">${tags.map(t=>`<span class="opp-chip">${t}</span>`).join('')}</div>` : ''}
@@ -4473,6 +4483,18 @@ async function confirmOppDate() {
     btn.disabled = false;
     btn.textContent = 'Confirm date';
     showToast('Could not save plan — try again');
+  }
+}
+
+async function deleteOpportunity(e, oppId) {
+  e.stopPropagation();
+  try {
+    const res = await fetch(`/api/opportunities/${oppId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    _browseMatches = _browseMatches.filter(o => o.id !== oppId);
+    renderBrowseMatches();
+  } catch(e) {
+    showToast('Could not remove — try again');
   }
 }
 

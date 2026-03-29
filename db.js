@@ -503,6 +503,7 @@ const q = {
     VALUES (?, ?, ?, ?, ?)
   `),
   deletePlan: db.prepare('DELETE FROM plans WHERE id=? AND user_id=?'),
+  deleteOpportunity: db.prepare('DELETE FROM opportunities WHERE id=? AND (created_by=? OR created_by IS NULL)'),
   getPlansForUser: db.prepare(`
     SELECT p.*, o.title AS opp_title, o.type AS opp_type, o.source_url AS opp_url,
            o.location_name AS opp_location, o.price_tier AS opp_price_tier
@@ -672,6 +673,10 @@ function deletePlan(id, userId) {
   return q.deletePlan.run(id, userId);
 }
 
+function deleteOpportunity(id, userId) {
+  return q.deleteOpportunity.run(id, userId);
+}
+
 function getPlansForUser(userId, from, to) {
   return q.getPlansForUser.all(userId, from, to);
 }
@@ -691,6 +696,7 @@ module.exports = {
   getUserActivityPrefs,
   // Plan helpers
   createPlan, deletePlan, getPlansForUser, getPlansDateCounts,
+  deleteOpportunity,
   // Re-export core user/calendar helpers for convenience in services
   getDaysForUserInRange: (userId, from, to) => q.getDaysForUserInRange.all(userId, from, to),
   getUserByToken: (token) => q.getUserByToken.get(token),

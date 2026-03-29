@@ -103,6 +103,14 @@ router.post('/opportunities/sync', async (req, res) => {
   }
 });
 
+// ── DELETE /api/opportunities/:id — remove an opportunity ────────────────
+router.delete('/opportunities/:id', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const result = db.deleteOpportunity(req.params.id, user.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'not found or not yours' });
+  res.json({ ok: true });
+});
+
 // ── POST /api/plans — save a plan for a date ──────────────────────────────
 router.post('/plans', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
