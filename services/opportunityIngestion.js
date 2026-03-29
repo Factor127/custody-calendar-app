@@ -15,20 +15,35 @@ const CHIP_TO_CAT = {
 
 // ── Guess type from signals ───────────────────────────────────────────────
 function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
-  // JSON-LD @type is most reliable
+  // 1. JSON-LD @type — most reliable signal
   if (jsonLdType) {
     const t = jsonLdType.toLowerCase();
     if (/restaurant|food|cafe|coffee|bar|pub|nightclub|lodging|localbusiness/.test(t)) return 'venue';
     if (/event|concert|festival|musicev|socialev/.test(t)) return 'event';
   }
-  // A specific date/time → almost certainly an event
+
+  // 2. Has a specific start_time → event
   if (hasSpecificTime) return 'event';
-  // Keyword signals in URL + title + desc
-  const text = `${url} ${title} ${desc}`.toLowerCase();
-  if (/restaurant|cafe|coffee|bistro|\bbar\b|\bpub\b|\bclub\b|nightclub|lounge|rooftop|eatery|diner/.test(text)) return 'venue';
-  if (/festival|concert|\bgig\b|\bshow\b|party|happening|exhibition|class|workshop/.test(text)) return 'event';
-  // No time + no event keyword → treat as venue/place
-  return 'venue';
+
+  let domain = '', path = '/';
+  try { const u = new URL(url); domain = u.hostname.replace(/^www\./, ''); path = u.pathname; } catch(e) {}
+
+  // 3. Known event platform domains → always event
+  if (/vibez\.io|selector\.org|eventbrite\.|ra\.co$|dice\.fm|ticketmaster\.|bandsintown\.|songkick\.|fever\.plus|lu\.ma|universe\.com|resident-advisor\./.test(domain)) return 'event';
+
+  // 4. URL path contains event patterns (e.g. /events/123, /tickets/, /e/abc)
+  if (/\/events?\/|\/tickets?\/|\/shows?\/|\/gigs?\/|\/concerts?\//.test(path)) return 'event';
+
+  // 5. Content keyword signals — title + desc only (not URL, to avoid false matches on domain names)
+  const text = `${title} ${desc}`.toLowerCase();
+  if (/restaurant|cafe|coffee|bistro|\bbar\b|\bpub\b|nightclub|lounge|rooftop|eatery|diner/.test(text)) return 'venue';
+  if (/festival|concert|\bgig\b|\bshow\b|party|happening|exhibition|class|workshop|\blive\b|tickets?/.test(text)) return 'event';
+
+  // 6. Homepage URL (path is just "/" or empty) with no event signals → it's a place/venue
+  if (!path || path === '/' || path.replace(/\//g,'').length < 3) return 'venue';
+
+  // 7. Default → event (a URL with a real path that has no venue signals is most likely an event listing)
+  return 'event';
 }
 
 // ── Metadata extraction from HTML ─────────────────────────────────────────
