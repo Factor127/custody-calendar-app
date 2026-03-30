@@ -1705,24 +1705,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         <span>Partner &amp; you are free</span>
       </span>
     </label>
-    <div class="custody-balance-bar">
-    <span class="bal-label">Balance:</span>
-    <span class="bal-swatch" style="background:var(--r);"></span>
-    <span class="bal-name" id="owner-name-label">Me</span>
-    <span class="bal-count" style="color:#a78bfa;" id="r-count">—</span>
-    <span style="color:var(--border);">·</span>
-    <span class="bal-swatch" style="background:var(--z);"></span>
-    <span class="bal-name">Co-parent</span>
-    <span class="bal-count" style="color:#60a5fa;" id="z-count">—</span>
-    <span class="bal-diff" id="difference"></span>
-    <span style="color:var(--border);margin:0 4px;">|</span>
-    <span class="leg-item">
-      <span class="leg-swatch" style="background:rgba(15,25,70,0.75);border:1px solid rgba(60,80,160,0.40);"></span>Free
-    </span>
-    <span class="leg-item">
-      <span class="leg-swatch" style="background:rgba(124,92,191,0.35);border:1px solid rgba(167,139,250,0.40);"></span>Custody
-    </span>
-    </div><!-- /.custody-balance-bar -->
   </div><!-- /.cal-show-bar -->
 
 <!-- Cell hover card -->
@@ -2912,8 +2894,8 @@ function handleDayClick(cell) {
   if (suggestMode) { toggleSuggestDay(cell, date); return; }
   if (editMode === 'holiday') { cycleTag(cell, date); return; }
 
-  // Normal mode — open day management sheet
-  openDaySheet(date);
+  // Normal mode — open smart crafter pre-filled with the tapped date
+  openSmartCrafter(date);
 }
 
 // ── Day management sheet ───────────────────────────────────────────────────
