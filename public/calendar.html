@@ -5945,6 +5945,11 @@ async function openSmartCrafter(prefillDate, prefillOpp) {
 
   // Auto-pick best date
   if (!_sc.selDate) _sc.selDate = _scBestDate();
+  // Jump calendar to the month of the auto-picked date
+  if (_sc.selDate) {
+    const _d = new Date(_sc.selDate + 'T00:00:00');
+    _scCalYear = _d.getFullYear(); _scCalMonth = _d.getMonth();
+  }
 
   renderSCWho();
   renderSCWhen();
@@ -5970,8 +5975,12 @@ function closeSCAll() {
 function _scBestDate() {
   if (!_sc.data?.myFreeDays?.length) return null;
   const selIds = [..._sc.selWho];
+  // Connections with no calendar data are unknown — treat optimistically
+  const withData = selIds.filter(id => (_sc.data.connFreeDays[id] || []).length > 0);
   for (const d of _sc.data.myFreeDays) {
-    const ok = selIds.length === 0 || selIds.some(id => (_sc.data.connFreeDays[id] || []).includes(d));
+    const ok = selIds.length === 0 ||
+               withData.length === 0 ||                                // all unknown → any free day works
+               withData.some(id => (_sc.data.connFreeDays[id] || []).includes(d));
     if (ok) return d;
   }
   return _sc.data.myFreeDays[0] || null;
@@ -6115,7 +6124,12 @@ function renderSCCal() {
     const isInjected = _sc.selDate === ds && !isFree;
 
     // Connection availability tint: any selected conn free on this day?
-    const connFree = selIds.length > 0 && selIds.some(id => _scConnFree(id, ds));
+    // Connections with no calendar data are "unknown" — treat optimistically (potentially free)
+    const withData = selIds.filter(id => (_sc.data?.connFreeDays[id] || []).length > 0);
+    const connFree = selIds.length > 0 && (
+      withData.length === 0 ||                                        // all unknown → optimistic
+      withData.some(id => _scConnFree(id, ds))                       // at least one with data is free
+    );
 
     let cls = 'sc-cal-day';
     if (isSel)       cls += ' selected';
@@ -6247,6 +6261,9 @@ async function _scUnfurlUrl(url) {
     if (data.date && data.date >= new Date().toISOString().slice(0, 10)) {
       _sc.selDate = data.date;
       dateApplied = true;
+      // Jump calendar to the month of the extracted date
+      const _ud = new Date(data.date + 'T00:00:00');
+      _scCalYear = _ud.getFullYear(); _scCalMonth = _ud.getMonth();
       renderSCWhen();
     }
 
