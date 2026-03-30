@@ -5971,10 +5971,16 @@ function _scConnFree(connId, date) {
 
 function _scAvailStatus(date) {
   const ids = [..._sc.selWho];
-  if (!ids.length) return _sc.data?.myFreeDays.includes(date) ? 'me-only' : 'all-busy';
-  const freeCount = ids.filter(id => _scConnFree(id, date)).length;
-  if (freeCount === ids.length) return 'all-free';
-  if (freeCount > 0)            return 'partial';
+  const myFree = _sc.data?.myFreeDays.includes(date);
+  if (!ids.length) return myFree ? 'me-only' : 'all-busy';
+
+  // Only consider connections that have calendar data; no data = unknown (not busy)
+  const withData = ids.filter(id => (_sc.data?.connFreeDays[id] || []).length > 0);
+  if (!withData.length) return myFree ? 'me-only' : 'all-busy';
+
+  const freeCount = withData.filter(id => _scConnFree(id, date)).length;
+  if (freeCount === withData.length) return withData.length < ids.length ? 'partial' : 'all-free';
+  if (freeCount > 0)                 return 'partial';
   return 'all-busy';
 }
 
@@ -6080,9 +6086,13 @@ function renderSCWhen() {
     const { main, rel } = _scFmtDate(date);
 
     const dots = selIds.map(id => {
-      const color = _sc.colors[id] || '#7c5cbf';
-      const free  = _scConnFree(id, date);
-      return `<div class="sc-avail-dot ${free ? 'free' : 'busy'}" style="background:${color};"></div>`;
+      const color    = _sc.colors[id] || '#7c5cbf';
+      const hasData  = (_sc.data?.connFreeDays[id] || []).length > 0;
+      const free     = _scConnFree(id, date);
+      // no calendar data → treat as unknown (neither free nor busy, use partial opacity)
+      const cls = !hasData ? 'busy' : (free ? 'free' : 'busy');
+      const opacity = !hasData ? 'opacity:0.4;' : '';
+      return `<div class="sc-avail-dot ${cls}" style="background:${color};${opacity}"></div>`;
     }).join('');
 
     const labelMap = {
