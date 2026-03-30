@@ -78,6 +78,20 @@
     .breakdown { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .breakdown-item { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 14px; font-size: 12px; }
     .breakdown-item span { font-weight: 700; font-size: 15px; display: block; }
+
+    .eng-cell { display:flex; gap:6px; align-items:center; flex-wrap:nowrap; }
+    .eng-pill  { font-size:11px; padding:2px 6px; border-radius:6px; font-weight:700;
+                 white-space:nowrap; background:#f3f4f6; color:#374151; }
+    .eng-pill.has { background:#ede9fe; color:#5b21b6; }
+    .contrib-bar { display:flex; align-items:center; gap:6px; }
+    .contrib-num { font-size:13px; font-weight:700; color:#111827; min-width:18px; text-align:right; }
+    .outcome-star { color:#d97706; font-size:13px; }
+    .top-contrib-list { margin-top:8px; }
+    .top-contrib-row { display:flex; align-items:center; gap:10px; padding:6px 0;
+                       border-bottom:1px solid #f3f4f6; font-size:13px; }
+    .top-contrib-row:last-child { border-bottom:none; }
+    .top-contrib-name { flex:1; font-weight:600; }
+    .top-contrib-stat { color:#6b7280; font-size:12px; }
   </style>
 </head>
 <body>
@@ -110,6 +124,11 @@
       <option value="">All categories</option>
     </select>
     <input type="search" id="filter-q" placeholder="Search title…" oninput="renderOpps()" style="width:180px;">
+    <select id="sort-opps" onchange="renderOpps()">
+      <option value="date">Sort: newest</option>
+      <option value="engagement">Sort: most engaged</option>
+      <option value="plans">Sort: most plans</option>
+    </select>
     <button class="btn" onclick="loadOpps()">↺ Refresh</button>
   </div>
 
@@ -123,14 +142,14 @@
           <th>Location</th>
           <th>When</th>
           <th>Price</th>
-          <th>Tags</th>
+          <th>Engagement</th>
           <th>Conf.</th>
           <th>Added by</th>
           <th>Submitted</th>
           <th></th>
         </tr>
       </thead>
-      <tbody id="opp-rows"><tr><td colspan="10" class="empty">Loading…</td></tr></tbody>
+      <tbody id="opp-rows"><tr><td colspan="11" class="empty">Loading…</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -183,11 +202,14 @@
           <th>Role</th>
           <th>Connection</th>
           <th>Days saved</th>
+          <th>Plans made</th>
+          <th>Contributions</th>
+          <th>Outcomes</th>
           <th>Joined</th>
           <th></th>
         </tr>
       </thead>
-      <tbody id="user-rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      <tbody id="user-rows"><tr><td colspan="10" class="empty">Loading…</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -265,8 +287,25 @@ async function loadOpps() {
       <div class="stat-card"><div class="stat-num">${byType.event||0}</div><div class="stat-label">Events</div></div>
       <div class="stat-card"><div class="stat-num">${byType.venue||0}</div><div class="stat-label">Venues</div></div>
       <div class="stat-card"><div class="stat-num">${byType.activity||0}</div><div class="stat-label">Activities</div></div>
-      <div class="stat-card"><div class="stat-num">${s.planCount}</div><div class="stat-label">Plans made</div></div>
+      <div class="stat-card" title="Card taps across all opportunities"><div class="stat-num">${s.total_views||0}</div><div class="stat-label">👁 Views</div></div>
+      <div class="stat-card" title="Plans made from suggested events/venues"><div class="stat-num">${s.total_plans_from_opps||0}</div><div class="stat-label">📅 Plans</div></div>
+      <div class="stat-card" title="Outings created from suggestions"><div class="stat-num">${s.total_outings||0}</div><div class="stat-label">🎉 Outings</div></div>
     `;
+    // Top contributors
+    if (s.topContributors?.length) {
+      document.getElementById('opp-stats').innerHTML += `
+        <div style="width:100%;margin-top:4px;background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 20px;">
+          <div style="font-size:11px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Top contributors (by outcomes)</div>
+          <div class="top-contrib-list">${s.topContributors.map((c,i) => `
+            <div class="top-contrib-row">
+              <span style="font-size:12px;color:#9ca3af;min-width:18px;">${i+1}</span>
+              <span class="top-contrib-name">${esc(c.name)}</span>
+              <span class="top-contrib-stat">${c.opp_count} added</span>
+              <span class="outcome-star">★ ${c.outcome_count} outcomes</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+    }
     // Category breakdown
     if (s.byCat.length) {
       document.getElementById('opp-stats').innerHTML += `
@@ -284,15 +323,25 @@ async function loadOpps() {
 }
 
 function renderOpps() {
-  const typeF = document.getElementById('filter-type').value;
-  const catF  = document.getElementById('filter-cat').value;
-  const q     = (document.getElementById('filter-q').value || '').toLowerCase();
+  const typeF  = document.getElementById('filter-type').value;
+  const catF   = document.getElementById('filter-cat').value;
+  const q      = (document.getElementById('filter-q').value || '').toLowerCase();
+  const sortBy = document.getElementById('sort-opps').value;
 
-  const filtered = _opps.filter(o =>
+  let filtered = _opps.filter(o =>
     (!typeF || o.type === typeF) &&
     (!catF  || o.category === catF) &&
     (!q     || (o.title||'').toLowerCase().includes(q))
   );
+
+  // Sort
+  if (sortBy === 'engagement') {
+    filtered = [...filtered].sort((a,b) =>
+      ((b.view_count||0) + (b.save_count||0)*2 + (b.plan_count||0)*5 + (b.outing_count||0)*10) -
+      ((a.view_count||0) + (a.save_count||0)*2 + (a.plan_count||0)*5 + (a.outing_count||0)*10));
+  } else if (sortBy === 'plans') {
+    filtered = [...filtered].sort((a,b) => (b.plan_count||0) - (a.plan_count||0));
+  }
 
   if (filtered.length === 0) {
     document.getElementById('opp-rows').innerHTML = '<tr><td colspan="11" class="empty">No opportunities match this filter.</td></tr>';
@@ -300,12 +349,20 @@ function renderOpps() {
   }
 
   document.getElementById('opp-rows').innerHTML = filtered.map(o => {
-    const tags = JSON.parse(o.tags || '[]');
-    const tagHtml = tags.map(t => `<span class="tag-pill">${esc(t)}</span>`).join('');
-    const confCls = o.confidence_score >= 0.8 ? 'conf-high' : o.confidence_score >= 0.5 ? 'conf-mid' : 'conf-low';
-    const confVal = o.confidence_score != null ? (o.confidence_score * 100).toFixed(0) + '%' : '—';
-    const typeCls = o.type === 'event' ? 'b-event' : o.type === 'venue' ? 'b-venue' : 'b-activity';
+    const confCls  = o.confidence_score >= 0.8 ? 'conf-high' : o.confidence_score >= 0.5 ? 'conf-mid' : 'conf-low';
+    const confVal  = o.confidence_score != null ? (o.confidence_score * 100).toFixed(0) + '%' : '—';
     const priceCls = o.price_tier === 'free' ? 'b-free' : o.price_tier ? 'b-paid' : 'b-none';
+
+    const views   = o.view_count   || 0;
+    const saves   = o.save_count   || 0;
+    const plans   = o.plan_count   || 0;
+    const outings = o.outing_count || 0;
+    const engHtml = `<div class="eng-cell">
+      <span class="eng-pill ${views   > 0 ? 'has':''}" title="Card taps">👁 ${views}</span>
+      <span class="eng-pill ${saves   > 0 ? 'has':''}" title="Saves">📌 ${saves}</span>
+      <span class="eng-pill ${plans   > 0 ? 'has':''}" title="Plans made">📅 ${plans}</span>
+      ${outings > 0 ? `<span class="eng-pill has" title="Outings">🎉 ${outings}</span>` : ''}
+    </div>`;
 
     return `<tr>
       <td>
@@ -325,10 +382,10 @@ function renderOpps() {
             .map(c => `<option value="${c}" ${o.category===c?'selected':''}>${c||'—'}</option>`).join('')}
         </select>
       </td>
-      <td class="muted" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.location_name||'—')}</td>
+      <td class="muted" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.location_name||'—')}</td>
       <td>${fmtEventTime(o.start_time)}</td>
       <td><span class="badge ${priceCls}">${esc(o.price_tier||'—')}</span></td>
-      <td style="max-width:120px;">${tagHtml || '<span class="muted">—</span>'}</td>
+      <td>${engHtml}</td>
       <td><span class="${confCls}">${confVal}</span></td>
       <td class="muted">${esc(o.submitter_name||'—')}</td>
       <td class="muted" style="white-space:nowrap;">${fmtDate(o.created_at)}</td>
@@ -443,11 +500,15 @@ async function loadUsers() {
   const owners    = users.filter(u => u.role === 'owner').length;
   const partners  = users.filter(u => u.role === 'partner').length;
   const connected = users.filter(u => u.conn_status === 'approved').length;
+  const totalContribs = users.reduce((s,u) => s + (u.opp_count||0), 0);
+  const totalOutcomes = users.reduce((s,u) => s + (u.outcome_count||0), 0);
   document.getElementById('user-stats').innerHTML = `
     <div class="stat-card"><div class="stat-num">${users.length}</div><div class="stat-label">Total users</div></div>
     <div class="stat-card"><div class="stat-num">${owners}</div><div class="stat-label">Owners</div></div>
     <div class="stat-card"><div class="stat-num">${partners}</div><div class="stat-label">Partners</div></div>
     <div class="stat-card"><div class="stat-num">${connected}</div><div class="stat-label">Connected</div></div>
+    <div class="stat-card" title="Total events/venues contributed by all users"><div class="stat-num">${totalContribs}</div><div class="stat-label">Contributions</div></div>
+    <div class="stat-card" title="Plans + outings generated from user suggestions"><div class="stat-num">${totalOutcomes}</div><div class="stat-label">★ Outcomes</div></div>
   `;
 
   if (users.length === 0) {
@@ -473,12 +534,20 @@ async function loadUsers() {
       roleCell = `<span class="badge b-partner">partner</span>`;
     }
 
+    const outcomes = u.outcome_count || 0;
+    const outcomesCell = outcomes > 0
+      ? `<span class="outcome-star">★ ${outcomes}</span>`
+      : `<span class="muted">—</span>`;
+
     return `<tr>
       <td><strong>${esc(u.name)}</strong></td>
       <td class="muted">${esc(u.email || '—')}</td>
       <td>${roleCell}</td>
       <td><span class="badge ${connBadge}">${esc(u.conn_status || 'none')}</span></td>
       <td class="muted">${u.day_count}</td>
+      <td class="muted">${u.plan_count || 0}</td>
+      <td class="muted">${u.opp_count || 0}</td>
+      <td>${outcomesCell}</td>
       <td class="muted" style="white-space:nowrap;">${fmtDate(u.created_at)}</td>
       <td><button class="btn-del" onclick="deleteUser('${u.id}','${esc(u.name)}')">Delete</button></td>
     </tr>`;

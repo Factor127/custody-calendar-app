@@ -35,7 +35,12 @@ router.get('/admin/users', (req, res) => {
       (SELECT c.relationship_type FROM connections c
         WHERE c.requester_id = u.id OR c.target_id = u.id
         ORDER BY CASE WHEN c.status='approved' THEN 0 ELSE 1 END, c.created_at DESC
-        LIMIT 1) AS relationship_type
+        LIMIT 1) AS relationship_type,
+      -- Contribution stats
+      (SELECT COUNT(*) FROM opportunities WHERE created_by = u.id) AS opp_count,
+      (SELECT COUNT(*) FROM plans WHERE user_id = u.id) AS plan_count,
+      (SELECT COALESCE(SUM(plan_count + outing_count), 0)
+         FROM opportunities WHERE created_by = u.id) AS outcome_count
     FROM users u
     ORDER BY u.created_at DESC
   `).all();
@@ -133,16 +138,37 @@ router.delete('/admin/submissions/:id', (req, res) => {
 
 // ── Stats ──────────────────────────────────────────────────────────────────
 
-// GET /api/admin/stats — aggregate counts
+// GET /api/admin/stats — aggregate counts + engagement totals
 router.get('/admin/stats', (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const oppCount   = db.prepare('SELECT COUNT(*) AS c FROM opportunities').get().c;
-  const subCount   = db.prepare('SELECT COUNT(*) AS c FROM opportunity_submissions').get().c;
-  const planCount  = db.prepare('SELECT COUNT(*) AS c FROM plans').get().c;
-  const byType     = db.prepare('SELECT type, COUNT(*) AS c FROM opportunities GROUP BY type').all();
-  const byCat      = db.prepare('SELECT category, COUNT(*) AS c FROM opportunities GROUP BY category ORDER BY c DESC').all();
-  const byStatus   = db.prepare('SELECT status, COUNT(*) AS c FROM opportunity_submissions GROUP BY status').all();
-  res.json({ oppCount, subCount, planCount, byType, byCat, byStatus });
+  const oppCount    = db.prepare('SELECT COUNT(*) AS c FROM opportunities').get().c;
+  const subCount    = db.prepare('SELECT COUNT(*) AS c FROM opportunity_submissions').get().c;
+  const planCount   = db.prepare('SELECT COUNT(*) AS c FROM plans').get().c;
+  const byType      = db.prepare('SELECT type, COUNT(*) AS c FROM opportunities GROUP BY type').all();
+  const byCat       = db.prepare('SELECT category, COUNT(*) AS c FROM opportunities GROUP BY category ORDER BY c DESC').all();
+  const byStatus    = db.prepare('SELECT status, COUNT(*) AS c FROM opportunity_submissions GROUP BY status').all();
+  // Engagement totals from gamification counters
+  const engRow      = db.prepare(`
+    SELECT COALESCE(SUM(view_count),0)   AS total_views,
+           COALESCE(SUM(save_count),0)   AS total_saves,
+           COALESCE(SUM(plan_count),0)   AS total_plans_from_opps,
+           COALESCE(SUM(outing_count),0) AS total_outings
+    FROM opportunities
+  `).get();
+  const eventCount  = db.prepare('SELECT COUNT(*) AS c FROM opportunity_events').get().c;
+  // Top contributors (by outcomes = plans + outings generated from their suggestions)
+  const topContributors = db.prepare(`
+    SELECT u.name, u.id,
+           COUNT(o.id) AS opp_count,
+           COALESCE(SUM(o.plan_count + o.outing_count), 0) AS outcome_count
+    FROM opportunities o
+    JOIN users u ON u.id = o.created_by
+    GROUP BY o.created_by
+    ORDER BY outcome_count DESC, opp_count DESC
+    LIMIT 5
+  `).all();
+  res.json({ oppCount, subCount, planCount, byType, byCat, byStatus,
+             ...engRow, eventCount, topContributors });
 });
 
 // ── Users ──────────────────────────────────────────────────────────────────
