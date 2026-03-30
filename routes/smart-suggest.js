@@ -120,7 +120,14 @@ router.get('/smart-suggest', (req, res) => {
 
   const suggestions = pickSuggestions(allConns);
 
-  res.json({ who, myFreeDays, connFreeDays, suggestions });
+  // Recent venues from past outings (for WHAT? quick-pick)
+  const recentVenues = db.prepare(
+    `SELECT DISTINCT venue, venue_address, venue_place_id
+     FROM outings WHERE created_by = ? AND venue IS NOT NULL
+     ORDER BY date DESC LIMIT 8`
+  ).all(me.id).map(r => ({ name: r.venue, address: r.venue_address || null, placeId: r.venue_place_id || null }));
+
+  res.json({ who, myFreeDays, connFreeDays, suggestions, recentVenues });
 });
 
 module.exports = router;

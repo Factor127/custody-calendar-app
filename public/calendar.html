@@ -1512,8 +1512,23 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-what-card.selected { border-color:var(--accent); background:rgba(124,92,191,0.18); box-shadow:0 0 10px rgba(124,92,191,0.35); }
     .sc-what-emoji { font-size:22px; margin-bottom:4px; }
     .sc-what-title { font-size:11px; font-weight:600; color:var(--text); }
+    .sc-what-wrap { position:relative; }
     .sc-what-input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--cell-bg); color:var(--text); box-sizing:border-box; outline:none; font-family:inherit; }
     .sc-what-input:focus { border-color:var(--accent); }
+    .sc-what-input.loading { opacity:0.6; }
+    .sc-what-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:200; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.4); display:none; }
+    .sc-what-drop.open { display:block; }
+    .sc-what-drop-item { padding:10px 14px; cursor:pointer; display:flex; flex-direction:column; gap:2px; transition:background .1s; }
+    .sc-what-drop-item:hover { background:rgba(124,92,191,0.15); }
+    .sc-what-drop-main { font-size:13px; font-weight:600; color:var(--text); }
+    .sc-what-drop-sub { font-size:11px; color:var(--muted); }
+    .sc-what-drop-section { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:8px 14px 4px; }
+    .sc-what-unfurl { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(124,92,191,0.12); border-radius:10px; margin-top:6px; cursor:pointer; }
+    .sc-what-unfurl-img { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; background:var(--surface); }
+    .sc-what-unfurl-info { flex:1; min-width:0; }
+    .sc-what-unfurl-title { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-what-unfurl-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+    .sc-what-unfurl-close { color:var(--muted); font-size:16px; cursor:pointer; padding:4px; flex-shrink:0; }
     /* Clash alert */
     .sc-clash-bar { background:#fef3c7; border:1px solid #fbbf24; border-radius:8px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
     .sc-clash-action { background:none; border:none; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
@@ -1944,9 +1959,16 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       <div class="sc-ingredient" style="margin-top:16px;padding-bottom:24px;">
         <div class="sc-ing-label">What? <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(optional)</span></div>
         <div class="sc-what-opts" id="sc-what-opts"></div>
-        <input id="sc-what-input" class="sc-what-input"
-          placeholder="Or type anything, paste a link…"
-          oninput="scWhatInputChange(this.value)" autocomplete="off">
+        <div class="sc-what-wrap">
+          <input id="sc-what-input" class="sc-what-input"
+            placeholder="Or type anything, paste a link…"
+            oninput="scWhatInputChange(this.value)"
+            onfocus="scWhatFocus()"
+            onblur="setTimeout(scWhatBlur,150)"
+            autocomplete="off">
+          <div id="sc-what-drop" class="sc-what-drop"></div>
+        </div>
+        <div id="sc-what-unfurl" style="display:none;"></div>
       </div>
     </div>
     <div class="sc-footer">
@@ -5858,6 +5880,8 @@ async function openSmartCrafter(prefillDate, prefillOpp) {
   document.getElementById('sc-what-opts').innerHTML  = '';
   document.getElementById('sc-what-input').value     = '';
   document.getElementById('sc-clash-bar-when').innerHTML = '';
+  document.getElementById('sc-what-unfurl').style.display = 'none';
+  scWhatCloseDrop();
 
   try {
     const res = await fetch(`/api/smart-suggest?token=${MY_TOKEN}`);
@@ -6121,15 +6145,164 @@ function scSelectWhat(idx) {
   renderSCSummary();
 }
 
+let _scWhatTimer = null;
+
 function scWhatInputChange(val) {
   _sc.whatInputVal = val;
-  if (val.trim()) {
-    _sc.selWhat = { custom: val.trim() };
-    document.querySelectorAll('.sc-what-card.selected').forEach(el => el.classList.remove('selected'));
-  } else {
-    _sc.selWhat = null;
+  clearTimeout(_scWhatTimer);
+
+  // Deselect suggestion cards when typing
+  document.querySelectorAll('.sc-what-card.selected').forEach(el => el.classList.remove('selected'));
+
+  const trimmed = val.trim();
+
+  // ── URL pasted ──
+  if (/^https?:\/\//i.test(trimmed)) {
+    _sc.selWhat = { custom: trimmed, url: trimmed };
+    scWhatCloseDrop();
+    _scUnfurlUrl(trimmed);
+    renderSCSummary();
+    return;
   }
+
+  // ── Empty ──
+  if (!trimmed) {
+    _sc.selWhat = null;
+    scWhatCloseDrop();
+    document.getElementById('sc-what-unfurl').style.display = 'none';
+    renderSCSummary();
+    return;
+  }
+
+  // ── Text: set immediately then debounce Places ──
+  _sc.selWhat = { custom: trimmed };
   renderSCSummary();
+
+  _scWhatTimer = setTimeout(() => _scPlacesSearch(trimmed), 350);
+}
+
+async function _scUnfurlUrl(url) {
+  const inp = document.getElementById('sc-what-input');
+  const box = document.getElementById('sc-what-unfurl');
+  inp?.classList.add('loading');
+  box.innerHTML = `<div style="padding:10px 0;font-size:12px;color:var(--muted);">Fetching link…</div>`;
+  box.style.display = 'block';
+
+  try {
+    const res = await fetch(`/api/unfurl?url=${encodeURIComponent(url)}&token=${MY_TOKEN}`);
+    const data = await res.json();
+    if (!res.ok || !data.title) throw new Error('no title');
+
+    // Update selWhat with richer info
+    _sc.selWhat = { custom: data.title, url, unfurled: data };
+
+    // If link contains a future date, offer to switch WHEN
+    let dateOffer = '';
+    if (data.date && data.date > new Date().toISOString().slice(0,10)) {
+      const { main } = _scFmtDate(data.date);
+      dateOffer = `<div style="margin-top:6px;font-size:12px;color:var(--accent);cursor:pointer;" onclick="_scAcceptUnfurlDate('${data.date}')">📅 Set date to ${main} →</div>`;
+    }
+
+    box.innerHTML = `<div class="sc-what-unfurl">
+      ${data.image ? `<img class="sc-what-unfurl-img" src="${data.image}" onerror="this.style.display='none'">` : ''}
+      <div class="sc-what-unfurl-info">
+        <div class="sc-what-unfurl-title">${data.title}</div>
+        <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}</div>
+        ${dateOffer}
+      </div>
+      <span class="sc-what-unfurl-close" onclick="_scClearUnfurl()">✕</span>
+    </div>`;
+
+    renderSCSummary();
+  } catch(e) {
+    box.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:6px 0;">Could not read link — saved as-is.</div>`;
+  } finally {
+    inp?.classList.remove('loading');
+  }
+}
+
+function _scAcceptUnfurlDate(date) {
+  _sc.selDate = date;
+  renderSCWhen();
+  renderSCSummary();
+  document.querySelector('.sc-what-unfurl-info div[onclick]')?.remove();
+}
+
+function _scClearUnfurl() {
+  document.getElementById('sc-what-unfurl').style.display = 'none';
+  document.getElementById('sc-what-input').value = '';
+  _sc.selWhat = null;
+  _sc.whatInputVal = '';
+  renderSCSummary();
+}
+
+async function _scPlacesSearch(q) {
+  const drop = document.getElementById('sc-what-drop');
+  if (!drop) return;
+  try {
+    const res  = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(q)}&token=${MY_TOKEN}`);
+    const data = await res.json();
+    if (!data.predictions?.length) { scWhatCloseDrop(); return; }
+    drop.innerHTML = data.predictions.map((p, i) =>
+      `<div class="sc-what-drop-item" onclick="scWhatPickPlace(${i})">
+        <div class="sc-what-drop-main">📍 ${p.main_text}</div>
+        ${p.secondary_text ? `<div class="sc-what-drop-sub">${p.secondary_text}</div>` : ''}
+      </div>`
+    ).join('');
+    drop._preds = data.predictions;
+    drop.classList.add('open');
+  } catch(e) { scWhatCloseDrop(); }
+}
+
+function scWhatPickPlace(idx) {
+  const drop = document.getElementById('sc-what-drop');
+  const p    = drop?._preds?.[idx];
+  if (!p) return;
+  const inp  = document.getElementById('sc-what-input');
+  const name = p.main_text;
+  if (inp) inp.value = name;
+  _sc.whatInputVal = name;
+  _sc.selWhat      = { custom: name, placeId: p.place_id, address: p.secondary_text || null };
+  scWhatCloseDrop();
+  renderSCSummary();
+}
+
+function scWhatFocus() {
+  const inp = document.getElementById('sc-what-input');
+  if (inp?.value.trim()) return; // already has text — don't override
+  const recent = _sc.data?.recentVenues || [];
+  if (!recent.length) return;
+  const drop = document.getElementById('sc-what-drop');
+  if (!drop) return;
+  drop.innerHTML = `<div class="sc-what-drop-section">Recent</div>` +
+    recent.map((v, i) =>
+      `<div class="sc-what-drop-item" onclick="scWhatPickRecent(${i})">
+        <div class="sc-what-drop-main">🕐 ${v.name}</div>
+        ${v.address ? `<div class="sc-what-drop-sub">${v.address}</div>` : ''}
+      </div>`
+    ).join('');
+  drop._recent = recent;
+  drop.classList.add('open');
+}
+
+function scWhatBlur() {
+  scWhatCloseDrop();
+}
+
+function scWhatPickRecent(idx) {
+  const drop = document.getElementById('sc-what-drop');
+  const v    = drop?._recent?.[idx];
+  if (!v) return;
+  const inp = document.getElementById('sc-what-input');
+  if (inp) inp.value = v.name;
+  _sc.whatInputVal = v.name;
+  _sc.selWhat      = { custom: v.name, placeId: v.placeId || null, address: v.address || null };
+  scWhatCloseDrop();
+  renderSCSummary();
+}
+
+function scWhatCloseDrop() {
+  document.getElementById('sc-what-drop')?.classList.remove('open');
 }
 
 // ── Footer summary ────────────────────────────────────────────────────────────

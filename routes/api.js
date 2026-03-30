@@ -1384,6 +1384,55 @@ router.get('/places/autocomplete', async (req, res) => {
   }
 });
 
+// GET /api/unfurl?url=... — extract title/date/description from any pasted link
+router.get('/unfurl', async (req, res) => {
+  const me = requireToken(req, res); if (!me) return;
+  const url = (req.query.url || '').trim();
+  if (!url.match(/^https?:\/\//i)) return res.status(400).json({ error: 'Invalid URL' });
+
+  try {
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Spontany/1.0)' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(6000),
+    });
+    const html = await resp.text();
+
+    // Pull a meta tag value — handles both attribute orders
+    const meta = (prop) => {
+      const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"'<>]{1,400})["']`, 'i');
+      const re2 = new RegExp(`<meta[^>]+content=["']([^"'<>]{1,400})["'][^>]+(?:property|name)=["']${prop}["']`, 'i');
+      return (html.match(re1) || html.match(re2))?.[1]?.trim() || null;
+    };
+
+    const title       = meta('og:title') || meta('twitter:title')
+                      || html.match(/<title[^>]*>([^<]{1,200})<\/title>/i)?.[1]?.trim() || null;
+    const description = meta('og:description') || meta('description') || null;
+    const image       = meta('og:image') || meta('twitter:image') || null;
+    const siteName    = meta('og:site_name') || null;
+
+    // Date: OG → JSON-LD startDate → URL date pattern
+    let date = meta('article:published_time') || meta('og:updated_time')
+             || meta('datePublished') || null;
+    if (!date) {
+      const jld = html.match(/"startDate"\s*:\s*"([^"]{6,30})"/i);
+      if (jld) date = jld[1];
+    }
+    if (!date) {
+      const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    }
+    if (date) {
+      const d = new Date(date);
+      date = isNaN(d) ? null : d.toISOString().slice(0, 10);
+    }
+
+    res.json({ title, description, image, siteName, date, url });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not fetch URL: ' + err.message });
+  }
+});
+
 // PUT /api/outings/:id — update outing details (venue, time, status)
 router.put('/outings/:id', (req, res) => {
   const me = requireToken(req, res);
