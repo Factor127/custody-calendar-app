@@ -84,7 +84,7 @@ router.post('/opportunities/direct', (req, res) => {
 
   // Check for duplicate by place_id (Google Place) or by title+location
   if (place_id) {
-    const existing = db.q.db.prepare(
+    const existing = db.db.prepare(
       "SELECT id FROM opportunities WHERE source_url LIKE ? OR location_name = ?"
     ).get(`%${place_id}%`, location_name || '');
     if (existing) return res.json({ id: existing.id, ok: true, duplicate: true });
@@ -103,11 +103,13 @@ router.post('/opportunities/direct', (req, res) => {
     location_name  || null,
     location_lat   || null,
     location_lng   || null,
-    price_tier || null,
-    confidence_score ?? 0.70,
-    'public',
-    source_url || null,
-    user.id
+    price_tier     || null,
+    'manual',                  // source_type
+    null,                      // source_domain
+    source_url     || null,    // source_url
+    confidence_score ?? 0.70,  // confidence_score
+    'public',                  // visibility
+    user.id                    // created_by
   );
   res.json({ id, ok: true });
 });

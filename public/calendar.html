@@ -4679,12 +4679,13 @@ function showToast(msg) {
 
 <script>
 function bnTab(tab) {
-  ['home','connections'].forEach(t =>
+  ['home','plans','connections'].forEach(t =>
     document.getElementById('bn-' + t)?.classList.toggle('active', t === tab)
   );
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
   if (tab === 'profile')     document.getElementById('profile-btn')?.click();
   if (tab === 'home')        window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (tab === 'plans')       document.getElementById('notif-panel')?.classList.add('open');
 }
 
 // ── FAB menu ────────────────────────────────────────────────────────────────
@@ -4709,15 +4710,15 @@ function openFabMenu() {
   planBtn.classList.toggle('disabled', !hasApproved);
   groupBtn.classList.toggle('disabled', !hasTwo);
 
-  document.getElementById('fab-menu').classList.add('open');
-  document.getElementById('fab-backdrop').classList.add('open');
-  document.getElementById('bn-fab-btn').classList.add('open');
+  document.getElementById('fab-menu')?.classList.add('open');
+  document.getElementById('fab-backdrop')?.classList.add('open');
+  document.getElementById('bn-fab-btn')?.classList.add('open');
 }
 
 function closeFabMenu() {
-  document.getElementById('fab-menu').classList.remove('open');
-  document.getElementById('fab-backdrop').classList.remove('open');
-  document.getElementById('bn-fab-btn').classList.remove('open');
+  document.getElementById('fab-menu')?.classList.remove('open');
+  document.getElementById('fab-backdrop')?.classList.remove('open');
+  document.getElementById('bn-fab-btn')?.classList.remove('open');
 }
 
 function goToConnections() {
@@ -6268,6 +6269,13 @@ function updateBnBadges() {
   const connPending = document.getElementById('notif-dot')?.classList.contains('hidden') ? 0 : 1;
   const cb = document.getElementById('bn-conn-badge');
   if (cb) { cb.textContent = connPending; cb.classList.toggle('hidden', connPending === 0); }
+
+  // Plans badge — count outings with pending invitees (sent or received)
+  const plansPending = (myOutings || []).reduce((n, o) => {
+    return n + ((o.invitees || []).some(i => i.status === 'pending') ? 1 : 0);
+  }, 0) + (myIncomingOutings || []).filter(o => o.my_invitee_status === 'pending').length;
+  const pb = document.getElementById('bn-plans-badge');
+  if (pb) { pb.textContent = plansPending; pb.classList.toggle('hidden', plansPending === 0); }
 
   const initial = document.getElementById('profile-initial')?.textContent || '?';
   const bnPi = document.getElementById('bn-profile-initial');
