@@ -6062,7 +6062,13 @@ function renderSCWhen() {
   }
 
   const now    = new Date(); now.setHours(0,0,0,0);
-  const dates  = myFree.filter(d => new Date(d + 'T00:00:00') >= now).slice(0, 30);
+  let   dates  = myFree.filter(d => new Date(d + 'T00:00:00') >= now).slice(0, 30);
+
+  // If a date was set (e.g. from link unfurl) but isn't in free days, inject it at top
+  if (_sc.selDate && !dates.includes(_sc.selDate) && _sc.selDate >= now.toISOString().slice(0,10)) {
+    dates = [_sc.selDate, ...dates];
+  }
+
   const selIds = [..._sc.selWho];
 
   listEl.innerHTML = dates.map(date => {
@@ -6087,11 +6093,12 @@ function renderSCWhen() {
       'me-only':  "I'm free",
     };
 
+    const notFreeDay = !myFree.includes(date);
     return `<div class="sc-date-row${sel ? ' selected' : ''}${avail === 'all-busy' && selIds.length ? ' all-busy-row' : ''}"
         onclick="scSelectDate('${date}')">
       <div class="sc-date-main">
         <div class="sc-date-day">${main}</div>
-        ${rel ? `<div class="sc-date-rel">${rel}</div>` : ''}
+        ${rel ? `<div class="sc-date-rel">${rel}${notFreeDay ? ' · kids day' : ''}</div>` : (notFreeDay ? `<div class="sc-date-rel">kids day</div>` : '')}
       </div>
       <div class="sc-date-avail">
         ${dots}
@@ -6193,22 +6200,26 @@ async function _scUnfurlUrl(url) {
     const data = await res.json();
     if (!res.ok || !data.title) throw new Error('no title');
 
-    // Update selWhat with richer info
+    // ── Populate WHAT with the extracted title ──
     _sc.selWhat = { custom: data.title, url, unfurled: data };
+    _sc.whatInputVal = data.title;
+    if (inp) inp.value = data.title;
 
-    // If link contains a future date, offer to switch WHEN
-    let dateOffer = '';
-    if (data.date && data.date > new Date().toISOString().slice(0,10)) {
-      const { main } = _scFmtDate(data.date);
-      dateOffer = `<div style="margin-top:6px;font-size:12px;color:var(--accent);cursor:pointer;" onclick="_scAcceptUnfurlDate('${data.date}')">📅 Set date to ${main} →</div>`;
+    // ── Auto-apply date if found ──
+    let dateApplied = false;
+    if (data.date && data.date >= new Date().toISOString().slice(0, 10)) {
+      _sc.selDate = data.date;
+      dateApplied = true;
+      renderSCWhen();
     }
+
+    const { main: dateMain } = dateApplied ? _scFmtDate(data.date) : {};
 
     box.innerHTML = `<div class="sc-what-unfurl">
       ${data.image ? `<img class="sc-what-unfurl-img" src="${data.image}" onerror="this.style.display='none'">` : ''}
       <div class="sc-what-unfurl-info">
         <div class="sc-what-unfurl-title">${data.title}</div>
-        <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}</div>
-        ${dateOffer}
+        <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}${dateApplied ? ` · 📅 ${dateMain}` : ''}</div>
       </div>
       <span class="sc-what-unfurl-close" onclick="_scClearUnfurl()">✕</span>
     </div>`;
