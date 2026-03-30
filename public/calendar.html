@@ -1587,6 +1587,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-confirm-summary { font-size:13px; font-weight:600; color:white; flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sc-confirm-summary.empty { color:rgba(255,255,255,0.5); font-weight:400; font-size:13px; }
     .sc-confirm-tick { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; font-size:13px; color:white; flex-shrink:0; }
+    .sc-save-later-btn { width:100%; margin-top:8px; padding:9px; background:none; border:none; border-radius:10px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--muted); transition:color .15s; }
+    .sc-save-later-btn:hover { color:var(--accent); }
     /* Review sheet — same sizing rules as sc-sheet */
     .sc-review-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0);
@@ -2043,6 +2045,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         <span class="sc-confirm-summary empty" id="sc-summary">Select who and when…</span>
         <span class="sc-confirm-tick">→</span>
       </button>
+      <button class="sc-save-later-btn" onclick="saveForLaterSC()">🔖 Save for later</button>
     </div>
   </div>
 </div>
@@ -2057,9 +2060,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       <button class="sc-close-btn" onclick="closeSCAll()">✕</button>
     </div>
     <div class="sc-review-body" id="sc-review-body"></div>
-    <div class="sc-footer" style="display:flex;flex-direction:column;gap:8px;">
+    <div class="sc-footer">
       <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="finalizeSC()">Done ✓</button>
-      <button class="btn btn-outline" style="width:100%;padding:10px;font-size:13px;color:var(--muted);" onclick="saveForLaterSC()">🔖 Save for later</button>
     </div>
   </div>
 </div>
