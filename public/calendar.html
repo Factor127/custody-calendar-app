@@ -1633,7 +1633,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- Locked: show when no social connections -->
-<div id="social-calendar-locked" style="max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
+<div id="social-calendar-locked" style="display:none;max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
   <div class="social-cal-title" style="margin-bottom:6px;">Who's free when you're free</div>
   <div class="social-cal-sub" style="margin-bottom:16px;">Invite a friend or partner to see when you match</div>
   <div style="font-size:13px;color:#6d4c41;margin-bottom:14px;">Invite a friend or partner to see your matching free time</div>
@@ -2596,6 +2596,14 @@ async function loadSocialCalendars() {
       });
     } catch(e) { /* skip if unreachable */ }
   }));
+
+  // Show strip or locked card depending on whether we have social connections
+  const hasSocial = socialConnections.length > 0;
+  const section = document.getElementById('social-calendar-section');
+  const locked  = document.getElementById('social-calendar-locked');
+  if (section) section.style.display = hasSocial ? '' : 'none';
+  if (locked)  locked.style.display  = hasSocial ? 'none' : '';
+  if (hasSocial) renderStrip();
 }
 
 // ── Mini calendar grid (compact card) ─────────────────────────────────────
