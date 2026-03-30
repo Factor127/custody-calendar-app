@@ -1544,7 +1544,19 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-cal-legend-item { display:flex; align-items:center; gap:4px; font-size:9px; color:var(--muted); white-space:nowrap; }
     .sc-leg-swatch { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
     /* WHO chip free badge */
-    .sc-free-badge { font-size:8px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:.04em; line-height:1; margin-top:-1px; }
+    .sc-free-badge { font-size:8px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; line-height:1; margin-top:-1px; }
+    /* Crafter hover tooltip */
+    .sc-hover-tip {
+      position:fixed; z-index:1200; pointer-events:none;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:8px 12px;
+      display:flex; flex-direction:column; gap:5px;
+      box-shadow:0 6px 24px rgba(0,0,0,0.4);
+      font-size:12px; color:var(--text); white-space:nowrap;
+    }
+    .sc-hover-tip-row { display:flex; align-items:center; gap:7px; }
+    .sc-hover-tip-avatar { width:20px; height:20px; border-radius:50%; flex-shrink:0; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:white; overflow:hidden; }
+    .sc-hover-tip-avatar img { width:100%; height:100%; object-fit:cover; }
     .sc-clash-bar { background:rgba(251,191,36,0.12); border:1px solid #fbbf24; border-radius:8px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; flex-shrink:0; }
     .sc-clash-action { background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
 
@@ -2003,7 +2015,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
             <span class="sc-leg-swatch" style="outline:1.5px solid var(--orange);outline-offset:-1px;"></span> I'm free
           </div>
           <div class="sc-cal-legend-item">
-            <span class="sc-leg-swatch" style="background:rgba(34,197,94,0.28);"></span> Others free
+            <span class="sc-leg-swatch" style="background:rgba(124,92,191,0.35);"></span> Others free
           </div>
           <div class="sc-cal-legend-item">
             <span class="sc-leg-swatch" style="outline:2px solid var(--accent);outline-offset:-1px;background:rgba(124,92,191,0.22);"></span> Selected
@@ -6169,9 +6181,9 @@ function renderSCCal() {
     const effectiveTotal = selIds.length;
     const freeRatio      = effectiveTotal > 0 ? effectiveFree / effectiveTotal : 0;
     // Map ratio → green tint alpha: 0=none, 1=max
-    const tintAlpha = freeRatio > 0 ? (0.06 + freeRatio * 0.28).toFixed(2) : 0;
+    const tintAlpha = freeRatio > 0 ? (0.06 + freeRatio * 0.30).toFixed(2) : 0;
     const connStyle  = !isSel && tintAlpha > 0
-      ? `style="background:rgba(34,197,94,${tintAlpha});"`
+      ? `style="background:rgba(124,92,191,${tintAlpha});"`   // brand purple tint
       : '';
 
     let cls = 'sc-cal-day';
@@ -6181,11 +6193,52 @@ function renderSCCal() {
     if (isToday && !isSel) cls += ' today';
     if (past && !isSel)    cls += ' other-month';
 
-    const click = (!past || isSel) ? `onclick="scSelectDate('${ds}')"` : '';
-    html += `<div class="${cls}" ${connStyle} ${click}>${day}</div>`;
+    const click  = (!past || isSel) ? `onclick="scSelectDate('${ds}')"` : '';
+    const hover  = !past ? `onmouseenter="showSCTip(event,'${ds}')" onmouseleave="hideSCTip()"` : '';
+    html += `<div class="${cls}" ${connStyle} ${click} ${hover}>${day}</div>`;
   }
 
   grid.innerHTML = html;
+}
+
+// ── Crafter calendar hover tooltip ───────────────────────────────────────────
+let _scTip = null;
+function showSCTip(e, dateStr) {
+  hideSCTip();
+  if (!_sc.data) return;
+  // All connections confirmed free on this date (have calendar data + day is in their free list)
+  const freeConns = _sc.data.who.filter(w => {
+    const days = _sc.data.connFreeDays[w.id] || [];
+    return days.length > 0 && days.includes(dateStr);
+  });
+  if (!freeConns.length) return;
+
+  const t = document.createElement('div');
+  t.className = 'sc-hover-tip';
+  t.innerHTML = freeConns.slice(0, 6).map(w => {
+    const avatarInner = w.photo
+      ? `<img src="${w.photo}" alt="" onerror="this.parentNode.textContent='${w.initial}'">`
+      : w.initial;
+    const isSel = _sc.selWho.has(w.id);
+    return `<div class="sc-hover-tip-row">
+      <div class="sc-hover-tip-avatar" style="${isSel ? 'outline:2px solid var(--accent);outline-offset:1px;' : ''}">${avatarInner}</div>
+      <span style="color:${isSel ? 'var(--text)' : 'var(--muted)'};">${w.name.split(' ')[0]} is free</span>
+    </div>`;
+  }).join('');
+  if (freeConns.length > 6) {
+    t.innerHTML += `<div style="font-size:10px;color:var(--muted);margin-top:2px;">+${freeConns.length - 6} more</div>`;
+  }
+
+  document.body.appendChild(t);
+  _scTip = t;
+  // Position above the cell
+  const rect = e.currentTarget.getBoundingClientRect();
+  t.style.left      = (rect.left + rect.width / 2) + 'px';
+  t.style.top       = (rect.top - 8) + 'px';
+  t.style.transform = 'translateX(-50%) translateY(-100%)';
+}
+function hideSCTip() {
+  if (_scTip) { _scTip.remove(); _scTip = null; }
 }
 
 function scCalPrev() {
