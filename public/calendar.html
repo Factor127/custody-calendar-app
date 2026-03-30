@@ -1450,88 +1450,101 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .pref-modal .pref-chip.selected { background:rgba(124,92,191,0.12); border-color:#7c5cbf; color:#7c5cbf; }
     .pref-modal-actions { display:flex; gap:8px; justify-content:flex-end; }
 
-    /* ── Smart Crafter bottom sheet ──────────────────────────────────── */
+    /* ── Smart Crafter ──────────────────────────────────────────────── */
     .sc-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0);
       z-index:950; pointer-events:none;
-      transition:background 0.3s; display:flex; align-items:flex-end;
+      transition:background 0.3s; display:flex; align-items:flex-end; justify-content:center;
     }
-    .sc-overlay.open { background:rgba(0,0,0,0.45); pointer-events:all; }
+    .sc-overlay.open { background:rgba(0,0,0,0.55); pointer-events:all; }
     .sc-sheet {
-      width:100%; max-height:92vh;
-      background:var(--cell-bg,#fff); border-radius:20px 20px 0 0;
+      width:100%; max-height:88vh;
+      background:var(--cell-bg); border-radius:20px 20px 0 0;
       transform:translateY(100%);
-      transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);
       display:flex; flex-direction:column; overflow:hidden;
     }
+    @media(min-width:700px) {
+      .sc-overlay { align-items:center; }
+      .sc-sheet { width:50vw; min-width:420px; max-width:560px; border-radius:20px; max-height:82vh; }
+    }
     .sc-overlay.open .sc-sheet { transform:translateY(0); }
-    .sc-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:12px auto 4px; flex-shrink:0; }
-    .sc-header { display:flex; align-items:center; justify-content:space-between; padding:4px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
-    .sc-header h2 { font-size:17px; font-weight:700; margin:0; flex:1; text-align:center; }
+    .sc-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
     .sc-close-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); padding:4px 8px; line-height:1; }
-    .sc-body { flex:1; overflow-y:auto; padding:0 0 8px; }
-    .sc-ingredient { padding:16px 20px 0; }
-    .sc-ing-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin-bottom:10px; }
-    .sc-footer { padding:10px 20px 14px; border-top:1px solid var(--border); flex-shrink:0; }
-    .sc-summary { font-size:12px; color:var(--muted); text-align:center; margin-bottom:8px; min-height:16px; line-height:1.4; }
-    .sc-summary span { color:var(--text); font-weight:600; }
-    /* WHO */
-    .sc-who-row { display:flex; gap:8px; flex-wrap:wrap; }
-    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:6px 4px; border-radius:12px; transition:background .15s; min-width:52px; user-select:none; }
-    .sc-who-chip:hover .sc-who-avatar { box-shadow:0 0 0 2px rgba(124,92,191,0.4); }
-    .sc-who-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:white; position:relative; background:#2a2a3d; transition:box-shadow .15s,transform .15s; overflow:hidden; }
-    .sc-who-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-    .sc-who-chip.selected .sc-who-avatar { transform:scale(1.08); box-shadow:0 0 0 3px var(--accent), 0 0 12px rgba(124,92,191,0.6); }
-    .sc-who-check { position:absolute; bottom:-2px; right:-2px; background:var(--accent); color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:none; align-items:center; justify-content:center; }
-    .sc-who-chip.selected .sc-who-check { display:flex; }
-    .sc-who-name { font-size:11px; color:var(--text); text-align:center; max-width:60px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .sc-who-more { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:6px 4px; min-width:52px; }
-    .sc-who-more-circle { width:44px; height:44px; border-radius:50%; background:var(--surface); border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--muted); }
-    /* WHEN */
-    .sc-dates-list { display:flex; flex-direction:column; gap:4px; max-height:230px; overflow-y:auto; }
-    .sc-date-row { display:flex; align-items:center; padding:9px 12px; border-radius:10px; cursor:pointer; gap:10px; border:2px solid transparent; transition:all .15s; }
-    .sc-date-row:hover { background:var(--surface); }
-    .sc-date-row.selected { background:rgba(124,92,191,0.15); border-color:var(--accent); box-shadow:0 0 10px rgba(124,92,191,0.35); }
-    .sc-date-row.all-busy-row { opacity:0.45; }
-    .sc-date-main { flex:1; }
-    .sc-date-day { font-size:13px; font-weight:600; color:var(--text); }
-    .sc-date-rel { font-size:11px; color:var(--muted); }
-    .sc-date-avail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
-    .sc-avail-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .sc-avail-dot.busy { opacity:0.25; }
-    .sc-avail-label { font-size:11px; white-space:nowrap; }
-    .sc-avail-label.all-free  { color:#22c55e; }
-    .sc-avail-label.partial   { color:#f59e0b; }
-    .sc-avail-label.all-busy  { color:#ef4444; }
-    .sc-avail-label.me-only   { color:var(--orange); }
-    .sc-no-dates { padding:16px 0; text-align:center; font-size:13px; color:var(--muted); }
-    /* WHAT */
-    .sc-what-opts { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-    .sc-what-card { flex:1; min-width:88px; max-width:140px; padding:10px 8px; border-radius:12px; border:2px solid var(--border); cursor:pointer; transition:all .15s; text-align:center; background:var(--cell-bg); }
-    .sc-what-card:hover { border-color:var(--accent); background:rgba(124,92,191,0.12); }
-    .sc-what-card.selected { border-color:var(--accent); background:rgba(124,92,191,0.18); box-shadow:0 0 10px rgba(124,92,191,0.35); }
-    .sc-what-emoji { font-size:22px; margin-bottom:4px; }
-    .sc-what-title { font-size:11px; font-weight:600; color:var(--text); }
-    .sc-what-wrap { position:relative; }
-    .sc-what-input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--cell-bg); color:var(--text); box-sizing:border-box; outline:none; font-family:inherit; }
+
+    /* TOP — What? search strip */
+    .sc-top { padding:10px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .sc-top-row { display:flex; align-items:center; gap:8px; }
+    .sc-top-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); white-space:nowrap; }
+    .sc-what-wrap { position:relative; flex:1; }
+    .sc-what-input { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--surface); color:var(--text); box-sizing:border-box; outline:none; font-family:inherit; }
     .sc-what-input:focus { border-color:var(--accent); }
     .sc-what-input.loading { opacity:0.6; }
-    .sc-what-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:200; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.4); display:none; }
+    .sc-what-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:300; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); display:none; }
     .sc-what-drop.open { display:block; }
     .sc-what-drop-item { padding:10px 14px; cursor:pointer; display:flex; flex-direction:column; gap:2px; transition:background .1s; }
     .sc-what-drop-item:hover { background:rgba(124,92,191,0.15); }
     .sc-what-drop-main { font-size:13px; font-weight:600; color:var(--text); }
     .sc-what-drop-sub { font-size:11px; color:var(--muted); }
     .sc-what-drop-section { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:8px 14px 4px; }
-    .sc-what-unfurl { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(124,92,191,0.12); border-radius:10px; margin-top:6px; cursor:pointer; }
-    .sc-what-unfurl-img { width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; background:var(--surface); }
+    .sc-what-unfurl { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(124,92,191,0.12); border-radius:8px; margin-top:6px; }
+    .sc-what-unfurl-img { width:36px; height:36px; border-radius:6px; object-fit:cover; flex-shrink:0; background:var(--surface); }
     .sc-what-unfurl-info { flex:1; min-width:0; }
-    .sc-what-unfurl-title { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .sc-what-unfurl-meta { font-size:11px; color:var(--muted); margin-top:2px; }
-    .sc-what-unfurl-close { color:var(--muted); font-size:16px; cursor:pointer; padding:4px; flex-shrink:0; }
-    /* Clash alert */
-    .sc-clash-bar { background:#fef3c7; border:1px solid #fbbf24; border-radius:8px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
-    .sc-clash-action { background:none; border:none; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .sc-what-unfurl-title { font-size:12px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-what-unfurl-meta { font-size:11px; color:var(--muted); }
+    .sc-what-unfurl-close { color:var(--muted); font-size:15px; cursor:pointer; padding:2px 4px; flex-shrink:0; }
+    /* WHAT quick-chips (shown in dropdown, not inline) */
+    .sc-what-card { padding:8px 12px; border-radius:8px; border:1.5px solid var(--border); cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px; background:var(--cell-bg); }
+    .sc-what-card:hover { border-color:var(--accent); background:rgba(124,92,191,0.12); }
+    .sc-what-card.selected { border-color:var(--accent); background:rgba(124,92,191,0.18); box-shadow:0 0 8px rgba(124,92,191,0.3); }
+    .sc-what-emoji { font-size:16px; }
+    .sc-what-title { font-size:12px; font-weight:600; color:var(--text); }
+    .sc-what-opts { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+
+    /* MIDDLE — Who + When side by side */
+    .sc-middle { display:flex; flex:1; overflow:hidden; min-height:0; }
+
+    /* WHO col — 1/3 */
+    .sc-who-col { width:33%; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; padding:10px 6px; display:flex; flex-direction:column; gap:4px; }
+    .sc-col-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:0 4px 6px; }
+    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:6px 4px; border-radius:10px; transition:background .15s; user-select:none; }
+    .sc-who-chip:hover .sc-who-avatar { box-shadow:0 0 0 2px rgba(124,92,191,0.4); }
+    .sc-who-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; position:relative; background:#2a2a3d; transition:box-shadow .15s,transform .15s; overflow:hidden; }
+    .sc-who-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+    .sc-who-chip.selected .sc-who-avatar { transform:scale(1.08); box-shadow:0 0 0 2.5px var(--accent), 0 0 10px rgba(124,92,191,0.55); }
+    .sc-who-check { position:absolute; bottom:-2px; right:-2px; background:var(--accent); color:white; border-radius:50%; width:14px; height:14px; font-size:8px; display:none; align-items:center; justify-content:center; }
+    .sc-who-chip.selected .sc-who-check { display:flex; }
+    .sc-who-name { font-size:10px; color:var(--text); text-align:center; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* WHEN col — 2/3 mini calendar */
+    .sc-when-col { flex:1; overflow:hidden; padding:10px 10px; display:flex; flex-direction:column; }
+    .sc-cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-shrink:0; }
+    .sc-cal-month-label { font-size:12px; font-weight:700; color:var(--text); }
+    .sc-cal-nav-btn { background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1; font-family:inherit; }
+    .sc-cal-nav-btn:hover { background:var(--surface); color:var(--text); }
+    .sc-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; flex:1; }
+    .sc-cal-dow { font-size:8px; font-weight:700; text-transform:uppercase; color:var(--muted); text-align:center; padding-bottom:4px; }
+    .sc-cal-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:var(--muted); border-radius:6px; cursor:default; transition:all .12s; position:relative; }
+    .sc-cal-day.free { color:var(--text); font-weight:600; cursor:pointer; }
+    .sc-cal-day.free:hover { background:rgba(124,92,191,0.15); }
+    .sc-cal-day.free::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--orange); }
+    .sc-cal-day.conn-free { background:rgba(34,197,94,0.08); }
+    .sc-cal-day.selected { background:var(--accent) !important; color:white !important; font-weight:700; box-shadow:0 0 8px rgba(124,92,191,0.5); cursor:pointer; }
+    .sc-cal-day.selected::after { display:none; }
+    .sc-cal-day.today:not(.selected) { outline:1.5px solid rgba(124,92,191,0.45); outline-offset:-1px; }
+    .sc-cal-day.injected { color:var(--text); cursor:pointer; font-weight:600; }
+    .sc-cal-day.injected::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--muted); }
+    .sc-clash-bar { background:rgba(251,191,36,0.12); border:1px solid #fbbf24; border-radius:8px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; flex-shrink:0; }
+    .sc-clash-action { background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
+
+    /* BOTTOM — summary + confirm */
+    .sc-bottom { padding:10px 12px 14px; border-top:1px solid var(--border); flex-shrink:0; }
+    .sc-confirm-btn { width:100%; padding:13px 16px; background:var(--accent); border:none; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:inherit; transition:opacity .15s; }
+    .sc-confirm-btn:hover { opacity:0.88; }
+    .sc-confirm-btn:disabled { opacity:0.4; cursor:default; }
+    .sc-confirm-summary { font-size:13px; font-weight:600; color:white; flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-confirm-summary.empty { color:rgba(255,255,255,0.5); font-weight:400; font-size:13px; }
+    .sc-confirm-tick { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; font-size:13px; color:white; flex-shrink:0; }
     /* Review sheet */
     .sc-review-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0);
@@ -1932,48 +1945,57 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 </div>
 
-<!-- ── Smart Crafter bottom sheet ──────────────────────────────────── -->
+<!-- ── Smart Crafter ──────────────────────────────────────────────── -->
 <div id="sc-overlay" class="sc-overlay">
   <div id="sc-sheet" class="sc-sheet">
     <div class="sc-handle"></div>
-    <div class="sc-header">
-      <button class="sc-close-btn" onclick="closeSC()" style="visibility:hidden;">✕</button>
-      <h2>✨ Start something</h2>
-      <button class="sc-close-btn" onclick="closeSC()">✕</button>
-    </div>
-    <div class="sc-body" id="sc-body">
-      <!-- WHO -->
-      <div class="sc-ingredient">
-        <div class="sc-ing-label">Who?</div>
-        <div class="sc-who-row" id="sc-who-row">
-          <span style="color:var(--muted);font-size:13px;">Loading…</span>
-        </div>
-      </div>
-      <!-- WHEN -->
-      <div class="sc-ingredient" style="margin-top:16px;">
-        <div class="sc-ing-label">When?</div>
-        <div id="sc-clash-bar-when"></div>
-        <div class="sc-dates-list" id="sc-dates-list"></div>
-      </div>
-      <!-- WHAT -->
-      <div class="sc-ingredient" style="margin-top:16px;padding-bottom:24px;">
-        <div class="sc-ing-label">What? <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(optional)</span></div>
-        <div class="sc-what-opts" id="sc-what-opts"></div>
+
+    <!-- TOP: What? search strip -->
+    <div class="sc-top">
+      <div class="sc-top-row">
+        <span class="sc-top-label">What?</span>
         <div class="sc-what-wrap">
           <input id="sc-what-input" class="sc-what-input"
-            placeholder="Or type anything, paste a link…"
+            placeholder="Search a place or paste a link…"
             oninput="scWhatInputChange(this.value)"
             onfocus="scWhatFocus()"
             onblur="setTimeout(scWhatBlur,150)"
             autocomplete="off">
           <div id="sc-what-drop" class="sc-what-drop"></div>
         </div>
-        <div id="sc-what-unfurl" style="display:none;"></div>
+        <button class="sc-close-btn" onclick="closeSC()">✕</button>
+      </div>
+      <div class="sc-what-opts" id="sc-what-opts"></div>
+      <div id="sc-what-unfurl" style="display:none;"></div>
+    </div>
+
+    <!-- MIDDLE: Who (1/3) + When calendar (2/3) -->
+    <div class="sc-middle">
+      <!-- WHO -->
+      <div class="sc-who-col">
+        <div class="sc-col-label">Who?</div>
+        <div id="sc-who-row">
+          <span style="color:var(--muted);font-size:12px;padding:4px;">Loading…</span>
+        </div>
+      </div>
+      <!-- WHEN mini calendar -->
+      <div class="sc-when-col">
+        <div id="sc-clash-bar-when"></div>
+        <div class="sc-cal-nav">
+          <button class="sc-cal-nav-btn" onclick="scCalPrev()">‹</button>
+          <span class="sc-cal-month-label" id="sc-cal-month-label"></span>
+          <button class="sc-cal-nav-btn" onclick="scCalNext()">›</button>
+        </div>
+        <div class="sc-cal-grid" id="sc-cal-grid"></div>
       </div>
     </div>
-    <div class="sc-footer">
-      <div class="sc-summary" id="sc-summary"></div>
-      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="openSCReview()">Review →</button>
+
+    <!-- BOTTOM: summary + confirm -->
+    <div class="sc-bottom">
+      <button class="sc-confirm-btn" id="sc-confirm-btn" onclick="openSCReview()">
+        <span class="sc-confirm-summary empty" id="sc-summary">Select who and when…</span>
+        <span class="sc-confirm-tick">→</span>
+      </button>
     </div>
   </div>
 </div>
@@ -5873,10 +5895,15 @@ async function openSmartCrafter(prefillDate, prefillOpp) {
   _sc.colors       = {};
   _sc.expanded     = false;
 
+  // Reset calendar to current month
+  const _now = new Date();
+  _scCalYear  = prefillDate ? +prefillDate.slice(0,4) : _now.getFullYear();
+  _scCalMonth = prefillDate ? +prefillDate.slice(5,7)-1 : _now.getMonth();
+
   document.getElementById('sc-overlay').classList.add('open');
   document.getElementById('sc-who-row').innerHTML =
-    '<span style="color:var(--muted);font-size:13px;">Loading…</span>';
-  document.getElementById('sc-dates-list').innerHTML = '';
+    '<span style="color:var(--muted);font-size:12px;padding:4px;">Loading…</span>';
+  document.getElementById('sc-cal-grid').innerHTML = '';
   document.getElementById('sc-what-opts').innerHTML  = '';
   document.getElementById('sc-what-input').value     = '';
   document.getElementById('sc-clash-bar-when').innerHTML = '';
@@ -6049,81 +6076,91 @@ function scExpandWho() {
   renderSCWho();
 }
 
-// ── WHEN ──────────────────────────────────────────────────────────────────────
+// ── WHEN — mini calendar ──────────────────────────────────────────────────────
 
-function renderSCWhen() {
-  const listEl = document.getElementById('sc-dates-list');
-  if (!listEl || !_sc.data) return;
+let _scCalYear = null, _scCalMonth = null;
 
-  const myFree = _sc.data.myFreeDays;
-  if (!myFree.length) {
-    listEl.innerHTML = '<div class="sc-no-dates">No free days found in the next 60 days.</div>';
-    return;
+function renderSCWhen() { renderSCCal(); } // alias kept for legacy calls
+
+function renderSCCal() {
+  const grid = document.getElementById('sc-cal-grid');
+  if (!grid || !_sc.data) return;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+
+  if (_scCalYear === null) { _scCalYear = today.getFullYear(); _scCalMonth = today.getMonth(); }
+
+  const y = _scCalYear, m = _scCalMonth;
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const label = document.getElementById('sc-cal-month-label');
+  if (label) label.textContent = `${MONTHS[m]} ${y}`;
+
+  const myFree   = new Set(_sc.data.myFreeDays || []);
+  const selIds   = [..._sc.selWho];
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInM  = new Date(y, m + 1, 0).getDate();
+  const DOW      = ['S','M','T','W','T','F','S'];
+
+  let html = DOW.map(d => `<div class="sc-cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+
+  for (let day = 1; day <= daysInM; day++) {
+    const ds   = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const past = ds < todayStr;
+    const isSel   = _sc.selDate === ds;
+    const isFree  = myFree.has(ds);
+    const isToday = ds === todayStr;
+    // injected date (from unfurl) not in free days
+    const isInjected = _sc.selDate === ds && !isFree;
+
+    // Connection availability tint: any selected conn free on this day?
+    const connFree = selIds.length > 0 && selIds.some(id => _scConnFree(id, ds));
+
+    let cls = 'sc-cal-day';
+    if (isSel)       cls += ' selected';
+    else if (isFree) cls += ' free' + (connFree ? ' conn-free' : '');
+    else if (isInjected) cls += ' injected';
+    if (isToday && !isSel) cls += ' today';
+    if (past && !isSel) cls += ' other-month';
+
+    const click = (!past || isSel) ? `onclick="scSelectDate('${ds}')"` : '';
+    html += `<div class="${cls}" ${click}>${day}</div>`;
   }
 
-  const now    = new Date(); now.setHours(0,0,0,0);
-  let   dates  = myFree.filter(d => new Date(d + 'T00:00:00') >= now).slice(0, 30);
+  grid.innerHTML = html;
+}
 
-  // If a date was set (e.g. from link unfurl) but isn't in free days, inject it at top
-  if (_sc.selDate && !dates.includes(_sc.selDate) && _sc.selDate >= now.toISOString().slice(0,10)) {
-    dates = [_sc.selDate, ...dates];
-  }
+function scCalPrev() {
+  if (_scCalMonth === null) { _scCalYear = new Date().getFullYear(); _scCalMonth = new Date().getMonth(); }
+  if (--_scCalMonth < 0) { _scCalMonth = 11; _scCalYear--; }
+  renderSCCal();
+}
 
-  const selIds = [..._sc.selWho];
-
-  listEl.innerHTML = dates.map(date => {
-    const sel    = _sc.selDate === date;
-    const avail  = _scAvailStatus(date);
-    const { main, rel } = _scFmtDate(date);
-
-    const dots = selIds.map(id => {
-      const color    = _sc.colors[id] || '#7c5cbf';
-      const hasData  = (_sc.data?.connFreeDays[id] || []).length > 0;
-      const free     = _scConnFree(id, date);
-      // no calendar data → treat as unknown (neither free nor busy, use partial opacity)
-      const cls = !hasData ? 'busy' : (free ? 'free' : 'busy');
-      const opacity = !hasData ? 'opacity:0.4;' : '';
-      return `<div class="sc-avail-dot ${cls}" style="background:${color};${opacity}"></div>`;
-    }).join('');
-
-    const labelMap = {
-      'all-free': '✓ All free',
-      'partial':  'Partial',
-      'all-busy': 'All busy',
-      'me-only':  "I'm free",
-    };
-
-    const notFreeDay = !myFree.includes(date);
-    return `<div class="sc-date-row${sel ? ' selected' : ''}${avail === 'all-busy' && selIds.length ? ' all-busy-row' : ''}"
-        onclick="scSelectDate('${date}')">
-      <div class="sc-date-main">
-        <div class="sc-date-day">${main}</div>
-        ${rel ? `<div class="sc-date-rel">${rel}${notFreeDay ? ' · kids day' : ''}</div>` : (notFreeDay ? `<div class="sc-date-rel">kids day</div>` : '')}
-      </div>
-      <div class="sc-date-avail">
-        ${dots}
-        <span class="sc-avail-label ${avail}">${labelMap[avail]}</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Scroll selected row into view
-  setTimeout(() => {
-    listEl.querySelector('.sc-date-row.selected')?.scrollIntoView({ block: 'nearest' });
-  }, 50);
+function scCalNext() {
+  if (_scCalMonth === null) { _scCalYear = new Date().getFullYear(); _scCalMonth = new Date().getMonth(); }
+  if (++_scCalMonth > 11) { _scCalMonth = 0; _scCalYear++; }
+  renderSCCal();
 }
 
 function scSelectDate(date) {
   _sc.selDate = date;
+  // Jump calendar to the month of the selected date
+  const d = new Date(date + 'T00:00:00');
+  _scCalYear = d.getFullYear(); _scCalMonth = d.getMonth();
   document.getElementById('sc-clash-bar-when').innerHTML = '';
-  renderSCWhen();
+  renderSCCal();
   renderSCSummary();
 }
 
 function scFindNewDate() {
   _sc.selDate = _scBestDate();
   document.getElementById('sc-clash-bar-when').innerHTML = '';
-  renderSCWhen();
+  if (_sc.selDate) {
+    const d = new Date(_sc.selDate + 'T00:00:00');
+    _scCalYear = d.getFullYear(); _scCalMonth = d.getMonth();
+  }
+  renderSCCal();
 }
 
 // ── WHAT ──────────────────────────────────────────────────────────────────────
@@ -6319,30 +6356,41 @@ function scWhatCloseDrop() {
 // ── Footer summary ────────────────────────────────────────────────────────────
 
 function renderSCSummary() {
-  const el = document.getElementById('sc-summary');
+  const el  = document.getElementById('sc-summary');
+  const btn = document.getElementById('sc-confirm-btn');
   if (!el) return;
+
   const parts = [];
 
-  // WHO
   const names = (_sc.data?.who || [])
     .filter(w => _sc.selWho.has(w.id))
     .map(w => w.name.split(' ')[0]);
-  if (names.length) parts.push(`<span>${names.join(', ')}</span>`);
+  if (names.length) parts.push(names.join(', '));
 
-  // WHEN
   if (_sc.selDate) {
     const { main } = _scFmtDate(_sc.selDate);
-    parts.push(`<span>${main}</span>`);
+    parts.push(main);
   }
 
-  // WHAT
   if (_sc.selWhat) {
     const label = _sc.selWhat.custom
       || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim();
-    if (label) parts.push(`<span>${label}</span>`);
+    if (label) parts.push(label);
   }
 
-  el.innerHTML = parts.length ? parts.join(' · ') : '';
+  const ready = _sc.selWho.size > 0 && _sc.selDate;
+  if (parts.length) {
+    el.textContent = parts.join(' · ');
+    el.classList.toggle('empty', !ready);
+  } else {
+    el.textContent = 'Select who and when…';
+    el.classList.add('empty');
+  }
+  if (btn) btn.disabled = !ready;
+
+  // Flip tick to ✓ when ready
+  const tick = btn?.querySelector('.sc-confirm-tick');
+  if (tick) tick.textContent = ready ? '✓' : '→';
 }
 
 // ── Review ────────────────────────────────────────────────────────────────────
