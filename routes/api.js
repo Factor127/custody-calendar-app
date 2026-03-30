@@ -1190,6 +1190,11 @@ router.post('/rsvp/:token', (req, res) => {
   const inv = q.getInviteeByRsvpToken.get(req.params.token);
   if (!inv) return res.status(404).json({ error: 'not found' });
   q.updateInviteeStatus.run(status, inv.id);
+  // Track RSVP acceptance as a contribution win
+  if (status === 'accepted' && inv.opportunity_id) {
+    const { trackOppEvent } = require('../db');
+    trackOppEvent(inv.opportunity_id, inv.user_id, 'rsvp_accepted');
+  }
   res.json({ ok: true, inviterName: inv.inviter_name });
 });
 
@@ -1235,6 +1240,13 @@ router.post('/outings', (req, res) => {
         } catch(e) { /* non-critical */ }
       }
     }
+  }
+
+  // ── Contribution tracking ─────────────────────────────────────────────
+  if (opportunity_id) {
+    const { trackOppEvent, incOppCounter } = require('../db');
+    trackOppEvent(opportunity_id, me.id, 'outing_created');
+    incOppCounter('incOppOutings', opportunity_id);
   }
 
   res.json({ id: outingId, status: 'pending' });

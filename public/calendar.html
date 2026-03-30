@@ -972,6 +972,40 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       color:var(--muted); cursor:pointer; white-space:nowrap; transition:all .15s;
     }
     .browse-tab.active { background:rgba(124,92,191,0.25); border-color:var(--accent); color:var(--accent); }
+    /* ── Impact tab ── */
+    .impact-header { padding:16px 0 4px; }
+    .impact-labels { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .impact-label  { background:rgba(167,139,250,.15); border:1px solid rgba(167,139,250,.35);
+                     color:var(--accent); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; }
+    .impact-stats-row { display:flex; gap:0; margin-bottom:18px; }
+    .impact-stat { flex:1; text-align:center; padding:10px 0;
+                   border-right:1px solid rgba(255,255,255,.06); }
+    .impact-stat:last-child { border-right:none; }
+    .impact-stat-num   { font-size:22px; font-weight:900; color:var(--text); }
+    .impact-stat-label { font-size:10px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.05em; }
+    .impact-section-title { font-size:11px; font-weight:700; color:var(--muted);
+                            text-transform:uppercase; letter-spacing:.06em; margin:14px 0 8px; }
+    .impact-win-row  { display:flex; gap:10px; align-items:flex-start;
+                       padding:10px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .impact-win-icon { font-size:20px; flex-shrink:0; margin-top:1px; }
+    .impact-win-body { flex:1; min-width:0; }
+    .impact-win-text { font-size:13px; color:var(--text); font-weight:600; }
+    .impact-win-sub  { font-size:12px; color:var(--muted); margin-top:2px;
+                       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .impact-win-time { font-size:11px; color:var(--muted); margin-top:3px; }
+    .impact-contrib-row { display:flex; align-items:center; gap:10px;
+                          padding:10px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .impact-contrib-info  { flex:1; min-width:0; }
+    .impact-contrib-title { font-size:13px; color:var(--text); font-weight:600;
+                            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .impact-contrib-meta  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .impact-pipeline { display:flex; gap:5px; align-items:center; flex-shrink:0; }
+    .pip      { font-size:11px; padding:3px 7px; border-radius:8px; font-weight:600;
+                background:rgba(255,255,255,.05); color:var(--muted); }
+    .pip.done { background:rgba(167,139,250,.2); color:var(--accent); }
+    .browse-tab-badge { display:inline-block; background:#f87171; color:white;
+                        border-radius:10px; padding:1px 5px; font-size:10px;
+                        font-weight:700; margin-left:4px; vertical-align:middle; }
     .browse-submit-bar {
       padding:12px 16px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0;
       display:flex; gap:8px;
@@ -4119,6 +4153,7 @@ function showToast(msg) {
       <button class="browse-tab" onclick="setBrowseTab('event',this)">Events</button>
       <button class="browse-tab" onclick="setBrowseTab('venue',this)">Venues</button>
       <button class="browse-tab" onclick="setBrowseTab('activity_template',this)">Activities</button>
+      <button class="browse-tab" id="impact-tab-btn" onclick="setBrowseTab('impact',this)">⚡ Impact</button>
     </div>
     <div class="browse-body" id="browse-body">
       <div class="browse-loading">Finding your matches…</div>
@@ -5189,6 +5224,22 @@ let _browseMatches = [];
 async function openBrowseSheet() {
   document.getElementById('browse-sheet').classList.add('open');
   await loadBrowseMatches();
+  // Check for new wins → badge the Impact tab
+  try {
+    const since = localStorage.getItem('lastImpactView') || new Date(Date.now() - 7*86400000).toISOString();
+    const r = await fetch(`/api/contributions/wins/new?since=${encodeURIComponent(since)}&token=${MY_TOKEN}`);
+    if (r.ok) {
+      const { count } = await r.json();
+      const impactBtn = document.getElementById('impact-tab-btn');
+      if (count > 0 && impactBtn && !document.getElementById('impact-tab-badge')) {
+        const badge = document.createElement('span');
+        badge.id = 'impact-tab-badge';
+        badge.className = 'browse-tab-badge';
+        badge.textContent = count;
+        impactBtn.appendChild(badge);
+      }
+    }
+  } catch(e) {}
 }
 function closeBrowseSheet() {
   document.getElementById('browse-sheet').classList.remove('open');
@@ -5198,6 +5249,9 @@ function setBrowseTab(tab, el) {
   _browseTab = tab;
   document.querySelectorAll('.browse-tab').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  // Hide submit bar on Impact tab
+  const bar = document.querySelector('.browse-submit-bar');
+  if (bar) bar.style.display = tab === 'impact' ? 'none' : '';
   renderBrowseMatches();
 }
 
@@ -5216,6 +5270,8 @@ async function loadBrowseMatches() {
 }
 
 function renderBrowseMatches() {
+  if (_browseTab === 'impact') { renderImpactTab(); return; }
+
   const body = document.getElementById('browse-body');
   let list = _browseMatches;
   if (_browseTab !== 'all') list = list.filter(o => o.type === _browseTab);
@@ -5253,6 +5309,117 @@ function renderBrowseMatches() {
   }).join('');
 }
 
+// ── Impact tab ────────────────────────────────────────────────────────────────
+function _timeAgo(isoStr) {
+  if (!isoStr) return '';
+  const diff  = Date.now() - new Date(isoStr).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  <  2)  return 'just now';
+  if (mins  < 60)  return `${mins}m ago`;
+  if (hours < 24)  return `${hours}h ago`;
+  if (days  <  7)  return `${days}d ago`;
+  return new Date(isoStr).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+
+async function renderImpactTab() {
+  const body = document.getElementById('browse-body');
+  body.innerHTML = '<div class="browse-loading">Loading your impact…</div>';
+  localStorage.setItem('lastImpactView', new Date().toISOString());
+
+  let data;
+  try {
+    const res = await fetch(`/api/contributions/impact?token=${MY_TOKEN}`);
+    if (!res.ok) throw new Error('failed');
+    data = await res.json();
+  } catch(e) {
+    body.innerHTML = '<div class="browse-empty">Could not load impact data.</div>';
+    return;
+  }
+
+  const { contributions = [], recentWins = [], labels = [] } = data;
+  const TYPE_ICON = { event:'🗓', venue:'📍', activity_template:'✨' };
+
+  if (!contributions.length) {
+    body.innerHTML = `<div class="browse-empty" style="padding-top:32px;">
+      <div style="font-size:40px;margin-bottom:10px;">⚡</div>
+      <div style="font-weight:700;">No contributions yet</div>
+      <div style="font-size:12px;margin-top:6px;line-height:1.5;">
+        Add events or venues using the link box below.<br>
+        When friends plan or attend them, your impact shows here.
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Totals
+  const totalViews   = contributions.reduce((s,c) => s + (c.view_count   || 0), 0);
+  const totalPlans   = contributions.reduce((s,c) => s + (c.plan_count   || 0), 0);
+  const totalOutings = contributions.reduce((s,c) => s + (c.outing_count || 0), 0);
+
+  // Reputation badges
+  const labelsHtml = labels.length
+    ? `<div class="impact-labels">${labels.map(l=>`<span class="impact-label">✦ ${l}</span>`).join('')}</div>`
+    : '';
+
+  // Stats bar
+  const statsHtml = `<div class="impact-stats-row">
+    <div class="impact-stat"><div class="impact-stat-num">${contributions.length}</div><div class="impact-stat-label">Added</div></div>
+    <div class="impact-stat"><div class="impact-stat-num">${totalViews}</div><div class="impact-stat-label">Seen</div></div>
+    <div class="impact-stat"><div class="impact-stat-num">${totalPlans}</div><div class="impact-stat-label">Plans</div></div>
+    <div class="impact-stat"><div class="impact-stat-num">${totalOutings}</div><div class="impact-stat-label">Outings</div></div>
+  </div>`;
+
+  // Recent wins
+  const WIN_CFG = {
+    plan_created:   { icon:'📅', text:'Your suggestion turned into a plan' },
+    outing_created: { icon:'🎉', text:'Someone used this for an outing' },
+    rsvp_accepted:  { icon:'✅', text:'Someone confirmed attendance' },
+  };
+  let winsHtml = '';
+  if (recentWins.length) {
+    winsHtml = `<div class="impact-section-title">Recent outcomes</div>
+      ${recentWins.slice(0,6).map(w => {
+        const cfg = WIN_CFG[w.event_type] || { icon:'⚡', text: w.event_type };
+        return `<div class="impact-win-row">
+          <div class="impact-win-icon">${cfg.icon}</div>
+          <div class="impact-win-body">
+            <div class="impact-win-text">${cfg.text}</div>
+            <div class="impact-win-sub">${(w.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+            <div class="impact-win-time">${_timeAgo(w.created_at)}</div>
+          </div>
+        </div>`;
+      }).join('')}`;
+  }
+
+  // Contributions list
+  let contribsHtml = `<div class="impact-section-title">Your contributions</div>`;
+  for (const c of contributions) {
+    const icon = TYPE_ICON[c.type] || '🎯';
+    const safeTitle = (c.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const meta = [c.category, c.type].filter(Boolean).join(' · ');
+    const hasOutcome = (c.plan_count || 0) + (c.outing_count || 0) > 0;
+    contribsHtml += `<div class="impact-contrib-row">
+      <div class="impact-contrib-info">
+        <div class="impact-contrib-title">${icon} ${safeTitle}</div>
+        <div class="impact-contrib-meta">${meta}</div>
+      </div>
+      <div class="impact-pipeline">
+        <span class="pip done" title="Submitted">✓ added</span>
+        ${(c.view_count   || 0) > 0 ? `<span class="pip done" title="${c.view_count} views">👁 ${c.view_count}</span>` : ''}
+        ${(c.plan_count   || 0) > 0 ? `<span class="pip done" title="${c.plan_count} plans">📅 ${c.plan_count}</span>` : ''}
+        ${(c.outing_count || 0) > 0 ? `<span class="pip done" title="${c.outing_count} outings">🎉 ${c.outing_count}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  body.innerHTML = `<div class="impact-header">${labelsHtml}${statsHtml}</div>${winsHtml}${contribsHtml}`;
+
+  // Clear the badge since user has now seen the tab
+  document.getElementById('impact-tab-badge')?.remove();
+}
+
 // ── Opp action sheet ─────────────────────────────────────────────────────────
 let _oppActionId  = null;
 let _oppActionUrl = null;
@@ -5260,6 +5427,11 @@ let _oppActionTitle = '';
 let _oppPickedDate = null;
 
 function oppCardClick(oppId, sourceUrl, title) {
+  // Track view event (fire-and-forget — non-critical)
+  fetch(`/api/contributions/event?token=${MY_TOKEN}`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ opportunity_id: oppId, event_type: 'viewed' })
+  }).catch(() => {});
   // If Browse was opened from Start Something, link the opp back instead
   if (_browseCalledFromSS) {
     _browseCalledFromSS = false;

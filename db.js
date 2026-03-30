@@ -28,6 +28,20 @@ try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) 
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
+// ── Gamification / contribution tracking ──────────────────────────────────────
+try { db.exec('ALTER TABLE opportunities ADD COLUMN view_count INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE opportunities ADD COLUMN save_count INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE opportunities ADD COLUMN plan_count INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE opportunities ADD COLUMN outing_count INTEGER DEFAULT 0'); } catch(e) {}
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS opportunity_events (
+    id             TEXT PRIMARY KEY,
+    opportunity_id TEXT NOT NULL,
+    actor_user_id  TEXT,
+    event_type     TEXT NOT NULL,
+    created_at     TEXT DEFAULT (datetime('now'))
+  )`);
+} catch(e) {}
 try { db.exec("ALTER TABLE invites ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN relationship_type TEXT NOT NULL DEFAULT 'coparent'"); } catch(e) { /* already exists */ }
 try { db.exec("ALTER TABLE connections ADD COLUMN desired_duration_days INTEGER"); } catch(e) { /* already exists */ }
@@ -535,6 +549,49 @@ const q = {
   getPlansForUserAllDates: db.prepare(`
     SELECT p.date, COUNT(*) as count FROM plans p WHERE p.user_id=? GROUP BY p.date
   `),
+
+  // ── Contribution / gamification ─────────────────────────────────────────
+  trackOppEvent:   db.prepare('INSERT INTO opportunity_events (id, opportunity_id, actor_user_id, event_type) VALUES (?, ?, ?, ?)'),
+  incOppViews:     db.prepare('UPDATE opportunities SET view_count   = view_count   + 1 WHERE id = ?'),
+  incOppSaves:     db.prepare('UPDATE opportunities SET save_count   = save_count   + 1 WHERE id = ?'),
+  incOppPlans:     db.prepare('UPDATE opportunities SET plan_count   = plan_count   + 1 WHERE id = ?'),
+  incOppOutings:   db.prepare('UPDATE opportunities SET outing_count = outing_count + 1 WHERE id = ?'),
+  getMyContributions: db.prepare(`
+    SELECT id, title, type, category, source_url, created_at,
+           view_count, save_count, plan_count, outing_count, visibility
+    FROM opportunities
+    WHERE created_by = ?
+    ORDER BY (plan_count + outing_count) DESC, created_at DESC
+  `),
+  getRecentWins: db.prepare(`
+    SELECT oe.event_type, oe.created_at, o.title, o.category, o.id AS opp_id
+    FROM opportunity_events oe
+    JOIN opportunities o ON o.id = oe.opportunity_id
+    WHERE o.created_by = ?
+      AND oe.actor_user_id IS NOT NULL AND oe.actor_user_id != ?
+      AND oe.event_type IN ('plan_created','outing_created','rsvp_accepted')
+    ORDER BY oe.created_at DESC
+    LIMIT 15
+  `),
+  getReputationStats: db.prepare(`
+    SELECT category,
+           SUM(plan_count)   AS total_plans,
+           SUM(outing_count) AS total_outings,
+           COUNT(id)         AS opp_count
+    FROM opportunities
+    WHERE created_by = ?
+    GROUP BY category
+    ORDER BY (SUM(plan_count) + SUM(outing_count)) DESC
+  `),
+  getNewWinsCount: db.prepare(`
+    SELECT COUNT(*) AS count
+    FROM opportunity_events oe
+    JOIN opportunities o ON o.id = oe.opportunity_id
+    WHERE o.created_by = ?
+      AND oe.actor_user_id IS NOT NULL AND oe.actor_user_id != ?
+      AND oe.event_type IN ('plan_created','outing_created')
+      AND oe.created_at > ?
+  `),
 };
 
 // ── Pattern generator ─────────────────────────────────────────────────────────
@@ -710,6 +767,28 @@ function getPlansDateCounts(userId) {
   return q.getPlansForUserAllDates.all(userId);
 }
 
+// ── Contribution event helpers ────────────────────────────────────────────────
+const { randomUUID: _uuid } = require('crypto');
+
+function trackOppEvent(opportunityId, actorUserId, eventType) {
+  try { q.trackOppEvent.run(_uuid(), opportunityId, actorUserId || null, eventType); } catch(e) {}
+}
+function incOppCounter(field, opportunityId) {
+  try { q[field].run(opportunityId); } catch(e) {}
+}
+function getMyContributions(userId) {
+  return q.getMyContributions.all(userId);
+}
+function getRecentWins(userId) {
+  return q.getRecentWins.all(userId, userId);
+}
+function getReputationStats(userId) {
+  return q.getReputationStats.all(userId);
+}
+function getNewWinsCount(userId, since) {
+  return (q.getNewWinsCount.get(userId, userId, since) || {}).count || 0;
+}
+
 module.exports = {
   db, q,
   generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr,
@@ -722,6 +801,9 @@ module.exports = {
   // Plan helpers
   createPlan, deletePlan, getPlansForUser, getPlansDateCounts,
   deleteOpportunity,
+  // Contribution / gamification helpers
+  trackOppEvent, incOppCounter,
+  getMyContributions, getRecentWins, getReputationStats, getNewWinsCount,
   // Re-export core user/calendar helpers for convenience in services
   getDaysForUserInRange: (userId, from, to) => q.getDaysForUserInRange.all(userId, from, to),
   getUserByToken: (token) => q.getUserByToken.get(token),

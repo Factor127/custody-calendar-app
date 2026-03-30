@@ -199,6 +199,11 @@ router.post('/plans', (req, res) => {
   const { randomUUID } = require('crypto');
   const id = randomUUID();
   db.createPlan(id, user.id, date, opportunity_id || null, note || null);
+  // ── Contribution tracking ─────────────────────────────────────────────
+  if (opportunity_id) {
+    db.trackOppEvent(opportunity_id, user.id, 'plan_created');
+    db.incOppCounter('incOppPlans', opportunity_id);
+  }
   res.json({ ok: true, plan_id: id });
 });
 
