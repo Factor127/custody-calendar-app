@@ -1622,22 +1622,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 
-<!-- Notification / Activity side panel -->
-<div id="notif-panel">
-  <div id="notif-tab" onclick="toggleNotifPanel()">
-    <span>✨ Plans</span>
-    <span id="notif-tab-count" class="tab-count hidden">0</span>
-  </div>
-  <div id="notif-content">
-    <div id="notif-content-header">
-      <strong>Activity Plans</strong>
-      <button id="notif-close-btn" onclick="closeNotifPanel()" title="Close">✕</button>
-    </div>
-    <div id="notif-list">
-      <div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet</div>
-    </div>
-  </div>
-</div>
 
 <!-- ── Full inline calendar ── -->
 <div class="cal-section" style="max-width:680px;margin:0 auto;">
@@ -4637,11 +4621,6 @@ function showToast(msg) {
     <div class="bn-label">Calendar</div>
   </button>
 
-  <button class="bn-item" id="bn-plans" onclick="bnTab('plans')">
-    <div class="bn-icon">🎉</div>
-    <div class="bn-label">Plans</div>
-    <div class="bn-badge hidden" id="bn-plans-badge">0</div>
-  </button>
 
   <button class="bn-item bn-fab" onclick="openSmartCrafter()">
     <div class="bn-fab-inner">＋</div>
@@ -4657,13 +4636,12 @@ function showToast(msg) {
 
 <script>
 function bnTab(tab) {
-  ['home','plans','connections'].forEach(t =>
+  ['home','connections'].forEach(t =>
     document.getElementById('bn-' + t)?.classList.toggle('active', t === tab)
   );
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
   if (tab === 'profile')     document.getElementById('profile-btn')?.click();
   if (tab === 'home')        window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (tab === 'plans')       document.getElementById('notif-panel')?.classList.add('open');
 }
 
 // ── FAB menu ────────────────────────────────────────────────────────────────
