@@ -2286,7 +2286,7 @@ function nextMonth() {
   } else {
     document.getElementById('profile-initial').textContent = (myName || '?')[0].toUpperCase();
   }
-  document.getElementById('owner-name-label').textContent = `${myName}:`;
+  const _onl = document.getElementById('owner-name-label'); if (_onl) _onl.textContent = `${myName}:`;
 
   await loadMyCalendar();
 
@@ -3328,11 +3328,11 @@ function calculateCustodyDays() {
     if (d.owner === 'self') self++;
     else coparent++;
   }
-  document.getElementById('r-count').textContent = `${self} days`;
-  document.getElementById('z-count').textContent = `${coparent} days`;
+  const _rc = document.getElementById('r-count'); if (_rc) _rc.textContent = `${self} days`;
+  const _zc = document.getElementById('z-count'); if (_zc) _zc.textContent = `${coparent} days`;
   const diff = Math.abs(self - coparent);
   const leader = self > coparent ? myName : 'Co-parent';
-  document.getElementById('difference').textContent = self === coparent ? 'Equal' : `${diff} days (${leader} has more)`;
+  const _df = document.getElementById('difference'); if (_df) _df.textContent = self === coparent ? 'Equal' : `${diff} days (${leader} has more)`;
 
 }
 
