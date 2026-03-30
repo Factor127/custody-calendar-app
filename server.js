@@ -23,10 +23,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.locals.BASE_URL = BASE_URL;
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-const authRouter  = require('./routes/auth');
-const apiRouter   = require('./routes/api');
-const adminRouter = require('./routes/admin');
-const pagesRouter = require('./routes/pages');
+const authRouter        = require('./routes/auth');
+const apiRouter         = require('./routes/api');
+const adminRouter       = require('./routes/admin');
+const pagesRouter       = require('./routes/pages');
+const smartSuggestRouter = require('./routes/smart-suggest');
 
 app.use('/api', authRouter);   // magic link endpoints at /api/auth/...
 app.use('/', authRouter);      // Google OAuth at /auth/google, /auth/google/callback
@@ -36,6 +37,7 @@ const opportunitiesRouter  = require('./routes/opportunities');
 const contributionsRouter  = require('./routes/contributions');
 app.use('/api', opportunitiesRouter);
 app.use('/api', contributionsRouter);
+app.use('/api', smartSuggestRouter);
 app.use('/', pagesRouter);
 
 // ── Root: serve login/home page directly ──────────────────────────────────────

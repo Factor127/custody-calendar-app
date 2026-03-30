@@ -551,6 +551,14 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       max-width:100%; display:block; margin-top:2px; cursor:default;
       position:relative; z-index:1;
     }
+    /* ── Two-tone month heading ──────────────────────────────────────────── */
+    .month-heading {
+      font-size: 42px; font-weight: 900; line-height: 1;
+      letter-spacing: -0.03em; margin-bottom: 8px; padding: 4px 0;
+    }
+    .month-heading .month-name { color: var(--text); }
+    .month-heading .month-year { color: var(--accent); margin-left: 10px; }
+
     .act-tooltip {
       display:none; position:absolute; bottom:100%; left:50%;
       transform:translateX(-50%); background:#202124; color:white;
@@ -683,6 +691,81 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .venue-ac-main { font-size:12px; font-weight:700; color:var(--text); }
     .venue-ac-sub  { font-size:10px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .venue-ac-spinner { padding:8px 10px; font-size:11px; color:var(--muted); text-align:center; }
+
+    /* ── Pending invite pulse on cell ────────────────────────────────── */
+    .cell-pending-ring {
+      position: absolute; top: 6px; right: 6px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      animation: cell-pulse 2s ease-in-out infinite;
+    }
+    @keyframes cell-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(167,139,250,0.5); }
+      50% { opacity: 0.8; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+    }
+
+    /* ── Coordinate Together section ─────────────────────────────────── */
+    .coordinate-title {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--muted); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .coordinate-scroll {
+      display: flex; gap: 12px; overflow-x: auto;
+      scrollbar-width: none; padding-bottom: 8px;
+    }
+    .coordinate-scroll::-webkit-scrollbar { display: none; }
+    .ctg-card {
+      flex-shrink: 0; width: 148px; border-radius: 18px;
+      padding: 16px 14px 14px; cursor: pointer; position: relative;
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: transform .15s, box-shadow .15s;
+      overflow: hidden;
+    }
+    .ctg-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(255,255,255,0.04);
+      border-radius: inherit; pointer-events: none;
+    }
+    .ctg-card:active { transform: scale(0.96); }
+    .ctg-card-dow {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; color: rgba(255,255,255,0.45); margin-bottom: 2px;
+    }
+    .ctg-card-date {
+      font-size: 22px; font-weight: 900; color: white; line-height: 1.1;
+      letter-spacing: -.02em; margin-bottom: 4px;
+    }
+    .ctg-card-with {
+      font-size: 11px; color: rgba(255,255,255,0.5);
+      font-weight: 600; margin-bottom: 24px;
+    }
+    .ctg-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ctg-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: white;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .ctg-arrow-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); border: none;
+      cursor: pointer; color: white; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .13s; font-family: inherit;
+    }
+    .ctg-arrow-btn:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Cell event pills ─────────────────────────────────────────────── */
+    .cell-event {
+      font-size: 9px; font-weight: 700;
+      background: rgba(249,115,22,0.18); color: var(--orange);
+      border-radius: 4px; padding: 2px 5px; margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 100%; display: block; line-height: 1.3;
+    }
 
     /* ── Plan bubbles on cells ────────────────────────────────────────── */
     .cell-plans {
@@ -1367,6 +1450,104 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .pref-modal .pref-chip.selected { background:rgba(124,92,191,0.12); border-color:#7c5cbf; color:#7c5cbf; }
     .pref-modal-actions { display:flex; gap:8px; justify-content:flex-end; }
 
+    /* ── Smart Crafter bottom sheet ──────────────────────────────────── */
+    .sc-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0);
+      z-index:950; pointer-events:none;
+      transition:background 0.3s; display:flex; align-items:flex-end;
+    }
+    .sc-overlay.open { background:rgba(0,0,0,0.45); pointer-events:all; }
+    .sc-sheet {
+      width:100%; max-height:92vh;
+      background:var(--cell-bg,#fff); border-radius:20px 20px 0 0;
+      transform:translateY(100%);
+      transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .sc-overlay.open .sc-sheet { transform:translateY(0); }
+    .sc-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:12px auto 4px; flex-shrink:0; }
+    .sc-header { display:flex; align-items:center; justify-content:space-between; padding:4px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .sc-header h2 { font-size:17px; font-weight:700; margin:0; flex:1; text-align:center; }
+    .sc-close-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); padding:4px 8px; line-height:1; }
+    .sc-body { flex:1; overflow-y:auto; padding:0 0 8px; }
+    .sc-ingredient { padding:16px 20px 0; }
+    .sc-ing-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin-bottom:10px; }
+    .sc-footer { padding:12px 20px; border-top:1px solid var(--border); flex-shrink:0; }
+    /* WHO */
+    .sc-who-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:6px 4px; border-radius:12px; transition:background .15s; min-width:52px; user-select:none; }
+    .sc-who-chip:hover { background:var(--surface); }
+    .sc-who-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:white; position:relative; border:3px solid transparent; transition:border-color .15s,transform .15s; }
+    .sc-who-chip.selected .sc-who-avatar { border-color:var(--accent); transform:scale(1.08); }
+    .sc-who-check { position:absolute; bottom:-2px; right:-2px; background:var(--accent); color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:none; align-items:center; justify-content:center; }
+    .sc-who-chip.selected .sc-who-check { display:flex; }
+    .sc-who-name { font-size:11px; color:var(--text); text-align:center; max-width:60px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-who-more { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:6px 4px; min-width:52px; }
+    .sc-who-more-circle { width:44px; height:44px; border-radius:50%; background:var(--surface); border:2px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--muted); }
+    /* WHEN */
+    .sc-dates-list { display:flex; flex-direction:column; gap:4px; max-height:230px; overflow-y:auto; }
+    .sc-date-row { display:flex; align-items:center; padding:9px 12px; border-radius:10px; cursor:pointer; gap:10px; border:2px solid transparent; transition:all .15s; }
+    .sc-date-row:hover { background:var(--surface); }
+    .sc-date-row.selected { background:#f0ebff; border-color:var(--accent); }
+    .sc-date-row.all-busy-row { opacity:0.45; }
+    .sc-date-main { flex:1; }
+    .sc-date-day { font-size:13px; font-weight:600; color:var(--text); }
+    .sc-date-rel { font-size:11px; color:var(--muted); }
+    .sc-date-avail { display:flex; align-items:center; gap:5px; flex-shrink:0; }
+    .sc-avail-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .sc-avail-dot.busy { opacity:0.25; }
+    .sc-avail-label { font-size:11px; white-space:nowrap; }
+    .sc-avail-label.all-free  { color:#22c55e; }
+    .sc-avail-label.partial   { color:#f59e0b; }
+    .sc-avail-label.all-busy  { color:#ef4444; }
+    .sc-avail-label.me-only   { color:var(--muted); }
+    .sc-no-dates { padding:16px 0; text-align:center; font-size:13px; color:var(--muted); }
+    /* WHAT */
+    .sc-what-opts { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .sc-what-card { flex:1; min-width:88px; max-width:140px; padding:10px 8px; border-radius:12px; border:2px solid var(--border); cursor:pointer; transition:all .15s; text-align:center; background:var(--cell-bg); }
+    .sc-what-card:hover { border-color:var(--accent); background:#f9f7ff; }
+    .sc-what-card.selected { border-color:var(--accent); background:#f0ebff; }
+    .sc-what-emoji { font-size:22px; margin-bottom:4px; }
+    .sc-what-title { font-size:11px; font-weight:600; color:var(--text); }
+    .sc-what-input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--cell-bg); color:var(--text); box-sizing:border-box; outline:none; font-family:inherit; }
+    .sc-what-input:focus { border-color:var(--accent); }
+    /* Clash alert */
+    .sc-clash-bar { background:#fef3c7; border:1px solid #fbbf24; border-radius:8px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
+    .sc-clash-action { background:none; border:none; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    /* Review sheet */
+    .sc-review-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0);
+      z-index:960; pointer-events:none;
+      transition:background 0.3s; display:flex; align-items:flex-end;
+    }
+    .sc-review-overlay.open { background:rgba(0,0,0,0.5); pointer-events:all; }
+    .sc-review-sheet {
+      width:100%; max-height:88vh;
+      background:var(--cell-bg,#fff); border-radius:20px 20px 0 0;
+      transform:translateY(100%);
+      transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .sc-review-overlay.open .sc-review-sheet { transform:translateY(0); }
+    .sc-review-body { flex:1; overflow-y:auto; padding:16px 20px; }
+    .sc-review-summary { background:var(--surface); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+    .sc-review-summary-line { font-size:14px; color:var(--text); margin:3px 0; }
+    .sc-review-summary-line strong { color:var(--accent); }
+    .sc-group-wa { width:100%; padding:14px; border-radius:12px; background:#25d366; color:white; border:none; cursor:pointer; font-size:15px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; }
+    .sc-group-wa:active, .sc-group-wa:hover { opacity:0.88; }
+    .sc-divider { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .sc-divider-line { flex:1; height:1px; background:var(--border); }
+    .sc-divider-text { font-size:12px; color:var(--muted); white-space:nowrap; }
+    .sc-review-person { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+    .sc-review-person:last-child { border-bottom:none; }
+    .sc-review-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; }
+    .sc-review-name { flex:1; font-size:14px; font-weight:600; }
+    .sc-review-wa-btn { padding:7px 12px; background:#25d366; color:white; border:none; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+    .sc-review-remove { background:none; border:none; font-size:20px; color:var(--muted); cursor:pointer; padding:4px 6px; line-height:1; }
+    .sc-review-remove:hover { color:#ef4444; }
+    .sc-add-person-btn { margin-top:12px; background:none; border:2px dashed var(--border); border-radius:10px; width:100%; padding:10px; font-size:13px; color:var(--muted); cursor:pointer; font-family:inherit; }
+    .sc-add-person-btn:hover { border-color:var(--accent); color:var(--accent); }
+
     /* ── Compact custody card ────────────────────────────────────────── */
     .cal-compact-card {
       max-width:680px; margin:0 auto 16px; padding:14px 18px 12px;
@@ -1435,6 +1616,55 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);color:var(--text);">💡 Suggest Changes</button>
       <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);color:var(--text);">📅 Change days</button>
       <button onclick="openKidsExport()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;color:var(--text);">🖨️ Kids schedule</button>
+    </div>
+  </div>
+</div>
+
+<div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
+  <div class="social-cal-title">Who's free when you're free</div>
+  <div id="next-free-banner" style="display:none;font-size:12px;font-weight:700;color:#e65100;background:rgba(230,81,0,0.08);padding:6px 14px;border-radius:8px;margin:0 0 10px;text-align:center;"></div>
+  <div class="strip-wrap">
+    <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
+    <div id="day-strip"></div>
+    <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
+  </div>
+  <div class="strip-range" id="strip-range"></div>
+</div>
+
+<!-- Locked: show when no social connections -->
+<div id="social-calendar-locked" style="max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
+  <div class="social-cal-title" style="margin-bottom:6px;">Who's free when you're free</div>
+  <div class="social-cal-sub" style="margin-bottom:16px;">Invite a friend or partner to see when you match</div>
+  <div style="font-size:13px;color:#6d4c41;margin-bottom:14px;">Invite a friend or partner to see your matching free time</div>
+  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+    <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">❤️ Invite partner</button>
+    <button class="btn btn-outline btn-sm" onclick="openInviteModal();selectInviteType('friend')" style="border-color:#ffcc80;color:#bf360c;">👋 Invite friend</button>
+  </div>
+</div>
+
+<!-- Compact custody card — shows mini calendar, click opens full modal -->
+<div class="cal-compact-card" onclick="openCalendarModal()">
+  <div class="mini-card-header">
+    <div id="compact-month-label" class="mini-card-month">📅 Custody Calendar</div>
+    <div class="mini-card-edit">View &amp; Edit →</div>
+  </div>
+  <div id="mini-cal-grid" class="mini-cal-wrap"></div>
+  <div id="compact-balance-label" class="mini-card-footer">Loading…</div>
+</div>
+
+<!-- Notification / Activity side panel -->
+<div id="notif-panel">
+  <div id="notif-tab" onclick="toggleNotifPanel()">
+    <span>✨ Plans</span>
+    <span id="notif-tab-count" class="tab-count hidden">0</span>
+  </div>
+  <div id="notif-content">
+    <div id="notif-content-header">
+      <strong>Activity Plans</strong>
+      <button id="notif-close-btn" onclick="closeNotifPanel()" title="Close">✕</button>
+    </div>
+    <div id="notif-list">
+      <div style="padding:20px 14px;color:var(--muted);font-size:12px;text-align:center;">No activity plans yet</div>
     </div>
   </div>
 </div>
@@ -1727,6 +1957,60 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         </div>
 
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Smart Crafter bottom sheet ──────────────────────────────────── -->
+<div id="sc-overlay" class="sc-overlay">
+  <div id="sc-sheet" class="sc-sheet">
+    <div class="sc-handle"></div>
+    <div class="sc-header">
+      <button class="sc-close-btn" onclick="closeSC()" style="visibility:hidden;">✕</button>
+      <h2>✨ Start something</h2>
+      <button class="sc-close-btn" onclick="closeSC()">✕</button>
+    </div>
+    <div class="sc-body" id="sc-body">
+      <!-- WHO -->
+      <div class="sc-ingredient">
+        <div class="sc-ing-label">Who?</div>
+        <div class="sc-who-row" id="sc-who-row">
+          <span style="color:var(--muted);font-size:13px;">Loading…</span>
+        </div>
+      </div>
+      <!-- WHEN -->
+      <div class="sc-ingredient" style="margin-top:16px;">
+        <div class="sc-ing-label">When?</div>
+        <div id="sc-clash-bar-when"></div>
+        <div class="sc-dates-list" id="sc-dates-list"></div>
+      </div>
+      <!-- WHAT -->
+      <div class="sc-ingredient" style="margin-top:16px;padding-bottom:24px;">
+        <div class="sc-ing-label">What? <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(optional)</span></div>
+        <div class="sc-what-opts" id="sc-what-opts"></div>
+        <input id="sc-what-input" class="sc-what-input"
+          placeholder="Or type anything, paste a link…"
+          oninput="scWhatInputChange(this.value)" autocomplete="off">
+      </div>
+    </div>
+    <div class="sc-footer">
+      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="openSCReview()">Review →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Smart Crafter Review sheet ─────────────────────────────────── -->
+<div id="sc-review-overlay" class="sc-review-overlay">
+  <div class="sc-review-sheet">
+    <div class="sc-handle"></div>
+    <div class="sc-header">
+      <button class="sc-close-btn" style="font-size:15px;" onclick="closeSCReview()">← Back</button>
+      <h2>Review & send</h2>
+      <button class="sc-close-btn" onclick="closeSCAll()">✕</button>
+    </div>
+    <div class="sc-review-body" id="sc-review-body"></div>
+    <div class="sc-footer">
+      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="finalizeSC()">Done ✓</button>
     </div>
   </div>
 </div>
@@ -2256,8 +2540,16 @@ function renderTogetherCard() {
   section.style.display = 'block';
 }
 
-// Alias
 function renderTogetherSection() { renderTogetherCard(); }
+
+function openOutingForDate(dateStr, otherUserId) {
+  const existing = document.getElementById('activity-modal') || document.getElementById('outing-modal');
+  if (existing) {
+    const di = existing.querySelector('input[type="date"]');
+    if (di) di.value = dateStr;
+    existing.style.display = 'flex';
+  }
+}
 
 async function quickPlanOuting(date, userId, name) {
   const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
@@ -4367,7 +4659,13 @@ function showToast(msg) {
     <div class="bn-label">Calendar</div>
   </button>
 
-  <button class="bn-item bn-fab" id="bn-fab-btn" onclick="toggleFabMenu()">
+  <button class="bn-item" id="bn-plans" onclick="bnTab('plans')">
+    <div class="bn-icon">🎉</div>
+    <div class="bn-label">Plans</div>
+    <div class="bn-badge hidden" id="bn-plans-badge">0</div>
+  </button>
+
+  <button class="bn-item bn-fab" onclick="openSmartCrafter()">
     <div class="bn-fab-inner">＋</div>
   </button>
 
@@ -5558,6 +5856,413 @@ async function submitBrowseUrl() {
     setTimeout(() => { status.textContent = ''; }, 4000);
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Smart Crafter
+// ══════════════════════════════════════════════════════════════════════════════
+
+const _SC_COLOR_PALETTE = ['#7c5cbf','#00bcd4','#ff7043','#4caf50','#e91e63','#2196f3','#ff9800','#9c27b0'];
+const _SC_DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const _SC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const _sc = {
+  data:         null,       // response from /api/smart-suggest
+  selWho:       new Set(),  // selected connection IDs
+  selDate:      null,       // 'YYYY-MM-DD'
+  selWhat:      null,       // {emoji,title,category} | {custom:'text'} | null
+  whatInputVal: '',
+  removed:      new Set(),  // connection IDs removed at review
+  colors:       {},         // connId → hex color
+  expanded:     false,      // WHO row expanded to show all
+};
+
+// ── Open / close ──────────────────────────────────────────────────────────────
+
+async function openSmartCrafter(prefillDate, prefillOpp) {
+  // Reset state
+  _sc.data         = null;
+  _sc.selWho       = new Set();
+  _sc.selDate      = prefillDate || null;
+  _sc.selWhat      = prefillOpp ? { custom: prefillOpp } : null;
+  _sc.whatInputVal = '';
+  _sc.removed      = new Set();
+  _sc.colors       = {};
+  _sc.expanded     = false;
+
+  document.getElementById('sc-overlay').classList.add('open');
+  document.getElementById('sc-who-row').innerHTML =
+    '<span style="color:var(--muted);font-size:13px;">Loading…</span>';
+  document.getElementById('sc-dates-list').innerHTML = '';
+  document.getElementById('sc-what-opts').innerHTML  = '';
+  document.getElementById('sc-what-input').value     = '';
+  document.getElementById('sc-clash-bar-when').innerHTML = '';
+
+  try {
+    const res = await fetch(`/api/smart-suggest?token=${MY_TOKEN}`);
+    if (!res.ok) throw new Error('smart-suggest ' + res.status);
+    _sc.data = await res.json();
+  } catch(e) {
+    console.error('Smart suggest error:', e);
+    _sc.data = { who: [], myFreeDays: [], connFreeDays: {}, suggestions: [] };
+  }
+
+  // Assign colours — reuse existing socialConnections colours if available
+  _sc.data.who.forEach((w, i) => {
+    const existing = socialConnections.find(sc => sc.id === w.id);
+    _sc.colors[w.id] = existing?.color || _SC_COLOR_PALETTE[i % _SC_COLOR_PALETTE.length];
+  });
+
+  // Auto-select top-ranked connection
+  if (_sc.data.who.length > 0) _sc.selWho.add(_sc.data.who[0].id);
+
+  // Auto-pick best date
+  if (!_sc.selDate) _sc.selDate = _scBestDate();
+
+  renderSCWho();
+  renderSCWhen();
+  renderSCWhat();
+}
+
+function closeSC() {
+  document.getElementById('sc-overlay').classList.remove('open');
+}
+
+function closeSCReview() {
+  document.getElementById('sc-review-overlay').classList.remove('open');
+}
+
+function closeSCAll() {
+  closeSCReview();
+  closeSC();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function _scBestDate() {
+  if (!_sc.data?.myFreeDays?.length) return null;
+  const selIds = [..._sc.selWho];
+  for (const d of _sc.data.myFreeDays) {
+    const ok = selIds.length === 0 || selIds.some(id => (_sc.data.connFreeDays[id] || []).includes(d));
+    if (ok) return d;
+  }
+  return _sc.data.myFreeDays[0] || null;
+}
+
+function _scConnFree(connId, date) {
+  return (_sc.data?.connFreeDays[connId] || []).includes(date);
+}
+
+function _scAvailStatus(date) {
+  const ids = [..._sc.selWho];
+  if (!ids.length) return _sc.data?.myFreeDays.includes(date) ? 'me-only' : 'all-busy';
+  const freeCount = ids.filter(id => _scConnFree(id, date)).length;
+  if (freeCount === ids.length) return 'all-free';
+  if (freeCount > 0)            return 'partial';
+  return 'all-busy';
+}
+
+function _scFmtDate(dateStr) {
+  const d    = new Date(dateStr + 'T00:00:00');
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const diff = Math.round((d - now) / 86400000);
+  const main = `${_SC_DAYS[d.getDay()]} ${d.getDate()} ${_SC_MONTHS[d.getMonth()]}`;
+  let rel = '';
+  if      (diff === 0)  rel = 'Today';
+  else if (diff === 1)  rel = 'Tomorrow';
+  else if (diff < 7)    rel = 'This week';
+  else if (diff < 14)   rel = 'Next week';
+  return { main, rel, diff };
+}
+
+// ── WHO ───────────────────────────────────────────────────────────────────────
+
+function renderSCWho() {
+  const row = document.getElementById('sc-who-row');
+  if (!row || !_sc.data) return;
+  const all  = _sc.data.who;
+
+  if (!all.length) {
+    row.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:4px 0;">
+      No connections yet — <a href="#" onclick="bnTab('connections');closeSC();return false;"
+        style="color:var(--accent);">add people</a> first.
+    </p>`;
+    return;
+  }
+
+  const show = _sc.expanded ? all : all.slice(0, 5);
+  const rest = _sc.expanded ? 0   : all.length - 5;
+
+  row.innerHTML = show.map(w => {
+    const sel   = _sc.selWho.has(w.id);
+    const color = _sc.colors[w.id] || '#7c5cbf';
+    return `<div class="sc-who-chip${sel ? ' selected' : ''}" onclick="scToggleWho('${w.id}')">
+      <div class="sc-who-avatar" style="background:${color};">
+        ${w.initial}
+        <div class="sc-who-check">✓</div>
+      </div>
+      <div class="sc-who-name">${w.name.split(' ')[0]}</div>
+    </div>`;
+  }).join('') + (rest > 0 ? `
+    <div class="sc-who-more" onclick="scExpandWho()">
+      <div class="sc-who-more-circle">+${rest}</div>
+      <div class="sc-who-name" style="color:var(--muted);">More</div>
+    </div>` : '');
+}
+
+function scToggleWho(connId) {
+  _sc.selWho.has(connId) ? _sc.selWho.delete(connId) : _sc.selWho.add(connId);
+  renderSCWho();
+
+  // Clash check: is the current date still OK?
+  if (_sc.selDate && _sc.selWho.size > 0) {
+    const status   = _scAvailStatus(_sc.selDate);
+    const clashBar = document.getElementById('sc-clash-bar-when');
+    if (status === 'all-busy') {
+      const { main } = _scFmtDate(_sc.selDate);
+      clashBar.innerHTML = `<div class="sc-clash-bar">
+        None of your picks are free on ${main}.
+        <button class="sc-clash-action" onclick="scFindNewDate()">Find a new date →</button>
+      </div>`;
+    } else {
+      clashBar.innerHTML = '';
+    }
+  }
+
+  renderSCWhen();
+  // Only re-render WHAT if user hasn't typed a custom value
+  if (!_sc.whatInputVal) renderSCWhat();
+}
+
+function scExpandWho() {
+  _sc.expanded = true;
+  renderSCWho();
+}
+
+// ── WHEN ──────────────────────────────────────────────────────────────────────
+
+function renderSCWhen() {
+  const listEl = document.getElementById('sc-dates-list');
+  if (!listEl || !_sc.data) return;
+
+  const myFree = _sc.data.myFreeDays;
+  if (!myFree.length) {
+    listEl.innerHTML = '<div class="sc-no-dates">No free days found in the next 60 days.</div>';
+    return;
+  }
+
+  const now    = new Date(); now.setHours(0,0,0,0);
+  const dates  = myFree.filter(d => new Date(d + 'T00:00:00') >= now).slice(0, 30);
+  const selIds = [..._sc.selWho];
+
+  listEl.innerHTML = dates.map(date => {
+    const sel    = _sc.selDate === date;
+    const avail  = _scAvailStatus(date);
+    const { main, rel } = _scFmtDate(date);
+
+    const dots = selIds.map(id => {
+      const color = _sc.colors[id] || '#7c5cbf';
+      const free  = _scConnFree(id, date);
+      return `<div class="sc-avail-dot ${free ? 'free' : 'busy'}" style="background:${color};"></div>`;
+    }).join('');
+
+    const labelMap = {
+      'all-free': '✓ All free',
+      'partial':  'Partial',
+      'all-busy': 'All busy',
+      'me-only':  "I'm free",
+    };
+
+    return `<div class="sc-date-row${sel ? ' selected' : ''}${avail === 'all-busy' && selIds.length ? ' all-busy-row' : ''}"
+        onclick="scSelectDate('${date}')">
+      <div class="sc-date-main">
+        <div class="sc-date-day">${main}</div>
+        ${rel ? `<div class="sc-date-rel">${rel}</div>` : ''}
+      </div>
+      <div class="sc-date-avail">
+        ${dots}
+        <span class="sc-avail-label ${avail}">${labelMap[avail]}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Scroll selected row into view
+  setTimeout(() => {
+    listEl.querySelector('.sc-date-row.selected')?.scrollIntoView({ block: 'nearest' });
+  }, 50);
+}
+
+function scSelectDate(date) {
+  _sc.selDate = date;
+  document.getElementById('sc-clash-bar-when').innerHTML = '';
+  renderSCWhen();
+}
+
+function scFindNewDate() {
+  _sc.selDate = _scBestDate();
+  document.getElementById('sc-clash-bar-when').innerHTML = '';
+  renderSCWhen();
+}
+
+// ── WHAT ──────────────────────────────────────────────────────────────────────
+
+function renderSCWhat() {
+  const optsEl = document.getElementById('sc-what-opts');
+  if (!optsEl || !_sc.data) return;
+
+  const suggestions = _sc.data.suggestions || [];
+  optsEl.innerHTML  = suggestions.slice(0, 3).map((s, i) => {
+    const sel = _sc.selWhat && !_sc.selWhat.custom && _sc.selWhat.title === s.title;
+    return `<div class="sc-what-card${sel ? ' selected' : ''}" onclick="scSelectWhat(${i})">
+      <div class="sc-what-emoji">${s.emoji}</div>
+      <div class="sc-what-title">${s.title}</div>
+    </div>`;
+  }).join('');
+}
+
+function scSelectWhat(idx) {
+  const s = _sc.data?.suggestions[idx];
+  if (!s) return;
+  _sc.selWhat      = { emoji: s.emoji, title: s.title, category: s.category };
+  _sc.whatInputVal = '';
+  document.getElementById('sc-what-input').value = '';
+  renderSCWhat();
+}
+
+function scWhatInputChange(val) {
+  _sc.whatInputVal = val;
+  if (val.trim()) {
+    _sc.selWhat = { custom: val.trim() };
+    document.querySelectorAll('.sc-what-card.selected').forEach(el => el.classList.remove('selected'));
+  } else {
+    _sc.selWhat = null;
+  }
+}
+
+// ── Review ────────────────────────────────────────────────────────────────────
+
+function openSCReview() {
+  if (_sc.selWho.size === 0) { showToast('Pick at least one person'); return; }
+  if (!_sc.selDate)          { showToast('Pick a date');              return; }
+  _sc.removed = new Set();
+  renderSCReview();
+  document.getElementById('sc-review-overlay').classList.add('open');
+}
+
+function renderSCReview() {
+  const body = document.getElementById('sc-review-body');
+  if (!body || !_sc.data) return;
+
+  const whatText = _sc.selWhat
+    ? (_sc.selWhat.custom || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim())
+    : '';
+  const { main: dateMain } = _scFmtDate(_sc.selDate);
+  const selected = _sc.data.who.filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
+
+  // Group message
+  const names     = selected.map(w => w.name.split(' ')[0]).join(', ');
+  const soft      = _scIsSoftInvite();
+  const groupMsg  = soft
+    ? `hey ${names}! thinking about getting together${whatText ? ` — ${whatText}` : ''} sometime, anyone up for it?`
+    : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`;
+
+  const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
+
+  // Build per-person URLs first (avoid innerHTML href corruption)
+  const personData = selected.map(w => {
+    const msg  = _scPersonMsg(w, whatText, dateMain, soft);
+    let num    = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
+    if (num && num.startsWith('0')) num = num.slice(1);
+    const url  = num
+      ? `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    return { w, url };
+  });
+
+  body.innerHTML = `
+    <div class="sc-review-summary">
+      <div class="sc-review-summary-line">📅 <strong>${dateMain}</strong></div>
+      ${whatText ? `<div class="sc-review-summary-line">✨ <strong>${whatText}</strong></div>` : ''}
+      <div class="sc-review-summary-line">👥 ${selected.map(w => w.name).join(', ')}</div>
+      ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:6px;">
+        Sending as a soft invite — no fixed date set yet</div>` : ''}
+    </div>
+    <a class="sc-group-wa" id="sc-group-wa-link" href="#" target="_blank" rel="noopener">
+      📲 Send group WhatsApp
+    </a>
+    <div class="sc-divider">
+      <div class="sc-divider-line"></div>
+      <div class="sc-divider-text">or send individually</div>
+      <div class="sc-divider-line"></div>
+    </div>
+    <div id="sc-review-people">
+      ${personData.map((pd, i) => {
+        const color = _sc.colors[pd.w.id] || '#7c5cbf';
+        return `<div class="sc-review-person" id="sc-rp-${pd.w.id}">
+          <div class="sc-review-avatar" style="background:${color};">${pd.w.initial}</div>
+          <div class="sc-review-name">${pd.w.name}</div>
+          <a class="sc-review-wa-btn" data-wi="${i}" href="#" target="_blank" rel="noopener">📱</a>
+          <button class="sc-review-remove" onclick="scRemovePerson('${pd.w.id}')" title="Remove">×</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="sc-add-person-btn" onclick="scAddPersonFromReview()">＋ Add someone</button>`;
+
+  // Assign hrefs via DOM (not innerHTML) to preserve encoding
+  body.querySelector('#sc-group-wa-link').href = groupWaUrl;
+  personData.forEach((pd, i) => {
+    const a = body.querySelector(`[data-wi="${i}"]`);
+    if (a) a.href = pd.url;
+  });
+}
+
+function _scIsSoftInvite() {
+  if (!_sc.selDate || !_sc.data) return false;
+  const { diff } = _scFmtDate(_sc.selDate);
+  if (diff < 14) return false;
+  // Soft if no one from WHO is free on the selected date
+  return [..._sc.selWho].every(id => !_scConnFree(id, _sc.selDate));
+}
+
+function _scPersonMsg(w, whatText, dateMain, soft) {
+  const first = w.name.split(' ')[0];
+  if (soft) return `hey ${first}! thinking about doing something${whatText ? ` — ${whatText}` : ''} sometime, you up for it?`;
+  return whatText
+    ? `hey ${first}! ${whatText} — ${dateMain}? you in?`
+    : `hey ${first}! up for doing something on ${dateMain}?`;
+}
+
+function scRemovePerson(connId) {
+  _sc.removed.add(connId);
+  renderSCReview();
+}
+
+function scAddPersonFromReview() {
+  closeSCReview();
+  _sc.expanded = true;
+  renderSCWho();
+  document.getElementById('sc-body')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function finalizeSC() {
+  const selected = (_sc.data?.who || []).filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
+  const invitees = selected.map(w => ({ userId: w.userId, name: w.name, phone: w.phone || null }));
+  const whatText = _sc.selWhat
+    ? (_sc.selWhat.custom || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim())
+    : 'Outing';
+
+  if (invitees.length > 0 && _sc.selDate) {
+    fetch(`/api/outings?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees }),
+    }).then(r => { if (r.ok) loadOutings(); });
+  }
+
+  closeSCAll();
+  showToast('✓ Plans saved!');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function updateBnBadges() {
   const connPending = document.getElementById('notif-dot')?.classList.contains('hidden') ? 0 : 1;
