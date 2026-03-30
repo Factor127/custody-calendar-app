@@ -52,8 +52,9 @@ router.post('/auth/request', async (req, res) => {
   const subject = isNew ? 'Set up your Spontany calendar' : 'Your Spontany login link';
   const html = `
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#202124;">
-      <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;">📅 Spontany</h1>
-      <p style="color:#5f6368;margin:0 0 28px;font-size:14px;">Shared custody calendar</p>
+      <img src="${(process.env.BASE_URL||'')+'/icon-192.png'}" width="48" height="48" alt="Spontany" style="border-radius:12px;display:block;margin:0 0 10px;">
+      <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0c0c15;">Spontany</h1>
+      <p style="color:#5f6368;margin:0 0 28px;font-size:14px;">Finds your moments — before they slip away.</p>
 
       <p style="margin:0 0 20px;">
         ${isNew
