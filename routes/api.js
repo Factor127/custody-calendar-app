@@ -1642,6 +1642,88 @@ router.post('/connections/:id/preferences', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── GET /api/contacts/google/matches — fetch Google contacts + match to users ──
+router.get('/contacts/google/matches', async (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  if (!me.google_access_token) {
+    return res.status(403).json({ error: 'no_google_token', message: 'Google contacts not connected' });
+  }
+
+  // Refresh token if expired
+  let accessToken = me.google_access_token;
+  if (me.google_token_expiry && new Date(me.google_token_expiry) < new Date()) {
+    if (!me.google_refresh_token) {
+      return res.status(403).json({ error: 'token_expired', message: 'Please reconnect Google contacts' });
+    }
+    try {
+      const r = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id:     process.env.GOOGLE_CLIENT_ID,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          refresh_token: me.google_refresh_token,
+          grant_type:    'refresh_token',
+        }),
+      });
+      const tok = await r.json();
+      if (!tok.access_token) throw new Error('refresh failed');
+      accessToken = tok.access_token;
+      const expiry = new Date(Date.now() + (tok.expires_in || 3600) * 1000).toISOString();
+      q.updateGoogleTokens.run(accessToken, me.google_refresh_token, expiry, me.id);
+    } catch(e) {
+      return res.status(403).json({ error: 'token_expired', message: 'Please reconnect Google contacts' });
+    }
+  }
+
+  // Fetch contacts from Google People API (paginate up to 2000)
+  const allPhones = [];
+  let pageToken = null;
+  do {
+    const url = new URL('https://people.googleapis.com/v1/people/me/connections');
+    url.searchParams.set('personFields', 'names,phoneNumbers');
+    url.searchParams.set('pageSize', '1000');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+
+    const r = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!r.ok) return res.status(502).json({ error: 'google_api_error' });
+    const data = await r.json();
+
+    for (const person of (data.connections || [])) {
+      const name = person.names?.[0]?.displayName || 'Unknown';
+      for (const ph of (person.phoneNumbers || [])) {
+        allPhones.push({ name, phone: ph.value });
+      }
+    }
+    pageToken = data.nextPageToken || null;
+  } while (pageToken);
+
+  // Match each phone against registered users
+  const seen = new Set();
+  const matches = [];
+  for (const { name: contactName, phone } of allPhones) {
+    const normalized = normalizePhone(phone);
+    if (!normalized) continue;
+    const user = q.getUserByPhone.get(normalized);
+    if (!user || user.id === me.id || seen.has(user.id)) continue;
+    seen.add(user.id);
+    const existing = q.getConnectionBetween.get(me.id, user.id, user.id, me.id);
+    matches.push({
+      contactName,
+      user: { id: user.id, name: user.name, photo: user.photo || null },
+      connection: existing
+        ? { id: existing.id, status: existing.status }
+        : null,
+    });
+  }
+
+  res.json({ matches, total_contacts: allPhones.length });
+});
+
 // ── GET /api/users/find-by-phone — look up a registered user by phone number ──
 // Returns a safe public profile only. Never returns token, email, or sensitive fields.
 router.get('/users/find-by-phone', (req, res) => {

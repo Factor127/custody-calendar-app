@@ -24,6 +24,9 @@ try { db.exec('ALTER TABLE users ADD COLUMN work_schedule TEXT'); } catch(e) { /
 try { db.exec('ALTER TABLE users ADD COLUMN age INTEGER'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN relationship_status TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN photo TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN google_access_token TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN google_refresh_token TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN google_token_expiry TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
@@ -280,6 +283,7 @@ const q = {
   getUserByGoogleId:   db.prepare('SELECT * FROM users WHERE google_id = ?'),
   getUserByPhone:      db.prepare("SELECT id, name, photo, mobile FROM users WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(mobile,' ',''),'-',''),'(',''),')',''),'.','') = ?"),
   updateGoogleId:      db.prepare('UPDATE users SET google_id = ? WHERE id = ?'),
+  updateGoogleTokens:  db.prepare('UPDATE users SET google_access_token = ?, google_refresh_token = ?, google_token_expiry = ? WHERE id = ?'),
   // Legacy single-tenant helpers (kept for backward compat)
   getOwner:            db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
   ownerExists:         db.prepare("SELECT 1 AS found FROM users WHERE role = 'owner' LIMIT 1"),

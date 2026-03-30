@@ -136,6 +136,76 @@ router.get('/auth/verify/:token', (req, res) => {
   );
 });
 
+// ── GET /auth/google/contacts ─────────────────────────────────────────────────
+// Initiates a Google OAuth flow specifically for reading contacts.
+// Requires the user to already be logged in (token in query).
+router.get('/auth/google/contacts', (req, res) => {
+  const token = req.query.token;
+  if (!token) return res.redirect('/');
+  const user = q.getUserByToken.get(token);
+  if (!user) return res.redirect('/');
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return res.status(500).send('Google is not configured.');
+
+  const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const redirectUri = `${base}/auth/google/contacts/callback`;
+
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  redirectUri,
+    response_type: 'code',
+    scope:         'https://www.googleapis.com/auth/contacts.readonly',
+    access_type:   'offline',
+    prompt:        'consent',          // force refresh_token to be returned
+    state:         token,              // carry user token through the flow
+  });
+
+  res.redirect(`${GOOGLE_AUTH_URL}?${params}`);
+});
+
+// ── GET /auth/google/contacts/callback ───────────────────────────────────────
+router.get('/auth/google/contacts/callback', async (req, res) => {
+  const { code, state: userToken, error } = req.query;
+  if (error || !code || !userToken) return res.redirect('/connections?contacts_error=1');
+
+  const user = q.getUserByToken.get(userToken);
+  if (!user) return res.redirect('/');
+
+  try {
+    const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const redirectUri = `${base}/auth/google/contacts/callback`;
+
+    // Exchange code for tokens
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id:     process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri:  redirectUri,
+        grant_type:    'authorization_code',
+      }),
+    });
+    const tokens = await tokenRes.json();
+    if (!tokens.access_token) throw new Error('No access token');
+
+    const expiry = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+    q.updateGoogleTokens.run(
+      tokens.access_token,
+      tokens.refresh_token || user.google_refresh_token || null,
+      expiry,
+      user.id
+    );
+
+    res.redirect(`/connections?token=${userToken}&contacts_imported=1`);
+  } catch(e) {
+    console.error('Contacts OAuth error:', e.message);
+    res.redirect(`/connections?token=${userToken}&contacts_error=1`);
+  }
+});
+
 // ── GET /auth/google ──────────────────────────────────────────────────────────
 // Redirect user to Google's consent screen
 router.get('/auth/google', (req, res) => {
