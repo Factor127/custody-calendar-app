@@ -1621,37 +1621,6 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 </div>
 
-<div id="social-calendar-section" style="display:none;max-width:680px;margin:0 auto 8px;">
-  <div class="social-cal-title">Who's free when you're free</div>
-  <div id="next-free-banner" style="display:none;font-size:12px;font-weight:700;color:#e65100;background:rgba(230,81,0,0.08);padding:6px 14px;border-radius:8px;margin:0 0 10px;text-align:center;"></div>
-  <div class="strip-wrap">
-    <button class="strip-nav" id="strip-prev" onclick="scrollStrip(-7)" title="Earlier">‹</button>
-    <div id="day-strip"></div>
-    <button class="strip-nav" id="strip-next" onclick="scrollStrip(7)" title="Later">›</button>
-  </div>
-  <div class="strip-range" id="strip-range"></div>
-</div>
-
-<!-- Locked: show when no social connections -->
-<div id="social-calendar-locked" style="display:none;max-width:680px;margin:24px auto;padding:28px 20px;background:linear-gradient(135deg,#fff8f0,#fef3e2);border:1.5px solid #ffcc80;border-radius:16px;text-align:center;box-shadow:0 4px 20px rgba(255,152,0,0.1);">
-  <div class="social-cal-title" style="margin-bottom:6px;">Who's free when you're free</div>
-  <div class="social-cal-sub" style="margin-bottom:16px;">Invite a friend or partner to see when you match</div>
-  <div style="font-size:13px;color:#6d4c41;margin-bottom:14px;">Invite a friend or partner to see your matching free time</div>
-  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-    <button class="btn btn-primary btn-sm" onclick="openInviteModal();selectInviteType('partner')">❤️ Invite partner</button>
-    <button class="btn btn-outline btn-sm" onclick="openInviteModal();selectInviteType('friend')" style="border-color:#ffcc80;color:#bf360c;">👋 Invite friend</button>
-  </div>
-</div>
-
-<!-- Compact custody card — shows mini calendar, click opens full modal -->
-<div class="cal-compact-card" onclick="openCalendarModal()">
-  <div class="mini-card-header">
-    <div id="compact-month-label" class="mini-card-month">📅 Custody Calendar</div>
-    <div class="mini-card-edit">View &amp; Edit →</div>
-  </div>
-  <div id="mini-cal-grid" class="mini-cal-wrap"></div>
-  <div id="compact-balance-label" class="mini-card-footer">Loading…</div>
-</div>
 
 <!-- Notification / Activity side panel -->
 <div id="notif-panel">
