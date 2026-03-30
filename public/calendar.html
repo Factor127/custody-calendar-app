@@ -1472,7 +1472,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-body { flex:1; overflow-y:auto; padding:0 0 8px; }
     .sc-ingredient { padding:16px 20px 0; }
     .sc-ing-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin-bottom:10px; }
-    .sc-footer { padding:12px 20px; border-top:1px solid var(--border); flex-shrink:0; }
+    .sc-footer { padding:10px 20px 14px; border-top:1px solid var(--border); flex-shrink:0; }
+    .sc-summary { font-size:12px; color:var(--muted); text-align:center; margin-bottom:8px; min-height:16px; line-height:1.4; }
+    .sc-summary span { color:var(--text); font-weight:600; }
     /* WHO */
     .sc-who-row { display:flex; gap:8px; flex-wrap:wrap; }
     .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:6px 4px; border-radius:12px; transition:background .15s; min-width:52px; user-select:none; }
@@ -1948,6 +1950,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       </div>
     </div>
     <div class="sc-footer">
+      <div class="sc-summary" id="sc-summary"></div>
       <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;" onclick="openSCReview()">Review →</button>
     </div>
   </div>
@@ -5893,6 +5896,7 @@ async function openSmartCrafter(prefillDate, prefillOpp) {
   renderSCWho();
   renderSCWhen();
   renderSCWhat();
+  renderSCSummary();
 }
 
 function closeSC() {
@@ -6012,6 +6016,7 @@ function scToggleWho(connId) {
   renderSCWhen();
   // Only re-render WHAT if user hasn't typed a custom value
   if (!_sc.whatInputVal) renderSCWhat();
+  renderSCSummary();
 }
 
 function scExpandWho() {
@@ -6080,6 +6085,7 @@ function scSelectDate(date) {
   _sc.selDate = date;
   document.getElementById('sc-clash-bar-when').innerHTML = '';
   renderSCWhen();
+  renderSCSummary();
 }
 
 function scFindNewDate() {
@@ -6111,6 +6117,7 @@ function scSelectWhat(idx) {
   _sc.whatInputVal = '';
   document.getElementById('sc-what-input').value = '';
   renderSCWhat();
+  renderSCSummary();
 }
 
 function scWhatInputChange(val) {
@@ -6121,6 +6128,36 @@ function scWhatInputChange(val) {
   } else {
     _sc.selWhat = null;
   }
+  renderSCSummary();
+}
+
+// ── Footer summary ────────────────────────────────────────────────────────────
+
+function renderSCSummary() {
+  const el = document.getElementById('sc-summary');
+  if (!el) return;
+  const parts = [];
+
+  // WHO
+  const names = (_sc.data?.who || [])
+    .filter(w => _sc.selWho.has(w.id))
+    .map(w => w.name.split(' ')[0]);
+  if (names.length) parts.push(`<span>${names.join(', ')}</span>`);
+
+  // WHEN
+  if (_sc.selDate) {
+    const { main } = _scFmtDate(_sc.selDate);
+    parts.push(`<span>${main}</span>`);
+  }
+
+  // WHAT
+  if (_sc.selWhat) {
+    const label = _sc.selWhat.custom
+      || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim();
+    if (label) parts.push(`<span>${label}</span>`);
+  }
+
+  el.innerHTML = parts.length ? parts.join(' · ') : '';
 }
 
 // ── Review ────────────────────────────────────────────────────────────────────
