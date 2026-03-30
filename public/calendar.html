@@ -1527,16 +1527,24 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-cal-nav-btn:hover { background:var(--surface); color:var(--text); }
     .sc-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; width:100%; align-content:start; }
     .sc-cal-dow { font-size:8px; font-weight:700; text-transform:uppercase; color:var(--muted); text-align:center; padding-bottom:4px; }
-    .sc-cal-day { aspect-ratio:1; min-width:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:var(--muted); border-radius:6px; cursor:default; transition:all .12s; position:relative; overflow:hidden; }
-    .sc-cal-day.free { color:var(--text); font-weight:600; cursor:pointer; }
-    .sc-cal-day.free:hover { background:rgba(124,92,191,0.15); }
-    .sc-cal-day.free::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--orange); }
-    .sc-cal-day.conn-free { background:rgba(34,197,94,0.08); }
-    .sc-cal-day.selected { background:var(--accent) !important; color:white !important; font-weight:700; box-shadow:0 0 8px rgba(124,92,191,0.5); cursor:pointer; }
-    .sc-cal-day.selected::after { display:none; }
+    .sc-cal-day { aspect-ratio:1; min-width:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:var(--muted); border-radius:6px; cursor:default; transition:background .12s, box-shadow .12s, outline .12s; position:relative; overflow:hidden; }
+    /* I'm free — orange frame, no dot */
+    .sc-cal-day.free { color:var(--text); font-weight:600; cursor:pointer; outline:1.5px solid var(--orange); outline-offset:-1px; }
+    .sc-cal-day.free:hover { background:rgba(124,92,191,0.12); }
+    /* Selected — glow + pulse, no solid fill */
+    @keyframes sc-day-pulse {
+      0%,100% { box-shadow:0 0 0 2px rgba(124,92,191,0.7), 0 0 10px rgba(124,92,191,0.35); }
+      50%      { box-shadow:0 0 0 4px rgba(124,92,191,0.2), 0 0 22px rgba(124,92,191,0.65); }
+    }
+    .sc-cal-day.selected { background:rgba(124,92,191,0.22) !important; color:white !important; font-weight:700; cursor:pointer; outline:2px solid var(--accent) !important; outline-offset:-1px; animation:sc-day-pulse 1.8s ease-in-out infinite; }
     .sc-cal-day.today:not(.selected) { outline:1.5px solid rgba(124,92,191,0.45); outline-offset:-1px; }
-    .sc-cal-day.injected { color:var(--text); cursor:pointer; font-weight:600; }
-    .sc-cal-day.injected::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--muted); }
+    .sc-cal-day.injected { color:var(--text); cursor:pointer; font-weight:600; outline:1px dashed var(--muted); outline-offset:-1px; }
+    /* Legend */
+    .sc-cal-legend { display:flex; align-items:center; gap:10px; margin-top:7px; padding-top:6px; border-top:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+    .sc-cal-legend-item { display:flex; align-items:center; gap:4px; font-size:9px; color:var(--muted); white-space:nowrap; }
+    .sc-leg-swatch { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+    /* WHO chip free badge */
+    .sc-free-badge { font-size:8px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:.04em; line-height:1; margin-top:-1px; }
     .sc-clash-bar { background:rgba(251,191,36,0.12); border:1px solid #fbbf24; border-radius:8px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; flex-shrink:0; }
     .sc-clash-action { background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
 
@@ -1990,6 +1998,17 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
           <button class="sc-cal-nav-btn" onclick="scCalNext()">›</button>
         </div>
         <div class="sc-cal-grid" id="sc-cal-grid"></div>
+        <div class="sc-cal-legend">
+          <div class="sc-cal-legend-item">
+            <span class="sc-leg-swatch" style="outline:1.5px solid var(--orange);outline-offset:-1px;"></span> I'm free
+          </div>
+          <div class="sc-cal-legend-item">
+            <span class="sc-leg-swatch" style="background:rgba(34,197,94,0.28);"></span> Others free
+          </div>
+          <div class="sc-cal-legend-item">
+            <span class="sc-leg-swatch" style="outline:2px solid var(--accent);outline-offset:-1px;background:rgba(124,92,191,0.22);"></span> Selected
+          </div>
+        </div>
       </div>
     </div>
 
@@ -6053,18 +6072,17 @@ function renderSCWho() {
     const photoLayer = w.photo
       ? `<img src="${w.photo}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove();">`
       : '';
-    // Availability dot: green=free, red=busy, nothing=unknown
-    const availDot = _sc.selDate && (_sc.data.connFreeDays[w.id]||[]).length > 0
-      ? `<span style="position:absolute;bottom:0;right:0;width:8px;height:8px;border-radius:50%;
-           background:${tier===0?'#22c55e':'#ef4444'};border:1.5px solid var(--cell-bg);"></span>`
+    // "free" label only for confirmed-free contacts on the selected date
+    const freeBadge = (_sc.selDate && tier === 0)
+      ? `<div class="sc-free-badge">free</div>`
       : '';
     return `<div class="sc-who-chip${sel ? ' selected' : ''}" onclick="scToggleWho('${w.id}')">
       <div class="sc-who-avatar">
         ${w.initial}${photoLayer}
         <div class="sc-who-check">✓</div>
-        ${availDot}
       </div>
       <div class="sc-who-name">${w.name.split(' ')[0]}</div>
+      ${freeBadge}
     </div>`;
   }).join('') + (rest > 0 ? `
     <div class="sc-who-more" onclick="scExpandWho()">
@@ -6132,32 +6150,39 @@ function renderSCCal() {
   let html = DOW.map(d => `<div class="sc-cal-dow">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) html += `<div></div>`;
 
+  // Pre-compute per-day: how many selected connections with data are free?
+  const withData = selIds.filter(id => (_sc.data?.connFreeDays[id] || []).length > 0);
+  const unknownCount = selIds.length - withData.length;  // connections with no calendar data
+
   for (let day = 1; day <= daysInM; day++) {
     const ds   = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const past = ds < todayStr;
-    const isSel   = _sc.selDate === ds;
-    const isFree  = myFree.has(ds);
-    const isToday = ds === todayStr;
-    // injected date (from unfurl) not in free days
-    const isInjected = _sc.selDate === ds && !isFree;
+    const isSel      = _sc.selDate === ds;
+    const isFree     = myFree.has(ds);
+    const isToday    = ds === todayStr;
+    const isInjected = isSel && !isFree;
 
-    // Connection availability tint: any selected conn free on this day?
-    // Connections with no calendar data are "unknown" — treat optimistically (potentially free)
-    const withData = selIds.filter(id => (_sc.data?.connFreeDays[id] || []).length > 0);
-    const connFree = selIds.length > 0 && (
-      withData.length === 0 ||                                        // all unknown → optimistic
-      withData.some(id => _scConnFree(id, ds))                       // at least one with data is free
-    );
+    // Brightness by free-contact count
+    // Known-free connections + unknown connections (optimistic) contribute to the tint
+    const knownFreeCount = withData.filter(id => (_sc.data?.connFreeDays[id] || []).includes(ds)).length;
+    const effectiveFree  = knownFreeCount + unknownCount;   // unknowns treated optimistically
+    const effectiveTotal = selIds.length;
+    const freeRatio      = effectiveTotal > 0 ? effectiveFree / effectiveTotal : 0;
+    // Map ratio → green tint alpha: 0=none, 1=max
+    const tintAlpha = freeRatio > 0 ? (0.06 + freeRatio * 0.28).toFixed(2) : 0;
+    const connStyle  = !isSel && tintAlpha > 0
+      ? `style="background:rgba(34,197,94,${tintAlpha});"`
+      : '';
 
     let cls = 'sc-cal-day';
-    if (isSel)       cls += ' selected';
-    else if (isFree) cls += ' free' + (connFree ? ' conn-free' : '');
-    else if (isInjected) cls += ' injected';
+    if (isSel)            cls += ' selected';
+    else if (isFree)      cls += ' free';
+    else if (isInjected)  cls += ' injected';
     if (isToday && !isSel) cls += ' today';
-    if (past && !isSel) cls += ' other-month';
+    if (past && !isSel)    cls += ' other-month';
 
     const click = (!past || isSel) ? `onclick="scSelectDate('${ds}')"` : '';
-    html += `<div class="${cls}" ${click}>${day}</div>`;
+    html += `<div class="${cls}" ${connStyle} ${click}>${day}</div>`;
   }
 
   grid.innerHTML = html;
