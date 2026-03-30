@@ -1587,8 +1587,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-confirm-summary { font-size:13px; font-weight:600; color:white; flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sc-confirm-summary.empty { color:rgba(255,255,255,0.5); font-weight:400; font-size:13px; }
     .sc-confirm-tick { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; font-size:13px; color:white; flex-shrink:0; }
-    .sc-save-later-btn { width:100%; margin-top:8px; padding:9px; background:none; border:none; border-radius:10px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--muted); transition:color .15s; }
-    .sc-save-later-btn:hover { color:var(--accent); }
+    .sc-confirm-btn.save-later-mode { background:var(--surface); border:1.5px solid var(--border); }
+    .sc-confirm-btn.save-later-mode .sc-confirm-summary { color:var(--text); }
+    .sc-confirm-btn.save-later-mode .sc-confirm-summary.empty { color:var(--muted); }
+    .sc-confirm-btn.save-later-mode .sc-confirm-tick { background:rgba(124,92,191,0.15); color:var(--accent); }
     /* Review sheet — same sizing rules as sc-sheet */
     .sc-review-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0);
@@ -2041,11 +2043,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     <!-- BOTTOM: summary + confirm -->
     <div class="sc-bottom">
-      <button class="sc-confirm-btn" id="sc-confirm-btn" onclick="openSCReview()">
-        <span class="sc-confirm-summary empty" id="sc-summary">Select who and when…</span>
-        <span class="sc-confirm-tick">→</span>
+      <button class="sc-confirm-btn save-later-mode" id="sc-confirm-btn" onclick="scConfirmOrSave()">
+        <span class="sc-confirm-summary empty" id="sc-summary">🔖 Save for later</span>
+        <span class="sc-confirm-tick">🔖</span>
       </button>
-      <button class="sc-save-later-btn" onclick="saveForLaterSC()">🔖 Save for later</button>
     </div>
   </div>
 </div>
@@ -6545,26 +6546,43 @@ function renderSCSummary() {
     if (label) parts.push(label);
   }
 
-  const ready = _sc.selWho.size > 0 && _sc.selDate;
-  if (parts.length) {
-    el.textContent = parts.join(' · ');
-    el.classList.toggle('empty', !ready);
-  } else {
-    el.textContent = 'Select who and when…';
-    el.classList.add('empty');
-  }
-  if (btn) btn.disabled = !ready;
+  const hasPeople = _sc.selWho.size > 0;
+  const ready     = hasPeople && _sc.selDate;
 
-  // Flip tick to ✓ when ready
-  const tick = btn?.querySelector('.sc-confirm-tick');
-  if (tick) tick.textContent = ready ? '✓' : '→';
+  if (hasPeople) {
+    // ── Review mode ──
+    btn?.classList.remove('save-later-mode');
+    if (btn) btn.disabled = !_sc.selDate;
+    if (parts.length) {
+      el.textContent = parts.join(' · ');
+      el.classList.toggle('empty', !_sc.selDate);
+    } else {
+      el.textContent = 'Pick a date…';
+      el.classList.add('empty');
+    }
+    const tick = btn?.querySelector('.sc-confirm-tick');
+    if (tick) tick.textContent = ready ? '✓' : '→';
+  } else {
+    // ── Save-for-later mode ──
+    btn?.classList.add('save-later-mode');
+    if (btn) btn.disabled = false;
+    const dateParts = parts.filter(p => p !== parts[0]); // exclude names (none anyway)
+    const hint = parts.length ? parts.join(' · ') : null;
+    el.textContent = hint ? `🔖 Save · ${hint}` : '🔖 Save for later';
+    el.classList.toggle('empty', !hint);
+    const tick = btn?.querySelector('.sc-confirm-tick');
+    if (tick) tick.textContent = '🔖';
+  }
 }
 
 // ── Review ────────────────────────────────────────────────────────────────────
 
+function scConfirmOrSave() {
+  if (_sc.selWho.size === 0) { saveForLaterSC(); } else { openSCReview(); }
+}
+
 function openSCReview() {
-  if (_sc.selWho.size === 0) { showToast('Pick at least one person'); return; }
-  if (!_sc.selDate)          { showToast('Pick a date');              return; }
+  if (!_sc.selDate) { showToast('Pick a date'); return; }
   _sc.removed = new Set();
   renderSCReview();
   document.getElementById('sc-review-overlay').classList.add('open');
