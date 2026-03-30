@@ -6023,7 +6023,15 @@ function _scFmtDate(dateStr) {
 function renderSCWho() {
   const row = document.getElementById('sc-who-row');
   if (!row || !_sc.data) return;
-  const all  = _sc.data.who;
+
+  // Sort by availability for the selected date (free → unknown → busy)
+  // Preserve original score order within each tier
+  const _availTier = (w) => {
+    const days = _sc.data.connFreeDays[w.id] || [];
+    if (!_sc.selDate || days.length === 0) return 1;   // no date or unknown
+    return days.includes(_sc.selDate) ? 0 : 2;          // 0=free, 2=busy
+  };
+  const all = [..._sc.data.who].sort((a, b) => _availTier(a) - _availTier(b));
 
   if (!all.length) {
     row.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:4px 0;">
@@ -6037,14 +6045,21 @@ function renderSCWho() {
   const rest = _sc.expanded ? 0   : all.length - 5;
 
   row.innerHTML = show.map(w => {
-    const sel = _sc.selWho.has(w.id);
+    const sel  = _sc.selWho.has(w.id);
+    const tier = _availTier(w);
     const photoLayer = w.photo
       ? `<img src="${w.photo}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove();">`
+      : '';
+    // Availability dot: green=free, red=busy, nothing=unknown
+    const availDot = _sc.selDate && (_sc.data.connFreeDays[w.id]||[]).length > 0
+      ? `<span style="position:absolute;bottom:0;right:0;width:8px;height:8px;border-radius:50%;
+           background:${tier===0?'#22c55e':'#ef4444'};border:1.5px solid var(--cell-bg);"></span>`
       : '';
     return `<div class="sc-who-chip${sel ? ' selected' : ''}" onclick="scToggleWho('${w.id}')">
       <div class="sc-who-avatar">
         ${w.initial}${photoLayer}
         <div class="sc-who-check">✓</div>
+        ${availDot}
       </div>
       <div class="sc-who-name">${w.name.split(' ')[0]}</div>
     </div>`;
@@ -6163,6 +6178,7 @@ function scSelectDate(date) {
   const d = new Date(date + 'T00:00:00');
   _scCalYear = d.getFullYear(); _scCalMonth = d.getMonth();
   document.getElementById('sc-clash-bar-when').innerHTML = '';
+  renderSCWho();   // re-sort WHO list by availability for the newly selected date
   renderSCCal();
   renderSCSummary();
 }
@@ -6264,6 +6280,7 @@ async function _scUnfurlUrl(url) {
       // Jump calendar to the month of the extracted date
       const _ud = new Date(data.date + 'T00:00:00');
       _scCalYear = _ud.getFullYear(); _scCalMonth = _ud.getMonth();
+      renderSCWho();   // re-sort WHO by availability for the event date
       renderSCWhen();
     }
 
