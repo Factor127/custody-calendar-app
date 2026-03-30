@@ -1649,14 +1649,20 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <div class="app-header">
-  <div class="app-header-brand">
+  <div class="app-header-brand" onclick="bnTab('home')" style="cursor:pointer;" title="Home">
     <img src="/logo.svg" class="app-logo" alt="Spontany">
     SPONTANY
   </div>
-  <div style="display:flex;align-items:center;gap:8px;">
+  <div style="display:flex;align-items:center;gap:10px;">
     <a id="connections-btn" href="#" style="display:none;">
       <span id="notif-dot" class="notif-dot hidden"></span>
     </a>
+    <!-- People button -->
+    <button onclick="bnTab('connections')" title="People"
+      style="background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px;position:relative;">
+      <span style="font-size:20px;line-height:1;">👥</span>
+      <div class="bn-badge hidden" id="bn-conn-badge" style="position:absolute;top:0;right:0;">0</div>
+    </button>
     <a id="profile-btn" href="#" class="profile-circle" title="My profile">
       <span id="profile-initial">?</span>
     </a>
@@ -4684,25 +4690,11 @@ function showToast(msg) {
 
 </div>
 
-<!-- ── Bottom navigation bar ── -->
-<nav class="bottom-nav" id="bottom-nav">
-
-  <button class="bn-item active" id="bn-home" onclick="bnTab('home')">
-    <div class="bn-icon">📅</div>
-    <div class="bn-label">Calendar</div>
-  </button>
-
-
+<!-- ── Bottom navigation bar — FAB only ── -->
+<nav class="bottom-nav" id="bottom-nav" style="justify-content:center;">
   <button class="bn-item bn-fab" onclick="openSmartCrafter()">
     <div class="bn-fab-inner">＋</div>
   </button>
-
-  <button class="bn-item" id="bn-connections" onclick="bnTab('connections')">
-    <div class="bn-icon">👥</div>
-    <div class="bn-label">People</div>
-    <div class="bn-badge hidden" id="bn-conn-badge">0</div>
-  </button>
-
 </nav>
 
 <script>
