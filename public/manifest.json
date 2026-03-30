@@ -1,0 +1,20 @@
+{
+  "name": "Spontany",
+  "short_name": "Spontany",
+  "description": "Coordinate your life with the people who matter",
+  "start_url": "/calendar.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c0c15",
+  "theme_color": "#7c5cbf",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
