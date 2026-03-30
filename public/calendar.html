@@ -1581,7 +1581,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* BOTTOM — summary + confirm */
     .sc-bottom { padding:10px 12px 14px; border-top:1px solid var(--border); flex-shrink:0; }
-    .sc-confirm-btn { width:100%; padding:13px 16px; background:var(--accent); border:none; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:inherit; transition:opacity .15s; }
+    .sc-confirm-btn { width:100%; padding:13px 16px; background:var(--accent); border:none; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:inherit; transition:opacity .15s; }
     .sc-confirm-btn:hover { opacity:0.88; }
     .sc-confirm-btn:disabled { opacity:0.4; cursor:default; }
     .sc-confirm-summary { font-size:13px; font-weight:600; color:white; flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -6001,8 +6001,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved) {
     _sc.colors[w.id] = existing?.color || _SC_COLOR_PALETTE[i % _SC_COLOR_PALETTE.length];
   });
 
-  // Auto-select top-ranked connection
-  if (_sc.data.who.length > 0) _sc.selWho.add(_sc.data.who[0].id);
+  // No auto-selection — user picks who they want
 
   // Auto-pick best date
   if (!_sc.selDate) _sc.selDate = _scBestDate();
@@ -6568,7 +6567,7 @@ function renderSCSummary() {
     if (btn) btn.disabled = false;
     const dateParts = parts.filter(p => p !== parts[0]); // exclude names (none anyway)
     const hint = parts.length ? parts.join(' · ') : null;
-    el.textContent = hint ? `🔖 Save · ${hint}` : '🔖 Save for later';
+    el.textContent = hint ? `🔖 Save to my calendar · ${hint}` : '🔖 Save to my calendar';
     el.classList.toggle('empty', !hint);
     const tick = btn?.querySelector('.sc-confirm-tick');
     if (tick) tick.textContent = '🔖';
