@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,6 +48,26 @@ app.use('/', pagesRouter);
 
 // ── Root: serve login/home page directly ──────────────────────────────────────
 app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'login.html')));
+
+// ── PWA icon PNGs — generated from icon.svg via sharp ────────────────────────
+const _iconCache = {};
+app.get('/icon-:size.png', async (req, res) => {
+  const size = parseInt(req.params.size);
+  if (![192, 512].includes(size)) return res.status(404).end();
+  try {
+    if (!_iconCache[size]) {
+      const sharp = require('sharp');
+      const svgBuf = fs.readFileSync(path.join(__dirname, 'public', 'icon.svg'));
+      _iconCache[size] = await sharp(svgBuf).resize(size, size).png().toBuffer();
+    }
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=604800'); // 1 week
+    res.send(_iconCache[size]);
+  } catch (e) {
+    console.error('Icon generation failed:', e.message);
+    res.status(500).end();
+  }
+});
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
