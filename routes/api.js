@@ -1206,15 +1206,16 @@ router.post('/outings', (req, res) => {
   if (!me) return;
 
   const { id: pregenId, date, message, invitees,
-          venue, venue_address, venue_place_id, opportunity_id } = req.body;
-  if (!Array.isArray(invitees) || invitees.length === 0) {
+          venue, venue_address, venue_place_id, opportunity_id, image_url, status } = req.body;
+  if (!Array.isArray(invitees) || (invitees.length === 0 && status !== 'saved')) {
     return res.status(400).json({ error: 'invitees required' });
   }
 
   const outingId = pregenId || uuidv4();
   q.createOuting.run(
     outingId, me.id, date, message || null,
-    venue || null, venue_address || null, venue_place_id || null, opportunity_id || null
+    venue || null, venue_address || null, venue_place_id || null, opportunity_id || null, image_url || null,
+    status || 'pending'
   );
 
   for (const inv of invitees) {

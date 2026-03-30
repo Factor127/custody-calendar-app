@@ -781,6 +781,25 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .plan-bubble.status-accepted { background: #4ade80; }
     .plan-bubble.status-my       { background: #7c5cbf; }
 
+    /* ── Event image fill + bubble ───────────────────────────────────── */
+    .cell-img-bg {
+      position: absolute; inset: 0; border-radius: 16px;
+      background-size: cover; background-position: center;
+      z-index: 0;
+    }
+    .cell-img-bg::after {
+      content: ''; position: absolute; inset: 0; border-radius: 16px;
+      background: rgba(10,8,20,0.52);
+    }
+    td.has-event-img > *:not(.cell-img-bg) { position: relative; z-index: 1; }
+    .cell-event-bubble {
+      position: absolute; top: -9px; right: -9px; z-index: 20;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--accent); border: 2px solid var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; line-height: 1;
+    }
+
     /* ── Cell avatar bubbles ──────────────────────────────────────────── */
     .cell-avatars {
       position: absolute; bottom: 6px; right: 6px;
@@ -2038,8 +2057,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       <button class="sc-close-btn" onclick="closeSCAll()">✕</button>
     </div>
     <div class="sc-review-body" id="sc-review-body"></div>
-    <div class="sc-footer">
+    <div class="sc-footer" style="display:flex;flex-direction:column;gap:8px;">
       <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="finalizeSC()">Done ✓</button>
+      <button class="btn btn-outline" style="width:100%;padding:10px;font-size:13px;color:var(--muted);" onclick="saveForLaterSC()">🔖 Save for later</button>
     </div>
   </div>
 </div>
@@ -2768,7 +2788,21 @@ function renderCalendar() {
     // Plan dot — purple bar if this date has a saved plan
     const planDot = planDates[dateStr] ? '<span class="plan-dot"></span>' : '';
 
-    html += `<td class="${tdClass}${actClass}" data-date="${dateStr}" onclick="handleDayClick(this)" onmouseenter="showCellHover(event,'${dateStr}')" onmouseleave="hideCellHover()">
+    // Event image: first outing on this day that has an image_url
+    const outingsOnDay = outingsByDate[dateStr] || [];
+    const savedOuting  = outingsOnDay.find(o => o.status === 'saved' && o.image_url);
+    const realOuting   = outingsOnDay.find(o => o.status !== 'saved' && o.image_url);
+    const imgOuting    = savedOuting || realOuting;
+    const eventImg     = imgOuting?.image_url || null;
+    const imgBg = eventImg ? `<div class="cell-img-bg" style="background-image:url('${eventImg.replace(/'/g,"\\'")}')"></div>` : '';
+    const eventBubble = outingsOnDay.some(o => o.status === 'saved')
+      ? `<div class="cell-event-bubble" title="Saved for later">🔖</div>`
+      : (eventImg ? `<div class="cell-event-bubble" title="Event planned">🎟</div>` : '');
+    const imgClass = eventImg ? ' has-event-img' : '';
+
+    html += `<td class="${tdClass}${actClass}${imgClass}" data-date="${dateStr}" onclick="handleDayClick(this)" onmouseenter="showCellHover(event,'${dateStr}')" onmouseleave="hideCellHover()">
+      ${imgBg}
+      ${eventBubble}
       <div class="cell-top-row">
         <div class="day-num">${day}</div>
         ${freeBadge}
@@ -2909,8 +2943,13 @@ function handleDayClick(cell) {
   if (suggestMode) { toggleSuggestDay(cell, date); return; }
   if (editMode === 'holiday') { cycleTag(cell, date); return; }
 
-  // Normal mode — open smart crafter pre-filled with the tapped date
-  openSmartCrafter(date);
+  // Normal mode — if there's a saved outing on this date, re-open crafter pre-filled
+  const savedOuting = (outingsByDate[date] || []).find(o => o.status === 'saved');
+  if (savedOuting) {
+    openSmartCrafter(null, null, savedOuting);
+  } else {
+    openSmartCrafter(date);
+  }
 }
 
 // ── Day management sheet ───────────────────────────────────────────────────
@@ -5889,28 +5928,30 @@ const _SC_DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const _SC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const _sc = {
-  data:         null,       // response from /api/smart-suggest
-  selWho:       new Set(),  // selected connection IDs
-  selDate:      null,       // 'YYYY-MM-DD'
-  selWhat:      null,       // {emoji,title,category} | {custom:'text'} | null
-  whatInputVal: '',
-  removed:      new Set(),  // connection IDs removed at review
-  colors:       {},         // connId → hex color
-  expanded:     false,      // WHO row expanded to show all
+  data:           null,       // response from /api/smart-suggest
+  selWho:         new Set(),  // selected connection IDs
+  selDate:        null,       // 'YYYY-MM-DD'
+  selWhat:        null,       // {emoji,title,category} | {custom:'text'} | null
+  whatInputVal:   '',
+  removed:        new Set(),  // connection IDs removed at review
+  colors:         {},         // connId → hex color
+  expanded:       false,      // WHO row expanded to show all
+  savedOutingId:  null,       // id of a 'saved' outing being converted
 };
 
 // ── Open / close ──────────────────────────────────────────────────────────────
 
-async function openSmartCrafter(prefillDate, prefillOpp) {
+async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved) {
   // Reset state
   _sc.data         = null;
   _sc.selWho       = new Set();
-  _sc.selDate      = prefillDate || null;
+  _sc.selDate      = prefillSaved?.date || prefillDate || null;
   _sc.selWhat      = prefillOpp ? { custom: prefillOpp } : null;
   _sc.whatInputVal = '';
-  _sc.removed      = new Set();
-  _sc.colors       = {};
-  _sc.expanded     = false;
+  _sc.removed        = new Set();
+  _sc.colors         = {};
+  _sc.expanded       = false;
+  _sc.savedOutingId  = null;
 
   // Reset calendar to current month
   const _now = new Date();
@@ -5971,6 +6012,31 @@ async function openSmartCrafter(prefillDate, prefillOpp) {
   renderSCWho();
   renderSCWhen();
   renderSCWhat();
+
+  // Restore saved outing state — pre-fill WHAT and show unfurl card
+  if (prefillSaved) {
+    _sc.savedOutingId = prefillSaved.id;
+    const title = prefillSaved.message || 'Saved event';
+    const url   = prefillSaved.venue || null;
+    const img   = prefillSaved.image_url || null;
+    _sc.selWhat      = { custom: title, url, unfurled: { title, image: img } };
+    _sc.whatInputVal = title;
+    const inp = document.getElementById('sc-what-input');
+    if (inp) inp.value = title;
+    const unfurlEl = document.getElementById('sc-what-unfurl');
+    if (unfurlEl) {
+      unfurlEl.style.display = '';
+      unfurlEl.innerHTML = `<div class="sc-what-unfurl">
+        ${img ? `<img class="sc-what-unfurl-img" src="${img}" onerror="this.style.display='none'">` : ''}
+        <div class="sc-what-unfurl-info">
+          <div class="sc-what-unfurl-title">${title}</div>
+          <div class="sc-what-unfurl-meta">${url ? new URL(url).hostname : 'Saved event'}</div>
+        </div>
+        <span class="sc-what-unfurl-close" onclick="_scClearUnfurl()">✕</span>
+      </div>`;
+    }
+  }
+
   renderSCSummary();
 }
 
@@ -6611,15 +6677,44 @@ async function finalizeSC() {
     : 'Outing';
 
   if (invitees.length > 0 && _sc.selDate) {
+    const imageUrl = _sc.selWhat?.unfurled?.image || null;
+    // If converting a saved outing, delete it first
+    if (_sc.savedOutingId) {
+      await fetch(`/api/outings/${_sc.savedOutingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+    }
     fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees }),
+      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl }),
     }).then(r => { if (r.ok) loadOutings(); });
   }
 
   closeSCAll();
   showToast('✓ Plans saved!');
+}
+
+async function saveForLaterSC() {
+  if (!_sc.selDate) { showToast('Pick a date first'); return; }
+  const whatText = _sc.selWhat
+    ? (_sc.selWhat.custom || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim())
+    : null;
+  const imageUrl = _sc.selWhat?.unfurled?.image || null;
+  const sourceUrl = _sc.selWhat?.url || null;
+  await fetch(`/api/outings?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      date: _sc.selDate,
+      message: whatText || 'Saved event',
+      invitees: [],
+      status: 'saved',
+      image_url: imageUrl,
+      venue: sourceUrl,
+    }),
+  });
+  await loadOutings();
+  closeSCAll();
+  showToast('🔖 Saved for later');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

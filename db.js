@@ -27,6 +27,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN photo TEXT'); } catch(e) { /* alread
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outings ADD COLUMN image_url TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
 // ── Gamification / contribution tracking ──────────────────────────────────────
 try { db.exec('ALTER TABLE opportunities ADD COLUMN view_count INTEGER DEFAULT 0'); } catch(e) {}
@@ -419,7 +420,7 @@ const q = {
   ),
   deleteActivity: db.prepare('DELETE FROM activities WHERE id = ?'),
 
-  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message, venue, venue_address, venue_place_id, opportunity_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'),
+  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message, venue, venue_address, venue_place_id, opportunity_id, image_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   getOutingsForUser:     db.prepare('SELECT * FROM outings WHERE created_by = ? ORDER BY date ASC'),
   getOutingById:         db.prepare('SELECT * FROM outings WHERE id = ?'),
   updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ?, venue_place_id = ?, venue_address = ? WHERE id = ?'),
