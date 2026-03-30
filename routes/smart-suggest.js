@@ -98,6 +98,7 @@ router.get('/smart-suggest', (req, res) => {
       userId:  conn.other_user_id,
       name:    conn.other_name,
       initial: (conn.other_name || '?')[0].toUpperCase(),
+      photo:   conn.other_photo || null,
       type:    relType,
       phone:   otherMobile || null,
       score:   Math.round(score * 100) / 100,
