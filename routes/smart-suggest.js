@@ -71,7 +71,7 @@ router.get('/smart-suggest', (req, res) => {
 
   // All approved connections
   const allConns = q.getAllConnectionsForUser
-    .all(me.id, me.id, me.id, me.id, me.id)
+    .all(me.id, me.id, me.id, me.id, me.id, me.id)   // 6 params: 4 CASE WHENs + 2 WHERE
     .filter(c => c.status === 'approved');
 
   // WHO — scored and ranked
