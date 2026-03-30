@@ -2223,10 +2223,13 @@ function renderStrip() {
       ? `<div style="font-size:8px;font-weight:700;color:#e65100;margin-top:1px;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px;">${actOnDay.title}</div>`
       : '';
 
-    // Bubble cluster — show up to 4 overlapping circles
-    const shownPeople = freePeople.slice(0, 4);
-    const bubbles = shownPeople.map(p => scAvatar(p, 13, 'border:1.5px solid var(--bg);')).join('');
-    const bubbleHtml = bubbles ? `<div class="bubble-cluster">${bubbles}</div>` : `<div style="min-height:16px;"></div>`;
+    // Bubble cluster — 1 face + count
+    const bubbleHtml = freePeople.length
+      ? `<div class="bubble-cluster">
+           ${scAvatar(freePeople[0], 16, 'border:1.5px solid var(--bg);')}
+           ${freePeople.length > 1 ? `<span style="font-size:10px;font-weight:700;color:var(--muted);margin-left:3px;">+${freePeople.length - 1}</span>` : ''}
+         </div>`
+      : `<div style="min-height:16px;"></div>`;
 
     const hasSocial = socialConnections.length > 0;
     const cardAttrs = hasSocial
@@ -2749,12 +2752,12 @@ function renderCalendar() {
       }).join('')
     }</div>` : '';
 
-    // Avatar bubbles: connections also free on this day
+    // Avatar bubbles: 1 face + count of others free on this day
     const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
-    const avatarHtml = freeFriends.length ? `<div class="cell-avatars">${
-      freeFriends.slice(0, 3).map(sc => scAvatar(sc, 14, 'border:1.5px solid var(--cell-bg);')).join('') +
-      (freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 3}</span>` : '')
-    }</div>` : '';
+    const avatarHtml = freeFriends.length ? `<div class="cell-avatars">
+      ${scAvatar(freeFriends[0], 16, 'border:1.5px solid var(--cell-bg);')}
+      ${freeFriends.length > 1 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 1}</span>` : ''}
+    </div>` : '';
 
     // Pulsing dot for incoming outings I haven't responded to
     const hasPendingInvite = (outingsByDate[dateStr] || []).some(o =>
