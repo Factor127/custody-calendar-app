@@ -5907,6 +5907,20 @@ async function openSmartCrafter(prefillDate, prefillOpp) {
     _sc.data = { who: [], myFreeDays: [], connFreeDays: {}, suggestions: [] };
   }
 
+  // Fallback: if API returned no WHO, build from already-loaded allConnections
+  if (!_sc.data.who || _sc.data.who.length === 0) {
+    const approved = (allConnections || []).filter(c => c.status === 'approved');
+    _sc.data.who = approved.map(c => ({
+      id:      c.id,
+      userId:  c.other_user_id,
+      name:    c.other_name || 'Unknown',
+      initial: (c.other_name || '?')[0].toUpperCase(),
+      type:    c.relationship_type || 'friend',
+      phone:   c.i_am_target ? c.requester_mobile : c.target_mobile,
+      score:   0.5,
+    }));
+  }
+
   // Assign colours — reuse existing socialConnections colours if available
   _sc.data.who.forEach((w, i) => {
     const existing = socialConnections.find(sc => sc.id === w.id);
