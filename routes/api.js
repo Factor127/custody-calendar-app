@@ -1384,40 +1384,81 @@ router.get('/places/autocomplete', async (req, res) => {
   }
 });
 
+// Decode HTML entities in OG tag content
+function _decodeEntities(s) {
+  if (!s) return s;
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g,          (_, d) => String.fromCharCode(parseInt(d, 10)))
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+}
+
+// Extract a YYYY-MM-DD from natural-language text like "on Monday, April 13 2026"
+// or "Thursday, 3 April 2025" or "April 3, 2025"
+function _parseDateFromText(text) {
+  if (!text) return null;
+  const M = { january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,
+              september:8,october:9,november:10,december:11,
+              jan:0,feb:1,mar:2,apr:3,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+  // "April 13 2026" / "April 13, 2026"
+  const r1 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})[\s,]+(\d{4})\b/i);
+  // "13 April 2026"
+  const r2 = text.match(/\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})\b/i);
+  let day, mon, year;
+  if (r1) { mon = M[r1[1].toLowerCase()]; day = +r1[2]; year = +r1[3]; }
+  else if (r2) { day = +r2[1]; mon = M[r2[2].toLowerCase()]; year = +r2[3]; }
+  else return null;
+  if (mon === undefined || !day || day > 31 || year < 2020) return null;
+  return `${year}-${String(mon + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+
 // GET /api/unfurl?url=... — extract title/date/description from any pasted link
 router.get('/unfurl', async (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   const url = (req.query.url || '').trim();
   if (!url.match(/^https?:\/\//i)) return res.status(400).json({ error: 'Invalid URL' });
 
+  // Facebook serves OG tags to its own crawler UA; force English descriptions
+  const isFacebook = /facebook\.com/i.test(url);
+  const headers = {
+    'User-Agent': isFacebook
+      ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+      : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
+
   try {
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Spontany/1.0)' },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(6000),
-    });
+    const resp = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(8000) });
     const html = await resp.text();
 
-    // Pull a meta tag value — handles both attribute orders
+    // Pull + decode a meta tag value — handles both attribute orders
     const meta = (prop) => {
-      const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"'<>]{1,400})["']`, 'i');
-      const re2 = new RegExp(`<meta[^>]+content=["']([^"'<>]{1,400})["'][^>]+(?:property|name)=["']${prop}["']`, 'i');
-      return (html.match(re1) || html.match(re2))?.[1]?.trim() || null;
+      const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"'<>]{1,600})["']`, 'i');
+      const re2 = new RegExp(`<meta[^>]+content=["']([^"'<>]{1,600})["'][^>]+(?:property|name)=["']${prop}["']`, 'i');
+      return _decodeEntities((html.match(re1) || html.match(re2))?.[1]?.trim() || null);
     };
 
-    const title       = meta('og:title') || meta('twitter:title')
-                      || html.match(/<title[^>]*>([^<]{1,200})<\/title>/i)?.[1]?.trim() || null;
+    let title = meta('og:title') || meta('twitter:title')
+              || _decodeEntities(html.match(/<title[^>]*>([^<]{1,200})<\/title>/i)?.[1]?.trim() || null);
+    // Reject generic error/login pages
+    const tl = (title || '').toLowerCase();
+    if (tl === 'facebook' || tl === 'error' || tl.includes('log in') || tl.includes('sign in')) title = null;
+
     const description = meta('og:description') || meta('description') || null;
     const image       = meta('og:image') || meta('twitter:image') || null;
     const siteName    = meta('og:site_name') || null;
 
-    // Date: OG → JSON-LD startDate → URL date pattern
+    // Date: structured tags first → JSON-LD → natural-language in description/title → URL pattern
     let date = meta('article:published_time') || meta('og:updated_time')
-             || meta('datePublished') || null;
+             || meta('event:start_time') || meta('datePublished') || null;
     if (!date) {
       const jld = html.match(/"startDate"\s*:\s*"([^"]{6,30})"/i);
       if (jld) date = jld[1];
     }
+    if (!date) date = _parseDateFromText(description); // e.g. "on Wednesday, June 10 2026"
+    if (!date) date = _parseDateFromText(title);
     if (!date) {
       const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
@@ -1427,6 +1468,7 @@ router.get('/unfurl', async (req, res) => {
       date = isNaN(d) ? null : d.toISOString().slice(0, 10);
     }
 
+    if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });
     res.json({ title, description, image, siteName, date, url });
   } catch (err) {
     res.status(500).json({ error: 'Could not fetch URL: ' + err.message });
