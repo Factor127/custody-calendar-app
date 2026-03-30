@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 
 const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
 const { sendCalendarInvite, sendEmail } = require('../utils/email');
+const { sendPush } = require('../utils/push');
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
@@ -342,6 +343,14 @@ router.post('/connections/request', (req, res) => {
   if (desiredDays) q.updateDesiredDuration.run(desiredDays, connId);
 
   res.json({ connection_id: connId, status: 'pending', message: 'Request sent to owner for approval' });
+
+  // Notify the owner that a connection request arrived
+  sendPush(owner.id, {
+    title: '👋 New connection request',
+    body:  `${partner.name} wants to connect with you on Spontany.`,
+    tag:   'connection-request',
+    url:   '/calendar.html',
+  });
 });
 
 // GET /api/connections/status?token= — partner polls their connection status
@@ -417,6 +426,14 @@ router.post('/connections/approve', (req, res) => {
   );
 
   res.json({ status: 'approved', duration_days, auto_renew: Boolean(auto_renew) });
+
+  // Notify the requester (partner) that they were approved
+  sendPush(conn.requester_id, {
+    title: '✅ You\'re connected!',
+    body:  `${user.name} approved your connection request. You can now see each other's availability.`,
+    tag:   'connection-approved',
+    url:   '/calendar.html',
+  });
 });
 
 // POST /api/connections/reject — either party can disconnect
@@ -1251,6 +1268,21 @@ router.post('/outings', (req, res) => {
   }
 
   res.json({ id: outingId, status: 'pending' });
+
+  // Notify registered invitees that they've been invited (non-saved outings only)
+  if (status !== 'saved' && invitees.length > 0 && date) {
+    const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    for (const inv of invitees) {
+      if (inv.userId) {
+        sendPush(inv.userId, {
+          title: `📅 ${me.name} invited you out`,
+          body:  `${message || 'An outing'} · ${dateLabel}`,
+          tag:   `outing-invite-${outingId}`,
+          url:   '/calendar.html',
+        });
+      }
+    }
+  }
 });
 
 // GET /api/outings — list my outings with invitees
@@ -1301,6 +1333,18 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
   }
   q.updateInviteeStatus.run(status, req.params.inviteeId);
   res.json({ ok: true, status });
+
+  // Notify outing creator when an invitee responds (accepted or declined)
+  if (isInvitee && (status === 'accepted' || status === 'declined')) {
+    const emoji = status === 'accepted' ? '🎉' : '😔';
+    const verb  = status === 'accepted' ? 'is in!'  : 'can\'t make it';
+    sendPush(outing.created_by, {
+      title: `${emoji} ${me.name} ${verb}`,
+      body:  outing.message || 'for your outing',
+      tag:   `outing-rsvp-${outing.id}`,
+      url:   '/calendar.html',
+    });
+  }
 });
 
 // GET /api/overlap — mutual free days between me and each approved connection

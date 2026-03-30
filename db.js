@@ -29,6 +29,16 @@ try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) {
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN image_url TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
+
+// ── Push subscriptions ────────────────────────────────────────────────────────
+db.exec(`CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT NOT NULL,
+  endpoint     TEXT NOT NULL UNIQUE,
+  p256dh       TEXT NOT NULL,
+  auth         TEXT NOT NULL,
+  created_at   TEXT DEFAULT (datetime('now'))
+)`);
 // ── Gamification / contribution tracking ──────────────────────────────────────
 try { db.exec('ALTER TABLE opportunities ADD COLUMN view_count INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE opportunities ADD COLUMN save_count INTEGER DEFAULT 0'); } catch(e) {}
@@ -438,6 +448,13 @@ const q = {
   `),
   updateInviteeStatus:   db.prepare('UPDATE outing_invitees SET status = ? WHERE id = ?'),
   getOutingInvitees:     db.prepare('SELECT * FROM outing_invitees WHERE outing_id = ?'),
+
+  // Push subscriptions
+  upsertPushSub:         db.prepare(`INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth)
+                           VALUES (?, ?, ?, ?, ?)
+                           ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id, p256dh=excluded.p256dh, auth=excluded.auth`),
+  deletePushSub:         db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?'),
+  getPushSubsForUser:    db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?'),
   getOutingsAsInvitee:   db.prepare(`
     SELECT o.*, oi.id AS invitee_record_id, oi.status AS my_invitee_status
     FROM outings o
