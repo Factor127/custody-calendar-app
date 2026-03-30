@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
-const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr } = require('../db');
+const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr, normalizePhone } = require('../db');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -1640,6 +1640,65 @@ router.post('/connections/:id/preferences', (req, res) => {
     q.upsertConnectionPrefs.run(newId, me.id, req.params.id, JSON.stringify(types));
   }
   res.json({ ok: true });
+});
+
+// ── GET /api/users/find-by-phone — look up a registered user by phone number ──
+// Returns a safe public profile only. Never returns token, email, or sensitive fields.
+router.get('/users/find-by-phone', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const raw = req.query.phone || '';
+  const normalized = normalizePhone(raw);
+  if (!normalized || normalized.replace(/\D/g, '').length < 7) {
+    return res.status(400).json({ error: 'Please enter a valid phone number' });
+  }
+
+  const user = q.getUserByPhone.get(normalized);
+  if (!user || user.id === me.id) return res.json({ found: false });
+
+  // Check if already connected
+  const existing = q.getConnectionBetween.get(me.id, user.id, user.id, me.id);
+  res.json({
+    found: true,
+    user:  { id: user.id, name: user.name, photo: user.photo || null },
+    connection: existing
+      ? { id: existing.id, status: existing.status, relationship_type: existing.relationship_type }
+      : null,
+  });
+});
+
+// ── POST /api/connections/request-friend — send a friend connection request ──
+// Unlike /connections/request (partner-only), any user can send a friend request.
+router.post('/connections/request-friend', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const { target_user_id } = req.body;
+  if (!target_user_id) return res.status(400).json({ error: 'target_user_id required' });
+
+  const target = q.getUserById.get(target_user_id);
+  if (!target) return res.status(404).json({ error: 'User not found' });
+  if (target.id === me.id) return res.status(400).json({ error: 'Cannot connect to yourself' });
+
+  // Check for existing connection
+  const existing = q.getConnectionBetween.get(me.id, target.id, target.id, me.id);
+  if (existing && (existing.status === 'pending' || existing.status === 'approved')) {
+    return res.json({ connection_id: existing.id, status: existing.status, already_exists: true });
+  }
+
+  const connId = uuidv4();
+  q.createFriendConnection.run(connId, me.id, target.id);
+
+  res.json({ connection_id: connId, status: 'pending' });
+
+  // Notify the target
+  sendPush(target.id, {
+    title: `👋 ${me.name} wants to connect`,
+    body:  'They found you on Spontany. Tap to see their request.',
+    tag:   `friend-request-${connId}`,
+    url:   '/connections',
+  });
 });
 
 module.exports = router;

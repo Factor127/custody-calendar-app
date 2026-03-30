@@ -270,6 +270,41 @@ input::placeholder { color:var(--muted); }
     </button>
   </div>
 
+  <!-- ── Find People ──────────────────────────────────────────────────── -->
+  <div id="find-people-section" style="margin:20px 0 8px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Find People</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;">
+
+      <!-- iOS Contacts picker (progressive enhancement) -->
+      <div id="contacts-picker-wrap" style="display:none;margin-bottom:12px;">
+        <button id="contacts-picker-btn" onclick="browseContacts()"
+          style="width:100%;padding:11px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <span>📒</span> Browse my contacts
+        </button>
+        <div style="display:flex;align-items:center;gap:8px;margin:12px 0;">
+          <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+          <span style="color:var(--muted);font-size:11px;">or enter a number</span>
+          <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+        </div>
+      </div>
+
+      <!-- Manual phone input -->
+      <div style="display:flex;gap:8px;">
+        <input id="find-phone-input" type="tel" placeholder="+1 555 000 0000" autocomplete="tel"
+          style="flex:1;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;"
+          oninput="clearFindResult()" onkeydown="if(event.key==='Enter')findByPhone()">
+        <button onclick="findByPhone()"
+          style="padding:11px 18px;background:var(--accent);border:none;border-radius:10px;color:white;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          Search
+        </button>
+      </div>
+
+      <!-- Result -->
+      <div id="find-result" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;">Your Network</div>
   <div class="conn-grid" id="connections-list">
     <div id="pref-card"></div>
     <p class="text-muted" id="connections-loading">Loading…</p>
@@ -691,6 +726,127 @@ async function skipPrefCard() {
     body: JSON.stringify({ skip: true })
   });
   document.getElementById('pref-card').classList.remove('visible');
+}
+
+// ── Find people by phone ──────────────────────────────────────────────────
+
+// Show iOS contacts picker button only when API is available
+if ('contacts' in navigator && 'ContactsManager' in window) {
+  document.getElementById('contacts-picker-wrap').style.display = 'block';
+}
+
+function clearFindResult() {
+  document.getElementById('find-result').innerHTML = '';
+}
+
+async function findByPhone() {
+  const raw = document.getElementById('find-phone-input').value.trim();
+  if (!raw) return;
+  const res = document.getElementById('find-result');
+  res.innerHTML = '<span style="color:var(--muted);font-size:13px;">Searching…</span>';
+
+  try {
+    const r = await fetch(`/api/users/find-by-phone?phone=${encodeURIComponent(raw)}&token=${MY_TOKEN}`);
+    const data = await r.json();
+
+    if (!data.found) {
+      res.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+          <span style="font-size:22px;">🔍</span>
+          <div>
+            <div style="font-size:13px;color:var(--text);">Not on Spontany yet</div>
+            <a href="https://wa.me/${raw.replace(/\D/g,'')}?text=${encodeURIComponent('Hey! I use Spontany to coordinate plans — join me: ' + window.location.origin)}"
+               target="_blank"
+               style="font-size:12px;color:#25d366;font-weight:600;text-decoration:none;">
+              📲 Invite via WhatsApp
+            </a>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const { user, connection } = data;
+    const connStatus = connection?.status;
+    let actionHtml = '';
+    if (!connection) {
+      actionHtml = `<button onclick="sendFriendRequest('${user.id}',this)"
+        style="padding:8px 16px;background:var(--accent);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;">
+        + Add
+      </button>`;
+    } else if (connStatus === 'pending') {
+      actionHtml = `<span style="font-size:12px;color:var(--muted);font-weight:600;">Pending…</span>`;
+    } else if (connStatus === 'approved') {
+      actionHtml = `<span style="font-size:12px;color:#4ade80;font-weight:600;">✓ Connected</span>`;
+    }
+
+    res.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <div style="width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:white;flex-shrink:0;overflow:hidden;">
+          ${user.photo ? `<img src="${user.photo}" style="width:100%;height:100%;object-fit:cover;">` : user.name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:700;color:var(--text);">${user.name}</div>
+          <div style="font-size:12px;color:var(--muted);">On Spontany</div>
+        </div>
+        ${actionHtml}
+      </div>`;
+  } catch(e) {
+    res.innerHTML = '<span style="color:var(--muted);font-size:13px;">Something went wrong — try again.</span>';
+  }
+}
+
+async function sendFriendRequest(targetUserId, btn) {
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const r = await fetch(`/api/connections/request-friend?token=${MY_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_user_id: targetUserId }),
+  });
+  if (r.ok) {
+    btn.textContent = 'Sent!';
+    btn.style.background = '#4ade80';
+    await loadConnections();
+  } else {
+    btn.disabled = false; btn.textContent = '+ Add';
+  }
+}
+
+async function browseContacts() {
+  try {
+    const contacts = await navigator.contacts.select(['tel'], { multiple: true });
+    if (!contacts.length) return;
+    // Flatten all phone numbers and search each
+    const phones = contacts.flatMap(c => c.tel || []);
+    const res = document.getElementById('find-result');
+    res.innerHTML = `<span style="color:var(--muted);font-size:13px;">Checking ${phones.length} numbers…</span>`;
+    const found = [];
+    for (const phone of phones) {
+      const r = await fetch(`/api/users/find-by-phone?phone=${encodeURIComponent(phone)}&token=${MY_TOKEN}`);
+      const d = await r.json();
+      if (d.found && !found.find(f => f.user.id === d.user.id)) found.push(d);
+    }
+    if (!found.length) {
+      res.innerHTML = '<span style="color:var(--muted);font-size:13px;">None of your contacts are on Spontany yet.</span>';
+      return;
+    }
+    res.innerHTML = found.map(({ user, connection }) => {
+      const connStatus = connection?.status;
+      const actionHtml = !connection
+        ? `<button onclick="sendFriendRequest('${user.id}',this)" style="padding:7px 14px;background:var(--accent);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;">+ Add</button>`
+        : connStatus === 'approved'
+          ? `<span style="font-size:12px;color:#4ade80;font-weight:600;">✓ Connected</span>`
+          : `<span style="font-size:12px;color:var(--muted);">Pending</span>`;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0;overflow:hidden;">
+          ${user.photo ? `<img src="${user.photo}" style="width:100%;height:100%;object-fit:cover;">` : user.name[0].toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0;font-size:14px;font-weight:600;">${user.name}</div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('Could not access contacts');
+  }
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────

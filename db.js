@@ -278,6 +278,7 @@ const q = {
   getUserById:         db.prepare('SELECT * FROM users WHERE id = ?'),
   getUserByEmail:      db.prepare('SELECT * FROM users WHERE email = ?'),
   getUserByGoogleId:   db.prepare('SELECT * FROM users WHERE google_id = ?'),
+  getUserByPhone:      db.prepare("SELECT id, name, photo, mobile FROM users WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(mobile,' ',''),'-',''),'(',''),')',''),'.','') = ?"),
   updateGoogleId:      db.prepare('UPDATE users SET google_id = ? WHERE id = ?'),
   // Legacy single-tenant helpers (kept for backward compat)
   getOwner:            db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
@@ -351,7 +352,13 @@ const q = {
     WHERE requester_id = ? AND target_id = ? AND status = 'approved'
     LIMIT 1
   `),
-  createConnection:  db.prepare('INSERT INTO connections (id, requester_id, target_id) VALUES (?, ?, ?)'),
+  createConnection:       db.prepare('INSERT INTO connections (id, requester_id, target_id) VALUES (?, ?, ?)'),
+  createFriendConnection: db.prepare("INSERT INTO connections (id, requester_id, target_id, relationship_type) VALUES (?, ?, ?, 'friend')"),
+  getConnectionBetween:   db.prepare(`
+    SELECT * FROM connections
+    WHERE (requester_id = ? AND target_id = ?) OR (requester_id = ? AND target_id = ?)
+    ORDER BY created_at DESC LIMIT 1
+  `),
   approveConnection: db.prepare(`
     UPDATE connections SET
       status             = 'approved',
@@ -807,8 +814,18 @@ function getNewWinsCount(userId, since) {
   return (q.getNewWinsCount.get(userId, userId, since) || {}).count || 0;
 }
 
+// Normalise a phone number to digits + leading + only (for matching)
+function normalizePhone(raw) {
+  if (!raw) return null;
+  const s = raw.trim();
+  // Keep leading + if present, strip everything else that isn't a digit
+  const prefix = s.startsWith('+') ? '+' : '';
+  return prefix + s.replace(/\D/g, '');
+}
+
 module.exports = {
   db, q,
+  normalizePhone,
   generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr,
   // Opportunity helpers
   createOpportunity, updateOpportunity, getOpportunityById,
