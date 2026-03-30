@@ -2429,6 +2429,8 @@ async function loadPartnerOverlay() {
 // A day is "my free day" if: I don't have kids (calendarDays[date] !== 'self')
 //   AND it's not a work day (based on MY_WORK_SCHEDULE).
 function renderTogetherCard() {
+  // Temporarily hidden — remove this return to restore
+  return;
   const section = document.getElementById('coordinate-section');
   const scroll  = document.getElementById('coordinate-scroll');
   if (!section || !scroll) return;
