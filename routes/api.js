@@ -1413,10 +1413,29 @@ function _parseDateFromText(text) {
   return `${year}-${String(mon + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
+// Return venue UTC offset in hours for cities found in text (daylight-saving adjusted).
+// Returns null if venue city not recognised.
+function _venueUtcOffset(text) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  // Eastern: NYC, Boston, Miami, Atlanta, Toronto, Washington DC, Philadelphia, Detroit
+  if (/new york|brooklyn|manhattan|bronx|queens|\bnyc\b|boston|miami|atlanta|washington\s*d\.?c|philadelphia|detroit|toronto|montreal|cleveland|pittsburgh|baltimore|charlotte|nashville|orlando|tampa|jacksonville/.test(t)) return -4; // EDT (Apr–Oct)
+  // Central: Chicago, Dallas, Houston, Minneapolis, New Orleans, Kansas City, St Louis
+  if (/chicago|dallas|houston|minneapolis|new orleans|kansas city|st[. ]+louis|milwaukee|memphis|oklahoma/.test(t)) return -5; // CDT
+  // Mountain: Denver, Phoenix, Salt Lake City
+  if (/denver|salt lake|phoenix|albuquerque|tucson/.test(t)) return -6; // MDT (Phoenix stays -7 MST all year but close enough)
+  // Pacific: LA, SF, Seattle, Portland, Las Vegas
+  if (/los angeles|hollywood|san francisco|san jose|san diego|seattle|portland|las vegas|sacramento|anaheim/.test(t)) return -7; // PDT
+  return null;
+}
+
 // GET /api/unfurl?url=... — extract title/date/description from any pasted link
 router.get('/unfurl', async (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   const url = (req.query.url || '').trim();
+  // co = client UTC offset in minutes EAST of UTC (Israel = 180, NY = -240)
+  // Sent as -new Date().getTimezoneOffset() from the browser
+  const clientOffsetMin = parseInt(req.query.co) || 0;
   if (!url.match(/^https?:\/\//i)) return res.status(400).json({ error: 'Invalid URL' });
 
   // Facebook serves OG tags to its own crawler UA; force English descriptions
@@ -1453,12 +1472,13 @@ router.get('/unfurl', async (req, res) => {
     // Date: structured tags first → JSON-LD → natural-language in description/title → URL pattern
     let date = meta('article:published_time') || meta('og:updated_time')
              || meta('event:start_time') || meta('datePublished') || null;
+    let textParsed = false; // true when date came from natural-language (venue local time, no tz info)
     if (!date) {
       const jld = html.match(/"startDate"\s*:\s*"([^"]{6,30})"/i);
       if (jld) date = jld[1];
     }
-    if (!date) date = _parseDateFromText(description); // e.g. "on Wednesday, June 10 2026"
-    if (!date) date = _parseDateFromText(title);
+    if (!date) { date = _parseDateFromText(description); if (date) textParsed = true; }
+    if (!date) { date = _parseDateFromText(title);       if (date) textParsed = true; }
     if (!date) {
       const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
@@ -1466,6 +1486,26 @@ router.get('/unfurl', async (req, res) => {
     if (date) {
       const d = new Date(date);
       date = isNaN(d) ? null : d.toISOString().slice(0, 10);
+    }
+
+    // Timezone correction for text-parsed dates (venue local time → client local date).
+    // e.g. "April 13" in NY is "April 14" for someone in Israel (UTC+3) since a
+    // typical 8 PM ET show is midnight UTC = 3 AM Israel time = April 14.
+    if (textParsed && date && clientOffsetMin !== 0) {
+      const venueOffsetHrs = _venueUtcOffset(description || title || '');
+      if (venueOffsetHrs !== null) {
+        // Compute UTC time of a typical 8 PM venue-local start
+        const localHour   = 20; // 8 PM assumed concert start
+        const utcHour     = localHour - venueOffsetHrs; // e.g. 20 -(-4) = 24 → next day 0:00
+        const extraDays   = Math.floor(utcHour / 24);
+        const utcHourMod  = utcHour % 24;
+        const utcDate     = new Date(date + 'T00:00:00Z');
+        utcDate.setUTCDate(utcDate.getUTCDate() + extraDays);
+        utcDate.setUTCHours(utcHourMod, 0, 0, 0);
+        // Shift UTC time by client offset to get client's local timestamp, then read date
+        const clientMs   = utcDate.getTime() + clientOffsetMin * 60 * 1000;
+        date = new Date(clientMs).toISOString().slice(0, 10);
+      }
     }
 
     if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });

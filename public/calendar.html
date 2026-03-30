@@ -6326,7 +6326,8 @@ async function _scUnfurlUrl(url) {
   box.style.display = 'block';
 
   try {
-    const res = await fetch(`/api/unfurl?url=${encodeURIComponent(url)}&token=${MY_TOKEN}`);
+    const _co = -new Date().getTimezoneOffset(); // minutes east of UTC (Israel = 180)
+    const res = await fetch(`/api/unfurl?url=${encodeURIComponent(url)}&token=${MY_TOKEN}&co=${_co}`);
     const data = await res.json();
     if (!res.ok || !data.title) throw new Error('no title');
 
