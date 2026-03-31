@@ -1560,7 +1560,7 @@ router.get('/unfurl', async (req, res) => {
   }
 });
 
-// PUT /api/outings/:id — update outing details (venue, time, status)
+// PUT /api/outings/:id — update outing details (title, venue, time, etc.)
 router.put('/outings/:id', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1568,15 +1568,240 @@ router.put('/outings/:id', (req, res) => {
   const outing = q.getOutingById.get(req.params.id);
   if (!outing || outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
 
-  const { venue, event_time, status, venue_place_id, venue_address } = req.body;
-  q.updateOutingDetails.run(
-    venue          || null,
-    event_time     || null,
-    status         || outing.status,
-    venue_place_id || null,
-    venue_address  || null,
-    req.params.id
-  );
+  const { title, venue, event_time, venue_address, status, venue_place_id } = req.body;
+
+  // If title/venue_address are being updated (full edit from event pane), use updateOutingFull
+  if (title !== undefined || venue_address !== undefined) {
+    q.updateOutingFull.run(
+      title !== undefined ? (title || null) : (outing.title || null),
+      venue !== undefined ? (venue || null) : (outing.venue || null),
+      event_time !== undefined ? (event_time || null) : (outing.event_time || null),
+      venue_address !== undefined ? (venue_address || null) : (outing.venue_address || null),
+      req.params.id,
+      me.id
+    );
+  } else {
+    q.updateOutingDetails.run(
+      venue          || null,
+      event_time     || null,
+      status         || outing.status,
+      venue_place_id || null,
+      venue_address  || null,
+      req.params.id
+    );
+  }
+
+  // Notify all invitees of the update
+  if (title !== undefined || venue !== undefined || event_time !== undefined || venue_address !== undefined) {
+    const invitees = q.getOutingInvitees.all(req.params.id);
+    for (const inv of invitees) {
+      if (inv.user_id && inv.user_id !== me.id) {
+        sendPush(inv.user_id, {
+          title: 'Plan updated',
+          body:  `${me.name} updated the details for ${outing.venue || outing.message || 'your plan'}`,
+          tag:   `outing-updated-${outing.id}`,
+          url:   '/calendar.html',
+        });
+      }
+    }
+  }
+
+  res.json({ ok: true });
+});
+
+// GET /api/outings/:id/detail — full outing detail with invitees + chat
+router.get('/outings/:id/detail', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingWithInvitees.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+
+  const invitees = q.getOutingInviteesWithUsers.all(req.params.id);
+
+  // Check access: must be creator or invitee
+  const isCreator  = outing.created_by === me.id;
+  const myInvitee  = invitees.find(i => i.user_id === me.id);
+  if (!isCreator && !myInvitee) return res.status(403).json({ error: 'Not authorized' });
+
+  // Get messages — non-creators only see public messages + their own private ones
+  const allMsgs = q.getOutingMessages.all(req.params.id);
+  const messages = isCreator
+    ? allMsgs
+    : allMsgs.filter(m => !m.is_private || m.sender_id === me.id);
+
+  res.json({
+    outing,
+    invitees: invitees.map(i => ({
+      id:           i.id,
+      user_id:      i.user_id,
+      name:         i.user_name || i.name,
+      photo:        i.user_photo || null,
+      status:       i.status,
+      decline_note: i.decline_note || null,
+    })),
+    messages: messages.map(m => ({
+      id:           m.id,
+      sender_id:    m.sender_id,
+      sender_name:  m.sender_name,
+      sender_photo: m.sender_photo || null,
+      message:      m.message,
+      is_private:   !!m.is_private,
+      message_type: m.message_type,
+      suggestion_id:m.suggestion_id || null,
+      created_at:   m.created_at,
+    })),
+    is_creator: isCreator,
+  });
+});
+
+// POST /api/outings/:id/messages — post a chat message
+router.post('/outings/:id/messages', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const isCreator = outing.created_by === me.id;
+  const isInvitee = invitees.some(i => i.user_id === me.id);
+  if (!isCreator && !isInvitee) return res.status(403).json({ error: 'Not authorized' });
+
+  const { message, is_private } = req.body;
+  if (!message || !message.trim()) return res.status(400).json({ error: 'message required' });
+
+  const msgId = uuidv4();
+  const isPriv = is_private ? 1 : 0;
+  q.createOutingMessage.run(msgId, req.params.id, me.id, message.trim(), isPriv, 'chat', null);
+
+  // Push notifications for public messages
+  if (!isPriv) {
+    const allParticipants = [outing.created_by, ...invitees.map(i => i.user_id).filter(Boolean)];
+    const unique = [...new Set(allParticipants)].filter(uid => uid !== me.id);
+    const eventName = outing.venue || outing.message || 'your plan';
+    for (const uid of unique) {
+      sendPush(uid, {
+        title: `${me.name} in ${eventName}`,
+        body:  message.trim().slice(0, 120),
+        tag:   `outing-chat-${req.params.id}`,
+        url:   '/calendar.html',
+      });
+    }
+  }
+
+  res.json({ ok: true, message: { id: msgId, sender_id: me.id, sender_name: me.name, message: message.trim(), is_private: !!isPriv, message_type: 'chat', created_at: new Date().toISOString() } });
+});
+
+// POST /api/outings/:id/rsvp — invitee responds (confirmed/maybe/declined/ignored)
+router.post('/outings/:id/rsvp', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const myInvitee = invitees.find(i => i.user_id === me.id);
+  if (!myInvitee) return res.status(403).json({ error: 'Not your invite' });
+
+  const { status, note } = req.body;
+  if (!['confirmed', 'maybe', 'declined', 'ignored'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  q.updateOutingRsvp.run(status, note || null, myInvitee.id);
+
+  // Notify creator
+  const eventName = outing.venue || outing.message || 'your plan';
+  const pushMsgs = {
+    confirmed: { title: `✅ ${me.name} is coming!`,       body: `Confirmed for ${eventName}` },
+    maybe:     { title: `🤔 ${me.name} might come`,       body: `Maybe for ${eventName}` },
+    declined:  { title: `❌ ${me.name} can't make it`,    body: note ? `Reason: ${note}` : eventName },
+    ignored:   { title: `${me.name} removed their invite`,body: eventName },
+  };
+  const pm = pushMsgs[status];
+  sendPush(outing.created_by, { ...pm, tag: `outing-rsvp-${outing.id}`, url: '/calendar.html' });
+
+  res.json({ ok: true });
+});
+
+// POST /api/outings/:id/suggest — invitee suggests a different time/place
+router.post('/outings/:id/suggest', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+  if (outing.created_by === me.id) return res.status(400).json({ error: 'Creator cannot suggest to their own outing' });
+
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const myInvitee = invitees.find(i => i.user_id === me.id);
+  if (!myInvitee) return res.status(403).json({ error: 'Not your invite' });
+
+  const { suggested_time, suggested_place } = req.body;
+  if (!suggested_time && !suggested_place) return res.status(400).json({ error: 'suggested_time or suggested_place required' });
+
+  const suggId = uuidv4();
+  q.createOutingSuggestion.run(suggId, req.params.id, me.id, suggested_time || null, suggested_place || null);
+
+  // System message in chat
+  const parts = [suggested_time, suggested_place].filter(Boolean);
+  const suggText = `${me.name} suggested: ${parts.join(' · ')}`;
+  const msgId = uuidv4();
+  q.createOutingMessage.run(msgId, req.params.id, me.id, suggText, 0, 'suggestion', suggId);
+
+  // Notify creator
+  const eventName = outing.venue || outing.message || 'your plan';
+  sendPush(outing.created_by, {
+    title: `${me.name} has a suggestion`,
+    body:  `For ${eventName}: ${parts.join(' · ')}`,
+    tag:   `outing-suggest-${outing.id}`,
+    url:   '/calendar.html',
+  });
+
+  res.json({ ok: true, suggestion_id: suggId });
+});
+
+// POST /api/outings/:id/suggestions/:suggId/accept — creator accepts a suggestion
+router.post('/outings/:id/suggestions/:suggId/accept', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+  if (outing.created_by !== me.id) return res.status(403).json({ error: 'Only creator can accept suggestions' });
+
+  const sugg = q.getOutingSuggestion.get(req.params.suggId);
+  if (!sugg || sugg.outing_id !== req.params.id) return res.status(404).json({ error: 'Suggestion not found' });
+
+  q.acceptOutingSuggestion.run(req.params.suggId);
+
+  // Apply the suggestion to the outing
+  const newTime  = sugg.suggested_time  || outing.event_time;
+  const newVenue = sugg.suggested_place || outing.venue;
+  q.updateOutingDetails.run(newVenue, newTime, outing.status, outing.venue_place_id, outing.venue_address, req.params.id);
+
+  // System message
+  const suggester = q.getUserById.get(sugg.suggester_id);
+  const sysMsg = `${me.name} accepted ${suggester?.name || 'their'}'s suggestion`;
+  const msgId = uuidv4();
+  q.createOutingMessage.run(msgId, req.params.id, me.id, sysMsg, 0, 'system', null);
+
+  // Notify all invitees
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const eventName = newVenue || outing.message || 'your plan';
+  for (const inv of invitees) {
+    if (inv.user_id && inv.user_id !== me.id) {
+      sendPush(inv.user_id, {
+        title: 'Plan updated',
+        body:  `${me.name} updated ${eventName}`,
+        tag:   `outing-updated-${outing.id}`,
+        url:   '/calendar.html',
+      });
+    }
+  }
+
   res.json({ ok: true });
 });
 

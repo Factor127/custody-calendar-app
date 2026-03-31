@@ -838,7 +838,11 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       border-top: 1px solid rgba(255,255,255,0.10);
       padding: 0 0 env(safe-area-inset-bottom,16px);
       transform: translateY(100%); transition: transform 0.28s cubic-bezier(.32,1,.22,1);
-      max-height: 80vh; overflow-y: auto;
+      max-height: 92vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    @media (min-width: 768px) {
+      .day-sheet-inner { max-width: 50vw; }
     }
     #day-sheet.open .day-sheet-inner { transform: translateY(0); }
     .day-sheet-handle {
@@ -893,6 +897,58 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.20);
       font-size: 12px; color: rgba(167,139,250,0.90); font-weight: 600;
     }
+
+    /* ── Pane navigation within day sheet ─────────────────────────────── */
+    .day-pane { display:none; flex-direction:column; height:100%; }
+    .day-pane.active { display:flex; }
+    .pane-header { display:flex; align-items:center; gap:10px; padding:14px 20px 10px; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .pane-back { background:none; border:none; color:var(--accent,#a78bfa); font-size:22px; cursor:pointer; padding:0; line-height:1; }
+    .pane-title { font-size:16px; font-weight:800; color:#eeeef8; flex:1; }
+
+    /* Section headers in day sheet */
+    .dss-heading { font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(238,238,248,0.35); padding:16px 16px 6px; }
+
+    /* RSVP row */
+    .rsvp-row { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; }
+    .rsvp-chip { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; background:rgba(255,255,255,0.06); font-size:12px; font-weight:600; color:rgba(238,238,248,0.6); }
+    .rsvp-chip.confirmed { background:rgba(74,222,128,0.15); color:#4ade80; }
+    .rsvp-chip.maybe { background:rgba(251,191,36,0.15); color:#fbbf24; }
+    .rsvp-chip.declined { background:rgba(239,68,68,0.12); color:#f87171; }
+
+    /* Chat */
+    .chat-list { flex:1; overflow-y:auto; padding:10px 16px; display:flex; flex-direction:column; gap:8px; }
+    .chat-msg { max-width:80%; }
+    .chat-msg.mine { align-self:flex-end; }
+    .chat-msg.theirs { align-self:flex-start; }
+    .chat-bubble { padding:8px 12px; border-radius:14px; font-size:13px; line-height:1.4; }
+    .chat-msg.mine .chat-bubble { background:rgba(124,92,191,0.35); color:#eeeef8; border-radius:14px 14px 4px 14px; }
+    .chat-msg.theirs .chat-bubble { background:rgba(255,255,255,0.08); color:#eeeef8; border-radius:14px 14px 14px 4px; }
+    .chat-msg-meta { font-size:10px; color:rgba(238,238,248,0.35); margin-top:2px; }
+    .chat-private-badge { font-size:9px; color:rgba(238,238,248,0.4); margin-left:4px; }
+    .chat-suggestion-bar { background:rgba(167,139,250,0.12); border:1px solid rgba(167,139,250,0.25); border-radius:12px; padding:10px 12px; margin:4px 0; font-size:12px; color:rgba(167,139,250,0.9); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .chat-input-row { display:flex; gap:8px; padding:10px 16px; border-top:1px solid rgba(255,255,255,0.07); }
+    .chat-input { flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.10); border-radius:20px; padding:9px 14px; color:#eeeef8; font-size:13px; font-family:inherit; outline:none; }
+    .chat-send-btn { background:rgba(124,92,191,0.5); border:none; border-radius:50%; width:36px; height:36px; color:white; font-size:16px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+
+    /* RSVP action buttons */
+    .rsvp-actions { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; }
+    .rsvp-action-btn { flex:1; min-width:80px; padding:11px 8px; border-radius:12px; border:none; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .rsvp-confirm { background:rgba(74,222,128,0.2); color:#4ade80; }
+    .rsvp-maybe { background:rgba(251,191,36,0.15); color:#fbbf24; }
+    .rsvp-later { background:rgba(255,255,255,0.07); color:rgba(238,238,248,0.5); }
+    .rsvp-decline { background:none; border:1.5px solid rgba(239,68,68,0.4)!important; color:#f87171; }
+    .rsvp-ignore { background:none; border:none!important; color:rgba(238,238,248,0.25); font-size:11px; font-weight:600; padding:6px; }
+
+    /* Suggest section */
+    .suggest-section { margin:10px 16px; background:rgba(167,139,250,0.07); border:1px solid rgba(167,139,250,0.2); border-radius:14px; padding:14px; }
+    .suggest-field { margin-bottom:10px; }
+    .suggest-label { font-size:11px; font-weight:700; color:rgba(238,238,248,0.5); margin-bottom:4px; text-transform:uppercase; letter-spacing:.06em; display:block; }
+    .suggest-select, .suggest-input { width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.10); border-radius:8px; padding:9px 12px; color:#eeeef8; font-size:13px; font-family:inherit; box-sizing:border-box; }
+
+    /* Decline note chips */
+    .decline-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .decline-chip { padding:6px 12px; border-radius:20px; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.12); font-size:12px; font-weight:600; color:rgba(238,238,248,0.6); cursor:pointer; }
+    .decline-chip.selected { background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#f87171; }
 
     /* ── Pending invite pulse on cell ────────────────────────────────── */
     .cell-pending-ring {
@@ -2072,7 +2128,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     </div>
     <div class="sc-review-body" id="sc-review-body"></div>
     <div class="sc-footer">
-      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="finalizeSC()">Done ✓</button>
+      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="finalizeSC()">Confirm invite ✓</button>
     </div>
   </div>
 </div>
@@ -2184,6 +2240,9 @@ function scAvatar(sc, size = 20, extraStyle = '') {
 let myOutings = [];
 let myIncomingOutings = [];
 const outingsByDate = {}; // date → outing[]
+let _dayPaneStack = [];   // navigation stack for day sheet panes
+let _currentOutingId = null;    // outing open in event pane
+let _currentInviteeId = null;   // invitee record id open in invite pane
 let inviteSelectedDate = null;
 let inviteSelectedPeople = new Set(); // set of connection userIds
 let inviteWaSentFlags = {};           // userId → true/false
@@ -2956,13 +3015,8 @@ function handleDayClick(cell) {
   if (suggestMode) { toggleSuggestDay(cell, date); return; }
   if (editMode === 'holiday') { cycleTag(cell, date); return; }
 
-  // Normal mode — if there's a saved outing on this date, re-open crafter pre-filled
-  const savedOuting = (outingsByDate[date] || []).find(o => o.status === 'saved');
-  if (savedOuting) {
-    openSmartCrafter(null, null, savedOuting);
-  } else {
-    openSmartCrafter(date);
-  }
+  // Normal mode — open the day sheet
+  openDaySheet(date);
 }
 
 // ── Day management sheet ───────────────────────────────────────────────────
@@ -2987,6 +3041,10 @@ async function openDaySheet(dateStr) {
   document.getElementById('day-sheet-date').textContent = dateLabel;
   document.getElementById('day-sheet-sub').textContent  = subParts.join(' · ');
 
+  // Reset pane stack to the list pane
+  _dayPaneStack = ['day-pane-list'];
+  _showPane('day-pane-list');
+
   renderDaySheetBody(dateStr, isFree, alsoFree, []);
   document.getElementById('day-sheet').classList.add('open');
 
@@ -3010,79 +3068,118 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
     html += `<div class="day-sheet-free-banner">✨ You & ${names} are both free</div>`;
   }
 
-  html += '<div class="day-sheet-plans">';
+  // ── Section 1: Planned (user is creator or accepted/confirmed invitee) ──────
+  const plannedOutings = dayOutings.filter(o => {
+    const incoming = myIncomingOutings.find(i => i.id === o.id);
+    if (incoming) return incoming.my_invitee_status !== 'pending' && incoming.my_invitee_status !== 'ignored';
+    // Created by me and not just saved
+    return myOutings.some(m => m.id === o.id) && o.status !== 'saved';
+  });
 
-  // Opportunity-based plans
-  for (const p of dayPlans) {
-    const icon = p.opp_type === 'venue' ? '📍' : '🎯';
-    const metaParts = [p.opp_location, p.opp_price_tier === 'free' ? 'Free entry' : p.opp_price_tier].filter(Boolean);
-    html += `<div class="day-plan-card" style="border-color:rgba(167,139,250,0.35);">
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span style="font-size:15px;">${icon}</span>
-        <span class="dpc-title">${p.opp_title || p.note || 'Saved plan'}</span>
-        ${p.opp_type ? `<span class="dpc-status planning">${p.opp_type}</span>` : ''}
-      </div>
-      ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
-      <div class="dpc-actions">
-        ${p.opp_url ? `<a href="${p.opp_url}" target="_blank" class="dpc-btn dpc-btn-accept" style="text-decoration:none;">Open link ↗</a>` : ''}
-        <button class="dpc-btn dpc-btn-cancel" onclick="removePlan('${p.id}','${dateStr}')">Remove</button>
-      </div>
-    </div>`;
-  }
+  // ── Section 2: Invites (pending incoming invites) ──────────────────────────
+  const pendingInvites = dayOutings.filter(o => {
+    const incoming = myIncomingOutings.find(i => i.id === o.id);
+    return incoming && incoming.my_invitee_status === 'pending';
+  });
 
-  if (dayOutings.length === 0 && dayPlans.length === 0) {
-    html += `<div style="padding:12px 0 4px;font-size:13px;color:rgba(238,238,248,0.40);text-align:center;">No plans yet for this day</div>`;
-  } else {
-    for (const o of dayOutings) {
+  // ── Section 3: Saved / Proposed ───────────────────────────────────────────
+  const savedOutings = dayOutings.filter(o => o.status === 'saved' && myOutings.some(m => m.id === o.id));
+
+  // ── Section 1 render ──────────────────────────────────────────────────────
+  if (plannedOutings.length > 0) {
+    html += `<div class="dss-heading">Planned</div>`;
+    html += '<div class="day-sheet-plans">';
+    for (const o of plannedOutings) {
       const incoming = myIncomingOutings.find(i => i.id === o.id);
-      const isPending  = incoming && incoming.my_invitee_status === 'pending';
-      const isAccepted = (incoming && incoming.my_invitee_status === 'accepted') || o.status === 'accepted';
-      const cardCls = isPending ? 'is-pending' : isAccepted ? 'is-accepted' : '';
-
-      const title   = o.venue || o.message || 'Plan';
+      const title = o.title || o.venue || o.message || 'Plan';
       const metaParts = [];
       if (o.event_time) metaParts.push(o.event_time);
       if (o.venue_address) metaParts.push(o.venue_address);
-      else if (o.venue && o.message) metaParts.push(o.message);
-      if (o.creator_name && incoming) metaParts.push('from ' + o.creator_name);
-
-      const statusLabel = isPending ? 'Pending' : isAccepted ? 'Accepted' : o.status === 'planning' ? 'Planning' : '';
-      const statusCls   = isPending ? 'pending' : isAccepted ? 'accepted' : 'planning';
-
-      let actions = '';
-      if (isPending) {
-        actions = `<div class="dpc-actions">
-          <button class="dpc-btn dpc-btn-accept"
-            onclick="respondToIncomingOuting('${o.id}','${incoming.invitee_record_id}','accepted');closeDaySheet();loadOutings()">✓ I'm in!</button>
-          <button class="dpc-btn dpc-btn-decline"
-            onclick="respondToIncomingOuting('${o.id}','${incoming.invitee_record_id}','declined');closeDaySheet();loadOutings()">Can't make it</button>
-        </div>`;
-      } else if (!incoming) {
-        // My own plan
-        actions = `<div class="dpc-actions">
-          <button class="dpc-btn dpc-btn-cancel"
-            onclick="cancelOuting('${o.id}','${dateStr}')">Cancel plan</button>
-        </div>`;
-      }
-
-      html += `<div class="day-plan-card ${cardCls}">
+      else if (o.venue && o.message && o.venue !== o.message) metaParts.push(o.message);
+      if (incoming?.creator_name) metaParts.push('with ' + incoming.creator_name);
+      const imgHtml = o.image_url ? `<img src="${o.image_url}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy">` : '';
+      html += `<div class="day-plan-card is-accepted" style="cursor:pointer;" onclick="openEventPane('${o.id}')">
+        ${imgHtml}
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
           <span class="dpc-title">${title}</span>
-          ${statusLabel ? `<span class="dpc-status ${statusCls}">${statusLabel}</span>` : ''}
+          <span class="dpc-status accepted">Confirmed</span>
         </div>
         ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
-        ${actions}
       </div>`;
     }
+    html += '</div>';
   }
 
-  html += '</div>';
+  // ── Section 2 render ──────────────────────────────────────────────────────
+  if (pendingInvites.length > 0) {
+    html += `<div class="dss-heading">Invites</div>`;
+    html += '<div class="day-sheet-plans">';
+    for (const o of pendingInvites) {
+      const incoming = myIncomingOutings.find(i => i.id === o.id);
+      const title = o.title || o.venue || o.message || 'Invite';
+      const metaParts = [];
+      if (o.event_time) metaParts.push(o.event_time);
+      if (o.creator_name || incoming?.creator_name) metaParts.push('from ' + (o.creator_name || incoming.creator_name));
+      const imgHtml = o.image_url ? `<img src="${o.image_url}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy">` : '';
+      html += `<div class="day-plan-card is-pending" style="cursor:pointer;" onclick="openInvitePane('${o.id}','${incoming.invitee_record_id}')">
+        ${imgHtml}
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+          <span class="dpc-title">${title}</span>
+          <span class="dpc-status pending">Pending</span>
+        </div>
+        ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
+      </div>`;
+    }
+    html += '</div>';
+  }
 
-  // Add plan button
+  // ── Section 3 render ──────────────────────────────────────────────────────
+  const hasSaved = savedOutings.length > 0 || dayPlans.length > 0;
+  if (hasSaved) {
+    html += `<div class="dss-heading">Saved / Proposed</div>`;
+    html += '<div class="day-sheet-plans">';
+    for (const o of savedOutings) {
+      const title = o.title || o.venue || o.message || 'Saved plan';
+      const metaParts = [];
+      if (o.event_time) metaParts.push(o.event_time);
+      const imgHtml = o.image_url ? `<img src="${o.image_url}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy">` : '';
+      html += `<div class="day-plan-card" style="border-color:rgba(167,139,250,0.30);cursor:pointer;" onclick="closeDaySheet();openSmartCrafter(null,null,${JSON.stringify(o).replace(/"/g,'&quot;')})">
+        ${imgHtml}
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+          <span class="dpc-title">${title}</span>
+          <span class="dpc-status planning">Saved</span>
+        </div>
+        ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
+      </div>`;
+    }
+    for (const p of dayPlans) {
+      const icon = p.opp_type === 'venue' ? '📍' : '🎯';
+      const metaParts = [p.opp_location, p.opp_price_tier === 'free' ? 'Free entry' : p.opp_price_tier].filter(Boolean);
+      html += `<div class="day-plan-card" style="border-color:rgba(167,139,250,0.35);">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:15px;">${icon}</span>
+          <span class="dpc-title">${p.opp_title || p.note || 'Saved plan'}</span>
+          ${p.opp_type ? `<span class="dpc-status planning">${p.opp_type}</span>` : ''}
+        </div>
+        ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
+        <div class="dpc-actions">
+          ${p.opp_url ? `<a href="${p.opp_url}" target="_blank" class="dpc-btn dpc-btn-accept" style="text-decoration:none;">Open link ↗</a>` : ''}
+          <button class="dpc-btn dpc-btn-cancel" onclick="removePlan('${p.id}','${dateStr}')">Remove</button>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // ── Section 4: Start something ────────────────────────────────────────────
+  html += `<div class="dss-heading">Start something</div>`;
   html += `<div class="day-sheet-add-row">
-    <button class="day-sheet-add-btn" onclick="closeDaySheet();openOutingModal('${dateStr}')">🗓 Plan with a friend</button>
-    <button class="day-sheet-add-btn" onclick="closeDaySheet();openBrowseSheet()">🎯 Browse events</button>
+    <button class="day-sheet-add-btn" onclick="closeDaySheet();openSmartCrafter('${dateStr}')">+ Plan something new</button>
   </div>`;
+
+  if (plannedOutings.length === 0 && pendingInvites.length === 0 && !hasSaved) {
+    html = (html || '') + '';
+  }
 
   document.getElementById('day-sheet-body').innerHTML = html;
 }
@@ -3090,6 +3187,9 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
 function closeDaySheet(e) {
   if (e && e.target !== document.getElementById('day-sheet')) return;
   document.getElementById('day-sheet').classList.remove('open');
+  _dayPaneStack = [];
+  _currentOutingId = null;
+  _currentInviteeId = null;
 }
 
 async function removePlan(planId, dateStr) {
@@ -3145,6 +3245,371 @@ function openOutingModal(prefillDate) {
   openPlanWizard(prefillDate);
 }
 let _prefillOutingDate = null;
+
+// ── Day sheet pane navigation ─────────────────────────────────────────────────
+
+function _showPane(paneId) {
+  ['day-pane-list','day-pane-event','day-pane-invite'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+  });
+  const target = document.getElementById(paneId);
+  if (target) { target.classList.add('active'); target.style.display = 'flex'; }
+}
+
+function dayPaneBack() {
+  _dayPaneStack.pop();
+  const prev = _dayPaneStack[_dayPaneStack.length - 1] || 'day-pane-list';
+  _showPane(prev);
+}
+
+async function openEventPane(outingId) {
+  _currentOutingId = outingId;
+  _dayPaneStack.push('day-pane-event');
+  _showPane('day-pane-event');
+  document.getElementById('event-pane-title').textContent = 'Loading…';
+  document.getElementById('event-pane-body').innerHTML = '<div style="padding:20px;text-align:center;color:rgba(238,238,248,0.4);font-size:13px;">Loading…</div>';
+  document.getElementById('event-edit-btn').style.display = 'none';
+  document.getElementById('chat-input-area').style.display = 'flex';
+  document.getElementById('private-toggle-row').style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/outings/${outingId}/detail?token=${MY_TOKEN}`);
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    renderEventPane(data);
+  } catch(e) {
+    document.getElementById('event-pane-body').innerHTML = '<div style="padding:20px;text-align:center;color:rgba(238,238,248,0.4);font-size:13px;">Could not load event.</div>';
+  }
+}
+
+function renderEventPane(data) {
+  const { outing, invitees, messages, is_creator } = data;
+  const title = outing.title || outing.venue || outing.message || 'Plan';
+  document.getElementById('event-pane-title').textContent = title;
+  if (is_creator) document.getElementById('event-edit-btn').style.display = '';
+  if (!is_creator) document.getElementById('private-toggle-row').style.display = '';
+
+  let html = '';
+
+  // Image header
+  if (outing.image_url) {
+    html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
+  }
+
+  // Event details
+  html += `<div style="padding:14px 16px 6px;">`;
+  if (outing.event_time) html += `<div style="font-size:13px;color:rgba(238,238,248,0.55);margin-bottom:4px;">🕐 ${outing.event_time}</div>`;
+  if (outing.venue) {
+    const venueLink = outing.venue_address
+      ? `<a href="https://maps.google.com/?q=${encodeURIComponent(outing.venue_address)}" target="_blank" style="color:#a78bfa;text-decoration:none;">📍 ${outing.venue}</a>`
+      : `<span>📍 ${outing.venue}</span>`;
+    html += `<div style="font-size:13px;color:rgba(238,238,248,0.70);margin-bottom:4px;">${venueLink}</div>`;
+  }
+  html += `</div>`;
+
+  // RSVP row
+  if (invitees.length > 0) {
+    html += `<div class="rsvp-row">`;
+    for (const inv of invitees) {
+      const initial = (inv.name || '?').charAt(0).toUpperCase();
+      const statusIcons = { confirmed:'✓', maybe:'?', pending:'○', declined:'✗', ignored:'·' };
+      const icon = statusIcons[inv.status] || '○';
+      const cls  = inv.status === 'confirmed' ? 'confirmed' : inv.status === 'maybe' ? 'maybe' : inv.status === 'declined' ? 'declined' : '';
+      const declineTip = (is_creator && inv.status === 'declined' && inv.decline_note) ? ` title="${inv.decline_note}"` : '';
+      const ignoredStyle = inv.status === 'ignored' ? 'opacity:0.35;' : '';
+      html += `<div class="rsvp-chip ${cls}" style="${ignoredStyle}"${declineTip}>
+        <span style="width:20px;height:20px;border-radius:50%;background:rgba(124,92,191,0.35);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">${initial}</span>
+        ${inv.name} ${icon}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Inline edit form placeholder (hidden by default)
+  html += `<div id="event-edit-form" style="display:none;padding:12px 16px;background:rgba(255,255,255,0.04);margin:0 16px 8px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);">
+    <div style="font-size:11px;font-weight:700;color:rgba(238,238,248,0.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Edit plan</div>
+    <div class="suggest-field"><label class="suggest-label">Title</label><input class="suggest-input" id="edit-title" value="${(outing.title||'').replace(/"/g,'&quot;')}" placeholder="Title"></div>
+    <div class="suggest-field"><label class="suggest-label">Venue</label><input class="suggest-input" id="edit-venue" value="${(outing.venue||'').replace(/"/g,'&quot;')}" placeholder="Venue name"></div>
+    <div class="suggest-field"><label class="suggest-label">Time</label><input class="suggest-input" id="edit-event-time" value="${(outing.event_time||'').replace(/"/g,'&quot;')}" placeholder="e.g. 7:30 PM"></div>
+    <div class="suggest-field"><label class="suggest-label">Address</label><input class="suggest-input" id="edit-venue-address" value="${(outing.venue_address||'').replace(/"/g,'&quot;')}" placeholder="Full address"></div>
+    <button class="btn btn-primary" style="width:100%;padding:11px;font-size:13px;" onclick="saveOutingEdit('${outing.id}')">Save changes</button>
+  </div>`;
+
+  // Chat messages
+  html += `<div class="chat-list" id="chat-msg-list">`;
+  for (const m of messages) {
+    const isMine = m.sender_id === myUserId;
+    const cls = isMine ? 'mine' : 'theirs';
+    const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    if (m.message_type === 'suggestion') {
+      // Suggestion bar
+      const suggId = m.suggestion_id;
+      const acceptBtn = is_creator && suggId ? `<button onclick="acceptSuggestion('${outing.id}','${suggId}')" style="background:rgba(167,139,250,0.25);border:none;border-radius:8px;padding:5px 10px;color:#a78bfa;font-size:11px;font-weight:700;cursor:pointer;">Accept</button>` : '';
+      html += `<div class="chat-suggestion-bar"><span>${m.message}</span>${acceptBtn}</div>`;
+    } else if (m.message_type === 'system') {
+      html += `<div style="text-align:center;font-size:11px;color:rgba(238,238,248,0.35);padding:4px 0;">${m.message}</div>`;
+    } else {
+      const privBadge = m.is_private ? `<span class="chat-private-badge">🔒</span>` : '';
+      html += `<div class="chat-msg ${cls}">
+        <div class="chat-bubble">${m.message}${privBadge}</div>
+        <div class="chat-msg-meta ${isMine ? 'text-right' : ''}" style="${isMine?'text-align:right;':''}">
+          ${isMine ? '' : m.sender_name + ' · '}${time}
+        </div>
+      </div>`;
+    }
+  }
+  html += `</div>`;
+
+  document.getElementById('event-pane-body').innerHTML = html;
+
+  // Scroll chat to bottom
+  const chatList = document.getElementById('chat-msg-list');
+  if (chatList) chatList.scrollTop = chatList.scrollHeight;
+}
+
+function showEditForm() {
+  const form = document.getElementById('event-edit-form');
+  if (form) form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+async function saveOutingEdit(outingId) {
+  const title        = document.getElementById('edit-title')?.value || '';
+  const venue        = document.getElementById('edit-venue')?.value || '';
+  const event_time   = document.getElementById('edit-event-time')?.value || '';
+  const venue_address= document.getElementById('edit-venue-address')?.value || '';
+  try {
+    const res = await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, venue, event_time, venue_address }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Plan updated');
+    await openEventPane(outingId);
+  } catch(e) {
+    showToast('Could not save — try again');
+  }
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-message-input');
+  const msg = input?.value?.trim();
+  if (!msg || !_currentOutingId) return;
+  const isPrivate = document.getElementById('private-msg-toggle')?.checked || false;
+  input.value = '';
+  try {
+    const res = await fetch(`/api/outings/${_currentOutingId}/messages?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, is_private: isPrivate }),
+    });
+    if (!res.ok) throw new Error();
+    await openEventPane(_currentOutingId);
+  } catch(e) {
+    showToast('Could not send message');
+  }
+}
+
+async function acceptSuggestion(outingId, suggId) {
+  try {
+    const res = await fetch(`/api/outings/${outingId}/suggestions/${suggId}/accept?token=${MY_TOKEN}`, { method: 'POST' });
+    if (!res.ok) throw new Error();
+    showToast('Suggestion accepted — plan updated');
+    await openEventPane(outingId);
+  } catch(e) {
+    showToast('Could not accept suggestion');
+  }
+}
+
+async function openInvitePane(outingId, inviteeRecordId) {
+  _currentOutingId = outingId;
+  _currentInviteeId = inviteeRecordId;
+  _dayPaneStack.push('day-pane-invite');
+  _showPane('day-pane-invite');
+  document.getElementById('invite-pane-body').innerHTML = '<div style="padding:20px;text-align:center;color:rgba(238,238,248,0.4);font-size:13px;">Loading…</div>';
+
+  try {
+    const res = await fetch(`/api/outings/${outingId}/detail?token=${MY_TOKEN}`);
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    renderInvitePane(data, inviteeRecordId);
+  } catch(e) {
+    document.getElementById('invite-pane-body').innerHTML = '<div style="padding:20px;text-align:center;color:rgba(238,238,248,0.4);font-size:13px;">Could not load invite.</div>';
+  }
+}
+
+function renderInvitePane(data, inviteeRecordId) {
+  const { outing } = data;
+  const title = outing.title || outing.venue || outing.message || 'Invite';
+  let html = '';
+
+  // Image header
+  if (outing.image_url) {
+    html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
+  }
+
+  html += `<div style="padding:14px 16px 10px;">`;
+  html += `<div style="font-size:18px;font-weight:800;color:#eeeef8;margin-bottom:6px;">${title}</div>`;
+  if (outing.event_time) html += `<div style="font-size:13px;color:rgba(238,238,248,0.55);margin-bottom:3px;">🕐 ${outing.event_time}</div>`;
+  if (outing.venue) html += `<div style="font-size:13px;color:rgba(238,238,248,0.70);margin-bottom:3px;">📍 ${outing.venue}</div>`;
+  if (outing.venue_address) html += `<div style="font-size:12px;color:rgba(238,238,248,0.45);">${outing.venue_address}</div>`;
+  html += `</div>`;
+
+  // Suggest different section (collapsed by default)
+  html += `<div id="invite-suggest-toggle" style="padding:0 16px 8px;">
+    <button onclick="toggleSuggestSection()" style="background:none;border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:8px 14px;color:rgba(167,139,250,0.8);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Suggest different time or place</button>
+  </div>`;
+
+  html += `<div id="invite-suggest-section" style="display:none;">
+    <div class="suggest-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:800;color:#eeeef8;">Suggest an alternative</span>
+        <button onclick="toggleSuggestSection()" style="background:none;border:none;color:rgba(238,238,248,0.4);font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div class="suggest-field">
+        <label class="suggest-label">Time</label>
+        <select class="suggest-select" id="suggest-time-select">
+          <option value="">Any time</option>
+          <option value="Morning (9-12)">Morning (9-12)</option>
+          <option value="Afternoon (12-17)">Afternoon (12-17)</option>
+          <option value="Evening (17-21)">Evening (17-21)</option>
+          <option value="Night (21+)">Night (21+)</option>
+          ${[...Array(29)].map((_,i)=>{const h=9+Math.floor(i/2);const m=i%2===0?'00':'30';const label=`${String(h).padStart(2,'0')}:${m}`;return `<option value="${label}">${label}</option>`;}).join('')}
+        </select>
+      </div>
+      <div class="suggest-field">
+        <label class="suggest-label">Suggest a place</label>
+        <input class="suggest-input" id="suggest-place-input" type="text" placeholder="e.g. Central Park, a coffee shop…">
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:11px;font-size:13px;" onclick="sendSuggestion('${outing.id}')">Send suggestion</button>
+    </div>
+  </div>`;
+
+  // RSVP action buttons
+  html += `<div id="invite-rsvp-area">`;
+  html += `<div class="rsvp-actions">
+    <button class="rsvp-action-btn rsvp-confirm" onclick="submitRsvp('${outing.id}','${inviteeRecordId}','confirmed')">Confirm</button>
+    <button class="rsvp-action-btn rsvp-maybe" onclick="submitRsvp('${outing.id}','${inviteeRecordId}','maybe')">Maybe</button>
+    <button class="rsvp-action-btn rsvp-later" onclick="closeDaySheet()">Later</button>
+    <button class="rsvp-action-btn rsvp-decline" onclick="startDecline('${outing.id}','${inviteeRecordId}')">Decline</button>
+  </div>
+  <div style="text-align:center;padding-bottom:8px;">
+    <button class="rsvp-ignore" onclick="startIgnore('${outing.id}','${inviteeRecordId}')">Remove this invite</button>
+  </div>`;
+  html += `</div>`;
+
+  // Decline flow (hidden)
+  html += `<div id="invite-decline-flow" style="display:none;padding:12px 16px;">
+    <div style="font-size:13px;font-weight:700;color:#eeeef8;margin-bottom:10px;">Are you sure you want to decline?</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="rsvp-action-btn rsvp-later" style="flex:none;padding:9px 16px;" onclick="cancelDeclineFlow()">Cancel</button>
+      <button class="rsvp-action-btn rsvp-decline" style="flex:none;padding:9px 16px;" onclick="showDeclineNote('${outing.id}','${inviteeRecordId}')">Yes, decline</button>
+    </div>
+  </div>`;
+
+  html += `<div id="invite-decline-note" style="display:none;padding:12px 16px;">
+    <div style="font-size:12px;font-weight:700;color:rgba(238,238,248,0.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Reason (optional)</div>
+    <div class="decline-chips" id="decline-chips-row">
+      ${['Have something booked','Too far','Not feeling well','Family commitment','Work conflict','Another time'].map(r=>`<button class="decline-chip" onclick="toggleDeclineChip(this,'${r.replace(/'/g,"\\'")}')">${r}</button>`).join('')}
+    </div>
+    <textarea id="decline-note-input" class="suggest-input" rows="2" placeholder="Add a note…" style="margin-bottom:10px;resize:none;"></textarea>
+    <button class="btn btn-primary" style="width:100%;padding:11px;font-size:13px;background:rgba(239,68,68,0.2);color:#f87171;" onclick="sendDecline('${outing.id}','${inviteeRecordId}')">Send decline</button>
+  </div>`;
+
+  // Ignore flow (hidden)
+  html += `<div id="invite-ignore-flow" style="display:none;padding:12px 16px;">
+    <div style="font-size:13px;font-weight:700;color:#eeeef8;margin-bottom:10px;">Remove this invite from your list?</div>
+    <div style="display:flex;gap:8px;">
+      <button class="rsvp-action-btn rsvp-later" style="flex:none;padding:9px 16px;" onclick="cancelIgnoreFlow()">Cancel</button>
+      <button class="rsvp-action-btn rsvp-ignore" style="flex:none;padding:9px 16px;border:1px solid rgba(255,255,255,0.15)!important;font-size:13px!important;color:rgba(238,238,248,0.4)!important;" onclick="submitRsvp('${outing.id}','${inviteeRecordId}','ignored')">Ignore</button>
+    </div>
+  </div>`;
+
+  document.getElementById('invite-pane-body').innerHTML = html;
+}
+
+function toggleSuggestSection() {
+  const s = document.getElementById('invite-suggest-section');
+  if (s) s.style.display = s.style.display === 'none' ? '' : 'none';
+}
+
+function toggleDeclineChip(btn, reason) {
+  btn.classList.toggle('selected');
+  if (btn.classList.contains('selected')) {
+    const input = document.getElementById('decline-note-input');
+    if (input && !input.value.includes(reason)) {
+      input.value = (input.value ? input.value + ', ' : '') + reason;
+    }
+  }
+}
+
+function startDecline(outingId, inviteeId) {
+  document.getElementById('invite-rsvp-area').style.display = 'none';
+  document.getElementById('invite-decline-flow').style.display = '';
+}
+
+function cancelDeclineFlow() {
+  document.getElementById('invite-decline-flow').style.display = 'none';
+  document.getElementById('invite-decline-note').style.display = 'none';
+  document.getElementById('invite-rsvp-area').style.display = '';
+}
+
+function showDeclineNote(outingId, inviteeId) {
+  document.getElementById('invite-decline-flow').style.display = 'none';
+  document.getElementById('invite-decline-note').style.display = '';
+}
+
+async function sendDecline(outingId, inviteeId) {
+  const chipNotes = [...document.querySelectorAll('#decline-chips-row .decline-chip.selected')].map(c => c.textContent).join(', ');
+  const freeNote  = document.getElementById('decline-note-input')?.value?.trim() || '';
+  const note = freeNote || chipNotes || null;
+  await submitRsvp(outingId, inviteeId, 'declined', note);
+}
+
+function startIgnore(outingId, inviteeId) {
+  document.getElementById('invite-rsvp-area').style.display = 'none';
+  document.getElementById('invite-ignore-flow').style.display = '';
+}
+
+function cancelIgnoreFlow() {
+  document.getElementById('invite-ignore-flow').style.display = 'none';
+  document.getElementById('invite-rsvp-area').style.display = '';
+}
+
+async function submitRsvp(outingId, inviteeId, status, note) {
+  try {
+    const res = await fetch(`/api/outings/${outingId}/rsvp?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, note: note || null }),
+    });
+    if (!res.ok) throw new Error();
+    showToast(status === 'confirmed' ? "You're in!" : status === 'maybe' ? 'Marked as maybe' : status === 'declined' ? 'Declined' : 'Invite removed');
+    closeDaySheet();
+    await loadOutings();
+  } catch(e) {
+    showToast('Could not update — try again');
+  }
+}
+
+async function sendSuggestion(outingId) {
+  const suggestedTime  = document.getElementById('suggest-time-select')?.value || '';
+  const suggestedPlace = document.getElementById('suggest-place-input')?.value?.trim() || '';
+  if (!suggestedTime && !suggestedPlace) { showToast('Add a time or place suggestion'); return; }
+  try {
+    const res = await fetch(`/api/outings/${outingId}/suggest?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ suggested_time: suggestedTime || null, suggested_place: suggestedPlace || null }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Suggestion sent!');
+    toggleSuggestSection();
+  } catch(e) {
+    showToast('Could not send suggestion');
+  }
+}
 
 function toggleCustody(cell, date) {
   const current = calendarDays[date]?.owner || 'self';
@@ -4516,14 +4981,50 @@ function showToast(msg) {
 <div id="day-sheet" onclick="closeDaySheet(event)">
   <div class="day-sheet-inner" id="day-sheet-inner">
     <div class="day-sheet-handle"></div>
-    <div class="day-sheet-header">
-      <div>
-        <div class="day-sheet-date" id="day-sheet-date"></div>
-        <div class="day-sheet-sub" id="day-sheet-sub"></div>
+
+    <!-- Pane 1: Day list -->
+    <div id="day-pane-list" class="day-pane active">
+      <div class="day-sheet-header">
+        <div>
+          <div class="day-sheet-date" id="day-sheet-date"></div>
+          <div class="day-sheet-sub" id="day-sheet-sub"></div>
+        </div>
+        <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
       </div>
-      <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
+      <div id="day-sheet-body" style="overflow-y:auto;flex:1;"></div>
     </div>
-    <div id="day-sheet-body"></div>
+
+    <!-- Pane 2: Event detail + chat -->
+    <div id="day-pane-event" class="day-pane">
+      <div class="pane-header">
+        <button class="pane-back" onclick="dayPaneBack()">←</button>
+        <div class="pane-title" id="event-pane-title">Event</div>
+        <button id="event-edit-btn" style="display:none;background:none;border:none;color:var(--accent,#a78bfa);font-size:13px;font-weight:700;cursor:pointer;" onclick="showEditForm()">Edit</button>
+        <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
+      </div>
+      <div id="event-pane-body" style="overflow-y:auto;flex:1;"></div>
+      <div id="chat-input-area" class="chat-input-row">
+        <div style="display:flex;flex-direction:column;flex:1;gap:4px;">
+          <div id="private-toggle-row" style="display:none;font-size:11px;color:rgba(238,238,248,0.4);padding:0 4px;">
+            <label style="cursor:pointer;display:flex;align-items:center;gap:5px;">
+              <input type="checkbox" id="private-msg-toggle" style="accent-color:#7c5cbf;"> Message owner only 🔒
+            </label>
+          </div>
+          <input class="chat-input" id="chat-message-input" placeholder="Add a message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}">
+        </div>
+        <button class="chat-send-btn" onclick="sendChatMessage()">↑</button>
+      </div>
+    </div>
+
+    <!-- Pane 3: Invite review -->
+    <div id="day-pane-invite" class="day-pane">
+      <div class="pane-header">
+        <button class="pane-back" onclick="dayPaneBack()">←</button>
+        <div class="pane-title">Invite</div>
+        <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
+      </div>
+      <div id="invite-pane-body" style="overflow-y:auto;flex:1;"></div>
+    </div>
   </div>
 </div>
 

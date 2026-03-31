@@ -32,6 +32,8 @@ try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) {
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN image_url TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outing_invitees ADD COLUMN decline_note TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outings ADD COLUMN title TEXT'); } catch(e) { /* already exists */ }
 
 // ── Push subscriptions ────────────────────────────────────────────────────────
 db.exec(`CREATE TABLE IF NOT EXISTS push_subscriptions (
@@ -272,6 +274,27 @@ db.exec(`CREATE TABLE IF NOT EXISTS plans (
   note           TEXT,
   created_at     TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id)
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS outing_messages (
+  id TEXT PRIMARY KEY,
+  outing_id TEXT NOT NULL,
+  sender_id TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_private INTEGER DEFAULT 0,
+  message_type TEXT DEFAULT 'chat',
+  suggestion_id TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS outing_suggestions (
+  id TEXT PRIMARY KEY,
+  outing_id TEXT NOT NULL,
+  suggester_id TEXT NOT NULL,
+  suggested_time TEXT,
+  suggested_place TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TEXT DEFAULT (datetime('now'))
 )`);
 
 // ── Prepared statements ───────────────────────────────────────────────────────
@@ -620,6 +643,43 @@ const q = {
       AND oe.actor_user_id IS NOT NULL AND oe.actor_user_id != ?
       AND oe.event_type IN ('plan_created','outing_created')
       AND oe.created_at > ?
+  `),
+
+  // ── Outing detail + chat + suggestions ─────────────────────────────────
+  getOutingWithInvitees: db.prepare(`
+    SELECT o.*,
+      u.name AS creator_name, u.photo AS creator_photo
+    FROM outings o
+    JOIN users u ON u.id = o.created_by
+    WHERE o.id = ?
+  `),
+  getOutingInviteesWithUsers: db.prepare(`
+    SELECT oi.*, u.name AS user_name, u.photo AS user_photo
+    FROM outing_invitees oi
+    LEFT JOIN users u ON u.id = oi.user_id
+    WHERE oi.outing_id = ?
+  `),
+  getOutingMessages: db.prepare(`
+    SELECT om.*, u.name AS sender_name, u.photo AS sender_photo
+    FROM outing_messages om
+    JOIN users u ON u.id = om.sender_id
+    WHERE om.outing_id = ?
+    ORDER BY om.created_at ASC
+  `),
+  createOutingMessage: db.prepare(`
+    INSERT INTO outing_messages (id, outing_id, sender_id, message, is_private, message_type, suggestion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `),
+  createOutingSuggestion: db.prepare(`
+    INSERT INTO outing_suggestions (id, outing_id, suggester_id, suggested_time, suggested_place)
+    VALUES (?, ?, ?, ?, ?)
+  `),
+  getOutingSuggestion: db.prepare('SELECT * FROM outing_suggestions WHERE id = ?'),
+  acceptOutingSuggestion: db.prepare("UPDATE outing_suggestions SET status = 'accepted' WHERE id = ?"),
+  updateOutingRsvp: db.prepare('UPDATE outing_invitees SET status = ?, decline_note = ? WHERE id = ?'),
+  updateOutingFull: db.prepare(`
+    UPDATE outings SET title = ?, venue = ?, event_time = ?, venue_address = ?
+    WHERE id = ? AND created_by = ?
   `),
 };
 
