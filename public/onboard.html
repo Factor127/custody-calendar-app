@@ -352,6 +352,11 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
         </div>
 
         <div class="field-group">
+          <label class="field-label" for="user-city">City <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+          <input id="user-city" class="field-input" type="text" placeholder="e.g. London, New York…" autocomplete="off">
+        </div>
+
+        <div class="field-group">
           <label class="field-label" for="user-age">Your age</label>
           <input id="user-age" class="field-input" type="number" placeholder="e.g. 34" min="18" max="99">
         </div>
@@ -1019,6 +1024,7 @@ async function saveAndFinish() {
     : { self_days:   week1Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 
   const phone        = document.getElementById('user-phone')?.value.trim() || null;
+  const city         = document.getElementById('user-city')?.value.trim() || null;
   const age          = parseInt(document.getElementById('user-age')?.value) || null;
   const workSchedule = getWorkSchedulePayload();
   const hasCustody   = isParent && !isMirror && generatedDays.length > 0;
@@ -1030,7 +1036,7 @@ async function saveAndFinish() {
     body = {
       invite_token:        INVITE_TOKEN,
       name, email,
-      mobile:              phone, age,
+      mobile:              phone, age, city,
       relationship_status: relStatus,
       work_schedule:       workSchedule,
       pattern_type:        hasCustody ? patternType : null,
@@ -1046,7 +1052,7 @@ async function saveAndFinish() {
       magic:               MAGIC_TOKEN,
       name,
       google_id:           GOOGLE_ID || undefined,
-      mobile:              phone, age,
+      mobile:              phone, age, city,
       relationship_status: relStatus,
       work_schedule:       workSchedule,
       pattern_type:        hasCustody ? patternType : 'none',

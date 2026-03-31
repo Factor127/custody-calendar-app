@@ -593,7 +593,14 @@ function renderConnectionsList() {
     return;
   }
 
-  const cardsHtml = allConnections.map(c => {
+  // Pending requests I need to review go first
+  const sorted = [...allConnections].sort((a, b) => {
+    const aP = (a.i_am_target && a.status === 'pending') ? 0 : 1;
+    const bP = (b.i_am_target && b.status === 'pending') ? 0 : 1;
+    return aP - bP;
+  });
+
+  const cardsHtml = sorted.map(c => {
     const relType  = c.relationship_type || 'coparent';
     const relLabel = relType === 'partner' ? '❤ PARTNER' : relType === 'friend' ? '👤 FRIEND' : '🛡 CO-PARENT';
     const dotClass = c.status === 'approved' ? 'active' : c.status === 'pending' ? 'pending' : 'inactive';
@@ -601,16 +608,17 @@ function renderConnectionsList() {
     const myUntil    = c.my_share_until    || c.approved_until;
 
     if (c.i_am_target && c.status === 'pending') {
-      return `<div class="conn-card pending-card">
+      return `<div class="conn-card pending-card" style="border:1.5px solid rgba(245,158,11,0.45);background:linear-gradient(135deg,rgba(245,158,11,0.07) 0%,rgba(19,19,33,0.95) 60%);box-shadow:0 0 0 1px rgba(245,158,11,0.12),0 4px 20px rgba(245,158,11,0.08);">
         <button class="conn-menu-btn" onclick="openConnMenu('${c.id}',this)">⋮</button>
+        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#f59e0b;text-transform:uppercase;margin-bottom:10px;">⚡ New request</div>
         <div class="conn-avatar-wrap">
-          <div class="conn-avatar">${avatarHtml(c.other_name, c.other_photo)}</div>
+          <div class="conn-avatar" style="border:2px solid rgba(245,158,11,0.4);">${avatarHtml(c.other_name, c.other_photo)}</div>
           <div class="conn-status-dot pending"></div>
         </div>
         <div class="conn-name">${c.other_name}</div>
         <div class="conn-role-badge ${relType}">${relLabel}</div>
-        <div style="font-size:12px;color:#f59e0b;margin-bottom:14px;font-weight:600;">⏳ Wants to connect</div>
-        <button class="conn-review-btn" onclick="openApproveModal('${c.id}','${c.other_name}',${c.desired_duration_days||0})">Review Request</button>
+        <div style="font-size:12px;color:rgba(245,158,11,0.85);margin-bottom:16px;font-weight:600;">Wants to connect with you</div>
+        <button class="conn-review-btn" onclick="openApproveModal('${c.id}','${c.other_name}',${c.desired_duration_days||0})" style="background:rgba(245,158,11,0.15);border:1.5px solid rgba(245,158,11,0.4);color:#f59e0b;font-weight:700;">Review Request →</button>
       </div>`;
     }
 

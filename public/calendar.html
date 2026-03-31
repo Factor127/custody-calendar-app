@@ -3355,6 +3355,13 @@ function renderEventPane(data) {
     html += `</div>`;
   }
 
+  // Cancel event (creator only)
+  if (is_creator) {
+    html += `<div style="padding:4px 16px 8px;text-align:center;">
+      <button onclick="cancelOuting('${outing.id}')" style="background:none;border:1px solid rgba(248,113,113,0.2);color:rgba(248,113,113,0.6);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;padding:6px 16px;border-radius:8px;">Cancel this event</button>
+    </div>`;
+  }
+
   // Inline edit form placeholder (hidden by default)
   html += `<div id="event-edit-form" style="display:none;padding:12px 16px;background:rgba(255,255,255,0.04);margin:0 16px 8px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);">
     <div style="font-size:11px;font-weight:700;color:rgba(238,238,248,0.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Edit plan</div>
@@ -3421,6 +3428,19 @@ async function saveOutingEdit(outingId) {
   }
 }
 
+async function cancelOuting(outingId) {
+  if (!confirm('Cancel this event? Invitees will be notified.')) return;
+  try {
+    const res = await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    showToast('Event cancelled');
+    closeDaySheet();
+    await loadOutings();
+  } catch(e) {
+    showToast('Could not cancel — try again');
+  }
+}
+
 async function sendChatMessage() {
   const input = document.getElementById('chat-message-input');
   const msg = input?.value?.trim();
@@ -3469,7 +3489,9 @@ async function openInvitePane(outingId, inviteeRecordId) {
 }
 
 function renderInvitePane(data, inviteeRecordId) {
-  const { outing } = data;
+  const { outing, invitees } = data;
+  const myInvitee = invitees.find(i => i.id === inviteeRecordId);
+  const currentStatus = myInvitee?.status || 'pending';
   const title = outing.title || outing.venue || outing.message || 'Invite';
   let html = '';
 
@@ -3515,13 +3537,18 @@ function renderInvitePane(data, inviteeRecordId) {
     </div>
   </div>`;
 
-  // RSVP action buttons
+  // RSVP action buttons — dim non-selected if already responded
+  const _rsvpDim = (s) => currentStatus !== 'pending' && currentStatus !== s
+    ? 'opacity:0.35;' : '';
+  const _rsvpActive = (s) => currentStatus === s
+    ? 'box-shadow:0 0 0 2px rgba(167,139,250,0.6);' : '';
+
   html += `<div id="invite-rsvp-area">`;
-  html += `<div class="rsvp-actions">
-    <button class="rsvp-action-btn rsvp-confirm" onclick="submitRsvp('${outing.id}','${inviteeRecordId}','confirmed')">Confirm</button>
-    <button class="rsvp-action-btn rsvp-maybe" onclick="submitRsvp('${outing.id}','${inviteeRecordId}','maybe')">Maybe</button>
-    <button class="rsvp-action-btn rsvp-later" onclick="closeDaySheet()">Later</button>
-    <button class="rsvp-action-btn rsvp-decline" onclick="startDecline('${outing.id}','${inviteeRecordId}')">Decline</button>
+  html += `<div class="rsvp-actions" id="rsvp-btn-row">
+    <button class="rsvp-action-btn rsvp-confirm" data-rsvp="confirmed" style="${_rsvpDim('confirmed')}${_rsvpActive('confirmed')}" onclick="submitRsvp('${outing.id}','${inviteeRecordId}','confirmed')">Confirm</button>
+    <button class="rsvp-action-btn rsvp-maybe"   data-rsvp="maybe"     style="${_rsvpDim('maybe')}${_rsvpActive('maybe')}"         onclick="submitRsvp('${outing.id}','${inviteeRecordId}','maybe')">Maybe</button>
+    <button class="rsvp-action-btn rsvp-later"   data-rsvp="later"     style="${_rsvpDim('later')}"                                onclick="closeDaySheet()">Later</button>
+    <button class="rsvp-action-btn rsvp-decline" data-rsvp="declined"  style="${_rsvpDim('declined')}${_rsvpActive('declined')}"   onclick="startDecline('${outing.id}','${inviteeRecordId}')">Decline</button>
   </div>
   <div style="text-align:center;padding-bottom:8px;">
     <button class="rsvp-ignore" onclick="startIgnore('${outing.id}','${inviteeRecordId}')">Remove this invite</button>
@@ -3556,6 +3583,65 @@ function renderInvitePane(data, inviteeRecordId) {
   </div>`;
 
   document.getElementById('invite-pane-body').innerHTML = html;
+
+  // Wire Places autocomplete to the suggest-place input
+  _initSuggestPlacesAc();
+}
+
+let _suggestPlaceAcTimer = null;
+let _suggestPlacePredictions = [];
+
+function _initSuggestPlacesAc() {
+  const input = document.getElementById('suggest-place-input');
+  if (!input) return;
+
+  // Wrap with a relative-positioned container and add dropdown
+  const wrap = input.parentElement;
+  wrap.style.position = 'relative';
+
+  const drop = document.createElement('div');
+  drop.id = 'suggest-place-drop';
+  drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;z-index:200;background:#1a1a2e;border:1px solid rgba(167,139,250,0.25);border-radius:10px;overflow:hidden;display:none;';
+  wrap.appendChild(drop);
+
+  input.addEventListener('input', () => {
+    clearTimeout(_suggestPlaceAcTimer);
+    const q = input.value.trim();
+    if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+    _suggestPlaceAcTimer = setTimeout(() => _fetchSuggestPlaces(q), 300);
+  });
+
+  input.addEventListener('blur', () => setTimeout(() => { drop.style.display = 'none'; }, 200));
+}
+
+async function _fetchSuggestPlaces(query) {
+  const drop = document.getElementById('suggest-place-drop');
+  if (!drop) return;
+  try {
+    const res = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(query)}&token=${MY_TOKEN}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    _suggestPlacePredictions = data.predictions || [];
+    if (!_suggestPlacePredictions.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = _suggestPlacePredictions.map((p, i) => {
+      const name = p.name || p.description || 'Place';
+      return `<div onclick="_selectSuggestPlace(${i})" style="padding:10px 14px;font-size:13px;color:#eeeef8;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onmouseover="this.style.background='rgba(124,92,191,0.15)'" onmouseout="this.style.background=''">${name}</div>`;
+    }).join('');
+    drop.style.display = 'block';
+  } catch(e) { /* silent */ }
+}
+
+function _selectSuggestPlace(idx) {
+  const p = _suggestPlacePredictions[idx];
+  if (!p) return;
+  const name = p.name || p.description || 'Place';
+  const input = document.getElementById('suggest-place-input');
+  if (input) input.value = name;
+  // Store place_id for saving to opportunity DB
+  input.dataset.placeId      = p.place_id   || '';
+  input.dataset.placeAddress = p.description || '';
+  const drop = document.getElementById('suggest-place-drop');
+  if (drop) drop.style.display = 'none';
 }
 
 function toggleSuggestSection() {
@@ -3614,8 +3700,31 @@ async function submitRsvp(outingId, inviteeId, status, note) {
       body: JSON.stringify({ status, note: note || null }),
     });
     if (!res.ok) throw new Error();
-    showToast(status === 'confirmed' ? "You're in!" : status === 'maybe' ? 'Marked as maybe' : status === 'declined' ? 'Declined' : 'Invite removed');
-    closeDaySheet();
+    const toastMsg = status === 'confirmed' ? "You're in! ✓" : status === 'maybe' ? 'Marked as maybe' : status === 'declined' ? 'Declined' : 'Invite removed';
+    showToast(toastMsg);
+    // Update button states in-place (gray-out non-selected, highlight selected)
+    const row = document.getElementById('rsvp-btn-row');
+    if (row) {
+      row.querySelectorAll('[data-rsvp]').forEach(btn => {
+        const btnStatus = btn.dataset.rsvp;
+        if (btnStatus === status) {
+          btn.style.opacity = '1';
+          btn.style.boxShadow = '0 0 0 2px rgba(167,139,250,0.6)';
+        } else {
+          btn.style.opacity = '0.35';
+          btn.style.boxShadow = '';
+        }
+      });
+    }
+    // Hide decline/ignore flows
+    const decFlow = document.getElementById('invite-decline-flow');
+    const decNote = document.getElementById('invite-decline-note');
+    const ignFlow = document.getElementById('invite-ignore-flow');
+    if (decFlow) decFlow.style.display = 'none';
+    if (decNote) decNote.style.display = 'none';
+    if (ignFlow) ignFlow.style.display = 'none';
+    const rsvpArea = document.getElementById('invite-rsvp-area');
+    if (rsvpArea) rsvpArea.style.display = '';
     await loadOutings();
   } catch(e) {
     showToast('Could not update — try again');
@@ -3624,7 +3733,8 @@ async function submitRsvp(outingId, inviteeId, status, note) {
 
 async function sendSuggestion(outingId) {
   const suggestedTime  = document.getElementById('suggest-time-select')?.value || '';
-  const suggestedPlace = document.getElementById('suggest-place-input')?.value?.trim() || '';
+  const placeInput     = document.getElementById('suggest-place-input');
+  const suggestedPlace = placeInput?.value?.trim() || '';
   if (!suggestedTime && !suggestedPlace) { showToast('Add a time or place suggestion'); return; }
   try {
     const res = await fetch(`/api/outings/${outingId}/suggest?token=${MY_TOKEN}`, {
@@ -3635,6 +3745,21 @@ async function sendSuggestion(outingId) {
     if (!res.ok) throw new Error();
     showToast('Suggestion sent!');
     toggleSuggestSection();
+
+    // Save place to opportunity DB if it came from Places autocomplete
+    const placeId = placeInput?.dataset?.placeId;
+    if (suggestedPlace && placeId) {
+      fetch(`/api/opportunities/direct?token=${MY_TOKEN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:    suggestedPlace,
+          place_id: placeId,
+          address:  placeInput.dataset.placeAddress || '',
+          source:   'suggestion',
+        }),
+      }).catch(() => {}); // fire-and-forget, non-critical
+    }
   } catch(e) {
     showToast('Could not send suggestion');
   }
@@ -6495,6 +6620,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved) {
   _sc.colors         = {};
   _sc.expanded       = false;
   _sc.savedOutingId  = null;
+  _sc.pregenOutingId = null;
 
   // Reset calendar to current month
   const _now = new Date();
@@ -7156,10 +7282,12 @@ function scReviewBack() {
   }
 }
 
-function scReviewAction() {
+async function scReviewAction() {
   if (_scReviewStage === 'review') {
     _scReviewStage = 'whatsapp';
     _scApplyReviewStage();
+    // Pre-create the outing now so we can include a deep link in WhatsApp messages
+    await _scPreCreateOuting();
     renderSCWhatsApp();
   } else {
     finalizeSC();
@@ -7213,13 +7341,19 @@ function renderSCWhatsApp() {
   const soft = _scIsSoftInvite();
 
   const names    = selected.map(w => w.name.split(' ')[0]).join(', ');
-  const groupMsg = soft
+  const groupRsvpNote = _sc.pregenOutingId ? `\n\nRSVP via Spontany: ${window.location.origin}/calendar?openEvent=${_sc.pregenOutingId}` : '';
+  const groupMsg = (soft
     ? `hey ${names}! thinking about getting together${whatText ? ` — ${whatText}` : ''} sometime, anyone up for it?`
-    : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`;
+    : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`) + groupRsvpNote;
   const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
 
   const personData = selected.map(w => {
-    const msg = _scPersonMsg(w, whatText, dateMain, soft);
+    // Build RSVP deep link if we have a pre-created outing and the invitee has a token
+    let rsvpLink = '';
+    if (_sc.pregenOutingId && w.token) {
+      rsvpLink = `\n\nRSVP here: ${window.location.origin}/calendar?token=${w.token}&openEvent=${_sc.pregenOutingId}`;
+    }
+    const msg = _scPersonMsg(w, whatText, dateMain, soft) + rsvpLink;
     let num = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
     if (num && num.startsWith('0')) num = num.slice(1);
     const url = num
@@ -7291,24 +7425,53 @@ function scAddPersonFromReview() {
   document.getElementById('sc-body')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function finalizeSC() {
+// Pre-creates the outing before the WhatsApp step so the deep link is known
+async function _scPreCreateOuting() {
+  if (_sc.pregenOutingId) return; // already created
   const selected = (_sc.data?.who || []).filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
+  if (!selected.length || !_sc.selDate) return;
   const invitees = selected.map(w => ({ userId: w.userId, name: w.name, phone: w.phone || null }));
   const whatText = _sc.selWhat
     ? (_sc.selWhat.custom || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim())
     : 'Outing';
-
-  if (invitees.length > 0 && _sc.selDate) {
-    const imageUrl = _sc.selWhat?.unfurled?.image || null;
-    // If converting a saved outing, delete it first
-    if (_sc.savedOutingId) {
-      await fetch(`/api/outings/${_sc.savedOutingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
-    }
-    fetch(`/api/outings?token=${MY_TOKEN}`, {
+  const imageUrl = _sc.selWhat?.unfurled?.image || null;
+  if (_sc.savedOutingId) {
+    await fetch(`/api/outings/${_sc.savedOutingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+  }
+  try {
+    const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl }),
-    }).then(r => { if (r.ok) loadOutings(); });
+    });
+    if (res.ok) {
+      const data = await res.json();
+      _sc.pregenOutingId = data.id || null;
+      loadOutings();
+    }
+  } catch(e) { /* non-critical */ }
+}
+
+async function finalizeSC() {
+  // If outing was pre-created during WhatsApp step, it's already saved
+  if (!_sc.pregenOutingId) {
+    const selected = (_sc.data?.who || []).filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
+    const invitees = selected.map(w => ({ userId: w.userId, name: w.name, phone: w.phone || null }));
+    const whatText = _sc.selWhat
+      ? (_sc.selWhat.custom || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim())
+      : 'Outing';
+
+    if (invitees.length > 0 && _sc.selDate) {
+      const imageUrl = _sc.selWhat?.unfurled?.image || null;
+      if (_sc.savedOutingId) {
+        await fetch(`/api/outings/${_sc.savedOutingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+      }
+      fetch(`/api/outings?token=${MY_TOKEN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl }),
+      }).then(r => { if (r.ok) loadOutings(); });
+    }
   }
 
   closeSCAll();

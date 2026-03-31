@@ -46,7 +46,7 @@ function requireOwner(req, res) {
 // Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
   const { magic, name, pattern_type, pattern_data, anchor_date, days, google_id,
-          work_schedule, mobile, age, relationship_status, photo } = req.body;
+          work_schedule, mobile, age, relationship_status, city, photo } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
   if (!magic) return res.status(400).json({ error: 'Email verification required. Please use the link sent to your email.' });
 
@@ -68,6 +68,7 @@ router.post('/users/setup', (req, res) => {
   if (mobile)              db.prepare('UPDATE users SET mobile = ? WHERE id = ?').run(mobile.trim(), id);
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, id);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, id);
+  if (city)                db.prepare("UPDATE users SET city = ? WHERE id = ?").run(city.trim(), id);
   if (photo)               db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo, id);
 
   // Save pattern for future reference / regeneration
@@ -112,7 +113,7 @@ router.post('/pattern/generate', (req, res) => {
 // POST /api/users/register — complete partner onboarding
 router.post('/users/register', (req, res) => {
   const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days,
-          age, relationship_status, work_schedule, photo } = req.body;
+          age, relationship_status, city, work_schedule, photo } = req.body;
 
   if (!invite_token) return res.status(400).json({ error: 'invite_token required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
@@ -139,6 +140,7 @@ router.post('/users/register', (req, res) => {
   if (normalMobile)        q.updateUserMobile.run(normalMobile, userId);
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, userId);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, userId);
+  if (city)                db.prepare("UPDATE users SET city = ? WHERE id = ?").run(city.trim(), userId);
   if (work_schedule)       db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?').run(JSON.stringify(work_schedule), userId);
   if (photo)               db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo, userId);
 
@@ -1815,6 +1817,20 @@ router.delete('/outings/:id', (req, res) => {
   const outing = q.getOutingById.get(req.params.id);
   if (!outing) return res.status(404).json({ error: 'Not found' });
   if (outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+
+  // Notify invitees before deleting
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const eventName = outing.venue || outing.message || 'your plan';
+  for (const inv of invitees) {
+    if (inv.user_id && inv.user_id !== me.id) {
+      sendPush(inv.user_id, {
+        title: `❌ ${me.name} cancelled`,
+        body:  `"${eventName}" has been cancelled.`,
+        tag:   `outing-cancelled-${outing.id}`,
+        url:   '/calendar.html',
+      });
+    }
+  }
 
   q.deleteOutingInvitees.run(req.params.id);
   q.deleteOuting.run(req.params.id);

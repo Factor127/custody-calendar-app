@@ -93,6 +93,7 @@ router.get('/smart-suggest', (req, res) => {
 
     const otherMobile = conn.i_am_target ? conn.requester_mobile : conn.target_mobile;
 
+    const otherUser = q.getUserById.get(conn.other_user_id);
     return {
       id:      conn.id,
       userId:  conn.other_user_id,
@@ -101,6 +102,7 @@ router.get('/smart-suggest', (req, res) => {
       photo:   conn.other_photo || null,
       type:    relType,
       phone:   otherMobile || null,
+      token:   otherUser?.access_token || null,
       score:   Math.round(score * 100) / 100,
     };
   }).sort((a, b) => b.score - a.score);
