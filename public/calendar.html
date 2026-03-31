@@ -2442,7 +2442,7 @@ function nextMonth() {
     const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
     history.replaceState(null, '', cleanUrl);
     // Small delay so the calendar renders first
-    setTimeout(() => openEventPane(_openEventId), 300);
+    setTimeout(() => openEventPaneDirect(_openEventId), 300);
   }
 
   const splash = document.getElementById('splash');
@@ -3282,6 +3282,14 @@ function dayPaneBack() {
   _dayPaneStack.pop();
   const prev = _dayPaneStack[_dayPaneStack.length - 1] || 'day-pane-list';
   _showPane(prev);
+}
+
+// Open the day sheet directly on an event (e.g. from a notification deep link)
+// without needing a date context. Back button goes to close rather than a list.
+async function openEventPaneDirect(outingId) {
+  _dayPaneStack = [];
+  document.getElementById('day-sheet').classList.add('open');
+  await openEventPane(outingId);
 }
 
 async function openEventPane(outingId) {
@@ -7376,9 +7384,9 @@ if ('serviceWorker' in navigator) {
       try {
         const targetParams = new URL(url).searchParams;
         const eventId = targetParams.get('openEvent');
-        if (eventId && typeof openEventPane === 'function') {
+        if (eventId && typeof openEventPaneDirect === 'function') {
           // Already on calendar page — open the event pane directly, no reload
-          openEventPane(eventId);
+          openEventPaneDirect(eventId);
           return;
         }
       } catch(e) {}
