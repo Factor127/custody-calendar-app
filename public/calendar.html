@@ -136,6 +136,7 @@ td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(249,115,22,0.6) !import
   transition: opacity .15s ease, transform .15s ease;
 }
 #cell-hover-card.visible { opacity: 1; transform: translateY(0); }
+@media (hover: none) { #cell-hover-card { display: none !important; } }
 .chc-date { font-size: 11px; font-weight: 800; letter-spacing: .06em;
   text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
 .chc-row { display: flex; align-items: center; gap: 8px;
@@ -704,14 +705,15 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Pending invite pulse on cell ────────────────────────────────── */
     .cell-pending-ring {
-      position: absolute; top: 6px; right: 6px;
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent);
-      animation: cell-pulse 2s ease-in-out infinite;
+      position: absolute; top: -5px; right: -5px; z-index: 2;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #a78bfa;
+      box-shadow: 0 0 0 2px #0c0c15;
+      animation: cell-pulse 1.8s ease-in-out infinite;
     }
     @keyframes cell-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(167,139,250,0.5); }
-      50% { opacity: 0.8; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #0c0c15, 0 0 0 3px rgba(167,139,250,0.6); }
+      50% { transform: scale(1.25); box-shadow: 0 0 0 2px #0c0c15, 0 0 0 7px rgba(167,139,250,0); }
     }
 
     /* ── Coordinate Together section ─────────────────────────────────── */
@@ -908,12 +910,67 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     /* Section headers in day sheet */
     .dss-heading { font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:rgba(238,238,248,0.35); padding:16px 16px 6px; }
 
+    /* Free contact avatars in day sheet "Start something" */
+    .dss-free-row {
+      display: flex; gap: 0; padding: 6px 16px 12px;
+      overflow: hidden;
+    }
+    .dss-free-avatar {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; flex-shrink: 0;
+      margin-right: -14px; /* overlap by default */
+      transition: margin-right 0.25s ease, transform 0.15s ease;
+    }
+    .dss-free-row:hover .dss-free-avatar { margin-right: 8px; } /* expand on hover */
+    .dss-free-avatar:hover { transform: translateY(-3px); }
+    .dss-free-avatar-circle {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 800; color: #fff; position: relative;
+      border: 2px solid #0c0c15;
+    }
+    .dss-free-name {
+      font-size: 10px; color: rgba(238,238,248,0.55); font-weight: 600;
+      max-width: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      opacity: 0; transition: opacity 0.25s ease;
+      text-align: center;
+    }
+    .dss-free-row:hover .dss-free-name { opacity: 1; }
+
     /* RSVP row */
     .rsvp-row { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; }
-    .rsvp-chip { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; background:rgba(255,255,255,0.06); font-size:12px; font-weight:600; color:rgba(238,238,248,0.6); }
+    .rsvp-chip {
+      display:flex; align-items:center; gap:6px; padding:5px 10px 5px 5px;
+      border-radius:20px; background:rgba(255,255,255,0.06);
+      font-size:12px; font-weight:600; color:rgba(238,238,248,0.6);
+      cursor:default; position:relative; transition:background 0.18s;
+    }
+    .rsvp-chip:hover { background:rgba(255,255,255,0.11); }
     .rsvp-chip.confirmed { background:rgba(74,222,128,0.15); color:#4ade80; }
+    .rsvp-chip.confirmed:hover { background:rgba(74,222,128,0.25); }
     .rsvp-chip.maybe { background:rgba(251,191,36,0.15); color:#fbbf24; }
+    .rsvp-chip.maybe:hover { background:rgba(251,191,36,0.25); }
     .rsvp-chip.declined { background:rgba(239,68,68,0.12); color:#f87171; }
+    .rsvp-chip.declined:hover { background:rgba(239,68,68,0.22); }
+
+    /* Participant avatar inside chip */
+    .rsvp-avatar {
+      width:28px; height:28px; border-radius:50%; flex-shrink:0;
+      background:rgba(124,92,191,0.35); display:inline-flex;
+      align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; overflow:hidden; position:relative;
+    }
+    .rsvp-avatar img { position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%; }
+
+    /* Hover tooltip on chip */
+    .rsvp-chip-tooltip {
+      display:none; position:absolute; bottom:calc(100% + 6px); left:50%;
+      transform:translateX(-50%); background:#1e1e35; border:1px solid rgba(167,139,250,0.25);
+      border-radius:10px; padding:8px 12px; white-space:nowrap; z-index:50;
+      font-size:12px; font-weight:600; color:#eeeef8; pointer-events:none;
+      box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    }
+    .rsvp-chip:hover .rsvp-chip-tooltip { display:block; }
 
     /* Chat */
     .chat-list { flex:1; overflow-y:auto; padding:10px 16px; display:flex; flex-direction:column; gap:8px; }
@@ -952,14 +1009,15 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Pending invite pulse on cell ────────────────────────────────── */
     .cell-pending-ring {
-      position: absolute; top: 6px; right: 6px;
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent);
-      animation: cell-pulse 2s ease-in-out infinite;
+      position: absolute; top: -5px; right: -5px; z-index: 2;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #a78bfa;
+      box-shadow: 0 0 0 2px #0c0c15;
+      animation: cell-pulse 1.8s ease-in-out infinite;
     }
     @keyframes cell-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(167,139,250,0.5); }
-      50% { opacity: 0.8; transform: scale(1.15); box-shadow: 0 0 0 4px rgba(167,139,250,0); }
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #0c0c15, 0 0 0 3px rgba(167,139,250,0.6); }
+      50% { transform: scale(1.25); box-shadow: 0 0 0 2px #0c0c15, 0 0 0 7px rgba(167,139,250,0); }
     }
 
     /* ── Coordinate Together section ─────────────────────────────────── */
@@ -1759,7 +1817,12 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <!-- People button -->
     <button onclick="bnTab('connections')" title="People"
       style="background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px;position:relative;">
-      <span style="font-size:20px;line-height:1;">👥</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="7" r="3.5"/>
+        <path d="M2 21c0-4 3.1-7 7-7s7 3 7 7"/>
+        <circle cx="18" cy="8" r="2.5" stroke-opacity=".65"/>
+        <path d="M22 21c0-2.8-1.8-5-4-5.5" stroke-opacity=".65"/>
+      </svg>
       <div class="bn-badge hidden" id="bn-conn-badge" style="position:absolute;top:0;right:0;">0</div>
     </button>
     <a id="profile-btn" href="#" class="profile-circle" title="My profile">
@@ -2924,6 +2987,7 @@ function renderCalendar() {
 let _hoverHideTimer = null;
 
 function showCellHover(event, dateStr) {
+  if (!window.matchMedia('(hover: hover)').matches) return; // no hover on touch
   clearTimeout(_hoverHideTimer);
   const card = document.getElementById('cell-hover-card');
   if (!card) return;
@@ -3194,6 +3258,21 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
 
   // ── Section 4: Start something ────────────────────────────────────────────
   html += `<div class="dss-heading">Start something</div>`;
+
+  // Who's free: show avatar row — hovering expands to show names, clicking opens crafter with that person
+  if (alsoFree.length > 0) {
+    html += `<div class="dss-free-row" title="Tap a person to plan with them">`;
+    html += alsoFree.map(c => {
+      const photo = c.photo ? `<img src="${c.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove();">` : '';
+      const initials = (c.name || '?')[0].toUpperCase();
+      return `<div class="dss-free-avatar" onclick="closeDaySheet();openSmartCrafter('${dateStr}',null,null,'${c.id}')" title="${c.name}">
+        <div class="dss-free-avatar-circle" style="background:${c.color||'#7c5cbf'};">${initials}${photo}</div>
+        <div class="dss-free-name">${c.name.split(' ')[0]}</div>
+      </div>`;
+    }).join('');
+    html += `</div>`;
+  }
+
   html += `<div class="day-sheet-add-row">
     <button class="day-sheet-add-btn" onclick="closeDaySheet();openSmartCrafter('${dateStr}')">+ Plan something new</button>
   </div>`;
@@ -3375,14 +3454,26 @@ function renderEventPane(data) {
     html += `<div class="rsvp-row">`;
     for (const inv of invitees) {
       const initial = (inv.name || '?').charAt(0).toUpperCase();
-      const statusIcons = { confirmed:'✓', maybe:'?', pending:'○', declined:'✗', ignored:'·' };
+      const statusIcons = { confirmed:'✓', maybe:'~', pending:'○', declined:'✗', ignored:'·' };
+      const statusLabels = { confirmed:'Going', maybe:'Maybe', pending:'Invited', declined:'Declined', ignored:'Ignored' };
       const icon = statusIcons[inv.status] || '○';
       const cls  = inv.status === 'confirmed' ? 'confirmed' : inv.status === 'maybe' ? 'maybe' : inv.status === 'declined' ? 'declined' : '';
-      const declineTip = (is_creator && inv.status === 'declined' && inv.decline_note) ? ` title="${inv.decline_note}"` : '';
       const ignoredStyle = inv.status === 'ignored' ? 'opacity:0.35;' : '';
-      html += `<div class="rsvp-chip ${cls}" style="${ignoredStyle}"${declineTip}>
-        <span style="width:20px;height:20px;border-radius:50%;background:rgba(124,92,191,0.35);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;">${initial}</span>
-        ${inv.name} ${icon}
+      const photoHtml = inv.photo
+        ? `<img src="${inv.photo}" alt="" onerror="this.remove();">`
+        : initial;
+      const declineNote = is_creator && inv.status === 'declined' && inv.decline_note
+        ? `<div style="font-size:11px;color:rgba(238,238,248,0.5);margin-top:3px;">"${inv.decline_note}"</div>` : '';
+      const tooltipLabel = statusLabels[inv.status] || 'Invited';
+      html += `<div class="rsvp-chip ${cls}" style="${ignoredStyle}">
+        <span class="rsvp-avatar">${photoHtml}</span>
+        <span>${inv.name}</span>
+        <span style="opacity:0.7;">${icon}</span>
+        <div class="rsvp-chip-tooltip">
+          <div>${inv.name}</div>
+          <div style="font-size:11px;opacity:0.7;">${tooltipLabel}</div>
+          ${declineNote}
+        </div>
       </div>`;
     }
     html += `</div>`;
@@ -3858,7 +3949,16 @@ async function submitRsvp(outingId, inviteeId, status, note) {
     if (!res.ok) throw new Error();
     const toastMsg = status === 'confirmed' ? "You're in! ✓" : status === 'maybe' ? 'Marked as maybe' : status === 'declined' ? 'Declined' : 'Invite removed';
     showToast(toastMsg);
-    // Update button states in-place (gray-out non-selected, highlight selected)
+
+    // For decisive actions (confirmed / declined / ignored) — close the sheet immediately
+    const closeAfter = ['confirmed', 'declined', 'ignored'].includes(status);
+    if (closeAfter) {
+      closeDaySheet();
+      await loadOutings();
+      return;
+    }
+
+    // For "maybe" — update button states in-place so user can still re-RSVP
     const row = document.getElementById('rsvp-btn-row');
     if (row) {
       row.querySelectorAll('[data-rsvp]').forEach(btn => {
@@ -6765,7 +6865,7 @@ const _sc = {
 
 // ── Open / close ──────────────────────────────────────────────────────────────
 
-async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved) {
+async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWhoId) {
   // Reset state
   _sc.data         = null;
   _sc.selWho       = new Set();
@@ -6823,7 +6923,8 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved) {
     _sc.colors[w.id] = existing?.color || _SC_COLOR_PALETTE[i % _SC_COLOR_PALETTE.length];
   });
 
-  // No auto-selection — user picks who they want
+  // Pre-select a specific connection if opened from a contact avatar
+  if (prefillWhoId) _sc.selWho.add(prefillWhoId);
 
   // Auto-pick best date
   if (!_sc.selDate) _sc.selDate = _scBestDate();
@@ -6881,15 +6982,46 @@ function closeSCAll() {
 
 function _scBestDate() {
   if (!_sc.data?.myFreeDays?.length) return null;
-  const selIds = [..._sc.selWho];
-  // Connections with no calendar data are unknown — treat optimistically
+  const selIds   = [..._sc.selWho];
   const withData = selIds.filter(id => (_sc.data.connFreeDays[id] || []).length > 0);
-  for (const d of _sc.data.myFreeDays) {
-    const ok = selIds.length === 0 ||
-               withData.length === 0 ||                                // all unknown → any free day works
-               withData.some(id => (_sc.data.connFreeDays[id] || []).includes(d));
-    if (ok) return d;
+
+  // Helper: is a given date string within N days from today?
+  const today = new Date(); today.setHours(0,0,0,0);
+  const inRange = (d, minDay, maxDay) => {
+    const dt = new Date(d + 'T00:00:00');
+    const diff = Math.round((dt - today) / 86400000);
+    return diff >= minDay && diff <= maxDay;
+  };
+
+  // No connections selected → any of my free days
+  if (selIds.length === 0 || withData.length === 0) {
+    return _sc.data.myFreeDays[0] || null;
   }
+
+  // Tier 1 — 100% of selected connections free, within next 14 days
+  for (const d of _sc.data.myFreeDays) {
+    if (!inRange(d, 0, 14)) continue;
+    const allFree = withData.every(id => (_sc.data.connFreeDays[id] || []).includes(d));
+    if (allFree) return d;
+  }
+
+  // Tier 2 — at least partial overlap within next 14 days (best coverage first)
+  let bestPartial = null, bestCount = 0;
+  for (const d of _sc.data.myFreeDays) {
+    if (!inRange(d, 0, 14)) continue;
+    const count = withData.filter(id => (_sc.data.connFreeDays[id] || []).includes(d)).length;
+    if (count > bestCount) { bestCount = count; bestPartial = d; }
+  }
+  if (bestPartial) return bestPartial;
+
+  // Tier 3 — 100% of selected connections free, days 15–60
+  for (const d of _sc.data.myFreeDays) {
+    if (!inRange(d, 15, 60)) continue;
+    const allFree = withData.every(id => (_sc.data.connFreeDays[id] || []).includes(d));
+    if (allFree) return d;
+  }
+
+  // Fallback — first free day regardless
   return _sc.data.myFreeDays[0] || null;
 }
 
