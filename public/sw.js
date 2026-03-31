@@ -2,7 +2,7 @@
 // Phase 1: Offline shell + static asset caching
 // Phase 2: Push notification handling (added below)
 
-const CACHE_VERSION = 'spontany-v2';
+const CACHE_VERSION = 'spontany-v3';
 const STATIC_ASSETS = [
   '/styles.css',
   '/logo.svg',
@@ -97,16 +97,33 @@ self.addEventListener('push', event => {
   );
 });
 
-// ── Notification click: open/focus the app ───────────────────────────────
+// ── Notification click: open/focus the app and navigate to target ────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const target = event.notification.data?.url || '/calendar.html';
+  const fullTarget = target.startsWith('http') ? target : self.location.origin + target;
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(windowClients => {
-        const match = windowClients.find(c => c.url.includes(self.location.origin));
-        if (match) return match.focus();
-        return clients.openWindow(target);
+      .then(async windowClients => {
+        // Find an existing app window
+        const appWindow = windowClients.find(
+          c => new URL(c.url).origin === self.location.origin
+        );
+        if (appWindow) {
+          // Navigate existing window to the target URL, then focus
+          try {
+            await appWindow.navigate(fullTarget);
+            await appWindow.focus();
+            return;
+          } catch (e) {
+            // navigate() failed (e.g. cross-origin guard) — just focus
+            await appWindow.focus();
+            return;
+          }
+        }
+        // No existing window — open a new one
+        return clients.openWindow(fullTarget);
       })
   );
 });

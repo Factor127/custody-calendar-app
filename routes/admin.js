@@ -183,6 +183,28 @@ router.delete('/admin/users/:id', (req, res) => {
 
   db.exec('BEGIN');
   try {
+    // Push subscriptions
+    db.prepare('DELETE FROM push_subscriptions WHERE user_id = ?').run(id);
+    // Outing messages & suggestions sent by this user
+    db.prepare('DELETE FROM outing_messages WHERE sender_id = ?').run(id);
+    db.prepare('DELETE FROM outing_suggestions WHERE suggester_id = ?').run(id);
+    // Outing invitee records
+    db.prepare('DELETE FROM outing_invitees WHERE user_id = ?').run(id);
+    // Outings created by this user (cascade their invitees/messages first)
+    const userOutings = db.prepare('SELECT id FROM outings WHERE created_by = ?').all(id);
+    for (const o of userOutings) {
+      db.prepare('DELETE FROM outing_messages WHERE outing_id = ?').run(o.id);
+      db.prepare('DELETE FROM outing_suggestions WHERE outing_id = ?').run(o.id);
+      db.prepare('DELETE FROM outing_invitees WHERE outing_id = ?').run(o.id);
+    }
+    db.prepare('DELETE FROM outings WHERE created_by = ?').run(id);
+    // Connection preferences (references connections)
+    const userConns = db.prepare('SELECT id FROM connections WHERE requester_id = ? OR target_id = ?').all(id, id);
+    for (const c of userConns) {
+      db.prepare('DELETE FROM connection_preferences WHERE connection_id = ?').run(c.id);
+    }
+    // Activities
+    try { db.prepare('DELETE FROM activities WHERE user_id = ?').run(id); } catch(e2) { /* table may not exist */ }
     db.prepare('DELETE FROM magic_links WHERE user_id = ?').run(id);
     db.prepare('DELETE FROM suggestions WHERE from_user_id = ? OR to_user_id = ?').run(id, id);
     db.prepare('DELETE FROM connections WHERE requester_id = ? OR target_id = ?').run(id, id);

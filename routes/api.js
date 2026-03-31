@@ -459,6 +459,8 @@ router.delete('/connections/:id', (req, res) => {
   if (!conn || (conn.target_id !== user.id && conn.requester_id !== user.id)) {
     return res.status(403).json({ error: 'Not authorized' });
   }
+  // Delete child rows first (foreign key constraints are ON)
+  db.prepare('DELETE FROM connection_preferences WHERE connection_id = ?').run(req.params.id);
   q.deleteConnection.run(req.params.id);
   res.json({ deleted: true });
 });
