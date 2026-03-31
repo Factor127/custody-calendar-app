@@ -1280,7 +1280,7 @@ router.post('/outings', (req, res) => {
           title: `📅 ${me.name} invited you out`,
           body:  `${message || 'An outing'} · ${dateLabel}`,
           tag:   `outing-invite-${outingId}`,
-          url:   '/calendar.html',
+          url:   `/calendar.html?openEvent=${outingId}`,
         });
       }
     }
@@ -1344,7 +1344,7 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
       title: `${emoji} ${me.name} ${verb}`,
       body:  outing.message || 'for your outing',
       tag:   `outing-rsvp-${outing.id}`,
-      url:   '/calendar.html',
+      url:   `/calendar.html?openEvent=${outing.id}`,
     });
   }
 });
@@ -1602,7 +1602,7 @@ router.put('/outings/:id', (req, res) => {
           title: 'Plan updated',
           body:  `${me.name} updated the details for ${outing.venue || outing.message || 'your plan'}`,
           tag:   `outing-updated-${outing.id}`,
-          url:   '/calendar.html',
+          url:   `/calendar.html?openEvent=${outing.id}`,
         });
       }
     }
@@ -1687,7 +1687,7 @@ router.post('/outings/:id/messages', (req, res) => {
         title: `${me.name} in ${eventName}`,
         body:  message.trim().slice(0, 120),
         tag:   `outing-chat-${req.params.id}`,
-        url:   '/calendar.html',
+        url:   `/calendar.html?openEvent=${req.params.id}`,
       });
     }
   }
@@ -1723,7 +1723,7 @@ router.post('/outings/:id/rsvp', (req, res) => {
     ignored:   { title: `${me.name} removed their invite`,body: eventName },
   };
   const pm = pushMsgs[status];
-  sendPush(outing.created_by, { ...pm, tag: `outing-rsvp-${outing.id}`, url: '/calendar.html' });
+  sendPush(outing.created_by, { ...pm, tag: `outing-rsvp-${outing.id}`, url: `/calendar.html?openEvent=${outing.id}` });
 
   res.json({ ok: true });
 });
@@ -1759,7 +1759,7 @@ router.post('/outings/:id/suggest', (req, res) => {
     title: `${me.name} has a suggestion`,
     body:  `For ${eventName}: ${parts.join(' · ')}`,
     tag:   `outing-suggest-${outing.id}`,
-    url:   '/calendar.html',
+    url:   `/calendar.html?openEvent=${outing.id}`,
   });
 
   res.json({ ok: true, suggestion_id: suggId });
@@ -1799,7 +1799,7 @@ router.post('/outings/:id/suggestions/:suggId/accept', (req, res) => {
         title: 'Plan updated',
         body:  `${me.name} updated ${eventName}`,
         tag:   `outing-updated-${outing.id}`,
-        url:   '/calendar.html',
+        url:   `/calendar.html?openEvent=${outing.id}`,
       });
     }
   }
