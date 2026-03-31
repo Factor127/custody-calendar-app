@@ -1760,9 +1760,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
 <!-- ── Month heading row: prev / month+year / next + edit ── -->
 <div style="max-width:680px;margin:0 auto;padding:20px 16px 6px;display:flex;align-items:center;gap:8px;">
-  <button class="btn btn-outline btn-sm" onclick="prevMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;">‹</button>
+  <button class="btn btn-outline" onclick="prevMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;font-size:20px;padding:4px 14px;line-height:1;">‹</button>
   <div class="app-title-strip" id="app-title-strip" style="flex:1;margin:0;padding:0;text-align:center;"></div>
-  <button class="btn btn-outline btn-sm" onclick="nextMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;">›</button>
+  <button class="btn btn-outline" onclick="nextMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;font-size:20px;padding:4px 14px;line-height:1;">›</button>
   <div style="position:relative;flex-shrink:0;" id="edit-menu-wrap">
     <button class="btn btn-sm" onclick="toggleEditMenu()" title="Edit"
       style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
@@ -2015,34 +2015,34 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
         <!-- Step 1: who to invite -->
         <div class="invite-step">
-          <h2 style="margin:0 0 4px;font-size:17px;">Who do you want to invite?</h2>
-          <p id="inv-date-label" class="text-muted" style="margin:0 0 14px;font-size:13px;"></p>
+          <h2 style="margin:0 0 4px;font-size:17px;text-align:center;">Who do you want to invite?</h2>
+          <p id="inv-date-label" class="text-muted" style="margin:0 0 14px;font-size:13px;text-align:center;"></p>
           <div id="invite-person-list"></div>
           <div class="modal-actions" style="margin-top:16px;">
-            <button class="btn btn-outline" onclick="closeModal('social-invite-modal')">Cancel</button>
-            <button class="btn btn-primary" onclick="inviteStep2()">Next →</button>
+            <button class="btn btn-outline" style="text-align:center;" onclick="closeModal('social-invite-modal')">Cancel</button>
+            <button class="btn btn-primary" style="text-align:center;" onclick="inviteStep2()">Next →</button>
           </div>
         </div>
 
-        <!-- Step 2: message editor -->
+        <!-- Step 2: confirm invite details -->
         <div class="invite-step">
-          <h2 style="margin:0 0 4px;font-size:17px;">Your message</h2>
-          <p class="text-muted" style="margin:0 0 10px;font-size:12px;">Edit before sending</p>
+          <h2 style="margin:0 0 4px;font-size:17px;text-align:center;">Confirm your invite</h2>
+          <p class="text-muted" style="margin:0 0 10px;font-size:12px;text-align:center;">Review the details before sending</p>
           <textarea id="invite-msg-area"></textarea>
           <div class="modal-actions" style="margin-top:16px;">
-            <button class="btn btn-outline" onclick="inviteStep1()">← Back</button>
-            <button class="btn btn-primary" onclick="inviteStep3()">Send via WhatsApp →</button>
+            <button class="btn btn-outline" style="text-align:center;" onclick="inviteStep1()">← Back</button>
+            <button class="btn btn-primary" style="text-align:center;" onclick="inviteStep3()">Send via WhatsApp →</button>
           </div>
         </div>
 
-        <!-- Step 3: WhatsApp queue -->
+        <!-- Step 3: WhatsApp send -->
         <div class="invite-step">
-          <h2 style="margin:0 0 4px;font-size:17px;">Send messages</h2>
-          <p id="inv-queue-desc" class="text-muted" style="margin:0 0 14px;font-size:12px;"></p>
+          <h2 style="margin:0 0 4px;font-size:17px;text-align:center;">Send via WhatsApp</h2>
+          <p id="inv-queue-desc" class="text-muted" style="margin:0 0 14px;font-size:12px;text-align:center;"></p>
           <div id="invite-wa-queue"></div>
           <div class="modal-actions" style="margin-top:16px;">
-            <button class="btn btn-outline" onclick="inviteStep2()">← Back</button>
-            <button class="btn btn-primary" onclick="saveOutingAndClose()">Done ✓</button>
+            <button class="btn btn-outline" style="text-align:center;" onclick="inviteStep2()">← Back</button>
+            <button class="btn btn-primary" style="text-align:center;" onclick="saveOutingAndClose()">Confirm invite ✓</button>
           </div>
         </div>
 
