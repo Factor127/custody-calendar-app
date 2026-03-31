@@ -29,6 +29,14 @@ try { db.exec('ALTER TABLE users ADD COLUMN google_refresh_token TEXT'); } catch
 try { db.exec('ALTER TABLE users ADD COLUMN google_token_expiry TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN city TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN city_place_id TEXT'); } catch(e) { /* already exists */ }
+
+// ── Email sequence tracking ────────────────────────────────────────────────────
+try { db.exec('ALTER TABLE users ADD COLUMN email_seq_step INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN email_seq_started TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN email_seq_last_sent TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN email_seq_opened TEXT DEFAULT \'[]\''); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN email_seq_2b_sent INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN unsubscribed INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }

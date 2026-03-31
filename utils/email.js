@@ -42,14 +42,20 @@ async function sendCalendarInvite({ to, subject, bodyText, icsContent, method = 
 /**
  * Send a plain or HTML email (no ICS attachment).
  */
-async function sendEmail({ to, subject, bodyText, html }) {
+async function sendEmail({ to, subject, bodyText, html, from, replyTo }) {
   if (!process.env.RESEND_API_KEY) {
     console.log('[email] RESEND_API_KEY not set — skipping email to', to);
     return;
   }
   try {
-    const payload = { from: FROM(), to: [to], subject, text: bodyText };
-    if (html) payload.html = html;
+    const payload = {
+      from:     from    || FROM(),
+      to:       [to],
+      subject,
+      text:     bodyText,
+    };
+    if (html)    payload.html     = html;
+    if (replyTo) payload.reply_to = replyTo;
     await getClient().emails.send(payload);
     console.log('[email] Sent email to', to);
   } catch (err) {

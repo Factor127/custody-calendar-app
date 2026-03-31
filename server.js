@@ -35,6 +35,7 @@ const adminRouter       = require('./routes/admin');
 const pagesRouter       = require('./routes/pages');
 const smartSuggestRouter = require('./routes/smart-suggest');
 const pushRouter         = require('./routes/push');
+const { startSequenceProcessor, markOpened } = require('./utils/emailSequence');
 
 app.use('/api', authRouter);   // magic link endpoints at /api/auth/...
 app.use('/', authRouter);      // Google OAuth at /auth/google, /auth/google/callback
@@ -50,6 +51,45 @@ app.use('/', pagesRouter);
 
 // ── Root: serve login/home page directly ──────────────────────────────────────
 app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'login.html')));
+
+// ── Email sequence: open tracking pixel ──────────────────────────────────────
+app.get('/api/email/open', (req, res) => {
+  const { u: userId, s: step } = req.query;
+  if (userId && step) {
+    try { markOpened(userId, parseInt(step)); } catch(e) { /* non-critical */ }
+  }
+  // Return a 1×1 transparent GIF
+  const GIF = Buffer.from('R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==', 'base64');
+  res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store', 'Content-Length': GIF.length });
+  res.end(GIF);
+});
+
+// ── Email sequence: unsubscribe ───────────────────────────────────────────────
+app.get('/api/email/unsubscribe', (req, res) => {
+  const { token } = req.query;
+  if (token) {
+    try {
+      const { db } = require('./db');
+      const user = db.prepare('SELECT id, name FROM users WHERE access_token = ?').get(token);
+      if (user) {
+        db.prepare('UPDATE users SET unsubscribed = 1 WHERE id = ?').run(user.id);
+        return res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
+          <style>body{font-family:-apple-system,sans-serif;background:#0c0c15;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+          .box{text-align:center;max-width:400px;padding:40px;} h1{font-size:24px;margin-bottom:12px;} p{color:rgba(238,238,248,0.6);font-size:14px;line-height:1.6;}
+          a{color:#a78bfa;text-decoration:none;}</style></head>
+          <body><div class="box">
+            <h1>You're unsubscribed.</h1>
+            <p>We'll stop sending you email updates, ${user.name.split(' ')[0]}.</p>
+            <p style="margin-top:20px;"><a href="/">Back to Spontany</a></p>
+          </div></body></html>`);
+      }
+    } catch(e) { /* non-critical */ }
+  }
+  res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
+    <style>body{font-family:-apple-system,sans-serif;background:#0c0c15;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+    .box{text-align:center;max-width:400px;padding:40px;} h1{font-size:24px;margin-bottom:12px;} p{color:rgba(238,238,248,0.6);font-size:14px;}</style></head>
+    <body><div class="box"><h1>Unsubscribed.</h1><p>You won't receive further emails from us.</p></div></body></html>`);
+});
 
 // ── PWA icon PNGs — generated from icon.svg via sharp ────────────────────────
 const _iconCache = {};
@@ -92,6 +132,13 @@ app.listen(PORT, () => {
     console.log('  → Weekly digest scheduler: active (fires Fridays 08:00 UTC)');
   } else {
     console.log('  → Weekly digest: disabled (set CRON_SECRET + RESEND_API_KEY to enable)');
+  }
+
+  // ── Welcome email sequence processor ─────────────────────────────────────
+  if (process.env.RESEND_API_KEY) {
+    startSequenceProcessor();
+  } else {
+    console.log('  → Email sequence: disabled (set RESEND_API_KEY to enable)');
   }
 });
 

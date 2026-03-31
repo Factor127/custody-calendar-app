@@ -9,6 +9,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
 const { sendCalendarInvite, sendEmail } = require('../utils/email');
 const { sendPush } = require('../utils/push');
+const { startSequence } = require('../utils/emailSequence');
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
@@ -92,6 +93,10 @@ router.post('/users/setup', (req, res) => {
   }
 
   res.json({ token, message: 'Owner created. Save your personal URL.' });
+
+  // Kick off welcome email sequence (fire-and-forget — non-blocking)
+  const newUser = q.getUserById.get(id);
+  if (newUser) startSequence(newUser).catch(e => console.error('[seq] Email 1 error:', e.message));
 });
 
 // ── Pattern & calendar generation ─────────────────────────────────────────────
@@ -188,6 +193,10 @@ router.post('/users/register', (req, res) => {
   }
 
   res.json({ token, userId, message: 'Registered successfully' });
+
+  // Kick off welcome email sequence for the new partner (fire-and-forget)
+  const newPartner = q.getUserById.get(userId);
+  if (newPartner) startSequence(newPartner).catch(e => console.error('[seq] Email 1 (partner) error:', e.message));
 });
 
 // ── Calendar data ─────────────────────────────────────────────────────────────
