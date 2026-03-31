@@ -28,6 +28,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN google_access_token TEXT'); } catch(
 try { db.exec('ALTER TABLE users ADD COLUMN google_refresh_token TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN google_token_expiry TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE users ADD COLUMN city TEXT'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE users ADD COLUMN city_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }

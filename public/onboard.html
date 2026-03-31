@@ -351,9 +351,10 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
           <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Used to log back in — never shared.</p>
         </div>
 
-        <div class="field-group">
+        <div class="field-group" style="position:relative;">
           <label class="field-label" for="user-city">City <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
-          <input id="user-city" class="field-input" type="text" placeholder="e.g. London, New York…" autocomplete="off">
+          <input id="user-city" class="field-input" type="text" placeholder="e.g. London, New York…" autocomplete="off" oninput="onCityInput()">
+          <div id="city-ac-drop" style="position:absolute;top:100%;left:0;right:0;z-index:300;background:#1a1a2e;border:1px solid rgba(167,139,250,0.25);border-radius:10px;overflow:hidden;display:none;margin-top:2px;"></div>
         </div>
 
         <div class="field-group">
@@ -721,6 +722,54 @@ function showWizardError(msg) {
 }
 
 // ── Step 1 ─────────────────────────────────────────────────────────────────────
+// ── City autocomplete (public endpoint, no auth needed) ──────────────────
+let _cityAcTimer = null;
+let _cityPredictions = [];
+
+function onCityInput() {
+  checkStep1Ready();
+  clearTimeout(_cityAcTimer);
+  const q = document.getElementById('user-city')?.value.trim();
+  const drop = document.getElementById('city-ac-drop');
+  if (!q || q.length < 2) { if (drop) drop.style.display = 'none'; return; }
+  _cityAcTimer = setTimeout(() => _fetchCities(q), 300);
+}
+
+async function _fetchCities(query) {
+  const drop = document.getElementById('city-ac-drop');
+  if (!drop) return;
+  try {
+    const res = await fetch(`/api/places/cities?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    _cityPredictions = data.predictions || [];
+    if (!_cityPredictions.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = _cityPredictions.map((p, i) => {
+      return `<div onclick="_selectCity(${i})" style="padding:11px 14px;font-size:14px;color:#eeeef8;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onmouseover="this.style.background='rgba(124,92,191,0.15)'" onmouseout="this.style.background=''">${p.name}<span style="font-size:11px;color:rgba(238,238,248,0.4);margin-left:6px;">${(p.description||'').replace(p.name,'').replace(/^,\s*/,'')}</span></div>`;
+    }).join('');
+    drop.style.display = 'block';
+  } catch(e) {}
+}
+
+function _selectCity(idx) {
+  const p = _cityPredictions[idx];
+  if (!p) return;
+  const input = document.getElementById('user-city');
+  if (input) {
+    input.value = p.name;
+    input.dataset.placeId = p.place_id || '';
+  }
+  const drop = document.getElementById('city-ac-drop');
+  if (drop) drop.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-city') && !e.target.closest('#city-ac-drop')) {
+    const drop = document.getElementById('city-ac-drop');
+    if (drop) drop.style.display = 'none';
+  }
+});
+
 function checkStep1Ready() {
   const name = document.getElementById('user-name')?.value.trim();
   const btn  = document.getElementById('step1-next-btn');
@@ -1024,7 +1073,9 @@ async function saveAndFinish() {
     : { self_days:   week1Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
 
   const phone        = document.getElementById('user-phone')?.value.trim() || null;
-  const city         = document.getElementById('user-city')?.value.trim() || null;
+  const cityInput    = document.getElementById('user-city');
+  const city         = cityInput?.value.trim() || null;
+  const city_place_id = cityInput?.dataset?.placeId || null;
   const age          = parseInt(document.getElementById('user-age')?.value) || null;
   const workSchedule = getWorkSchedulePayload();
   const hasCustody   = isParent && !isMirror && generatedDays.length > 0;
@@ -1036,7 +1087,7 @@ async function saveAndFinish() {
     body = {
       invite_token:        INVITE_TOKEN,
       name, email,
-      mobile:              phone, age, city,
+      mobile:              phone, age, city, city_place_id,
       relationship_status: relStatus,
       work_schedule:       workSchedule,
       pattern_type:        hasCustody ? patternType : null,
@@ -1052,7 +1103,7 @@ async function saveAndFinish() {
       magic:               MAGIC_TOKEN,
       name,
       google_id:           GOOGLE_ID || undefined,
-      mobile:              phone, age, city,
+      mobile:              phone, age, city, city_place_id,
       relationship_status: relStatus,
       work_schedule:       workSchedule,
       pattern_type:        hasCustody ? patternType : 'none',

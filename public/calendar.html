@@ -3289,6 +3289,33 @@ function dayPaneBack() {
 async function openEventPaneDirect(outingId) {
   _dayPaneStack = [];
   document.getElementById('day-sheet').classList.add('open');
+
+  // Fetch detail first to decide which pane to open
+  try {
+    const res = await fetch(`/api/outings/${outingId}/detail?token=${MY_TOKEN}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (!data.is_creator) {
+      // If I'm a pending invitee, show the invite pane with RSVP actions
+      const myInvitee = data.invitees.find(i => i.user_id === myUserId);
+      if (myInvitee && myInvitee.status === 'pending') {
+        _currentOutingId = outingId;
+        _currentInviteeId = myInvitee.id;
+        _dayPaneStack.push('day-pane-invite');
+        _showPane('day-pane-invite');
+        renderInvitePane(data, myInvitee.id);
+        return;
+      }
+    }
+    // Creator, or already-responded invitee → event pane
+    _currentOutingId = outingId;
+    _dayPaneStack.push('day-pane-event');
+    _showPane('day-pane-event');
+    document.getElementById('event-pane-title').textContent = 'Loading…';
+    renderEventPane(data);
+    return;
+  } catch(e) {}
+
   await openEventPane(outingId);
 }
 
@@ -3326,14 +3353,20 @@ function renderEventPane(data) {
     html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
   }
 
-  // Event details
+  // Event details — date, time, venue
   html += `<div style="padding:14px 16px 6px;">`;
+  if (outing.date) {
+    const _d = new Date(outing.date + 'T12:00:00');
+    const _dateLabel = _d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    html += `<div style="font-size:14px;font-weight:700;color:rgba(238,238,248,0.9);margin-bottom:4px;">📅 ${_dateLabel}</div>`;
+  }
   if (outing.event_time) html += `<div style="font-size:13px;color:rgba(238,238,248,0.55);margin-bottom:4px;">🕐 ${outing.event_time}</div>`;
   if (outing.venue) {
     const venueLink = outing.venue_address
       ? `<a href="https://maps.google.com/?q=${encodeURIComponent(outing.venue_address)}" target="_blank" style="color:#a78bfa;text-decoration:none;">📍 ${outing.venue}</a>`
-      : `<span>📍 ${outing.venue}</span>`;
-    html += `<div style="font-size:13px;color:rgba(238,238,248,0.70);margin-bottom:4px;">${venueLink}</div>`;
+      : `<span style="color:rgba(238,238,248,0.70);">📍 ${outing.venue}</span>`;
+    html += `<div style="font-size:13px;margin-bottom:4px;">${venueLink}</div>`;
+    if (outing.venue_address) html += `<div style="font-size:11px;color:rgba(238,238,248,0.35);margin-bottom:4px;">${outing.venue_address}</div>`;
   }
   html += `</div>`;
 
@@ -3353,6 +3386,37 @@ function renderEventPane(data) {
       </div>`;
     }
     html += `</div>`;
+  }
+
+  // Suggest changes (invitees — non-creator participants)
+  if (!is_creator) {
+    html += `<div id="ep-suggest-toggle" style="padding:0 16px 8px;">
+      <button onclick="toggleEPSuggest()" style="background:none;border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:8px 14px;color:rgba(167,139,250,0.8);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;">Suggest a change ✏️</button>
+    </div>
+    <div id="ep-suggest-section" style="display:none;padding:0 16px 8px;">
+      <div class="suggest-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span style="font-size:13px;font-weight:800;color:#eeeef8;">Suggest an alternative</span>
+          <button onclick="toggleEPSuggest()" style="background:none;border:none;color:rgba(238,238,248,0.4);font-size:16px;cursor:pointer;">✕</button>
+        </div>
+        <div class="suggest-field">
+          <label class="suggest-label">Time</label>
+          <select class="suggest-select" id="ep-suggest-time">
+            <option value="">Any time</option>
+            <option value="Morning (9-12)">Morning (9-12)</option>
+            <option value="Afternoon (12-17)">Afternoon (12-17)</option>
+            <option value="Evening (17-21)">Evening (17-21)</option>
+            <option value="Night (21+)">Night (21+)</option>
+            ${[...Array(29)].map((_,i)=>{const h=9+Math.floor(i/2);const m=i%2===0?'00':'30';const label=`${String(h).padStart(2,'0')}:${m}`;return `<option value="${label}">${label}</option>`;}).join('')}
+          </select>
+        </div>
+        <div class="suggest-field" style="position:relative;">
+          <label class="suggest-label">Suggest a place</label>
+          <input class="suggest-input" id="ep-suggest-place" type="text" placeholder="e.g. Central Park, a coffee shop…" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:11px;font-size:13px;" onclick="sendEventSuggestion('${outing.id}')">Send suggestion</button>
+      </div>
+    </div>`;
   }
 
   // Cancel event (creator only)
@@ -3647,6 +3711,98 @@ function _selectSuggestPlace(idx) {
 function toggleSuggestSection() {
   const s = document.getElementById('invite-suggest-section');
   if (s) s.style.display = s.style.display === 'none' ? '' : 'none';
+}
+
+function toggleEPSuggest() {
+  const s = document.getElementById('ep-suggest-section');
+  if (!s) return;
+  const opening = s.style.display === 'none';
+  s.style.display = opening ? '' : 'none';
+  if (opening) {
+    // Wire Places autocomplete for the event-pane suggest place input
+    _initEPPlacesAc();
+  }
+}
+
+let _epPlaceAcTimer = null;
+let _epPlacePredictions = [];
+
+function _initEPPlacesAc() {
+  const input = document.getElementById('ep-suggest-place');
+  if (!input || input.dataset.acInit) return;
+  input.dataset.acInit = '1';
+
+  const wrap = input.parentElement;
+  const drop = document.createElement('div');
+  drop.id = 'ep-suggest-place-drop';
+  drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;z-index:200;background:#1a1a2e;border:1px solid rgba(167,139,250,0.25);border-radius:10px;overflow:hidden;display:none;';
+  wrap.appendChild(drop);
+
+  input.addEventListener('input', () => {
+    clearTimeout(_epPlaceAcTimer);
+    const q = input.value.trim();
+    if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+    _epPlaceAcTimer = setTimeout(() => _fetchEPPlaces(q), 300);
+  });
+  input.addEventListener('blur', () => setTimeout(() => { drop.style.display = 'none'; }, 200));
+}
+
+async function _fetchEPPlaces(query) {
+  const drop = document.getElementById('ep-suggest-place-drop');
+  if (!drop) return;
+  try {
+    const res = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(query)}&token=${MY_TOKEN}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    _epPlacePredictions = data.predictions || [];
+    if (!_epPlacePredictions.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = _epPlacePredictions.map((p, i) => {
+      const name = p.name || p.description || 'Place';
+      return `<div onclick="_selectEPPlace(${i})" style="padding:10px 14px;font-size:13px;color:#eeeef8;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onmouseover="this.style.background='rgba(124,92,191,0.15)'" onmouseout="this.style.background=''">${name}</div>`;
+    }).join('');
+    drop.style.display = 'block';
+  } catch(e) {}
+}
+
+function _selectEPPlace(idx) {
+  const p = _epPlacePredictions[idx];
+  if (!p) return;
+  const input = document.getElementById('ep-suggest-place');
+  if (input) {
+    input.value = p.name || p.description || 'Place';
+    input.dataset.placeId      = p.place_id   || '';
+    input.dataset.placeAddress = p.description || '';
+  }
+  const drop = document.getElementById('ep-suggest-place-drop');
+  if (drop) drop.style.display = 'none';
+}
+
+async function sendEventSuggestion(outingId) {
+  const suggestedTime  = document.getElementById('ep-suggest-time')?.value || '';
+  const placeInput     = document.getElementById('ep-suggest-place');
+  const suggestedPlace = placeInput?.value?.trim() || '';
+  if (!suggestedTime && !suggestedPlace) { showToast('Add a time or place suggestion'); return; }
+  try {
+    const res = await fetch(`/api/outings/${outingId}/suggest?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ suggested_time: suggestedTime || null, suggested_place: suggestedPlace || null }),
+    });
+    if (!res.ok) throw new Error();
+    showToast('Suggestion sent!');
+    toggleEPSuggest();
+    // Save to opportunity DB if came from Places
+    const placeId = placeInput?.dataset?.placeId;
+    if (suggestedPlace && placeId) {
+      fetch(`/api/opportunities/direct?token=${MY_TOKEN}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: suggestedPlace, place_id: placeId, address: placeInput.dataset.placeAddress || '', source: 'suggestion' }),
+      }).catch(() => {});
+    }
+    await openEventPane(outingId);
+  } catch(e) {
+    showToast('Could not send suggestion');
+  }
 }
 
 function toggleDeclineChip(btn, reason) {

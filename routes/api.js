@@ -46,7 +46,7 @@ function requireOwner(req, res) {
 // Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
   const { magic, name, pattern_type, pattern_data, anchor_date, days, google_id,
-          work_schedule, mobile, age, relationship_status, city, photo } = req.body;
+          work_schedule, mobile, age, relationship_status, city, city_place_id, photo } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required' });
   if (!magic) return res.status(400).json({ error: 'Email verification required. Please use the link sent to your email.' });
 
@@ -69,6 +69,7 @@ router.post('/users/setup', (req, res) => {
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, id);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, id);
   if (city)                db.prepare("UPDATE users SET city = ? WHERE id = ?").run(city.trim(), id);
+  if (city_place_id)       db.prepare("UPDATE users SET city_place_id = ? WHERE id = ?").run(city_place_id, id);
   if (photo)               db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo, id);
 
   // Save pattern for future reference / regeneration
@@ -113,7 +114,7 @@ router.post('/pattern/generate', (req, res) => {
 // POST /api/users/register — complete partner onboarding
 router.post('/users/register', (req, res) => {
   const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days,
-          age, relationship_status, city, work_schedule, photo } = req.body;
+          age, relationship_status, city, city_place_id, work_schedule, photo } = req.body;
 
   if (!invite_token) return res.status(400).json({ error: 'invite_token required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
@@ -141,6 +142,7 @@ router.post('/users/register', (req, res) => {
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, userId);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, userId);
   if (city)                db.prepare("UPDATE users SET city = ? WHERE id = ?").run(city.trim(), userId);
+  if (city_place_id)       db.prepare("UPDATE users SET city_place_id = ? WHERE id = ?").run(city_place_id, userId);
   if (work_schedule)       db.prepare('UPDATE users SET work_schedule = ? WHERE id = ?').run(JSON.stringify(work_schedule), userId);
   if (photo)               db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo, userId);
 
@@ -1398,6 +1400,32 @@ router.get('/overlap', (req, res) => {
   });
 
   res.json({ overlap, my_free_count: myFreeDays.length });
+});
+
+// GET /api/places/cities — public city autocomplete (no auth — used during onboarding)
+// Only returns (cities) type results, so exposure is minimal.
+router.get('/places/cities', async (req, res) => {
+  const input = (req.query.q || '').trim();
+  if (input.length < 2) return res.json({ predictions: [] });
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return res.json({ predictions: [] });
+
+  try {
+    const url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      + '?input='  + encodeURIComponent(input)
+      + '&types=(cities)'
+      + '&key='    + apiKey;
+    const gData = await fetch(url).then(r => r.json());
+    const predictions = (gData.predictions || []).slice(0, 6).map(p => ({
+      place_id:    p.place_id,
+      name:        p.structured_formatting?.main_text || p.description,
+      description: p.description,
+    }));
+    res.json({ predictions });
+  } catch (err) {
+    res.json({ predictions: [] });
+  }
 });
 
 // GET /api/places/autocomplete — proxy to Google Places API (keeps key server-side)
