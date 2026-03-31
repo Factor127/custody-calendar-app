@@ -1678,6 +1678,16 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .sc-review-overlay.open .sc-review-sheet { transform:translateY(0); opacity:1; pointer-events:all; }
     .sc-review-body { flex:1; overflow-y:auto; padding:16px 20px; }
+    .sc-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px 12px; position:relative;
+      border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
+    }
+    .sc-header h2 {
+      position:absolute; left:50%; transform:translateX(-50%);
+      font-size:17px; font-weight:800; color:var(--text); margin:0;
+      white-space:nowrap;
+    }
     .sc-review-summary { background:var(--surface); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
     .sc-review-summary-line { font-size:14px; color:var(--text); margin:3px 0; }
     .sc-review-summary-line strong { color:var(--accent); }
@@ -1760,9 +1770,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
 <!-- ── Month heading row: prev / month+year / next + edit ── -->
 <div style="max-width:680px;margin:0 auto;padding:20px 16px 6px;display:flex;align-items:center;gap:8px;">
-  <button class="btn btn-outline" onclick="prevMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;font-size:20px;padding:4px 14px;line-height:1;">‹</button>
+  <button onclick="prevMonth()" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:border-color .15s,color .15s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">‹</button>
   <div class="app-title-strip" id="app-title-strip" style="flex:1;margin:0;padding:0;text-align:center;"></div>
-  <button class="btn btn-outline" onclick="nextMonth()" style="border-color:var(--border);color:var(--muted);flex-shrink:0;font-size:20px;padding:4px 14px;line-height:1;">›</button>
+  <button onclick="nextMonth()" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:border-color .15s,color .15s;" onmouseover="this.style.color='var(--text)';this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">›</button>
   <div style="position:relative;flex-shrink:0;" id="edit-menu-wrap">
     <button class="btn btn-sm" onclick="toggleEditMenu()" title="Edit"
       style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
@@ -2122,13 +2132,13 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   <div class="sc-review-sheet">
     <div class="sc-handle"></div>
     <div class="sc-header">
-      <button class="sc-close-btn" style="font-size:15px;" onclick="closeSCReview()">← Back</button>
-      <h2>Review & send</h2>
+      <button class="sc-close-btn" style="font-size:15px;" id="sc-review-back-btn" onclick="scReviewBack()">← Back</button>
+      <h2 id="sc-review-title">Review invite</h2>
       <button class="sc-close-btn" onclick="closeSCAll()">✕</button>
     </div>
     <div class="sc-review-body" id="sc-review-body"></div>
     <div class="sc-footer">
-      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;" onclick="finalizeSC()">Confirm invite ✓</button>
+      <button class="btn btn-primary" id="sc-review-action-btn" style="width:100%;padding:13px;font-size:15px;" onclick="scReviewAction()">Confirm invite →</button>
     </div>
   </div>
 </div>
@@ -7091,11 +7101,50 @@ function scConfirmOrSave() {
   if (_sc.selWho.size === 0) { saveForLaterSC(); } else { openSCReview(); }
 }
 
+let _scReviewStage = 'review'; // 'review' | 'whatsapp'
+
 function openSCReview() {
   if (!_sc.selDate) { showToast('Pick a date'); return; }
   _sc.removed = new Set();
+  _scReviewStage = 'review';
+  _scApplyReviewStage();
   renderSCReview();
   document.getElementById('sc-review-overlay').classList.add('open');
+}
+
+function _scApplyReviewStage() {
+  const titleEl  = document.getElementById('sc-review-title');
+  const actionEl = document.getElementById('sc-review-action-btn');
+  const backEl   = document.getElementById('sc-review-back-btn');
+  if (_scReviewStage === 'review') {
+    if (titleEl)  titleEl.textContent  = 'Review invite';
+    if (actionEl) actionEl.textContent = 'Confirm invite →';
+    if (backEl)   backEl.textContent   = '← Back';
+  } else {
+    if (titleEl)  titleEl.textContent  = 'Send via WhatsApp';
+    if (actionEl) actionEl.textContent = 'Done ✓';
+    if (backEl)   backEl.textContent   = '← Edit';
+  }
+}
+
+function scReviewBack() {
+  if (_scReviewStage === 'whatsapp') {
+    _scReviewStage = 'review';
+    _scApplyReviewStage();
+    renderSCReview();
+  } else {
+    closeSCReview();
+  }
+}
+
+function scReviewAction() {
+  if (_scReviewStage === 'review') {
+    _scReviewStage = 'whatsapp';
+    _scApplyReviewStage();
+    renderSCWhatsApp();
+  } else {
+    finalizeSC();
+  }
 }
 
 function renderSCReview() {
@@ -7107,34 +7156,63 @@ function renderSCReview() {
     : '';
   const { main: dateMain } = _scFmtDate(_sc.selDate);
   const selected = _sc.data.who.filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
+  const soft = _scIsSoftInvite();
 
-  // Group message
-  const names     = selected.map(w => w.name.split(' ')[0]).join(', ');
-  const soft      = _scIsSoftInvite();
-  const groupMsg  = soft
+  // Stage 1: Review only — no WhatsApp
+  body.innerHTML = `
+    <div class="sc-review-summary">
+      ${_sc.selWhat?.unfurled?.image ? `<img src="${_sc.selWhat.unfurled.image}" style="width:100%;border-radius:10px;margin-bottom:12px;max-height:140px;object-fit:cover;" onerror="this.remove();">` : ''}
+      <div class="sc-review-summary-line" style="font-size:16px;font-weight:800;text-align:center;margin-bottom:10px;">
+        ${whatText || 'Hangout'}
+      </div>
+      <div class="sc-review-summary-line" style="text-align:center;">📅 <strong>${dateMain}</strong></div>
+      ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">No fixed date — soft invite</div>` : ''}
+    </div>
+    <div style="margin:16px 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Inviting</div>
+    <div id="sc-review-people-stage1">
+      ${selected.map(w => {
+        const color = _sc.colors[w.id] || '#7c5cbf';
+        return `<div class="sc-review-person" id="sc-rp-${w.id}">
+          <div class="sc-review-avatar" style="background:${color};">${w.initial}${w.photo ? `<img src="${w.photo}" alt="" onerror="this.remove();">` : ''}</div>
+          <div class="sc-review-name">${w.name}</div>
+          <button class="sc-review-remove" onclick="scRemovePerson('${w.id}')" title="Remove">×</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="sc-add-person-btn" onclick="scAddPersonFromReview()">＋ Add someone</button>`;
+}
+
+function renderSCWhatsApp() {
+  const body = document.getElementById('sc-review-body');
+  if (!body || !_sc.data) return;
+
+  const whatText = _sc.selWhat
+    ? (_sc.selWhat.custom || `${_sc.selWhat.emoji || ''} ${_sc.selWhat.title || ''}`.trim())
+    : '';
+  const { main: dateMain } = _scFmtDate(_sc.selDate);
+  const selected = _sc.data.who.filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
+  const soft = _scIsSoftInvite();
+
+  const names    = selected.map(w => w.name.split(' ')[0]).join(', ');
+  const groupMsg = soft
     ? `hey ${names}! thinking about getting together${whatText ? ` — ${whatText}` : ''} sometime, anyone up for it?`
     : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`;
-
   const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
 
-  // Build per-person URLs first (avoid innerHTML href corruption)
   const personData = selected.map(w => {
-    const msg  = _scPersonMsg(w, whatText, dateMain, soft);
-    let num    = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
+    const msg = _scPersonMsg(w, whatText, dateMain, soft);
+    let num = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
     if (num && num.startsWith('0')) num = num.slice(1);
-    const url  = num
+    const url = num
       ? `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     return { w, url };
   });
 
   body.innerHTML = `
-    <div class="sc-review-summary">
-      <div class="sc-review-summary-line">📅 <strong>${dateMain}</strong></div>
-      ${whatText ? `<div class="sc-review-summary-line">✨ <strong>${whatText}</strong></div>` : ''}
-      <div class="sc-review-summary-line">👥 ${selected.map(w => w.name).join(', ')}</div>
-      ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:6px;">
-        Sending as a soft invite — no fixed date set yet</div>` : ''}
+    <div class="sc-review-summary" style="text-align:center;padding:12px 16px;">
+      <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">${dateMain}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);">${whatText || 'Hangout'} · ${selected.map(w=>w.name.split(' ')[0]).join(', ')}</div>
     </div>
     <a class="sc-group-wa" id="sc-group-wa-link" href="#" target="_blank" rel="noopener">
       📲 Send group WhatsApp
@@ -7147,23 +7225,18 @@ function renderSCReview() {
     <div id="sc-review-people">
       ${personData.map((pd, i) => {
         const color = _sc.colors[pd.w.id] || '#7c5cbf';
-        const photoLayer = pd.w.photo
-          ? `<img src="${pd.w.photo}" alt="" onerror="this.remove();">`
-          : '';
         return `<div class="sc-review-person" id="sc-rp-${pd.w.id}">
-          <div class="sc-review-avatar" style="background:${color};">${pd.w.initial}${photoLayer}</div>
+          <div class="sc-review-avatar" style="background:${color};">${pd.w.initial}${pd.w.photo ? `<img src="${pd.w.photo}" alt="" onerror="this.remove();">` : ''}</div>
           <div class="sc-review-name">${pd.w.name}</div>
           <a class="sc-review-wa-btn" data-wi="${i}" href="#" target="_blank" rel="noopener">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             Send
           </a>
-          <button class="sc-review-remove" onclick="scRemovePerson('${pd.w.id}')" title="Remove">×</button>
         </div>`;
       }).join('')}
-    </div>
-    <button class="sc-add-person-btn" onclick="scAddPersonFromReview()">＋ Add someone</button>`;
+    </div>`;
 
-  // Assign hrefs via DOM (not innerHTML) to preserve encoding
+  // Assign hrefs via DOM
   body.querySelector('#sc-group-wa-link').href = groupWaUrl;
   personData.forEach((pd, i) => {
     const a = body.querySelector(`[data-wi="${i}"]`);
@@ -7281,6 +7354,16 @@ if ('serviceWorker' in navigator) {
       _trySubscribePush();
     } catch(err) {
       console.warn('[SW] Registration failed:', err);
+    }
+  });
+
+  // Handle notification click messages from the SW (for PC where navigate() may not work)
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'NOTIFICATION_CLICK') {
+      const url = event.data.url;
+      if (url && url !== location.href) {
+        location.href = url;
+      }
     }
   });
 }

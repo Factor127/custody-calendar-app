@@ -2,7 +2,7 @@
 // Phase 1: Offline shell + static asset caching
 // Phase 2: Push notification handling (added below)
 
-const CACHE_VERSION = 'spontany-v3';
+const CACHE_VERSION = 'spontany-v4';
 const STATIC_ASSETS = [
   '/styles.css',
   '/logo.svg',
@@ -106,23 +106,19 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(async windowClients => {
-        // Find an existing app window
+        // Find an existing app window at our origin
         const appWindow = windowClients.find(
           c => new URL(c.url).origin === self.location.origin
         );
         if (appWindow) {
-          // Navigate existing window to the target URL, then focus
-          try {
-            await appWindow.navigate(fullTarget);
-            await appWindow.focus();
-            return;
-          } catch (e) {
-            // navigate() failed (e.g. cross-origin guard) — just focus
-            await appWindow.focus();
-            return;
-          }
+          // Post a message so the page can handle navigation (works even when navigate() isn't available)
+          appWindow.postMessage({ type: 'NOTIFICATION_CLICK', url: fullTarget });
+          try { await appWindow.focus(); } catch(e) {}
+          // Also try navigate() as a secondary attempt
+          try { await appWindow.navigate(fullTarget); } catch(e) {}
+          return;
         }
-        // No existing window — open a new one
+        // No existing window — open a new one (always works on notification click gesture)
         return clients.openWindow(fullTarget);
       })
   );
