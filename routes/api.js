@@ -2021,6 +2021,37 @@ router.get('/users/find-by-phone', (req, res) => {
   });
 });
 
+// ── GET /api/users/search?q= — search users by name or email ──
+// Returns safe public profiles only. Never returns token, email, or sensitive fields.
+router.get('/users/search', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const query = (req.query.q || '').trim();
+  if (query.length < 2) return res.json({ users: [] });
+
+  const pattern = `%${query}%`;
+  const results = db.prepare(`
+    SELECT id, name, photo, city
+    FROM users
+    WHERE id != ? AND (name LIKE ? OR email LIKE ?)
+    LIMIT 12
+  `).all(me.id, pattern, pattern);
+
+  const users = results.map(u => {
+    const existing = q.getConnectionBetween.get(me.id, u.id, u.id, me.id);
+    return {
+      id:   u.id,
+      name: u.name,
+      photo: u.photo || null,
+      city:  u.city  || null,
+      connection: existing ? { id: existing.id, status: existing.status } : null,
+    };
+  });
+
+  res.json({ users });
+});
+
 // ── POST /api/connections/request-friend — send a friend connection request ──
 // Unlike /connections/request (partner-only), any user can send a friend request.
 router.post('/connections/request-friend', (req, res) => {

@@ -240,6 +240,60 @@ input::placeholder { color:var(--muted); }
 .pref-chip.selected { background:rgba(124,92,191,0.25); border-color:var(--accent); color:var(--accent); }
 .pref-card-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:2px; }
 
+/* ── Name search ─────────────────────────────────────────────────────── */
+.name-search-row { display:flex; gap:8px; margin-top:12px; }
+.name-search-input {
+  flex:1; padding:11px 14px; background:var(--surface);
+  border:1px solid var(--border); border-radius:10px;
+  color:var(--text); font-size:14px; font-family:inherit;
+}
+.name-search-input:focus { outline:none; border-color:var(--accent); }
+.name-search-input::placeholder { color:var(--muted); }
+#name-search-results { margin-top:10px; }
+
+/* Search result rows */
+.srch-row {
+  display:flex; align-items:center; gap:12px; padding:9px 0;
+  border-bottom:1px solid var(--border); cursor:pointer;
+  transition:background .12s; border-radius:6px;
+}
+.srch-row:last-child { border-bottom:none; }
+.srch-row:hover { background:rgba(255,255,255,0.04); }
+.srch-avatar {
+  width:42px; height:42px; border-radius:50%;
+  background:var(--blue); display:flex; align-items:center; justify-content:center;
+  font-size:17px; font-weight:800; color:white; flex-shrink:0; overflow:hidden;
+}
+.srch-avatar img { width:100%; height:100%; object-fit:cover; }
+
+/* ── Profile pane (slide-up) ────────────────────────────────────────── */
+.profile-pane-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.6);
+  z-index:800; display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.profile-pane-overlay.open { opacity:1; pointer-events:all; }
+.profile-pane {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:24px 24px 0 0; width:100%; max-width:560px;
+  padding:0 0 40px; max-height:82vh; overflow-y:auto;
+  transform:translateY(30px); transition:transform .25s ease;
+}
+.profile-pane-overlay.open .profile-pane { transform:translateY(0); }
+.profile-pane-handle {
+  width:40px; height:4px; background:rgba(255,255,255,0.15);
+  border-radius:2px; margin:12px auto 20px;
+}
+.profile-pane-avatar {
+  width:80px; height:80px; border-radius:50%;
+  background:var(--blue); display:flex; align-items:center; justify-content:center;
+  font-size:32px; font-weight:900; color:white; overflow:hidden;
+  margin:0 auto 14px;
+}
+.profile-pane-avatar img { width:100%; height:100%; object-fit:cover; }
+.profile-pane-name { font-size:24px; font-weight:900; color:var(--text); text-align:center; margin:0 0 6px; }
+.profile-pane-meta { font-size:13px; color:var(--muted); text-align:center; margin:0 0 24px; }
+
 /* ── Context menu ────────────────────────────────────────────────────── */
 .ctx-menu {
   position:fixed; background:var(--card); border:1px solid var(--border);
@@ -301,6 +355,7 @@ input::placeholder { color:var(--muted); }
         <hr style="flex:1;border:none;border-top:1px solid var(--border);">
       </div>
 
+
       <!-- iOS Contacts picker (progressive enhancement) -->
       <div id="contacts-picker-wrap" style="display:none;margin-bottom:12px;">
         <button id="contacts-picker-btn" onclick="browseContacts()"
@@ -327,6 +382,21 @@ input::placeholder { color:var(--muted); }
 
       <!-- Result -->
       <div id="find-result" style="margin-top:12px;"></div>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:8px;margin:16px 0 12px;">
+        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+        <span style="color:var(--muted);font-size:11px;">or search by name</span>
+        <hr style="flex:1;border:none;border-top:1px solid var(--border);">
+      </div>
+
+      <!-- Name / email search -->
+      <div class="name-search-row">
+        <input id="name-search-input" class="name-search-input" type="search"
+          placeholder="Search by name…" autocomplete="off"
+          oninput="onNameSearchInput()" onkeydown="if(event.key==='Escape')clearNameSearch()">
+      </div>
+      <div id="name-search-results"></div>
     </div>
   </div>
 
@@ -375,6 +445,19 @@ input::placeholder { color:var(--muted); }
 
 <!-- Context menu -->
 <div class="ctx-menu" id="ctx-menu" style="display:none;"></div>
+
+<!-- ── Profile pane ────────────────────────────────────────────────────── -->
+<div class="profile-pane-overlay" id="profile-pane-overlay" onclick="closeProfilePane(event)">
+  <div class="profile-pane" id="profile-pane">
+    <div class="profile-pane-handle"></div>
+    <div class="profile-pane-avatar" id="pp-avatar"></div>
+    <h2 class="profile-pane-name" id="pp-name"></h2>
+    <p class="profile-pane-meta" id="pp-meta"></p>
+    <div style="padding:0 24px;">
+      <div id="pp-action"></div>
+    </div>
+  </div>
+</div>
 
 <!-- Approve modal -->
 <div class="modal-overlay" id="approve-modal">
@@ -938,6 +1021,136 @@ async function sendFriendRequest(targetUserId, btn) {
     await loadConnections();
   } else {
     btn.disabled = false; btn.textContent = '+ Add';
+  }
+}
+
+// ── Name/email search ─────────────────────────────────────────────────────
+let _nameSearchTimer = null;
+
+function onNameSearchInput() {
+  clearTimeout(_nameSearchTimer);
+  const q = document.getElementById('name-search-input').value.trim();
+  const box = document.getElementById('name-search-results');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  box.innerHTML = '<span style="color:var(--muted);font-size:13px;">Searching…</span>';
+  _nameSearchTimer = setTimeout(() => doNameSearch(q), 320);
+}
+
+function clearNameSearch() {
+  document.getElementById('name-search-input').value = '';
+  document.getElementById('name-search-results').innerHTML = '';
+}
+
+async function doNameSearch(q) {
+  const box = document.getElementById('name-search-results');
+  try {
+    const r = await fetch(`/api/users/search?q=${encodeURIComponent(q)}&token=${MY_TOKEN}`);
+    const data = await r.json();
+    if (!data.users?.length) {
+      box.innerHTML = `<div style="font-size:13px;color:var(--muted);padding:8px 0;">No one found for "${q}"</div>`;
+      return;
+    }
+    box.innerHTML = data.users.map(u => {
+      const statusLabel = u.connection?.status === 'approved' ? '✓ Connected'
+                        : u.connection?.status === 'pending'  ? 'Pending…'
+                        : null;
+      const actionHtml = statusLabel
+        ? `<span style="font-size:12px;color:${u.connection.status === 'approved' ? '#4ade80' : 'var(--muted)'};font-weight:600;flex-shrink:0;">${statusLabel}</span>`
+        : `<button onclick="openProfilePane(${JSON.stringify(u).replace(/"/g,'&quot;')},event)"
+             style="padding:7px 16px;background:var(--accent);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">
+             View
+           </button>`;
+      const avatarHtml = u.photo
+        ? `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;">`
+        : u.name[0].toUpperCase();
+      return `<div class="srch-row" onclick="openProfilePane(${JSON.stringify(u).replace(/"/g,'&quot;')})">
+        <div class="srch-avatar">${avatarHtml}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);">${u.name}</div>
+          ${u.city ? `<div style="font-size:12px;color:var(--muted);">${u.city}</div>` : '<div style="font-size:12px;color:var(--muted);">On Spontany</div>'}
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    box.innerHTML = '<span style="color:var(--muted);font-size:13px;">Search failed — try again.</span>';
+  }
+}
+
+// ── Profile pane ──────────────────────────────────────────────────────────
+let _ppUser = null;
+
+function openProfilePane(user) {
+  _ppUser = user;
+
+  // Avatar
+  const av = document.getElementById('pp-avatar');
+  av.innerHTML = user.photo
+    ? `<img src="${user.photo}" alt="" style="width:100%;height:100%;object-fit:cover;">`
+    : user.name[0].toUpperCase();
+
+  document.getElementById('pp-name').textContent = user.name;
+  document.getElementById('pp-meta').textContent  = user.city ? `📍 ${user.city}` : 'Spontany member';
+
+  const actionEl = document.getElementById('pp-action');
+  const cs = user.connection?.status;
+  if (cs === 'approved') {
+    actionEl.innerHTML = `<div style="text-align:center;padding:14px;background:rgba(74,222,128,0.1);border-radius:12px;color:#4ade80;font-size:14px;font-weight:700;">✓ Already connected</div>`;
+  } else if (cs === 'pending') {
+    actionEl.innerHTML = `<div style="text-align:center;padding:14px;background:rgba(255,255,255,0.04);border-radius:12px;color:var(--muted);font-size:14px;font-weight:600;">Connection request sent ⏳</div>`;
+  } else {
+    actionEl.innerHTML = `
+      <button id="pp-connect-btn" onclick="ppConnect()"
+        style="width:100%;padding:14px;background:var(--blue);border:none;border-radius:14px;
+               color:white;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s;
+               display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="7" r="3.5"/><path d="M2 21c0-4 3.1-7 7-7s7 3 7 7"/>
+          <path d="M19 8v6M22 11h-6" stroke-width="2.2"/>
+        </svg>
+        Connect
+      </button>
+      <p style="text-align:center;font-size:12px;color:var(--muted);margin:10px 0 0;">
+        They'll get a notification and can accept your request.
+      </p>`;
+  }
+
+  document.getElementById('profile-pane-overlay').classList.add('open');
+}
+
+function closeProfilePane(e) {
+  // Close only if clicking the backdrop (not the pane itself)
+  if (e && e.target !== document.getElementById('profile-pane-overlay')) return;
+  document.getElementById('profile-pane-overlay').classList.remove('open');
+  _ppUser = null;
+}
+
+async function ppConnect() {
+  if (!_ppUser) return;
+  const btn = document.getElementById('pp-connect-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const r = await fetch(`/api/connections/request-friend?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_user_id: _ppUser.id }),
+    });
+    if (!r.ok) throw new Error();
+    document.getElementById('pp-action').innerHTML = `
+      <div style="text-align:center;padding:14px;background:rgba(74,222,128,0.1);border-radius:12px;color:#4ade80;font-size:14px;font-weight:700;">
+        Request sent! ✓
+      </div>
+      <p style="text-align:center;font-size:12px;color:var(--muted);margin:10px 0 0;">
+        You'll be notified when they accept.
+      </p>`;
+    await loadConnections();
+    // Also update search results so the chip shows "Pending"
+    _ppUser.connection = { status: 'pending' };
+    const q = document.getElementById('name-search-input').value.trim();
+    if (q.length >= 2) doNameSearch(q);
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }
+    showToast('Could not send request — try again');
   }
 }
 
