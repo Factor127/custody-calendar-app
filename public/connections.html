@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Connections — Spontany</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
   <style>
 :root {
@@ -13,14 +16,14 @@
   --orange:#f97316;
 }
 * { box-sizing:border-box; }
-body { background:var(--bg); color:var(--text); margin:0; }
+body { background:var(--bg); color:var(--text); margin:0; font-family:'Inter',system-ui,sans-serif; }
 
 /* ── Header ─────────────────────────────────────────────────────────── */
 .page-header {
   display:flex; align-items:center; justify-content:space-between;
   padding:28px 24px 0;
 }
-.page-title { font-size:30px; font-weight:900; color:var(--text); letter-spacing:-0.02em; margin:0; }
+.page-title { font-size:30px; font-weight:900; color:var(--text); letter-spacing:-0.02em; margin:0; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
 .invite-btn {
   background:var(--blue); color:white; border:none; border-radius:50px;
   padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer;
@@ -202,7 +205,11 @@ body { background:var(--bg); color:var(--text); margin:0; }
 .ical-card strong { color:var(--text); font-size:14px; }
 
 /* ── Modal overrides ─────────────────────────────────────────────────── */
-.modal { background:var(--surface) !important; border-color:var(--border) !important; }
+.modal {
+  background:rgba(13,13,25,0.82) !important;
+  backdrop-filter:blur(28px) !important; -webkit-backdrop-filter:blur(28px) !important;
+  border:1px solid rgba(255,255,255,0.08) !important;
+}
 .modal h2 { color:var(--text); }
 .radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text); }
 .radio-option.selected { border-color:var(--blue) !important; background:rgba(124,92,191,0.15) !important; }
@@ -274,7 +281,9 @@ input::placeholder { color:var(--muted); }
 }
 .profile-pane-overlay.open { opacity:1; pointer-events:all; }
 .profile-pane {
-  background:var(--surface); border:1px solid var(--border);
+  background:rgba(13,13,25,0.82);
+  backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,0.08);
   border-radius:24px 24px 0 0; width:100%; max-width:560px;
   padding:0 0 40px; max-height:82vh; overflow-y:auto;
   transform:translateY(30px); transition:transform .25s ease;
