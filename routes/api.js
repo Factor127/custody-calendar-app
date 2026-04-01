@@ -1874,6 +1874,23 @@ router.delete('/outings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// GET /api/outings/:id/invitee-rsvp-tokens — returns rsvp_token per invitee (creator only)
+// Used to build per-person RSVP links in WhatsApp messages without exposing access_tokens
+router.get('/outings/:id/invitee-rsvp-tokens', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+  if (outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const result = invitees
+    .filter(i => i.user_id !== me.id)
+    .map(i => ({ userId: i.user_id, name: i.name, rsvp_token: i.rsvp_token }));
+  res.json({ invitees: result });
+});
+
 // ── Connection preferences ─────────────────────────────────────────────────
 
 // GET /api/connections/:id/preferences
@@ -2043,9 +2060,9 @@ router.get('/users/search', (req, res) => {
   const results = db.prepare(`
     SELECT id, name, photo, city
     FROM users
-    WHERE id != ? AND (name LIKE ? OR email LIKE ?)
+    WHERE id != ? AND name LIKE ?
     LIMIT 12
-  `).all(me.id, pattern, pattern);
+  `).all(me.id, pattern);
 
   const users = results.map(u => {
     const existing = q.getConnectionBetween.get(me.id, u.id, u.id, me.id);
@@ -2092,6 +2109,17 @@ router.post('/connections/request-friend', (req, res) => {
     tag:   `friend-request-${connId}`,
     url:   '/connections',
   });
+});
+
+// ── POST /api/users/rotate-token — generate a new access token for the caller ──
+// Old token immediately stops working. User must update their bookmarked URL.
+router.post('/users/rotate-token', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const newToken = uuidv4();
+  q.updateUserToken.run(newToken, me.id);
+  res.json({ token: newToken });
 });
 
 module.exports = router;

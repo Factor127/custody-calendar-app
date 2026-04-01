@@ -7,7 +7,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#7c5cbf">
+  <meta name="theme-color" content="#e6f952">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,30 +18,49 @@
   <style>
 /* ══ Dark theme ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
-  --border:rgba(255,255,255,0.07); --text:#eeeef8;
-  --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
+  --lime:      #e6f952;
+  --lime-dim:  #aec013;
+  --bg:        #0e0e0e;
+  --surface:   #131313;
+  --cell-bg:   #1a1a1a;
+  --border:    rgba(226,226,226,0.08);
+  --text:      #e2e2e2;
+  --muted:     rgba(226,226,226,0.42);
+  --blue:      #e6f952;
+  --accent:    #e6f952;
+  --orange:    #ff7351;
 }
 .field-input, input[type="email"] {
-  background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
+  background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important;
 }
+.field-input:focus, input[type="email"]:focus { outline:none; border-color:var(--lime) !important; }
 input::placeholder { color:var(--muted); }
 .error-box { background:rgba(183,28,28,0.18) !important; border-color:rgba(239,83,80,0.30) !important; color:#ef9a9a !important; }
 /* ─────────────────────────────────────────────────────────────────────── */
-    body { margin: 0; padding: 0; }
+    body {
+      margin: 0; padding: 0 10px 24px;
+      background: linear-gradient(145deg, #e6f952, #aec013);
+      min-height: 100vh;
+    }
+
+    #app-frame {
+      background: #0e0e0e;
+      border-radius: 0 0 24px 24px;
+      min-height: calc(100vh - 24px);
+      overflow: clip;
+    }
 
     .login-wrap {
-      min-height: 100vh;
+      min-height: calc(100vh - 24px);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
-      background: #0c0c15;
     }
 
     .login-card {
-      background: #131321;
-      border: 1px solid rgba(255,255,255,0.07);
+      background: #131313;
+      border: 1px solid rgba(226,226,226,0.08);
       border-radius: 20px;
       padding: 44px 40px 36px;
       max-width: 400px;
@@ -60,12 +79,12 @@ input::placeholder { color:var(--muted); }
 
     .error-box {
       display: none;
-      background: #fce4ec;
-      border: 1px solid #f48fb1;
+      background: rgba(183,28,28,0.18);
+      border: 1px solid rgba(239,83,80,0.30);
       border-radius: 8px;
       padding: 10px 14px;
       font-size: 13px;
-      color: #b71c1c;
+      color: #ef9a9a;
       margin-top: 12px;
     }
 
@@ -80,7 +99,7 @@ input::placeholder { color:var(--muted); }
     #loading-state { display:none; text-align:center; padding:20px 0; }
     .spinner {
       width:32px; height:32px; border:3px solid var(--border);
-      border-top-color:var(--blue); border-radius:50%;
+      border-top-color:var(--lime); border-radius:50%;
       animation:spin 0.7s linear infinite; margin:0 auto 14px;
     }
     @keyframes spin { to { transform:rotate(360deg); } }
@@ -92,6 +111,7 @@ input::placeholder { color:var(--muted); }
   </style>
 </head>
 <body>
+<div id="app-frame">
 <div class="login-wrap">
   <div class="login-card">
 
@@ -161,12 +181,13 @@ input::placeholder { color:var(--muted); }
       </p>
       <p style="color:var(--muted);font-size:12px;">
         Didn't get it? Check your spam folder, or
-        <a href="#" onclick="resetForm()" style="color:var(--blue);">try a different email</a>.
+        <a href="#" onclick="resetForm()" style="color:var(--lime);">try a different email</a>.
       </p>
     </div>
 
   </div>
 </div>
+</div><!-- /#app-frame -->
 
 <script>
 async function requestLink() {

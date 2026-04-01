@@ -102,7 +102,7 @@ router.get('/smart-suggest', (req, res) => {
       photo:   conn.other_photo || null,
       type:    relType,
       phone:   otherMobile || null,
-      token:   otherUser?.access_token || null,
+      token:   null, // never expose other users' access tokens
       score:   Math.round(score * 100) / 100,
     };
   }).sort((a, b) => b.score - a.score);

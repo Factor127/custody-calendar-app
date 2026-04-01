@@ -8,57 +8,69 @@
   <style>
 /* ══ Dark theme ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
-  --border:rgba(255,255,255,0.07); --text:#eeeef8;
-  --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
+  --lime:      #e6f952;
+  --lime-dim:  #aec013;
+  --bg:        #0e0e0e;
+  --surface:   #131313;
+  --cell-bg:   #1a1a1a;
+  --border:    rgba(226,226,226,0.08);
+  --text:      #e2e2e2;
+  --muted:     rgba(226,226,226,0.42);
+  --blue:      #e6f952;
+  --accent:    #e6f952;
+  --orange:    #ff7351;
 }
-body { background:var(--bg); color:var(--text); }
+body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text); padding: 0 10px 24px; margin: 0; min-height: 100vh; }
+#app-frame { background: #0e0e0e; border-radius: 0 0 24px 24px; min-height: calc(100vh - 24px); overflow: clip; }
 .section-card { background:var(--surface) !important; border-color:var(--border) !important; }
-.modal { background:var(--surface) !important; border-color:var(--border) !important; }
+.modal { background:rgba(14,14,14,0.88) !important; backdrop-filter:blur(32px) !important; border:1px solid rgba(226,226,226,0.07) !important; }
 .modal h2 { color:var(--text); }
 .radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text); }
-.radio-option.selected { border-color:var(--blue) !important; background:rgba(124,92,191,0.15) !important; }
+.radio-option.selected { border-color:var(--lime) !important; background:rgba(230,249,82,0.10) !important; }
 .field-input, input[type="text"], input[type="email"], input[type="tel"] {
-  background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
+  background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important;
+}
+.field-input:focus, input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus {
+  outline:none; border-color:var(--lime) !important;
 }
 input::placeholder { color:var(--muted); }
-select { background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important; }
+select { background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important; }
 .day-btn { background:var(--surface) !important; color:var(--muted) !important; border-color:var(--border) !important; }
-.day-btn.selected { background:var(--blue) !important; border-color:var(--blue) !important; color:white !important; }
+.day-btn.selected { background:var(--lime) !important; border-color:var(--lime) !important; color:#0e0e0e !important; }
 .week-option { background:var(--surface) !important; color:var(--text) !important; border-color:var(--border) !important; }
-.week-option.selected { border-color:var(--blue) !important; background:rgba(124,92,191,0.18) !important; color:var(--accent) !important; }
+.week-option.selected { border-color:var(--lime) !important; background:rgba(230,249,82,0.10) !important; color:var(--lime) !important; }
 .pattern-tab { background:var(--surface) !important; color:var(--muted) !important; border-color:var(--border) !important; }
-.pattern-tab.active { border-color:var(--blue) !important; background:rgba(124,92,191,0.18) !important; color:var(--accent) !important; }
+.pattern-tab.active { border-color:var(--lime) !important; background:rgba(230,249,82,0.10) !important; color:var(--lime) !important; }
 /* ─────────────────────────────────────────────────────────────────────── */
     .profile-page { max-width:520px; margin:0 auto; padding-bottom:40px; }
-    .section-card { background:white; border:1.5px solid var(--border); border-radius:14px; padding:22px 24px; margin-bottom:16px; }
-    .section-title { font-size:15px; font-weight:800; margin:0 0 18px; }
+    .section-card { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:22px 24px; margin-bottom:16px; }
+    .section-title { font-size:15px; font-weight:800; margin:0 0 18px; font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:var(--text); }
     .page-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
-    .back-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); padding:4px; }
+    .back-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--lime); padding:4px; }
     .back-btn:hover { color:var(--text); }
     /* Day picker */
     .day-picker { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
     .day-btn {
       width:40px; height:40px; border-radius:50%; border:2px solid var(--border);
-      background:white; font-size:12px; font-weight:700; cursor:pointer; color:var(--muted);
+      background:var(--surface); font-size:12px; font-weight:700; cursor:pointer; color:var(--muted);
       display:flex; align-items:center; justify-content:center; transition:all 0.13s;
     }
-    .day-btn.selected { background:var(--blue); border-color:var(--blue); color:white; }
+    .day-btn.selected { background:var(--lime); border-color:var(--lime); color:#0e0e0e; }
     .week-option {
       border:2px solid var(--border); border-radius:10px; padding:10px 14px;
       cursor:pointer; font-size:13px; font-weight:600; text-align:center;
-      transition:all 0.13s; background:white;
+      transition:all 0.13s; background:var(--surface);
     }
-    .week-option.selected { border-color:var(--blue); background:#e8f0fe; color:var(--blue); }
+    .week-option.selected { border-color:var(--lime); background:rgba(230,249,82,0.10); color:var(--lime); }
     .pattern-type-tabs { display:flex; gap:8px; margin-bottom:16px; }
-    .pattern-tab { flex:1; padding:8px; border:2px solid var(--border); border-radius:8px; background:white;
+    .pattern-tab { flex:1; padding:8px; border:2px solid var(--border); border-radius:8px; background:var(--surface);
       font-size:12px; font-weight:700; cursor:pointer; text-align:center; color:var(--muted); }
-    .pattern-tab.active { border-color:var(--blue); background:#e8f0fe; color:var(--blue); }
+    .pattern-tab.active { border-color:var(--lime); background:rgba(230,249,82,0.10); color:var(--lime); }
   </style>
 </head>
 <body>
-
-<div class="profile-page">
+<div id="app-frame">
+<div class="profile-page" style="padding-top:24px;">
 
   <div class="page-header">
     <button class="back-btn" onclick="goBack()" title="Back">←</button>
@@ -77,15 +89,15 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       <label for="profile-photo-input" style="cursor:pointer;position:relative;flex-shrink:0;" title="Change photo">
         <div id="profile-photo-preview" style="
           width:72px;height:72px;border-radius:50%;
-          background:var(--blue);display:flex;align-items:center;justify-content:center;
-          font-size:26px;font-weight:900;color:white;overflow:hidden;
+          background:var(--lime);display:flex;align-items:center;justify-content:center;
+          font-size:26px;font-weight:900;color:#0e0e0e;overflow:hidden;
           border:2px solid var(--border);transition:border-color .15s;
         ">?</div>
         <div style="
           position:absolute;bottom:2px;right:2px;
           width:22px;height:22px;border-radius:50%;
-          background:var(--blue);display:flex;align-items:center;justify-content:center;
-          font-size:13px;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.5);
+          background:var(--lime);display:flex;align-items:center;justify-content:center;
+          font-size:13px;color:#0e0e0e;box-shadow:0 2px 6px rgba(0,0,0,0.5);
         ">＋</div>
         <input id="profile-photo-input" type="file" accept="image/*" style="display:none;" onchange="handleProfilePhoto(this)">
       </label>
@@ -131,6 +143,14 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
       <button class="btn btn-outline" onclick="signOut()" style="color:#c62828;border-color:#ef9a9a;">Sign out</button>
       <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+    </div>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(226,226,226,0.08);">
+      <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">Security</p>
+      <button class="btn btn-outline" onclick="rotateToken()" style="font-size:13px;">
+        🔑 Reset my access link
+      </button>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 0;">Generates a new personal URL. Your old bookmarked link will stop working.</p>
     </div>
   </div>
 
@@ -255,6 +275,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
 
 
 </div>
+</div><!-- /#app-frame -->
 
 <script>
 const params = new URLSearchParams(location.search);
@@ -393,8 +414,8 @@ let workScheduleType = 'none';
 
 function selectWorkType(type, labelEl) {
   workScheduleType = type;
-  document.querySelectorAll('#work-type-group label').forEach(l => l.style.borderColor = 'var(--border)');
-  labelEl.style.borderColor = 'var(--blue)';
+  document.querySelectorAll('#work-type-group label').forEach(l => l.style.borderColor = 'rgba(226,226,226,0.08)');
+  labelEl.style.borderColor = '#e6f952';
   labelEl.querySelector('input').checked = true;
   document.getElementById('custom-work-picker').style.display = type === 'custom' ? 'flex' : 'none';
 }
@@ -413,7 +434,7 @@ function loadWorkSchedule(ws) {
     const radio = l.querySelector('input');
     if (radio && radio.value === type) {
       radio.checked = true;
-      l.style.borderColor = 'var(--blue)';
+      l.style.borderColor = '#e6f952';
     }
   });
   if (type === 'custom') {
@@ -542,6 +563,16 @@ function signOut() {
   localStorage.removeItem('myToken');
   localStorage.removeItem('myRole');
   window.location.replace('/');
+}
+
+async function rotateToken() {
+  if (!confirm('This will invalidate your current link. You\'ll be redirected to your new one. Continue?')) return;
+  const res = await fetch(`/api/users/rotate-token?token=${MY_TOKEN}`, { method: 'POST' });
+  if (!res.ok) { alert('Failed — please try again'); return; }
+  const { token } = await res.json();
+  localStorage.setItem('myToken', token);
+  const calUrl = userRole === 'owner' ? `/calendar?token=${token}` : `/partner?token=${token}`;
+  window.location.replace(calUrl);
 }
 
 let toastTimer;

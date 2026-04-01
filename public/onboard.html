@@ -7,7 +7,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#7c5cbf">
+  <meta name="theme-color" content="#e6f952">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,17 +18,26 @@
   <style>
 /* ══ Dark theme ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:#0c0c15; --surface:#131321; --cell-bg:#19192a;
-  --border:rgba(255,255,255,0.07); --text:#eeeef8;
-  --muted:rgba(238,238,248,0.40); --blue:#7c5cbf; --accent:#a78bfa;
-  --r:rgba(124,92,191,0.20); --r-border:rgba(167,139,250,0.35);
+  --lime:      #e6f952;
+  --lime-dim:  #aec013;
+  --bg:        #0e0e0e;
+  --surface:   #131313;
+  --cell-bg:   #1a1a1a;
+  --border:    rgba(226,226,226,0.08);
+  --text:      #e2e2e2;
+  --muted:     rgba(226,226,226,0.42);
+  --blue:      #e6f952;
+  --accent:    #e6f952;
+  --orange:    #ff7351;
+  --r:rgba(230,249,82,0.12); --r-border:rgba(230,249,82,0.35);
 }
-body { background:var(--bg); color:var(--text); }
+body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text); padding: 0 10px 24px; margin: 0; min-height: 100vh; }
+#app-frame { background: #0e0e0e; border-radius: 0 0 24px 24px; min-height: calc(100vh - 24px); overflow: clip; }
 /* Done screen success icon */
-.success-icon { background: rgba(124,92,191,0.25) !important; color: var(--accent) !important; }
+.success-icon { background: rgba(230,249,82,0.18) !important; color: var(--lime) !important; }
 /* Cards / form surface */
 .card { background:var(--surface) !important; border-color:var(--border) !important; }
-.modal { background:var(--surface) !important; border-color:var(--border) !important; }
+.modal { background:rgba(14,14,14,0.88) !important; backdrop-filter:blur(32px) !important; border:1px solid rgba(226,226,226,0.07) !important; }
 .wizard-card { background:var(--surface) !important; border-color:var(--border) !important; box-shadow:0 4px 32px rgba(0,0,0,0.4) !important; }
 /* Consistent horizontal padding on every step */
 .wizard-step { padding: 0 28px; }
@@ -36,27 +45,24 @@ body { background:var(--bg); color:var(--text); }
 .wizard-nav { padding: 0 28px; border-top: none !important; }
 /* Inputs */
 .field-input, input[type="text"], input[type="email"], input[type="tel"], textarea {
-  background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important;
+  background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important;
 }
 input::placeholder, textarea::placeholder { color:var(--muted); }
-select { background:#1a1a2e !important; color:var(--text) !important; border-color:var(--border) !important; }
+select { background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important; }
 /* Radio options */
 .radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text) !important; }
-.radio-option.selected { border-color:var(--blue) !important; background:rgba(124,92,191,0.15) !important; }
+.radio-option.selected { border-color:var(--lime) !important; background:rgba(230,249,82,0.10) !important; }
 /* Invite tabs */
-.inv-type-tabs { background:#1a1a2e !important; }
+.inv-type-tabs { background:#1a1a1a !important; }
 .inv-type-tab { color:var(--muted) !important; }
 .inv-type-tab.active { background:var(--surface) !important; color:var(--text) !important; box-shadow:0 1px 4px rgba(0,0,0,0.5) !important; }
 /* Invite url box */
-.inv-url-box { background:#1a1a2e !important; border-color:var(--border) !important; }
-/* Week picker selected */
-.wp-cell.self .wp-num   { color:#81c784 !important; }
-.wp-cell.self .wp-month { color:#a5d6a7 !important; }
+.inv-url-box { background:#1a1a1a !important; border-color:var(--border) !important; }
 /* Expand btn */
-.expand-btn:hover { background:rgba(124,92,191,0.15) !important; border-color:var(--blue) !important; }
+.expand-btn:hover { background:rgba(230,249,82,0.10) !important; border-color:var(--lime) !important; }
 /* Time picker */
 .time-section-label { color:var(--muted) !important; }
-.time-option:hover, .time-option.selected { background:rgba(124,92,191,0.20) !important; border-color:var(--blue) !important; color:var(--text) !important; }
+.time-option:hover, .time-option.selected { background:rgba(230,249,82,0.12) !important; border-color:var(--lime) !important; color:var(--text) !important; }
 /* ─────────────────────────────────────────────────────────────────────── */
     /* ── Week picker ── */
     .week-picker-grid {
@@ -125,13 +131,13 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       border-radius: 10px;
       font-size: 14px;
       font-weight: 700;
-      color: var(--blue);
+      color: var(--lime);
       cursor: pointer;
       text-align: center;
       transition: background 0.15s, border-color 0.15s;
       font-family: inherit;
     }
-    .expand-btn:hover { background: #e8f0fe; border-color: var(--blue); }
+    .expand-btn:hover { background: rgba(230,249,82,0.10); border-color: var(--lime); }
 
     .wp-legend {
       display: flex;
@@ -181,7 +187,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     /* ── Intro overlay ── */
     .intro-overlay {
       position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(180deg, #08081a 0%, #110730 45%, #1c0848 75%, #2a0a60 100%);
+      background: linear-gradient(180deg, #0e0e0e 0%, #131313 45%, #1a1a1a 75%, #0e0e0e 100%);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: 48px 32px; text-align: center;
       transition: opacity 0.55s ease;
@@ -205,19 +211,19 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     .intro-dot   { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: background 0.3s, transform 0.3s; }
     .intro-dot.active { background: white; transform: scale(1.25); }
     .intro-cta {
-      background: var(--blue); color: white; border: none; border-radius: 28px;
+      background: var(--lime); color: #0e0e0e; border: none; border-radius: 28px;
       padding: 16px 36px; font-size: 16px; font-weight: 700; cursor: pointer;
-      font-family: inherit; box-shadow: 0 6px 24px rgba(124,92,191,.45);
+      font-family: inherit; box-shadow: 0 6px 24px rgba(230,249,82,.35);
       transition: transform .12s, box-shadow .12s;
     }
-    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(124,92,191,.3); }
+    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,.2); }
 
     /* ── Wizard hidden until intro done ── */
     #wizard-main { transition: opacity 0.4s ease; }
 
     /* ── Step 1 dark header ── */
     .step1-header {
-      background: linear-gradient(180deg, #110730, #1c0848);
+      background: linear-gradient(180deg, #0e0e0e, #131313);
       margin: -24px -24px 24px; padding: 30px 24px 28px;
       border-radius: 16px 16px 0 0; text-align: center;
     }
@@ -230,7 +236,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface);
       color: var(--muted); user-select: none; transition: all .13s;
     }
-    .rel-chip.on { background: rgba(124,92,191,0.20); border-color: var(--accent); color: var(--accent); }
+    .rel-chip.on { background: rgba(230,249,82,0.12); border-color: var(--lime); color: var(--lime); }
 
     /* ── Parent question ── */
     .parent-opts-row { display: flex; gap: 14px; margin: 20px 0 28px; }
@@ -241,7 +247,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       transition: background .13s, border-color .13s, transform .1s; text-align: center;
     }
     .parent-opt:active { transform: scale(0.96); }
-    .parent-opt.selected { border-color: var(--accent); background: rgba(124,92,191,0.18); }
+    .parent-opt.selected { border-color: var(--lime); background: rgba(230,249,82,0.10); }
     .parent-opt-emoji  { font-size: 38px; line-height: 1; }
     .parent-opt-label  { font-size: 15px; font-weight: 700; color: var(--text); }
     .parent-opt-sub    { font-size: 11px; color: var(--muted); line-height: 1.4; }
@@ -257,24 +263,25 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
     .ts-section { margin-top: 22px; }
     .ts-section-title { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
     .ts-time-display  { text-align: center; font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 18px; letter-spacing: -.01em; }
-    .ts-time-display .ts-highlight { color: var(--accent); }
+    .ts-time-display .ts-highlight { color: var(--lime); }
     .ts-track-wrap { position: relative; height: 44px; display: flex; align-items: center; padding: 0 14px; margin-bottom: 4px; touch-action: none; }
     .ts-track  { width: 100%; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
-    .ts-active { position: absolute; height: 6px; background: var(--blue); border-radius: 3px; top: 0; pointer-events: none; }
+    .ts-active { position: absolute; height: 6px; background: var(--lime); border-radius: 3px; top: 0; pointer-events: none; }
     .ts-handle {
       position: absolute; width: 26px; height: 26px; background: var(--surface);
-      border: 3px solid var(--accent); border-radius: 50%; top: 50%;
+      border: 3px solid var(--lime); border-radius: 50%; top: 50%;
       transform: translate(-50%, -50%); cursor: grab; touch-action: none;
-      box-shadow: 0 2px 8px rgba(124,92,191,.35); z-index: 2;
+      box-shadow: 0 2px 8px rgba(230,249,82,.25); z-index: 2;
     }
-    .ts-handle:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(124,92,191,.5); }
+    .ts-handle:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(230,249,82,.4); }
     .ts-ticks { display: flex; justify-content: space-between; padding: 0 14px; }
     .ts-tick  { font-size: 9px; color: var(--muted); font-weight: 600; }
     .ts-skip-link { display: block; text-align: center; font-size: 12px; color: var(--muted); margin-top: 18px; text-decoration: underline; cursor: pointer; }
-    .ts-skip-link:hover { color: var(--blue); }
+    .ts-skip-link:hover { color: var(--lime); }
   </style>
 </head>
 <body>
+<div id="app-frame">
 
 <!-- ── INTRO OVERLAY ── -->
 <div id="intro-overlay" class="intro-overlay">
@@ -354,7 +361,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
         <div class="field-group" style="position:relative;">
           <label class="field-label" for="user-city">City <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
           <input id="user-city" class="field-input" type="text" placeholder="e.g. London, New York…" autocomplete="off" oninput="onCityInput()">
-          <div id="city-ac-drop" style="position:absolute;top:100%;left:0;right:0;z-index:300;background:#1a1a2e;border:1px solid rgba(167,139,250,0.25);border-radius:10px;overflow:hidden;display:none;margin-top:2px;"></div>
+          <div id="city-ac-drop" style="position:absolute;top:100%;left:0;right:0;z-index:300;background:#1a1a1a;border:1px solid rgba(230,249,82,0.20);border-radius:10px;overflow:hidden;display:none;margin-top:2px;"></div>
         </div>
 
         <div class="field-group">
@@ -511,8 +518,8 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
           <div style="
             position:absolute;bottom:4px;right:4px;
             width:28px;height:28px;border-radius:50%;
-            background:var(--blue);display:flex;align-items:center;justify-content:center;
-            font-size:16px;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.5);
+            background:var(--lime);display:flex;align-items:center;justify-content:center;
+            font-size:16px;color:#0e0e0e;box-shadow:0 2px 8px rgba(0,0,0,0.5);
           ">＋</div>
           <input id="photo-input" type="file" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
         </label>
@@ -531,7 +538,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
       <p class="wizard-sub" style="text-align:center;margin-bottom:14px;" id="done-sub">Here are your free days coming up.</p>
 
       <!-- Invite mode: connection explanation -->
-      <div id="done-connected-box" style="display:none;background:rgba(124,92,191,0.12);border:1.5px solid rgba(167,139,250,0.25);border-radius:10px;padding:14px 16px;margin:0 0 16px;font-size:13px;line-height:1.6;color:var(--accent);"></div>
+      <div id="done-connected-box" style="display:none;background:rgba(230,249,82,0.08);border:1.5px solid rgba(230,249,82,0.25);border-radius:10px;padding:14px 16px;margin:0 0 16px;font-size:13px;line-height:1.6;color:var(--lime);"></div>
 
       <!-- Free days strip (both modes) -->
       <div style="margin-bottom:20px;">
@@ -592,6 +599,7 @@ select { background:#1a1a2e !important; color:var(--text) !important; border-col
 
   </div><!-- /.wizard-card -->
 </div><!-- /.wizard#wizard-main -->
+</div><!-- /#app-frame -->
 
 <script>
 // ── Mode detection ─────────────────────────────────────────────────────────────
@@ -745,7 +753,7 @@ async function _fetchCities(query) {
     _cityPredictions = data.predictions || [];
     if (!_cityPredictions.length) { drop.style.display = 'none'; return; }
     drop.innerHTML = _cityPredictions.map((p, i) => {
-      return `<div onclick="_selectCity(${i})" style="padding:11px 14px;font-size:14px;color:#eeeef8;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);" onmouseover="this.style.background='rgba(124,92,191,0.15)'" onmouseout="this.style.background=''">${p.name}<span style="font-size:11px;color:rgba(238,238,248,0.4);margin-left:6px;">${(p.description||'').replace(p.name,'').replace(/^,\s*/,'')}</span></div>`;
+      return `<div onclick="_selectCity(${i})" style="padding:11px 14px;font-size:14px;color:#e2e2e2;cursor:pointer;border-bottom:1px solid rgba(226,226,226,0.06);" onmouseover="this.style.background='rgba(230,249,82,0.10)'" onmouseout="this.style.background=''">${p.name}<span style="font-size:11px;color:rgba(226,226,226,0.42);margin-left:6px;">${(p.description||'').replace(p.name,'').replace(/^,\s*/,'')}</span></div>`;
     }).join('');
     drop.style.display = 'block';
   } catch(e) {}
