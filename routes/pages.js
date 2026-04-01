@@ -62,10 +62,25 @@ router.get('/invite/:token', (req, res) => {
     return res.status(404).send('<h2>This invite link is invalid or has expired.</h2><p>Ask your partner to generate a new one.</p>');
   }
   if (invite.used_by) {
-    // If already registered, redirect to partner's calendar
-    const partner = q.getUserById.get(invite.used_by);
-    if (partner) return res.redirect(`/calendar?token=${partner.access_token}`);
-    return res.status(410).send('<h2>This invite has already been used.</h2>');
+    // Invite already used — never expose the registered user's token to whoever is clicking.
+    // The legitimate partner should log in via their saved URL or the magic-link flow.
+    return res.status(410).send(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>Invite already used — Spontany</title>
+      <style>
+        body{margin:0;background:#0c0c15;color:#eeeef8;font-family:-apple-system,sans-serif;
+             display:flex;align-items:center;justify-content:center;min-height:100vh;}
+        .box{text-align:center;max-width:400px;padding:40px 24px;}
+        h1{font-size:22px;font-weight:800;margin:0 0 12px;}
+        p{color:rgba(238,238,248,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;}
+        a{display:inline-block;padding:12px 28px;background:#7c5cbf;color:white;
+          border-radius:50px;text-decoration:none;font-size:14px;font-weight:700;}
+      </style></head>
+      <body><div class="box">
+        <h1>This invite has already been used.</h1>
+        <p>If you're the person who registered with this link, log in to access your account.</p>
+        <a href="/">Log in to Spontany</a>
+      </div></body></html>`);
   }
   res.sendFile(path.join(PUBLIC, 'onboard.html'));
 });
