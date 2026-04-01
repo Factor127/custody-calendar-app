@@ -141,9 +141,9 @@ router.get('/auth/verify/:token', (req, res) => {
 // Requires the user to already be logged in (token in query).
 router.get('/auth/google/contacts', (req, res) => {
   const token = req.query.token;
-  if (!token) return res.redirect('/');
+  if (!token) return res.redirect('/login');
   const user = q.getUserByToken.get(token);
-  if (!user) return res.redirect('/');
+  if (!user) return res.redirect('/login');
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) return res.status(500).send('Google is not configured.');
@@ -170,7 +170,7 @@ router.get('/auth/google/contacts/callback', async (req, res) => {
   if (error || !code || !userToken) return res.redirect('/connections?contacts_error=1');
 
   const user = q.getUserByToken.get(userToken);
-  if (!user) return res.redirect('/');
+  if (!user) return res.redirect('/login');
 
   try {
     const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;

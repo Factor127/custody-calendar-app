@@ -12,10 +12,7 @@ router.get('/admin', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
-// Login page (served at root; /login kept as alias)
-router.get('/login', (req, res) => {
-  res.redirect('/');
-});
+// Login page — served by server.js directly, skip here to avoid conflicts
 
 // First-time setup page — now served by the unified onboard.html
 // Multi-tenant: any verified email can set up — requires ?magic= from auth flow
@@ -27,9 +24,9 @@ router.get('/setup', (req, res) => {
 // Unified calendar — works for all authenticated users
 router.get('/calendar', (req, res) => {
   const token = req.query.token;
-  if (!token) return res.redirect('/');
+  if (!token) return res.redirect('/login');
   const user = q.getUserByToken.get(token);
-  if (!user) return res.redirect('/');
+  if (!user) return res.redirect('/login');
   res.sendFile(path.join(PUBLIC, 'calendar.html'));
 });
 
@@ -45,9 +42,9 @@ router.get('/profile', (req, res) => {
 // Connections management page
 router.get('/connections', (req, res) => {
   const token = req.query.token;
-  if (!token) return res.redirect('/');
+  if (!token) return res.redirect('/login');
   const user = q.getUserByToken.get(token);
-  if (!user) return res.redirect('/');
+  if (!user) return res.redirect('/login');
   res.sendFile(path.join(PUBLIC, 'connections.html'));
 });
 
@@ -79,7 +76,7 @@ router.get('/invite/:token', (req, res) => {
       <body><div class="box">
         <h1>This invite has already been used.</h1>
         <p>If you're the person who registered with this link, log in to access your account.</p>
-        <a href="/">Log in to Spontany</a>
+        <a href="/login">Log in to Spontany</a>
       </div></body></html>`);
   }
   res.sendFile(path.join(PUBLIC, 'onboard.html'));
@@ -88,17 +85,17 @@ router.get('/invite/:token', (req, res) => {
 // Kids month export (clean printable single-month view)
 router.get('/kids-export', (req, res) => {
   const token = req.query.token;
-  if (!token) return res.redirect('/');
+  if (!token) return res.redirect('/login');
   const user = q.getUserByToken.get(token);
-  if (!user) return res.redirect('/');
+  if (!user) return res.redirect('/login');
   res.sendFile(path.join(PUBLIC, 'kids-export.html'));
 });
 
 // Legacy partner route — redirect to unified calendar
 router.get('/partner', (req, res) => {
   const token = req.query.token;
-  if (!token) return res.redirect('/');
-  return res.redirect(token ? `/calendar?token=${token}` : '/');
+  if (!token) return res.redirect('/login');
+  return res.redirect(token ? `/calendar?token=${token}` : '/login');
 });
 
 // RSVP landing page — no auth required, rsvp_token in URL

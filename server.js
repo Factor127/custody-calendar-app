@@ -49,8 +49,9 @@ app.use('/api', smartSuggestRouter);
 app.use('/api', pushRouter);
 app.use('/', pagesRouter);
 
-// ── Root: serve login/home page directly ──────────────────────────────────────
-app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'login.html')));
+// ── Root: landing page ────────────────────────────────────────────────────────
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'landing.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 
 // ── Email sequence: open tracking pixel ──────────────────────────────────────
 app.get('/api/email/open', (req, res) => {
