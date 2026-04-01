@@ -70,7 +70,13 @@ body { background: var(--bg); color: var(--text); padding: 0 0 80px; }
 
 /* ── Calendar container — kill all white backgrounds from styles.css ── */
 .cal-section { padding: 0 12px; }
-.calendar-container { background: transparent !important; gap: 0 !important; }
+.calendar-container { background: transparent !important; gap: 0 !important; overflow: hidden; }
+
+/* ── Month slide animation ── */
+@keyframes slideInLeft  { from { opacity:0; transform:translateX(-32px); } to { opacity:1; transform:translateX(0); } }
+@keyframes slideInRight { from { opacity:0; transform:translateX( 32px); } to { opacity:1; transform:translateX(0); } }
+.calendar-container.slide-left  .month { animation: slideInLeft  0.22s ease; }
+.calendar-container.slide-right .month { animation: slideInRight 0.22s ease; }
 .month {
   background: transparent !important;
   border: none !important;
@@ -2426,9 +2432,19 @@ function renderStrip() {
 
 
 // ── Month navigation ──────────────────────────────────────────────────────
+function _slideCalendar(dir) {
+  const c = document.getElementById('calendar-container');
+  if (!c) return;
+  c.classList.remove('slide-left', 'slide-right');
+  void c.offsetWidth; // force reflow to restart animation
+  c.classList.add(dir === 'prev' ? 'slide-right' : 'slide-left');
+  setTimeout(() => c.classList.remove('slide-left', 'slide-right'), 300);
+}
+
 function prevMonth() {
   currentViewMonth--;
   if (currentViewMonth < 0) { currentViewMonth = 11; currentViewYear--; }
+  _slideCalendar('prev');
   renderCalendar();
 }
 
@@ -2439,8 +2455,55 @@ function nextMonth() {
   if (nextY > maxDate.getFullYear() || (nextY === maxDate.getFullYear() && nextM > maxDate.getMonth())) return;
   currentViewMonth++;
   if (currentViewMonth > 11) { currentViewMonth = 0; currentViewYear++; }
+  _slideCalendar('next');
   renderCalendar();
 }
+
+// ── Swipe navigation ─────────────────────────────────────────────────────────
+(function initCalendarSwipe() {
+  let _tx = 0, _ty = 0, _swiping = false;
+  const THRESHOLD = 48; // px minimum swipe distance
+  const MAX_VERT  = 80; // px maximum vertical drift before cancelling
+
+  function onTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    _tx = e.touches[0].clientX;
+    _ty = e.touches[0].clientY;
+    _swiping = true;
+  }
+
+  function onTouchEnd(e) {
+    if (!_swiping) return;
+    _swiping = false;
+    const dx = e.changedTouches[0].clientX - _tx;
+    const dy = e.changedTouches[0].clientY - _ty;
+    if (Math.abs(dy) > MAX_VERT) return;      // too much vertical drift
+    if (Math.abs(dx) < THRESHOLD) return;     // too short
+    // Don't fire if a sheet/overlay is open
+    const sheet = document.getElementById('day-sheet');
+    if (sheet && sheet.classList.contains('open')) return;
+    if (document.getElementById('sc-overlay')?.classList.contains('open')) return;
+    dx < 0 ? nextMonth() : prevMonth();
+  }
+
+  function onTouchMove(e) {
+    if (!_swiping || e.touches.length !== 1) return;
+    const dx = Math.abs(e.touches[0].clientX - _tx);
+    const dy = Math.abs(e.touches[0].clientY - _ty);
+    // If clearly a horizontal swipe, prevent page scroll
+    if (dx > dy && dx > 12) e.preventDefault();
+  }
+
+  // Attach once the calendar container exists
+  function attach() {
+    const el = document.getElementById('calendar-container');
+    if (!el) { setTimeout(attach, 200); return; }
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+  }
+  attach();
+})();
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (async function init() {
