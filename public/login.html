@@ -49,6 +49,14 @@ input::placeholder { color:var(--muted); }
       min-height: calc(100vh - 24px);
       overflow: clip;
     }
+    @media (min-width: 860px) {
+      body { padding: 0 60px 60px; }
+      #app-frame { border-radius: 0 0 28px 28px; min-height: calc(100vh - 60px); }
+    }
+    @media (min-width: 1280px) {
+      body { padding: 0 100px 80px; }
+      #app-frame { min-height: calc(100vh - 80px); }
+    }
 
     .login-wrap {
       min-height: calc(100vh - 24px);
