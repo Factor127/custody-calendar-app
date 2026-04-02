@@ -1482,7 +1482,8 @@ function _decodeEntities(s) {
 
 // Extract a YYYY-MM-DD from natural-language text like "on Monday, April 13 2026"
 // or "Thursday, 3 April 2025" or "April 3, 2025"
-function _parseDateFromText(text) {
+// Also handles numeric formats: "06/08/2026", "06.08.2026", "06-08-2026"
+function _parseDateFromText(text, url) {
   if (!text) return null;
   const M = { january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,
               september:8,october:9,november:10,december:11,
@@ -1494,8 +1495,22 @@ function _parseDateFromText(text) {
   let day, mon, year;
   if (r1) { mon = M[r1[1].toLowerCase()]; day = +r1[2]; year = +r1[3]; }
   else if (r2) { day = +r2[1]; mon = M[r2[2].toLowerCase()]; year = +r2[3]; }
-  else return null;
-  if (mon === undefined || !day || day > 31 || year < 2020) return null;
+
+  // Numeric: DD/MM/YYYY or DD.MM.YYYY or DD-MM-YYYY (non-US locales including Israel, EU)
+  // Disambiguate: if first number > 12 it must be DD, if domain is .il/.eu etc assume DD/MM
+  if (mon === undefined) {
+    const rn = text.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/);
+    if (rn) {
+      const a = +rn[1], b = +rn[2]; year = +rn[3];
+      // If a > 12, it must be DD/MM; if b > 12, it must be MM/DD
+      // For .co.il or other non-US domains, default to DD/MM
+      const isDMY = a > 12 || (a <= 12 && b <= 12 && /\.il|\.co\.il|\.eu|\.uk|\.de|\.fr|\.es|\.it|\.nl|\.au|\.nz/i.test(url || ''));
+      if (isDMY) { day = a; mon = b - 1; }
+      else       { mon = a - 1; day = b; }
+    }
+  }
+
+  if (mon === undefined || !day || day > 31 || mon > 11 || year < 2020) return null;
   return `${year}-${String(mon + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
@@ -1589,8 +1604,8 @@ router.get('/unfurl', async (req, res) => {
       const tMatch = date.match(/T(\d{2}):(\d{2})/);
       if (tMatch) time = `${tMatch[1]}:${tMatch[2]}`;
     }
-    if (!date) { date = _parseDateFromText(description); if (date) textParsed = true; }
-    if (!date) { date = _parseDateFromText(title);       if (date) textParsed = true; }
+    if (!date) { date = _parseDateFromText(description, url); if (date) textParsed = true; }
+    if (!date) { date = _parseDateFromText(title, url);       if (date) textParsed = true; }
     if (!date) {
       const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
