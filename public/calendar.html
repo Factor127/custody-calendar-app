@@ -3609,10 +3609,10 @@ function renderEventPane(data) {
 
   // Add to calendar button — shown to everyone when there's a date
   if (outing.date) {
-    // Enrich outing with invitees and source URL for calendar export
-    const _calOuting = { ...outing, _invitees: invitees || [], _sourceUrl: outing.source_url || null };
+    // Store enriched outing for calendar export (avoids JSON-in-HTML attribute issues)
+    window._calExportOuting = { ...outing, _invitees: invitees || [], _sourceUrl: outing.source_url || null };
     html += `<div style="padding:2px 16px 10px;">
-      <button onclick="addOutingToCalendar(${JSON.stringify(_calOuting).replace(/"/g,'&quot;')})"
+      <button onclick="addOutingToCalendar(window._calExportOuting)"
         style="background:none;border:1px solid rgba(230,249,82,0.25);border-radius:10px;
                padding:8px 16px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
                cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;
@@ -4062,7 +4062,9 @@ function addOutingToCalendar(outing) {
   lines.push('STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR');
 
   const icsContent = lines.join('\r\n') + '\r\n';
-  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  // UTF-8 BOM helps Outlook/Windows recognize encoding for non-ASCII (Hebrew) content
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const blob = new Blob([bom, icsContent], { type: 'text/calendar;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
@@ -7993,11 +7995,13 @@ function renderSCWhatsApp() {
   const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
 
   const personData = selected.map(w => {
-    // Build RSVP deep link using per-invitee rsvp_token (never access_token)
+    // Build RSVP/event deep link — prefer per-invitee rsvp_token, fall back to general event link
     let rsvpLink = '';
     const rsvpToken = _sc.rsvpTokens?.[w.userId];
     if (_sc.pregenOutingId && rsvpToken) {
       rsvpLink = `\n\nRSVP here: ${window.location.origin}/rsvp/${rsvpToken}`;
+    } else if (_sc.pregenOutingId) {
+      rsvpLink = `\n\nView on Spontany: ${window.location.origin}/calendar?openEvent=${_sc.pregenOutingId}`;
     }
     const msg = _scPersonMsg(w, whatText, dateMain, soft) + eventLink + rsvpLink;
     let num = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
