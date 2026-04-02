@@ -3814,7 +3814,7 @@ function renderInvitePane(data, inviteeRecordId) {
   if (!outing.venue) _missingFields.push('venue');
   if (!outing.venue_address) _missingFields.push('address');
 
-  if (_missingFields.length) {
+  if (_missingFields.length && currentStatus !== 'declined' && currentStatus !== 'ignored') {
     html += `<div style="margin-top:10px;padding:10px;background:rgba(124,92,191,0.10);border:1px solid rgba(124,92,191,0.25);border-radius:10px;">`;
     html += `<div style="font-size:11px;font-weight:700;color:rgba(167,139,250,0.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Know any missing details?</div>`;
     if (!outing.event_time) {

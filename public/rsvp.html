@@ -45,6 +45,12 @@
     .fill-label { font-size: 11px; font-weight: 700; color: rgba(167,139,250,0.7); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
     .fill-input { width: 100%; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; border: 1px solid rgba(226,226,226,0.12); background: rgba(226,226,226,0.06); color: #e2e2e2; font-size: 14px; font-family: inherit; }
     .fill-input::placeholder { color: rgba(226,226,226,0.3); }
+
+    .decline-section { margin-top: 16px; padding: 12px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; }
+    .decline-label { font-size: 11px; font-weight: 700; color: rgba(248,113,113,0.7); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .decline-select { width: 100%; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; border: 1px solid rgba(226,226,226,0.12); background: rgba(226,226,226,0.06); color: #e2e2e2; font-size: 14px; font-family: inherit; appearance: auto; }
+    .decline-note { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(226,226,226,0.12); background: rgba(226,226,226,0.06); color: #e2e2e2; font-size: 14px; font-family: inherit; resize: none; }
+    .decline-note::placeholder { color: rgba(226,226,226,0.3); }
   </style>
 </head>
 <body>
@@ -103,15 +109,56 @@ function renderInvite(d) {
     ${rows.join('')}
     ${fillSection}
     ${rows.length || fillSection ? '<div class="divider"></div>' : ''}
-    <div class="actions">
+    <div class="actions" id="rsvp-actions">
       <button class="btn-yes" onclick="respond('accepted')">✅ Yes, I'm in!</button>
-      <button class="btn-no"  onclick="respond('declined')">❌ Can't make it</button>
+      <button class="btn-no"  onclick="showDeclineFlow()">❌ Can't make it</button>
+    </div>
+    <div id="decline-flow" style="display:none;">
+      <div class="decline-section">
+        <div class="decline-label">Reason (optional)</div>
+        <select id="rsvp-decline-reason" class="decline-select" onchange="if(this.value==='other'){document.getElementById('rsvp-decline-note').style.display=''}">
+          <option value="">Select a reason...</option>
+          <option value="Have something booked">Have something booked</option>
+          <option value="Too far">Too far</option>
+          <option value="Not feeling well">Not feeling well</option>
+          <option value="Family commitment">Family commitment</option>
+          <option value="Work conflict">Work conflict</option>
+          <option value="Another time">Another time</option>
+          <option value="other">Other...</option>
+        </select>
+        <textarea id="rsvp-decline-note" class="decline-note" rows="2" placeholder="Add a note..." style="display:none;margin-top:6px;"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button class="btn-no" style="flex:1;" onclick="cancelDecline()">Cancel</button>
+        <button class="btn-no" style="flex:1;border-color:rgba(239,68,68,0.4);color:#f87171;" onclick="confirmDecline()">Decline</button>
+      </div>
     </div>
     ${alreadyHtml}
   `;
 }
 
-async function respond(status) {
+function showDeclineFlow() {
+  document.getElementById('rsvp-actions').style.display = 'none';
+  const fill = document.querySelector('.fill-section');
+  if (fill) fill.style.display = 'none';
+  document.getElementById('decline-flow').style.display = '';
+}
+
+function cancelDecline() {
+  document.getElementById('decline-flow').style.display = 'none';
+  document.getElementById('rsvp-actions').style.display = '';
+  const fill = document.querySelector('.fill-section');
+  if (fill) fill.style.display = '';
+}
+
+function confirmDecline() {
+  const reason = document.getElementById('rsvp-decline-reason')?.value || '';
+  const note = document.getElementById('rsvp-decline-note')?.value?.trim() || '';
+  const declineNote = reason === 'other' ? note : (reason || note || null);
+  respond('declined', declineNote);
+}
+
+async function respond(status, note) {
   try {
     // Save any filled-in details before responding
     const time    = document.getElementById('rsvp-fill-time')?.value?.trim() || '';
@@ -132,7 +179,7 @@ async function respond(status) {
     const res = await fetch(`/api/rsvp/${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, note: note || null })
     });
     if (!res.ok) throw new Error();
     const d = await res.json();

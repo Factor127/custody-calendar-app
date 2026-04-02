@@ -1215,13 +1215,13 @@ router.get('/rsvp/:token', (req, res) => {
 
 // POST /api/rsvp/:token — submit accept/decline
 router.post('/rsvp/:token', (req, res) => {
-  const { status } = req.body;
+  const { status, note } = req.body;
   if (!['accepted', 'declined'].includes(status)) {
     return res.status(400).json({ error: 'status must be accepted or declined' });
   }
   const inv = q.getInviteeByRsvpToken.get(req.params.token);
   if (!inv) return res.status(404).json({ error: 'not found' });
-  q.updateInviteeStatus.run(status, inv.id);
+  q.updateOutingRsvp.run(status, note || null, inv.id);
   // Track RSVP acceptance as a contribution win
   if (status === 'accepted' && inv.opportunity_id) {
     const { trackOppEvent } = require('../db');
