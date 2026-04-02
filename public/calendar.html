@@ -1938,9 +1938,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
       <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(230,249,82,0.22);flex-shrink:0;"></span> Kid-free
     </div>
-    <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;">
+    <label id="both-free-pill" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--lime);cursor:pointer;user-select:none;padding:3px 9px 3px 6px;border:1px solid rgba(230,249,82,0.35);border-radius:20px;background:rgba(230,249,82,0.08);transition:opacity .15s,background .15s;">
       <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)" style="display:none;">
-      <span id="both-free-swatch" style="display:inline-block;width:12px;height:12px;border-radius:3px;border:2px solid var(--lime);flex-shrink:0;box-sizing:border-box;background:rgba(230,249,82,0.18);"></span> Both free
+      <span id="both-free-swatch" style="display:inline-block;width:10px;height:10px;border-radius:2px;border:2px solid var(--lime);flex-shrink:0;box-sizing:border-box;background:rgba(230,249,82,0.25);"></span> Both free
     </label>
   </div>
 
@@ -5603,11 +5603,15 @@ function closeActivityWaModal() {
 // ── Utilities ─────────────────────────────────────────────────────────────
 function toggleClass(cls, on) {
   document.body.classList.toggle(cls, on);
-  // Update the "Both free" swatch visual
-  const sw = document.getElementById('both-free-swatch');
-  if (sw && cls === 'hide-frames') {
-    sw.style.background = on ? 'transparent' : 'rgba(230,249,82,0.18)';
-    sw.style.opacity = on ? '0.4' : '1';
+  if (cls === 'hide-frames') {
+    const pill = document.getElementById('both-free-pill');
+    const sw = document.getElementById('both-free-swatch');
+    if (pill) {
+      pill.style.opacity = on ? '0.45' : '1';
+      pill.style.background = on ? 'transparent' : 'rgba(230,249,82,0.08)';
+      pill.style.borderColor = on ? 'rgba(230,249,82,0.15)' : 'rgba(230,249,82,0.35)';
+    }
+    if (sw) sw.style.background = on ? 'transparent' : 'rgba(230,249,82,0.25)';
   }
 }
 
