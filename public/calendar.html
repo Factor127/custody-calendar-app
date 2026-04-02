@@ -7614,6 +7614,9 @@ async function _scUnfurlUrl(url) {
 
     const { main: dateMain } = dateApplied ? _scFmtDate(data.date) : {};
     const timeBadge = data.time ? ` · 🕐 ${data.time}` : '';
+    const missingHints = [];
+    if (!dateApplied) missingHints.push('date');
+    if (!data.time)   missingHints.push('time');
 
     box.innerHTML = `<div class="sc-what-unfurl">
       ${data.image ? `<img class="sc-what-unfurl-img" src="${data.image}" onerror="this.style.display='none'">` : ''}
@@ -7622,7 +7625,7 @@ async function _scUnfurlUrl(url) {
         <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}${dateApplied ? ` · 📅 ${dateMain}` : ''}${timeBadge}</div>
       </div>
       <span class="sc-what-unfurl-close" onclick="_scClearUnfurl()">✕</span>
-    </div>`;
+    </div>${missingHints.length ? `<div style="padding:6px 4px 2px;font-size:12px;color:var(--orange);">⚠ Couldn't detect the ${missingHints.join(' or ')} — please pick ${missingHints.includes('date') ? 'a date on the calendar' : ''}${missingHints.length === 2 ? ' and ' : ''}${missingHints.includes('time') && !missingHints.includes('date') ? 'a time' : missingHints.includes('time') ? 'set the time' : ''} below</div>` : ''}`;
 
     renderSCSummary();
   } catch(e) {
