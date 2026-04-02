@@ -7,7 +7,7 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#e6f952">
+  <meta name="theme-color" content="#0e0e0e">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -175,7 +175,7 @@ td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(255,115,81,0.6) !import
   transition: opacity .15s ease, transform .15s ease;
 }
 #cell-hover-card.visible { opacity: 1; transform: translateY(0); }
-@media (hover: none) { #cell-hover-card { display: none !important; } .free-tooltip { display: none !important; } .sc-hover-tip { display: none !important; } }
+@media (hover: none), (pointer: coarse) { #cell-hover-card { display: none !important; } .free-tooltip { display: none !important; } .sc-hover-tip { display: none !important; } }
 .chc-date { font-size: 11px; font-weight: 800; letter-spacing: .06em;
   text-transform: uppercase; color: var(--lime); margin-bottom: 8px; }
 .chc-row { display: flex; align-items: center; gap: 8px;
@@ -956,7 +956,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
 
     /* ── Pane navigation within day sheet ─────────────────────────────── */
-    .day-pane { display:none; flex-direction:column; height:100%; }
+    .day-pane { display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
     .day-pane.active { display:flex; }
     .pane-header { display:flex; align-items:center; gap:10px; padding:14px 20px 10px; border-bottom:1px solid rgba(255,255,255,0.07); }
     .pane-back { background:none; border:none; color:var(--lime); font-size:22px; cursor:pointer; padding:0; line-height:1; }
@@ -1938,19 +1938,11 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
       <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(230,249,82,0.22);flex-shrink:0;"></span> Kid-free
     </div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
-      <span style="display:inline-block;width:12px;height:12px;border-radius:3px;border:2px solid var(--lime);flex-shrink:0;box-sizing:border-box;"></span> Both free
-    </div>
-  </div>
-  <div class="cal-show-bar">
-    <label class="cal-show-item" style="gap:8px;">
-      <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)">
-      <span style="display:inline-flex;align-items:center;gap:6px;">
-        <span style="display:inline-block;width:13px;height:13px;border-radius:4px;border:2px solid var(--lime);opacity:0.85;flex-shrink:0;"></span>
-        <span>Partner &amp; you are free</span>
-      </span>
+    <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;user-select:none;">
+      <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)" style="display:none;">
+      <span id="both-free-swatch" style="display:inline-block;width:12px;height:12px;border-radius:3px;border:2px solid var(--lime);flex-shrink:0;box-sizing:border-box;background:rgba(230,249,82,0.18);"></span> Both free
     </label>
-  </div><!-- /.cal-show-bar -->
+  </div>
 
 <!-- Cell hover card -->
 <div id="cell-hover-card"></div>
@@ -3123,7 +3115,7 @@ function renderCalendar() {
 let _hoverHideTimer = null;
 
 function showCellHover(event, dateStr) {
-  if (!window.matchMedia('(hover: hover)').matches) return; // no hover on touch
+  if ('ontouchstart' in window || !window.matchMedia('(hover: hover)').matches) return;
   clearTimeout(_hoverHideTimer);
   const card = document.getElementById('cell-hover-card');
   if (!card) return;
@@ -5078,7 +5070,7 @@ function conversationalDate(dateStr) {
 // ── Free-time tooltip ──────────────────────────────────────────────────────
 let _tooltip = null;
 function showFreeTooltip(e, dateStr) {
-  if (!window.matchMedia('(hover: hover)').matches) return;
+  if ('ontouchstart' in window || !window.matchMedia('(hover: hover)').matches) return;
   hideFreeTooltip();
   const free = socialConnections.filter(sc => sc.days[dateStr]?.owner === 'coparent');
   if (free.length === 0) return;
@@ -5609,7 +5601,15 @@ function closeActivityWaModal() {
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────
-function toggleClass(cls, on) { document.body.classList.toggle(cls, on); }
+function toggleClass(cls, on) {
+  document.body.classList.toggle(cls, on);
+  // Update the "Both free" swatch visual
+  const sw = document.getElementById('both-free-swatch');
+  if (sw && cls === 'hide-frames') {
+    sw.style.background = on ? 'transparent' : 'rgba(230,249,82,0.18)';
+    sw.style.opacity = on ? '0.4' : '1';
+  }
+}
 
 function togglePartnerOverlay(checked) {
   toggleClass('hide-partner', !checked);
@@ -5688,7 +5688,7 @@ function showToast(msg) {
         </div>
         <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
       </div>
-      <div id="day-sheet-body" style="overflow-y:auto;flex:1;"></div>
+      <div id="day-sheet-body" style="overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
     </div>
 
     <!-- Pane 2: Event detail + chat -->
@@ -7514,7 +7514,7 @@ function renderSCCal() {
 // ── Crafter calendar hover tooltip ───────────────────────────────────────────
 let _scTip = null;
 function showSCTip(e, dateStr) {
-  if (!window.matchMedia('(hover: hover)').matches) return;
+  if ('ontouchstart' in window || !window.matchMedia('(hover: hover)').matches) return;
   hideSCTip();
   if (!_sc.data) return;
   // All connections confirmed free on this date (have calendar data + day is in their free list)
