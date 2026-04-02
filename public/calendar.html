@@ -7077,6 +7077,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   _sc.selWho       = new Set();
   _sc.selDate      = prefillSaved?.date || prefillDate || null;
   _sc.selTime      = null;
+  _sc.opportunityId = null;
   _sc.selWhat      = prefillOpp ? { custom: prefillOpp } : null;
   _sc.whatInputVal = '';
   _sc.removed        = new Set();
@@ -7581,6 +7582,17 @@ async function _scUnfurlUrl(url) {
     _sc.whatInputVal = data.title;
     if (inp) inp.value = data.title;
 
+    // ── Register link as an opportunity in the knowledge base ──
+    fetch(`/api/opportunities/submit?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    }).then(r => r.ok ? r.json() : null).then(opp => {
+      if (opp?.opportunity_id) {
+        _sc.opportunityId = opp.opportunity_id;
+      }
+    }).catch(() => {}); // non-critical, fire-and-forget
+
     // ── Auto-apply date if found ──
     let dateApplied = false;
     if (data.date && data.date >= new Date().toISOString().slice(0, 10)) {
@@ -7632,6 +7644,7 @@ function _scClearUnfurl() {
   document.getElementById('sc-what-input').value = '';
   _sc.selWhat = null;
   _sc.selTime = null;
+  _sc.opportunityId = null;
   _sc.whatInputVal = '';
   const timeInp = document.getElementById('sc-time-input');
   if (timeInp) timeInp.value = '';
@@ -7964,7 +7977,7 @@ async function _scPreCreateOuting() {
     const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null }),
+      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -8004,7 +8017,7 @@ async function finalizeSC() {
       fetch(`/api/outings?token=${MY_TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null }),
+        body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
       }).then(r => { if (r.ok) loadOutings(); });
     }
   }
