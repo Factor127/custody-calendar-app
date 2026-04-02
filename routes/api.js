@@ -1671,6 +1671,78 @@ router.get('/unfurl', async (req, res) => {
       timeDisplay = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
     }
 
+    // ── Claude AI fallback for SPA pages with no extractable content ──────
+    // If basic extraction yielded no date (or a generic/useless title), ask Claude
+    // to infer event details from the URL structure and whatever HTML is available.
+    if (!date || !title || (title && !date && !image)) {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (apiKey) {
+        try {
+          const bodyText = html
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+            .slice(0, 2000);
+          const claudePrompt = `Extract event details from this ticketing page. The page may be a JavaScript SPA so the HTML content is sparse — use the URL structure and any text you can find.
+
+URL: ${url}
+Page title: ${title || '(none)'}
+Site: ${siteName || '(unknown)'}
+Page text: ${bodyText || '(empty — SPA)'}
+
+Return ONLY valid JSON:
+{
+  "title": "Event/artist name",
+  "date": "YYYY-MM-DD or null",
+  "time": "HH:MM (24h) or null",
+  "venue": "venue name or null"
+}
+
+Rules:
+- The current year is ${new Date().getFullYear()}.
+- For Israeli sites (.co.il), dates in DD/MM format are day/month.
+- If the URL has a presentationId or prsntId parameter, this is a specific showtime — try to identify which one.
+- If you cannot determine the date/time, set them to null but still extract the title.
+- Do NOT invent data you're not confident about.`;
+
+          const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 256, messages: [{ role: 'user', content: claudePrompt }] }),
+            signal: AbortSignal.timeout(8000)
+          });
+          if (claudeRes.ok) {
+            const cData = await claudeRes.json();
+            const cText = cData.content?.[0]?.text || '';
+            const cJson = cText.match(/\{[\s\S]+\}/);
+            if (cJson) {
+              const parsed = JSON.parse(cJson[0]);
+              if (parsed.title && !title) title = parsed.title;
+              if (parsed.title && title && /כרטיסים|tickets|comy|booking/i.test(title)) title = parsed.title; // replace generic site title
+              if (parsed.date && !date) {
+                date = parsed.date;
+                const d = new Date(date);
+                date = isNaN(d) ? null : d.toISOString().slice(0, 10);
+              }
+              if (parsed.time && !time) {
+                time = _parseTimeFromText(parsed.time) || parsed.time;
+                if (time && !timeDisplay) {
+                  const [hh, mm] = time.split(':').map(Number);
+                  if (!isNaN(hh)) {
+                    const ampm = hh >= 12 ? 'PM' : 'AM';
+                    const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+                    timeDisplay = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+                  }
+                }
+              }
+            }
+          }
+        } catch(e) { /* Claude fallback non-critical */ }
+      }
+    }
+
     if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });
     res.json({ title, description, image, siteName, date, time: timeDisplay, url });
   } catch (err) {
