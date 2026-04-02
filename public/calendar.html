@@ -3896,12 +3896,20 @@ function renderInvitePane(data, inviteeRecordId) {
   </div>`;
 
   html += `<div id="invite-decline-note" style="display:none;padding:12px 16px;">
-    <div style="font-size:12px;font-weight:700;color:rgba(238,238,248,0.5);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Reason (optional)</div>
-    <div class="decline-chips" id="decline-chips-row">
-      ${['Have something booked','Too far','Not feeling well','Family commitment','Work conflict','Another time'].map(r=>`<button class="decline-chip" onclick="toggleDeclineChip(this,'${r.replace(/'/g,"\\'")}')">${r}</button>`).join('')}
+    <div style="position:relative;">
+      <input type="text" id="decline-note-input" class="suggest-input" placeholder="Add a reason (optional)…"
+        style="margin-bottom:0;resize:none;width:100%;"
+        onfocus="document.getElementById('decline-dropdown').style.display=''"
+        oninput="document.getElementById('decline-dropdown').style.display='none'">
+      <div id="decline-dropdown" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;overflow:hidden;z-index:10;">
+        ${['Have something booked','Too far','Not feeling well','Family commitment','Work conflict','Another time'].map(r =>
+          `<div style="padding:10px 14px;font-size:13px;color:rgba(238,238,248,0.7);cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.06);"
+            onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background=''"
+            onclick="document.getElementById('decline-note-input').value='${r}';document.getElementById('decline-dropdown').style.display='none';">${r}</div>`
+        ).join('')}
+      </div>
     </div>
-    <textarea id="decline-note-input" class="suggest-input" rows="2" placeholder="Add a note…" style="margin-bottom:10px;resize:none;"></textarea>
-    <button class="btn btn-primary" style="width:100%;padding:11px;font-size:13px;background:rgba(239,68,68,0.2);color:#f87171;" onclick="sendDecline('${outing.id}','${inviteeRecordId}')">Send decline</button>
+    <button class="btn btn-primary" style="width:100%;padding:11px;font-size:13px;background:rgba(239,68,68,0.2);color:#f87171;margin-top:10px;" onclick="sendDecline('${outing.id}','${inviteeRecordId}')">Send decline</button>
   </div>`;
 
   // Ignore flow (hidden)
@@ -4167,9 +4175,7 @@ function showDeclineNote(outingId, inviteeId) {
 }
 
 async function sendDecline(outingId, inviteeId) {
-  const chipNotes = [...document.querySelectorAll('#decline-chips-row .decline-chip.selected')].map(c => c.textContent).join(', ');
-  const freeNote  = document.getElementById('decline-note-input')?.value?.trim() || '';
-  const note = freeNote || chipNotes || null;
+  const note = document.getElementById('decline-note-input')?.value?.trim() || null;
   await submitRsvp(outingId, inviteeId, 'declined', note);
 }
 
