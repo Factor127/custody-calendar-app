@@ -138,12 +138,12 @@ th {
 
 /* Ownership fills */
 td.r {
-  background: rgba(230,249,82,0.10) !important;   /* lime tint — my custody days */
-  border-color: rgba(230,249,82,0.20) !important;
+  background: rgba(124,92,191,0.22) !important;   /* purple — R's custody days (has kids) */
+  border-color: rgba(167,139,250,0.18) !important;
 }
 td.z {
-  background: #0a0a0a !important;                 /* deeper obsidian — co-parent days */
-  border-color: rgba(226,226,226,0.04) !important;
+  background: rgba(230,249,82,0.12) !important;   /* lime/yellow — free days (no kids) */
+  border-color: rgba(230,249,82,0.22) !important;
 }
 td.bothfree { box-shadow: inset 0 0 0 1.5px var(--lime) !important; }
 body.hide-frames td.bothfree { box-shadow: none !important; }
@@ -3382,7 +3382,7 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
       const photo = c.photo ? `<img src="${c.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove();">` : '';
       const initials = (c.name || '?')[0].toUpperCase();
       return `<div class="dss-free-avatar" onclick="closeDaySheet();openSmartCrafter('${dateStr}',null,null,'${c.id}')" title="${c.name}">
-        <div class="dss-free-avatar-circle" style="background:${c.color||'#aec013'};">${initials}${photo}</div>
+        <div class="dss-free-avatar-circle" style="background:${c.color||'#7c5cbf'};">${initials}${photo}</div>
         <div class="dss-free-name">${c.name.split(' ')[0]}</div>
       </div>`;
     }).join('');
@@ -7043,7 +7043,7 @@ async function submitBrowseUrl() {
 // Smart Crafter
 // ══════════════════════════════════════════════════════════════════════════════
 
-const _SC_COLOR_PALETTE = ['#aec013','#00bcd4','#ff7043','#4caf50','#e91e63','#2196f3','#ff9800','#9c27b0'];
+const _SC_COLOR_PALETTE = ['#7c5cbf','#00bcd4','#ff7043','#4caf50','#e91e63','#2196f3','#ff9800','#9c27b0'];
 const _SC_DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const _SC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
