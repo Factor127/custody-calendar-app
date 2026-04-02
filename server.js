@@ -43,10 +43,12 @@ app.use('/api', adminRouter);
 app.use('/api', apiRouter);
 const opportunitiesRouter  = require('./routes/opportunities');
 const contributionsRouter  = require('./routes/contributions');
+const matchRouter          = require('./routes/match');
 app.use('/api', opportunitiesRouter);
 app.use('/api', contributionsRouter);
 app.use('/api', smartSuggestRouter);
 app.use('/api', pushRouter);
+app.use('/api', matchRouter);
 app.use('/', pagesRouter);
 
 // ── Root: landing page ────────────────────────────────────────────────────────

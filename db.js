@@ -307,6 +307,21 @@ db.exec(`CREATE TABLE IF NOT EXISTS outing_suggestions (
   created_at TEXT DEFAULT (datetime('now'))
 )`);
 
+// ── Match requests ────────────────────────────────────────────────────────────
+db.exec(`CREATE TABLE IF NOT EXISTS match_requests (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  token           TEXT UNIQUE NOT NULL,
+  person_a_name   TEXT,
+  person_a_email  TEXT,
+  person_a_schedule TEXT,
+  person_b_name   TEXT,
+  person_b_email  TEXT,
+  person_b_schedule TEXT,
+  status          TEXT DEFAULT 'pending',
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  completed_at    DATETIME
+)`);
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
