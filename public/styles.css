@@ -253,7 +253,7 @@ input:checked + .slider:before { transform: translateX(18px); }
 }
 
 .btn:hover { filter: brightness(0.92); }
-.btn-primary  { background: var(--blue); color: white; }
+.btn-primary  { background: var(--blue); color: var(--btn-primary-text, white); }
 .btn-green    { background: #34a853; color: white; }
 .btn-purple   { background: #9c27b0; color: white; }
 .btn-gray     { background: #5f6368; color: white; }
