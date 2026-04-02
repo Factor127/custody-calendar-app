@@ -1683,7 +1683,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-what-input { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--surface); color:var(--text); box-sizing:border-box; outline:none; font-family:inherit; }
     .sc-what-input:focus { border-color:var(--accent); }
     .sc-what-input.loading { opacity:0.6; }
-    .sc-what-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:300; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.5); display:none; }
+    .sc-what-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:300; overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:55vh; box-shadow:0 8px 24px rgba(0,0,0,0.5); display:none; }
     .sc-what-drop.open { display:block; }
     .sc-what-drop-item { padding:10px 14px; cursor:pointer; display:flex; flex-direction:column; gap:2px; transition:background .1s; }
     .sc-what-drop-item:hover { background:rgba(230,249,82,0.10); }
@@ -1705,12 +1705,13 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-what-opts { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
 
     /* MIDDLE — Who + When side by side */
-    .sc-middle { display:flex; flex:1; overflow:hidden; min-height:0; }
+    .sc-middle { display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
 
-    /* WHO col — 1/3 */
-    .sc-who-col { flex:0 0 33%; max-width:33%; border-right:1px solid var(--border); overflow-x:hidden; overflow-y:auto; padding:10px 6px; display:flex; flex-direction:column; gap:4px; }
-    .sc-col-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:0 4px 6px; }
-    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:6px 4px; border-radius:10px; transition:background .15s; user-select:none; }
+    /* WHO row — horizontal scrollable below calendar */
+    .sc-who-col { flex-shrink:0; border-top:1px solid var(--border); overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:8px 10px; display:flex; flex-direction:row; align-items:flex-start; gap:10px; scrollbar-width:none; }
+    .sc-who-col::-webkit-scrollbar { display:none; }
+    .sc-col-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:2px 0; flex-shrink:0; white-space:nowrap; align-self:center; }
+    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 2px; border-radius:10px; transition:background .15s; user-select:none; flex-shrink:0; }
     .sc-who-chip:hover .sc-who-avatar { box-shadow:0 0 0 2px rgba(230,249,82,0.40); }
     .sc-who-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; position:relative; background:#2a2a2a; transition:box-shadow .15s,transform .15s; overflow:hidden; }
     .sc-who-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
@@ -1719,8 +1720,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-who-chip.selected .sc-who-check { display:flex; }
     .sc-who-name { font-size:10px; color:var(--text); text-align:center; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* WHEN col — 2/3 mini calendar */
-    .sc-when-col { flex:1; min-width:0; overflow:hidden; padding:10px 8px; display:flex; flex-direction:column; }
+    /* WHEN col — full width mini calendar */
+    .sc-when-col { flex:1; min-width:0; min-height:0; overflow:hidden; padding:10px 8px; display:flex; flex-direction:column; }
     .sc-cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-shrink:0; }
     .sc-cal-month-label { font-size:12px; font-weight:700; color:var(--text); }
     .sc-cal-nav-btn { background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1; font-family:inherit; }
@@ -2198,7 +2199,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         <span class="sc-top-label">What?</span>
         <div class="sc-what-wrap">
           <input id="sc-what-input" class="sc-what-input"
-            placeholder="Search a place or paste a link…"
+            placeholder="Paste a link, search, or pick a type…"
             oninput="scWhatInputChange(this.value)"
             onfocus="scWhatFocus()"
             onblur="setTimeout(scWhatBlur,150)"
@@ -2207,19 +2208,11 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         </div>
         <button class="sc-close-btn" onclick="closeSC()">✕</button>
       </div>
-      <div class="sc-what-opts" id="sc-what-opts"></div>
       <div id="sc-what-unfurl" style="display:none;"></div>
     </div>
 
-    <!-- MIDDLE: Who (1/3) + When calendar (2/3) -->
+    <!-- MIDDLE: When calendar (full width) + Who (horizontal row below) -->
     <div class="sc-middle">
-      <!-- WHO -->
-      <div class="sc-who-col">
-        <div class="sc-col-label">Who?</div>
-        <div id="sc-who-row">
-          <span style="color:var(--muted);font-size:12px;padding:4px;">Loading…</span>
-        </div>
-      </div>
       <!-- WHEN mini calendar -->
       <div class="sc-when-col">
         <div id="sc-clash-bar-when"></div>
@@ -2247,6 +2240,13 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
             style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);font-family:inherit;outline:none;min-width:0;"
             onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'; _scTimeChanged(this.value);">
           <button onclick="_scSkipTime()" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">All day</button>
+        </div>
+      </div>
+      <!-- WHO — horizontal scrollable row -->
+      <div class="sc-who-col">
+        <div class="sc-col-label">Who?</div>
+        <div id="sc-who-row" style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--muted);font-size:12px;padding:4px;">Loading…</span>
         </div>
       </div>
     </div>
@@ -7395,8 +7395,8 @@ function renderSCWho() {
     return;
   }
 
-  const show = _sc.expanded ? all : all.slice(0, 5);
-  const rest = _sc.expanded ? 0   : all.length - 5;
+  // Show all contacts in horizontal scrollable row (no limit needed)
+  const show = all;
 
   row.innerHTML = show.map(w => {
     const sel  = _sc.selWho.has(w.id);
@@ -7416,11 +7416,7 @@ function renderSCWho() {
       <div class="sc-who-name">${w.name.split(' ')[0]}</div>
       ${freeBadge}
     </div>`;
-  }).join('') + (rest > 0 ? `
-    <div class="sc-who-more" onclick="scExpandWho()">
-      <div class="sc-who-more-circle">+${rest}</div>
-      <div class="sc-who-name" style="color:var(--muted);">More</div>
-    </div>` : '');
+  }).join('');
 }
 
 function scToggleWho(connId) {
@@ -7664,11 +7660,11 @@ function scWhatInputChange(val) {
     return;
   }
 
-  // ── Text: set immediately then debounce Places ──
+  // ── Text: set immediately, then search DB + event types + Places ──
   _sc.selWhat = { custom: trimmed };
   renderSCSummary();
 
-  _scWhatTimer = setTimeout(() => _scPlacesSearch(trimmed), 350);
+  _scWhatTimer = setTimeout(() => _scUnifiedSearch(trimmed), 350);
 }
 
 async function _scUnfurlUrl(url) {
@@ -7761,6 +7757,84 @@ function _scClearUnfurl() {
   renderSCSummary();
 }
 
+async function _scUnifiedSearch(q) {
+  const drop = document.getElementById('sc-what-drop');
+  if (!drop) return;
+  let html = '';
+
+  // 1. Filter event types that match the query
+  const ql = q.toLowerCase();
+  const matchingTypes = SC_EVENT_TYPES.filter(t => t.label.toLowerCase().includes(ql));
+  if (matchingTypes.length) {
+    html += matchingTypes.map((t, i) => {
+      const idx = SC_EVENT_TYPES.indexOf(t);
+      return `<div class="sc-what-drop-item" onclick="scWhatPickType(${idx})">
+        <div class="sc-what-drop-main">${t.emoji} ${t.label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // 2. Search opportunities DB
+  try {
+    const dbRes = await fetch(`/api/opportunities/search?q=${encodeURIComponent(q)}&token=${MY_TOKEN}`);
+    if (dbRes.ok) {
+      const dbData = await dbRes.json();
+      const opps = (dbData.results || []).slice(0, 4);
+      if (opps.length) {
+        html += `<div class="sc-what-drop-section">Events & venues</div>`;
+        html += opps.map((o, i) => {
+          const icon = o.type === 'event' ? '🎫' : '📍';
+          const meta = [o.location_name?.split(',')[0], o.category].filter(Boolean).join(' · ');
+          return `<div class="sc-what-drop-item" onclick="scWhatPickOpp(${i})">
+            <div class="sc-what-drop-main">${icon} ${o.title}</div>
+            ${meta ? `<div class="sc-what-drop-sub">${meta}</div>` : ''}
+          </div>`;
+        }).join('');
+        drop._opps = opps;
+      }
+    }
+  } catch(e) {}
+
+  // 3. Google Places
+  try {
+    const plRes = await fetch(`/api/places/autocomplete?q=${encodeURIComponent(q)}&token=${MY_TOKEN}`);
+    if (plRes.ok) {
+      const plData = await plRes.json();
+      const preds = (plData.predictions || []).slice(0, 4);
+      if (preds.length) {
+        html += `<div class="sc-what-drop-section">Places</div>`;
+        html += preds.map((p, i) =>
+          `<div class="sc-what-drop-item" onclick="scWhatPickPlace(${i})">
+            <div class="sc-what-drop-main">📍 ${p.main_text}</div>
+            ${p.secondary_text ? `<div class="sc-what-drop-sub">${p.secondary_text}</div>` : ''}
+          </div>`
+        ).join('');
+        drop._preds = preds;
+      }
+    }
+  } catch(e) {}
+
+  if (html) {
+    drop.innerHTML = html;
+    drop.classList.add('open');
+  } else {
+    scWhatCloseDrop();
+  }
+}
+
+function scWhatPickOpp(idx) {
+  const drop = document.getElementById('sc-what-drop');
+  const o = drop?._opps?.[idx];
+  if (!o) return;
+  const inp = document.getElementById('sc-what-input');
+  if (inp) inp.value = o.title;
+  _sc.whatInputVal = o.title;
+  _sc.selWhat = { custom: o.title, oppId: o.id, source_url: o.source_url };
+  if (o.source_url) _sc.selWhat.url = o.source_url;
+  scWhatCloseDrop();
+  renderSCSummary();
+}
+
 async function _scPlacesSearch(q) {
   const drop = document.getElementById('sc-what-drop');
   if (!drop) return;
@@ -7792,22 +7866,56 @@ function scWhatPickPlace(idx) {
   renderSCSummary();
 }
 
+const SC_EVENT_TYPES = [
+  { emoji:'🎵', label:'Concert / Show' },
+  { emoji:'🍽', label:'Restaurant / Dinner' },
+  { emoji:'☕', label:'Coffee / Drinks' },
+  { emoji:'🌳', label:'Day Trip / Outdoors' },
+  { emoji:'⚽', label:'Sports / Activity' },
+  { emoji:'🎨', label:'Arts / Exhibition' },
+  { emoji:'🎉', label:'Party / Social' },
+  { emoji:'🤷', label:'Something else' },
+];
+
 function scWhatFocus() {
   const inp = document.getElementById('sc-what-input');
-  if (inp?.value.trim()) return; // already has text — don't override
-  const recent = _sc.data?.recentVenues || [];
-  if (!recent.length) return;
+  if (inp?.value.trim()) return;
   const drop = document.getElementById('sc-what-drop');
   if (!drop) return;
-  drop.innerHTML = `<div class="sc-what-drop-section">Recent</div>` +
-    recent.map((v, i) =>
+
+  let html = '';
+  // Recent venues
+  const recent = _sc.data?.recentVenues || [];
+  if (recent.length) {
+    html += `<div class="sc-what-drop-section">Recent</div>`;
+    html += recent.map((v, i) =>
       `<div class="sc-what-drop-item" onclick="scWhatPickRecent(${i})">
         <div class="sc-what-drop-main">🕐 ${v.name}</div>
         ${v.address ? `<div class="sc-what-drop-sub">${v.address}</div>` : ''}
       </div>`
     ).join('');
-  drop._recent = recent;
+    drop._recent = recent;
+  }
+  // Event type suggestions
+  html += `<div class="sc-what-drop-section">Type of outing</div>`;
+  html += SC_EVENT_TYPES.map((t, i) =>
+    `<div class="sc-what-drop-item" onclick="scWhatPickType(${i})">
+      <div class="sc-what-drop-main">${t.emoji} ${t.label}</div>
+    </div>`
+  ).join('');
+  drop.innerHTML = html;
   drop.classList.add('open');
+}
+
+function scWhatPickType(idx) {
+  const t = SC_EVENT_TYPES[idx];
+  if (!t) return;
+  const inp = document.getElementById('sc-what-input');
+  if (inp) inp.value = `${t.emoji} ${t.label}`;
+  _sc.whatInputVal = `${t.emoji} ${t.label}`;
+  _sc.selWhat = { custom: `${t.emoji} ${t.label}` };
+  scWhatCloseDrop();
+  renderSCSummary();
 }
 
 function scWhatBlur() {
