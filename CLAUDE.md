@@ -48,3 +48,8 @@ Ran, solo founder building Spontany — a scheduling app for divorcees to manage
 - Uses Claude for code/planning, ChatGPT for creative/messaging, Canva for design
 - Prefers to build things himself rather than use heavy platforms
 - Asks smart strategic questions — treat as a technical founder who thinks about the full picture
+
+## Session context backups
+Full history of decisions, fixes, and features built — read these at the start of any session to get full context:
+- `docs/context-backup-2026-04-02.md` — cell colors, landing page, onboard restructure, match tool, logo replacement, contrast fixes, file consolidation
+- `docs/context-backup-2026-04-02b.md` — carousel images fix, commit cleanup
