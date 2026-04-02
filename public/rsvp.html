@@ -40,6 +40,11 @@
     .error-msg { text-align: center; color: #ff7351; font-size: 14px; padding: 32px 0; }
 
     .already { font-size: 13px; color: rgba(226,226,226,0.42); text-align: center; margin-top: 12px; }
+
+    .fill-section { margin-top: 16px; padding: 12px; background: rgba(124,92,191,0.10); border: 1px solid rgba(124,92,191,0.25); border-radius: 12px; }
+    .fill-label { font-size: 11px; font-weight: 700; color: rgba(167,139,250,0.7); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .fill-input { width: 100%; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; border: 1px solid rgba(226,226,226,0.12); background: rgba(226,226,226,0.06); color: #e2e2e2; font-size: 14px; font-family: inherit; }
+    .fill-input::placeholder { color: rgba(226,226,226,0.3); }
   </style>
 </head>
 <body>
@@ -76,6 +81,18 @@ function renderInvite(d) {
   if (d.location) rows.push(`<div class="detail-row"><span class="detail-icon">📍</span><div class="detail-text">${esc(d.location)}</div></div>`);
   if (d.link)     rows.push(`<div class="detail-row"><span class="detail-icon">🔗</span><div class="detail-text"><a href="${esc(d.link)}" target="_blank" rel="noopener">${esc(d.link.replace(/https?:\/\/(www\.)?/,'').slice(0,50))}</a></div></div>`);
 
+  // Editable inputs for missing details
+  const missingHtml = [];
+  if (!d.time)     missingHtml.push(`<input id="rsvp-fill-time" type="text" placeholder="Time (e.g. 19:00, Evening)" class="fill-input">`);
+  if (!d.venue)    missingHtml.push(`<input id="rsvp-fill-venue" type="text" placeholder="Venue name" class="fill-input">`);
+  if (!d.location) missingHtml.push(`<input id="rsvp-fill-address" type="text" placeholder="Address" class="fill-input">`);
+
+  const fillSection = missingHtml.length ? `
+    <div class="fill-section">
+      <div class="fill-label">Know any missing details?</div>
+      ${missingHtml.join('')}
+    </div>` : '';
+
   const alreadyHtml = d.status !== 'pending'
     ? `<div class="already">You already responded: <strong>${d.status === 'accepted' ? '✅ Going' : '❌ Can\'t make it'}</strong></div>`
     : '';
@@ -84,7 +101,8 @@ function renderInvite(d) {
     <div class="invite-label">You're invited by</div>
     <div class="invite-from"><span>${esc(d.inviterName)}</span></div>
     ${rows.join('')}
-    ${rows.length ? '<div class="divider"></div>' : ''}
+    ${fillSection}
+    ${rows.length || fillSection ? '<div class="divider"></div>' : ''}
     <div class="actions">
       <button class="btn-yes" onclick="respond('accepted')">✅ Yes, I'm in!</button>
       <button class="btn-no"  onclick="respond('declined')">❌ Can't make it</button>
@@ -95,6 +113,22 @@ function renderInvite(d) {
 
 async function respond(status) {
   try {
+    // Save any filled-in details before responding
+    const time    = document.getElementById('rsvp-fill-time')?.value?.trim() || '';
+    const venue   = document.getElementById('rsvp-fill-venue')?.value?.trim() || '';
+    const address = document.getElementById('rsvp-fill-address')?.value?.trim() || '';
+    if (time || venue || address) {
+      const body = {};
+      if (time)    body.event_time = time;
+      if (venue)   body.venue = venue;
+      if (address) body.venue_address = address;
+      await fetch(`/api/rsvp/${token}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+
     const res = await fetch(`/api/rsvp/${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

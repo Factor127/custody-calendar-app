@@ -3798,9 +3798,37 @@ function renderInvitePane(data, inviteeRecordId) {
 
   html += `<div style="padding:14px 16px 10px;">`;
   html += `<div style="font-size:18px;font-weight:800;color:#eeeef8;margin-bottom:6px;">${title}</div>`;
-  if (outing.event_time) html += `<div style="font-size:13px;color:rgba(238,238,248,0.55);margin-bottom:3px;">🕐 ${outing.event_time}</div>`;
-  if (outing.venue) html += `<div style="font-size:13px;color:rgba(238,238,248,0.70);margin-bottom:3px;">📍 ${outing.venue}</div>`;
-  if (outing.venue_address) html += `<div style="font-size:12px;color:rgba(238,238,248,0.45);">${outing.venue_address}</div>`;
+  if (outing.event_time) {
+    html += `<div style="font-size:13px;color:rgba(238,238,248,0.55);margin-bottom:3px;">🕐 ${outing.event_time}</div>`;
+  }
+  if (outing.venue) {
+    html += `<div style="font-size:13px;color:rgba(238,238,248,0.70);margin-bottom:3px;">📍 ${outing.venue}</div>`;
+  }
+  if (outing.venue_address) {
+    html += `<div style="font-size:12px;color:rgba(238,238,248,0.45);">${outing.venue_address}</div>`;
+  }
+
+  // Editable inputs for missing details
+  const _missingFields = [];
+  if (!outing.event_time) _missingFields.push('time');
+  if (!outing.venue) _missingFields.push('venue');
+  if (!outing.venue_address) _missingFields.push('address');
+
+  if (_missingFields.length) {
+    html += `<div style="margin-top:10px;padding:10px;background:rgba(124,92,191,0.10);border:1px solid rgba(124,92,191,0.25);border-radius:10px;">`;
+    html += `<div style="font-size:11px;font-weight:700;color:rgba(167,139,250,0.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Know any missing details?</div>`;
+    if (!outing.event_time) {
+      html += `<input id="invite-fill-time" type="text" placeholder="Time (e.g. 19:00, Evening)" style="width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(238,238,248,0.12);background:rgba(238,238,248,0.06);color:#eeeef8;font-size:13px;font-family:inherit;">`;
+    }
+    if (!outing.venue) {
+      html += `<input id="invite-fill-venue" type="text" placeholder="Venue name" style="width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(238,238,248,0.12);background:rgba(238,238,248,0.06);color:#eeeef8;font-size:13px;font-family:inherit;">`;
+    }
+    if (!outing.venue_address) {
+      html += `<input id="invite-fill-address" type="text" placeholder="Address" style="width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(238,238,248,0.12);background:rgba(238,238,248,0.06);color:#eeeef8;font-size:13px;font-family:inherit;">`;
+    }
+    html += `</div>`;
+  }
+
   html += `</div>`;
 
   // Suggest different section (collapsed by default)
@@ -4144,8 +4172,29 @@ function cancelIgnoreFlow() {
   document.getElementById('invite-rsvp-area').style.display = '';
 }
 
+async function _saveInviteFilledDetails(outingId) {
+  const time    = document.getElementById('invite-fill-time')?.value?.trim() || '';
+  const venue   = document.getElementById('invite-fill-venue')?.value?.trim() || '';
+  const address = document.getElementById('invite-fill-address')?.value?.trim() || '';
+  if (!time && !venue && !address) return;
+  const body = {};
+  if (time)    body.event_time = time;
+  if (venue)   body.venue = venue;
+  if (address) body.venue_address = address;
+  try {
+    await fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch(e) { /* best-effort */ }
+}
+
 async function submitRsvp(outingId, inviteeId, status, note) {
   try {
+    // Save any filled-in missing details before RSVP
+    await _saveInviteFilledDetails(outingId);
+
     const res = await fetch(`/api/outings/${outingId}/rsvp?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

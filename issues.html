@@ -158,6 +158,29 @@
   .prompt-actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
   .copy-feedback { color: #22c55e; font-size: 0.8rem; opacity: 0; transition: opacity 0.3s; }
   .copy-feedback.show { opacity: 1; }
+
+  /* Roadmap */
+  .release-section {
+    background: #131321; border-radius: 8px; padding: 16px; margin-bottom: 12px;
+    border: 1px solid #2d2d44;
+  }
+  .release-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; gap: 8px;
+  }
+  .release-header h3 { font-size: 1rem; color: #a78bfa; margin: 0; }
+  .release-header .release-count { font-size: 0.8rem; color: #64748b; }
+  .release-actions { display: flex; gap: 6px; }
+  .roadmap-card {
+    background: #1e1e2e; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  }
+  .roadmap-card-info { flex: 1; }
+  .roadmap-card-desc { font-size: 0.9rem; color: #e2e8f0; }
+  .roadmap-card-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .roadmap-card-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: flex-start; }
+  .roadmap-empty { color: #64748b; font-size: 0.85rem; font-style: italic; padding: 8px 0; }
+  .add-release-row { display: flex; gap: 8px; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -171,6 +194,7 @@
 
 <div class="tabs">
   <button class="tab active" data-tab="issues" onclick="switchTab('issues')">Issues</button>
+  <button class="tab" data-tab="roadmap" onclick="switchTab('roadmap')">Roadmap</button>
   <button class="tab" data-tab="insights" onclick="switchTab('insights')">Insights</button>
 </div>
 
@@ -244,6 +268,14 @@
   </div>
 </div>
 
+<!-- ROADMAP TAB -->
+<div id="tab-roadmap" class="tab-content">
+  <div id="roadmapContent"></div>
+  <div class="add-release-row">
+    <button class="btn btn-secondary" onclick="addReleaseBucket()">+ Add Release</button>
+  </div>
+</div>
+
 <!-- INSIGHTS TAB -->
 <div id="tab-insights" class="tab-content">
   <div class="insights" id="insightsPanel"></div>
@@ -255,10 +287,23 @@ const STORAGE_KEY = 'spontany_issues';
 let issues = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let activeRecognition = null;
 let activeTargetId = null;
-const promptSelected = new Set();
+const PROMPT_KEY = 'spontany_prompt_selected';
+const promptSelected = new Set(JSON.parse(localStorage.getItem(PROMPT_KEY) || '[]'));
+
+const RELEASES_KEY = 'spontany_releases';
+let releases = JSON.parse(localStorage.getItem(RELEASES_KEY) || '["next","next+1"]');
 
 const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
 const STATUS_ORDER = { open: 0, 'in-progress': 1, done: 2, 'wont-fix': 3 };
+
+function saveReleases() {
+  localStorage.setItem(RELEASES_KEY, JSON.stringify(releases));
+}
+
+function releaseName(r) {
+  if (r === 'next') return 'Next Release';
+  return 'Next Release ' + r.replace('next', '');
+}
 
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
@@ -367,6 +412,7 @@ function renderIssues() {
   const sortBy = document.getElementById('sortBy').value;
 
   let filtered = issues.filter(i => {
+    if (i.release) return false; // roadmap issues hidden from Issues tab
     if (filterStatus !== 'all' && i.status !== filterStatus) return false;
     if (filterPriority !== 'all' && i.priority !== filterPriority) return false;
     if (search && !(i.description || '').toLowerCase().includes(search)) return false;
@@ -414,6 +460,10 @@ function renderIssues() {
             <option value="medium" ${i.priority==='medium'?'selected':''}>Medium</option>
             <option value="low" ${i.priority==='low'?'selected':''}>Low</option>
           </select>
+          <select onchange="if(this.value){moveToRoadmap('${i.id}', this.value);} event.stopPropagation();" onclick="event.stopPropagation();">
+            <option value="">Move to Roadmap...</option>
+            ${releases.map(r => `<option value="${r}">${releaseName(r)}</option>`).join('')}
+          </select>
           <button class="btn btn-sm btn-danger" onclick="deleteIssue('${i.id}'); event.stopPropagation();">Delete</button>
         </div>
 
@@ -443,7 +493,17 @@ function toggleExpand(id) {
 
 function updateStatus(id, status) {
   const i = issues.find(x => x.id === id);
-  if (i) { i.status = status; i.updated = Date.now(); save(); renderIssues(); }
+  if (i) {
+    i.status = status;
+    i.updated = Date.now();
+    if (status === 'done' || status === 'wont-fix') {
+      promptSelected.delete(id);
+      savePromptSelections();
+      buildPrompt();
+    }
+    save();
+    renderIssues();
+  }
 }
 
 function updatePriority(id, priority) {
@@ -483,12 +543,17 @@ function esc(s) {
 }
 
 // --- Prompt Builder ---
+function savePromptSelections() {
+  localStorage.setItem(PROMPT_KEY, JSON.stringify([...promptSelected]));
+}
+
 function togglePrompt(id) {
   if (promptSelected.has(id)) {
     promptSelected.delete(id);
   } else {
     promptSelected.add(id);
   }
+  savePromptSelections();
   renderIssues();
   buildPrompt();
 }
@@ -507,22 +572,41 @@ function buildPrompt() {
   countEl.textContent = `${promptSelected.size} issue${promptSelected.size > 1 ? 's' : ''} selected`;
 
   const selected = issues.filter(i => promptSelected.has(i.id));
-  const lines = ['Please address the following issues in the Spontany codebase:\n'];
 
+  // Sort by priority for the prompt
+  const PORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+  selected.sort((a, b) => (PORDER[a.priority] ?? 9) - (PORDER[b.priority] ?? 9));
+
+  const lines = [];
+
+  // Context block
+  lines.push('I have the following issues to address in the Spontany codebase.');
+  lines.push('Stack: Node.js + Express + SQLite backend, vanilla HTML/CSS/JS frontend (no framework, no build step), PWA.');
+  lines.push('');
+
+  // Issues block
+  lines.push(`## Issues (${selected.length})`);
+  lines.push('');
   selected.forEach((issue, idx) => {
-    lines.push(`${idx + 1}. [${issue.priority.toUpperCase()}] [${issue.category}] ${issue.description}`);
+    lines.push(`${idx + 1}. **[${issue.priority.toUpperCase()}]** (${issue.category}) ${issue.description}`);
     if (issue.notes.length) {
       issue.notes.forEach(n => {
-        lines.push(`   - Note: ${n.text}`);
+        lines.push(`   - ${n.text}`);
       });
     }
-    lines.push('');
   });
 
-  lines.push('For each issue:');
-  lines.push('- Identify the relevant file(s)');
-  lines.push('- Implement the fix or feature');
-  lines.push('- Confirm what was changed');
+  // Instructions block
+  lines.push('');
+  lines.push('## Instructions');
+  lines.push('');
+  lines.push('Work through these in priority order. For each:');
+  lines.push('1. Read the relevant files first before making changes');
+  lines.push('2. Make minimal, focused edits — don\'t refactor surrounding code');
+  lines.push('3. Test that the fix works if there\'s a way to verify');
+  lines.push('4. Move to the next issue');
+  lines.push('');
+  lines.push('After all issues are done, commit with a single descriptive message summarizing what was fixed.');
 
   textarea.value = lines.join('\n');
 }
@@ -538,8 +622,81 @@ function copyPrompt() {
 
 function clearPromptSelections() {
   promptSelected.clear();
+  savePromptSelections();
   renderIssues();
   buildPrompt();
+}
+
+// --- Roadmap ---
+function moveToRoadmap(id, release) {
+  const i = issues.find(x => x.id === id);
+  if (i) { i.release = release; i.updated = Date.now(); save(); renderIssues(); renderRoadmap(); }
+}
+
+function moveToIssues(id) {
+  const i = issues.find(x => x.id === id);
+  if (i) { i.release = null; i.updated = Date.now(); save(); renderIssues(); renderRoadmap(); }
+}
+
+function moveBatchToIssues(release) {
+  issues.forEach(i => { if (i.release === release) { i.release = null; i.updated = Date.now(); } });
+  save(); renderIssues(); renderRoadmap();
+}
+
+function addReleaseBucket() {
+  const nums = releases.map(r => r === 'next' ? 0 : parseInt(r.replace('next+', '')) || 0);
+  const max = Math.max(...nums, 0);
+  releases.push('next+' + (max + 1));
+  saveReleases();
+  renderRoadmap();
+}
+
+function removeReleaseBucket(release) {
+  const count = issues.filter(i => i.release === release).length;
+  if (count > 0) { alert('Move all issues out of this release first.'); return; }
+  releases = releases.filter(r => r !== release);
+  saveReleases();
+  renderRoadmap();
+}
+
+function renderRoadmap() {
+  const container = document.getElementById('roadmapContent');
+  if (!container) return;
+
+  container.innerHTML = releases.map(r => {
+    const items = issues.filter(i => i.release === r)
+      .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9));
+
+    return `
+      <div class="release-section">
+        <div class="release-header">
+          <div>
+            <h3>${releaseName(r)}</h3>
+            <span class="release-count">${items.length} issue${items.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="release-actions">
+            ${items.length ? `<button class="btn btn-sm btn-primary" onclick="moveBatchToIssues('${r}')">Move All to Issues</button>` : ''}
+            <button class="btn btn-sm btn-ghost" onclick="removeReleaseBucket('${r}')" title="Remove release">&times;</button>
+          </div>
+        </div>
+        ${items.length ? items.map(i => `
+          <div class="roadmap-card">
+            <div class="roadmap-card-info">
+              <div class="roadmap-card-desc">${esc(i.description)}</div>
+              <div class="roadmap-card-meta">
+                <span class="badge badge-${i.priority}">${i.priority}</span>
+                <span class="badge" style="background:#2d2d44;color:#94a3b8;">${i.category}</span>
+                <span class="badge badge-${i.status}">${i.status}</span>
+              </div>
+            </div>
+            <div class="roadmap-card-actions">
+              <button class="btn btn-sm btn-secondary" onclick="moveToIssues('${i.id}')">Back to Issues</button>
+            </div>
+          </div>
+        `).join('') : '<div class="roadmap-empty">No issues in this release</div>'}
+      </div>
+    `;
+  }).join('');
 }
 
 // --- Insights ---
@@ -626,11 +783,11 @@ function findDuplicates() {
   for (let i = 0; i < active.length; i++) {
     if (used.has(active[i].id)) continue;
     const group = [active[i]];
-    const wordsA = getWords(active[i].title);
+    const wordsA = getWords(active[i].description);
 
     for (let j = i + 1; j < active.length; j++) {
       if (used.has(active[j].id)) continue;
-      const wordsB = getWords(active[j].title);
+      const wordsB = getWords(active[j].description);
       const overlap = wordsA.filter(w => wordsB.includes(w));
       const similarity = overlap.length / Math.max(wordsA.length, wordsB.length);
       if (similarity >= 0.5 && overlap.length >= 2) {
@@ -657,14 +814,14 @@ function suggestNextSteps() {
   const inProg = active.filter(i => i.status === 'in-progress');
 
   if (critical.length > 0) {
-    steps.push(`Tackle ${critical.length} critical issue${critical.length > 1 ? 's' : ''} first: "${esc(critical[0].title)}"`);
+    steps.push(`Tackle ${critical.length} critical issue${critical.length > 1 ? 's' : ''} first: "${esc(critical[0].description)}"`);
   }
   if (inProg.length > 3) {
     steps.push(`You have ${inProg.length} issues in progress — consider finishing some before starting new ones.`);
   }
   if (inProg.length === 0 && active.length > 0) {
     const next = active.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])[0];
-    steps.push(`Nothing in progress. Start with: "${esc(next.title)}" (${next.priority})`);
+    steps.push(`Nothing in progress. Start with: "${esc(next.description)}" (${next.priority})`);
   }
 
   const cats = {};
@@ -686,11 +843,19 @@ function suggestNextSteps() {
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
+  if (tab === 'roadmap') renderRoadmap();
   if (tab === 'insights') renderInsights();
 }
 
 // --- Init ---
+// Clean stale selections for deleted issues
+const issueIds = new Set(issues.map(i => i.id));
+for (const id of promptSelected) {
+  if (!issueIds.has(id)) promptSelected.delete(id);
+}
+if (promptSelected.size > 0) savePromptSelections();
 renderIssues();
+buildPrompt();
 </script>
 </body>
 </html>

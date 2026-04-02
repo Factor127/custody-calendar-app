@@ -1230,6 +1230,27 @@ router.post('/rsvp/:token', (req, res) => {
   res.json({ ok: true, inviterName: inv.inviter_name });
 });
 
+// PATCH /api/rsvp/:token — update outing details via rsvp token (public, no auth)
+// Allows invitees to fill in missing event details when RSVPing
+router.patch('/rsvp/:token', (req, res) => {
+  const inv = q.getInviteeByRsvpToken.get(req.params.token);
+  if (!inv) return res.status(404).json({ error: 'not found' });
+  const outing = q.getOutingById.get(inv.outing_id);
+  if (!outing) return res.status(404).json({ error: 'not found' });
+
+  const { venue, event_time, venue_address } = req.body;
+  // Update with latest values — treat as corrections
+  q.updateOutingFull.run(
+    outing.title || null,
+    venue !== undefined ? (venue || null) : (outing.venue || null),
+    event_time !== undefined ? (event_time || null) : (outing.event_time || null),
+    venue_address !== undefined ? (venue_address || null) : (outing.venue_address || null),
+    inv.outing_id,
+    outing.created_by
+  );
+  res.json({ ok: true });
+});
+
 // ── Outings ───────────────────────────────────────────────────────────────
 
 // POST /api/outings — create a new outing with invitees
@@ -1822,12 +1843,19 @@ Rules:
 });
 
 // PUT /api/outings/:id — update outing details (title, venue, time, etc.)
+// Creator can update anything; invitees can fill in missing details
 router.put('/outings/:id', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
   const outing = q.getOutingById.get(req.params.id);
-  if (!outing || outing.created_by !== me.id) return res.status(403).json({ error: 'Not authorized' });
+  if (!outing) return res.status(404).json({ error: 'Not found' });
+
+  const isCreator = outing.created_by === me.id;
+  const invitees = q.getOutingInvitees.all(req.params.id);
+  const isInvitee = invitees.some(inv => inv.user_id === me.id);
+
+  if (!isCreator && !isInvitee) return res.status(403).json({ error: 'Not authorized' });
 
   const { title, venue, event_time, venue_address, status, venue_place_id } = req.body;
 
