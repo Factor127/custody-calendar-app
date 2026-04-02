@@ -1497,11 +1497,15 @@ function _parseDateFromText(text, url) {
   else if (r2) { day = +r2[1]; mon = M[r2[2].toLowerCase()]; year = +r2[3]; }
 
   // Numeric: DD/MM/YYYY or DD.MM.YYYY or DD-MM-YYYY (non-US locales including Israel, EU)
+  // Also handles 2-digit years: DD.MM.YY (common on Israeli sites like hatarbut.co.il)
   // Disambiguate: if first number > 12 it must be DD, if domain is .il/.eu etc assume DD/MM
   if (mon === undefined) {
-    const rn = text.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/);
+    const rn = text.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})\b/);
     if (rn) {
-      const a = +rn[1], b = +rn[2]; year = +rn[3];
+      const a = +rn[1], b = +rn[2];
+      year = +rn[3];
+      // Expand 2-digit year: 00-49 → 2000-2049, 50-99 → 1950-1999
+      if (year < 100) year += year < 50 ? 2000 : 1900;
       // If a > 12, it must be DD/MM; if b > 12, it must be MM/DD
       // For .co.il or other non-US domains, default to DD/MM
       const isDMY = a > 12 || (a <= 12 && b <= 12 && /\.il|\.co\.il|\.eu|\.uk|\.de|\.fr|\.es|\.it|\.nl|\.au|\.nz/i.test(url || ''));
@@ -1609,6 +1613,21 @@ router.get('/unfurl', async (req, res) => {
     if (!date) {
       const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    }
+    // Fallback: scan HTML for date in elements with date/event-related classes
+    // (e.g. hatarbut.co.il uses class="event-date-occurrence">16.04.26)
+    if (!date) {
+      const dateClassPatterns = [
+        /class="[^"]*(?:event-date|occurrence|eo-event)[^"]*"[^>]*>([^<]{4,30})/i,
+        /class="[^"]*\bdate\b[^"]*"[^>]*>([^<]{4,30})/i,
+      ];
+      for (const pat of dateClassPatterns) {
+        const m = html.match(pat);
+        if (m) {
+          date = _parseDateFromText(m[1], url);
+          if (date) { textParsed = true; break; }
+        }
+      }
     }
     // If no time found from structured data, try natural-language extraction
     if (!time) time = _parseTimeFromText(description);
@@ -1746,6 +1765,58 @@ Rules:
     if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });
     res.json({ title, description, image, siteName, date, time: timeDisplay, url });
   } catch (err) {
+    // ── Fetch failed (blocked, timeout, etc.) — try Claude with URL-only ──
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (apiKey) {
+      try {
+        // Decode URL-encoded Hebrew slugs for Claude to read
+        let decodedUrl = url;
+        try { decodedUrl = decodeURIComponent(url); } catch(e) {}
+        const claudePrompt = `I cannot fetch this page (it blocks server requests), but I need to extract event details from the URL alone.
+
+URL: ${decodedUrl}
+
+Return ONLY valid JSON:
+{ "title": "Event/artist name in original language", "date": "YYYY-MM-DD or null", "time": "HH:MM or null", "siteName": "site name" }
+
+Rules:
+- Extract the event/artist name from the URL slug (decode %XX Hebrew characters).
+- Known Israeli ticketing sites: zappa-club.co.il (music venue), eventim.co.il (events), hatarbut.co.il (culture halls).
+- If the URL has no date info, set date to null.
+- The current year is ${new Date().getFullYear()}.
+- Do NOT invent dates/times you cannot determine from the URL.`;
+
+        const cRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: claudePrompt }] }),
+          signal: AbortSignal.timeout(8000)
+        });
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          const cText = cData.content?.[0]?.text || '';
+          const cJson = cText.match(/\{[\s\S]+\}/);
+          if (cJson) {
+            const parsed = JSON.parse(cJson[0]);
+            if (parsed.title) {
+              let fDate = parsed.date || null;
+              if (fDate) { const d = new Date(fDate); fDate = isNaN(d) ? null : d.toISOString().slice(0, 10); }
+              let fTime = null;
+              if (parsed.time) {
+                fTime = _parseTimeFromText(parsed.time);
+                if (fTime) {
+                  const [hh, mm] = fTime.split(':').map(Number);
+                  const ampm = hh >= 12 ? 'PM' : 'AM';
+                  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+                  fTime = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+                }
+              }
+              return res.json({ title: parsed.title, description: null, image: null, siteName: parsed.siteName || null, date: fDate, time: fTime, url });
+            }
+          }
+        }
+      } catch(e) { /* Claude fallback failed too */ }
+    }
     res.status(500).json({ error: 'Could not fetch URL: ' + err.message });
   }
 });
