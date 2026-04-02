@@ -3815,7 +3815,7 @@ function renderInvitePane(data, inviteeRecordId) {
   if (!outing.venue_address) _missingFields.push('address');
 
   if (_missingFields.length && currentStatus !== 'declined' && currentStatus !== 'ignored') {
-    html += `<div style="margin-top:10px;padding:10px;background:rgba(124,92,191,0.10);border:1px solid rgba(124,92,191,0.25);border-radius:10px;">`;
+    html += `<div id="invite-fill-details" style="margin-top:10px;padding:10px;background:rgba(124,92,191,0.10);border:1px solid rgba(124,92,191,0.25);border-radius:10px;">`;
     html += `<div style="font-size:11px;font-weight:700;color:rgba(167,139,250,0.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Know any missing details?</div>`;
     if (!outing.event_time) {
       html += `<input id="invite-fill-time" type="text" placeholder="Time (e.g. 19:00, Evening)" style="width:100%;padding:8px 10px;margin-bottom:6px;border-radius:8px;border:1px solid rgba(238,238,248,0.12);background:rgba(238,238,248,0.06);color:#eeeef8;font-size:13px;font-family:inherit;">`;
@@ -4149,12 +4149,16 @@ function toggleDeclineChip(btn, reason) {
 function startDecline(outingId, inviteeId) {
   document.getElementById('invite-rsvp-area').style.display = 'none';
   document.getElementById('invite-decline-flow').style.display = '';
+  const fill = document.getElementById('invite-fill-details');
+  if (fill) fill.style.display = 'none';
 }
 
 function cancelDeclineFlow() {
   document.getElementById('invite-decline-flow').style.display = 'none';
   document.getElementById('invite-decline-note').style.display = 'none';
   document.getElementById('invite-rsvp-area').style.display = '';
+  const fill = document.getElementById('invite-fill-details');
+  if (fill) fill.style.display = '';
 }
 
 function showDeclineNote(outingId, inviteeId) {
@@ -4172,11 +4176,15 @@ async function sendDecline(outingId, inviteeId) {
 function startIgnore(outingId, inviteeId) {
   document.getElementById('invite-rsvp-area').style.display = 'none';
   document.getElementById('invite-ignore-flow').style.display = '';
+  const fill = document.getElementById('invite-fill-details');
+  if (fill) fill.style.display = 'none';
 }
 
 function cancelIgnoreFlow() {
   document.getElementById('invite-ignore-flow').style.display = 'none';
   document.getElementById('invite-rsvp-area').style.display = '';
+  const fill = document.getElementById('invite-fill-details');
+  if (fill) fill.style.display = '';
 }
 
 async function _saveInviteFilledDetails(outingId) {
