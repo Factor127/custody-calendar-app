@@ -1618,6 +1618,25 @@ router.get('/unfurl', async (req, res) => {
       const doorTime = html.match(/"(?:doorTime|startTime)"\s*:\s*"([^"]{3,20})"/i);
       if (doorTime) time = _parseTimeFromText(doorTime[1]);
     }
+    // Fallback: scan page body for event-time patterns near date/event context
+    // Many SPAs server-render the event time in the HTML even when meta tags are empty
+    if (!time) {
+      // Look for time displayed near date-related elements (common in event pages)
+      const bodyTimePatterns = [
+        // Time in a span/div with class containing "time" (allow text before digits)
+        /class="[^"]*time[^"]*"[^>]*>[^<]*?(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
+        // Time near a date (allow HTML tags between date text and time, e.g. separate spans)
+        /(?:20[2-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).{0,120}?[>•|\s](\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
+        // Hebrew: שעה (hour) or פתיחת (opening) followed by time
+        /(?:שעה|פתיחת).{0,20}?(\d{1,2}:\d{2})/,
+        // Generic: "doors" or "gates" or "show" or "start" near a time
+        /(?:doors?|gates?|show|starts?|begins?).{0,30}?(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
+      ];
+      for (const pat of bodyTimePatterns) {
+        const m = html.match(pat);
+        if (m) { time = _parseTimeFromText(m[1]); if (time) break; }
+      }
+    }
     if (date) {
       const d = new Date(date);
       date = isNaN(d) ? null : d.toISOString().slice(0, 10);
