@@ -1919,8 +1919,15 @@ router.get('/outings/:id/detail', (req, res) => {
     ? allMsgs
     : allMsgs.filter(m => !m.is_private || m.sender_id === me.id);
 
+  // Look up opportunity source URL if linked
+  let event_link = null;
+  if (outing.opportunity_id) {
+    const opp = q.getOpportunityById.get(outing.opportunity_id);
+    if (opp?.source_url) event_link = opp.source_url;
+  }
+
   res.json({
-    outing,
+    outing: { ...outing, event_link },
     invitees: invitees.map(i => ({
       id:           i.id,
       user_id:      i.user_id,

@@ -3829,6 +3829,13 @@ function renderInvitePane(data, inviteeRecordId) {
     html += `</div>`;
   }
 
+  // Link to event button
+  if (outing.event_link) {
+    html += `<div style="padding:0 16px 6px;">
+      <a href="${outing.event_link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid rgba(230,249,82,0.28);border-radius:10px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;text-decoration:none;font-family:inherit;">🔗 Link to event</a>
+    </div>`;
+  }
+
   html += `</div>`;
 
   // Suggest different section (collapsed by default)
@@ -7900,6 +7907,7 @@ function renderSCReview() {
       </div>
       <div class="sc-review-summary-line" style="text-align:center;">📅 <strong>${dateMain}</strong>${_sc.selTime ? ` · 🕐 ${_sc.selTime}` : ''}</div>
       ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">No fixed date — soft invite</div>` : ''}
+      ${_sc.selWhat?.url ? `<div style="text-align:center;margin-top:8px;"><a href="${_sc.selWhat.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid rgba(230,249,82,0.28);border-radius:10px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;text-decoration:none;font-family:inherit;">🔗 Link to event</a></div>` : ''}
     </div>
     <div style="margin:16px 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Inviting</div>
     <div id="sc-review-people-stage1">
