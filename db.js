@@ -489,7 +489,7 @@ const q = {
   ),
   deleteActivity: db.prepare('DELETE FROM activities WHERE id = ?'),
 
-  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message, venue, venue_address, venue_place_id, opportunity_id, image_url, status, event_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+  createOuting:          db.prepare('INSERT INTO outings (id, created_by, date, message, venue, venue_address, venue_place_id, opportunity_id, image_url, status, event_time, title) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   getOutingsForUser:     db.prepare('SELECT * FROM outings WHERE created_by = ? ORDER BY date ASC'),
   getOutingById:         db.prepare('SELECT * FROM outings WHERE id = ?'),
   updateOutingDetails:   db.prepare('UPDATE outings SET venue = ?, event_time = ?, status = ?, venue_place_id = ?, venue_address = ? WHERE id = ?'),

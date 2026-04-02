@@ -3609,8 +3609,10 @@ function renderEventPane(data) {
 
   // Add to calendar button — shown to everyone when there's a date
   if (outing.date) {
+    // Enrich outing with invitees and source URL for calendar export
+    const _calOuting = { ...outing, _invitees: invitees || [], _sourceUrl: outing.source_url || null };
     html += `<div style="padding:2px 16px 10px;">
-      <button onclick="addOutingToCalendar(${JSON.stringify(outing).replace(/"/g,'&quot;')})"
+      <button onclick="addOutingToCalendar(${JSON.stringify(_calOuting).replace(/"/g,'&quot;')})"
         style="background:none;border:1px solid rgba(230,249,82,0.25);border-radius:10px;
                padding:8px 16px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
                cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;
@@ -4024,12 +4026,27 @@ function addOutingToCalendar(outing) {
 
   const escape = s => (s || '').replace(/[\\,;]/g, c => '\\' + c).replace(/\n/g, '\\n');
 
+  // Build a rich description with all available details
+  const descParts = [];
+  if (outing.message && outing.message !== title) descParts.push(outing.message);
+  if (outing.event_time) descParts.push('Time: ' + outing.event_time);
+  if (loc) descParts.push('Venue: ' + loc);
+  // Include invitees if available
+  const inviteeNames = (outing._invitees || []).map(i => i.name).filter(Boolean);
+  if (inviteeNames.length) descParts.push('With: ' + inviteeNames.join(', '));
+  // Include event link if from URL
+  const eventLink = outing._sourceUrl || null;
+  if (eventLink) descParts.push('Event link: ' + eventLink);
+  descParts.push('Planned via Spontany');
+  const fullDesc = descParts.join('\\n');
+
   let lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Spontany//spontany.io//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
+    'X-WR-CALNAME:Spontany',
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${now}`,
@@ -4038,12 +4055,13 @@ function addOutingToCalendar(outing) {
       ? (() => { const d = new Date(outing.date + 'T00:00:00'); d.setDate(d.getDate()+1); return 'DTEND;VALUE=DATE:' + d.toISOString().slice(0,10).replace(/-/g,''); })()
       : `DTEND:${dtEnd}`,
     `SUMMARY:${escape(title)}`,
+    `DESCRIPTION:${escape(fullDesc)}`,
   ];
-  if (loc)          lines.push(`LOCATION:${escape(loc)}`);
-  if (outing.message && outing.message !== title) lines.push(`DESCRIPTION:${escape(outing.message)}`);
-  lines.push('END:VEVENT', 'END:VCALENDAR');
+  if (loc) lines.push(`LOCATION:${escape(loc)}`);
+  if (eventLink) lines.push(`URL:${eventLink}`);
+  lines.push('STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR');
 
-  const icsContent = lines.join('\r\n');
+  const icsContent = lines.join('\r\n') + '\r\n';
   const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -7966,10 +7984,12 @@ function renderSCWhatsApp() {
   const soft = _scIsSoftInvite();
 
   const names    = selected.map(w => w.name.split(' ')[0]).join(', ');
+  const eventUrl = _sc.selWhat?.url || null;
+  const eventLink = eventUrl ? `\n\n🔗 ${eventUrl}` : '';
   const groupRsvpNote = _sc.pregenOutingId ? `\n\nRSVP via Spontany: ${window.location.origin}/calendar?openEvent=${_sc.pregenOutingId}` : '';
   const groupMsg = (soft
     ? `hey ${names}! thinking about getting together${whatText ? ` — ${whatText}` : ''} sometime, anyone up for it?`
-    : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`) + groupRsvpNote;
+    : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`) + eventLink + groupRsvpNote;
   const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
 
   const personData = selected.map(w => {
@@ -7979,7 +7999,7 @@ function renderSCWhatsApp() {
     if (_sc.pregenOutingId && rsvpToken) {
       rsvpLink = `\n\nRSVP here: ${window.location.origin}/rsvp/${rsvpToken}`;
     }
-    const msg = _scPersonMsg(w, whatText, dateMain, soft) + rsvpLink;
+    const msg = _scPersonMsg(w, whatText, dateMain, soft) + eventLink + rsvpLink;
     let num = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
     if (num && num.startsWith('0')) num = num.slice(1);
     const url = num
@@ -8068,7 +8088,7 @@ async function _scPreCreateOuting() {
     const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
+      body: JSON.stringify({ date: _sc.selDate, message: whatText, title: whatText || null, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -8108,7 +8128,7 @@ async function finalizeSC() {
       fetch(`/api/outings?token=${MY_TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
+        body: JSON.stringify({ date: _sc.selDate, message: whatText, title: whatText || null, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
       }).then(r => { if (r.ok) loadOutings(); });
     }
   }

@@ -282,12 +282,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const res = await fetch(`/api/me?token=${saved}`);
     if (res.ok) {
       const user = await res.json();
-      // Valid token — redirect to the right calendar
-      window.location.replace(
-        user.role === 'owner'
-          ? `/calendar?token=${saved}`
-          : `/partner?token=${saved}`
-      );
+      // Valid token — redirect to the right calendar (preserve deep-link params)
+      const _nextParam = new URLSearchParams(window.location.search).get('next');
+      const basePath = user.role === 'owner' ? '/calendar' : '/partner';
+      if (_nextParam) {
+        // Append token to the deep-link URL
+        const sep = _nextParam.includes('?') ? '&' : '?';
+        window.location.replace(_nextParam + sep + 'token=' + saved);
+      } else {
+        window.location.replace(basePath + '?token=' + saved);
+      }
       return;
     }
   } catch(e) { /* network error — fall through */ }

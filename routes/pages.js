@@ -24,9 +24,12 @@ router.get('/setup', (req, res) => {
 // Unified calendar — works for all authenticated users
 router.get('/calendar', (req, res) => {
   const token = req.query.token;
-  if (!token) return res.redirect('/login');
+  // Preserve deep-link params (e.g. openEvent) through login redirect
+  const openEvent = req.query.openEvent;
+  const loginUrl = openEvent ? `/login?next=${encodeURIComponent('/calendar?openEvent=' + openEvent)}` : '/login';
+  if (!token) return res.redirect(loginUrl);
   const user = q.getUserByToken.get(token);
-  if (!user) return res.redirect('/login');
+  if (!user) return res.redirect(loginUrl);
   res.sendFile(path.join(PUBLIC, 'calendar.html'));
 });
 

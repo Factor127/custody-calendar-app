@@ -1258,7 +1258,7 @@ router.post('/outings', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
-  const { id: pregenId, date, message, invitees,
+  const { id: pregenId, date, message, title, invitees,
           venue, venue_address, venue_place_id, opportunity_id, image_url, status, event_time } = req.body;
   if (!Array.isArray(invitees) || (invitees.length === 0 && status !== 'saved')) {
     return res.status(400).json({ error: 'invitees required' });
@@ -1268,7 +1268,7 @@ router.post('/outings', (req, res) => {
   q.createOuting.run(
     outingId, me.id, date, message || null,
     venue || null, venue_address || null, venue_place_id || null, opportunity_id || null, image_url || null,
-    status || 'pending', event_time || null
+    status || 'pending', event_time || null, title || message || null
   );
 
   for (const inv of invitees) {
