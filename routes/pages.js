@@ -107,6 +107,17 @@ router.get('/privacy', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'privacy.html'));
 });
 
+router.get('/privacy-policy', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'privacy-policy.html'));
+});
+
+router.get('/terms', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'terms-of-service.html'));
+});
+router.get('/terms-of-service', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'terms-of-service.html'));
+});
+
 // Match tool — public, no auth required. Token is read client-side from URL.
 router.get('/match', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'match.html'));

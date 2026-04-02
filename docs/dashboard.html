@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spontany — Launch Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0c0c15;
+    color: #e2e2f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 32px; flex-wrap: wrap;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; color: #fff; }
+  .header h1 span { color: #f97316; }
+  .header .subtitle {
+    font-size: 14px; color: #a78bfa; font-weight: 500;
+    background: rgba(167,139,250,0.1); padding: 4px 12px; border-radius: 20px;
+  }
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin-bottom: 32px;
+  }
+  .stat {
+    background: #131321; border-radius: 12px; padding: 16px; text-align: center;
+    border: 1px solid #1e1e35;
+  }
+  .stat .num { font-size: 32px; font-weight: 700; }
+  .stat .label { font-size: 12px; color: #888; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat.done .num { color: #4ade80; }
+  .stat.todo .num { color: #f97316; }
+  .stat.backlog .num { color: #7c5cbf; }
+  .stat.progress .num { color: #facc15; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid #1e1e35;
+    background: #131321; color: #888; font-size: 14px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab:hover { background: #1e1e35; color: #e2e2f0; }
+  .tab.active { background: #7c5cbf; color: #fff; border-color: #7c5cbf; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .group { margin-bottom: 28px; }
+  .group-title {
+    font-size: 16px; font-weight: 600; color: #a78bfa;
+    margin-bottom: 12px; padding-bottom: 6px;
+    border-bottom: 1px solid #1e1e35;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .group-title .count {
+    font-size: 12px; background: rgba(167,139,250,0.15);
+    color: #a78bfa; padding: 2px 8px; border-radius: 10px;
+  }
+  .task {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border-radius: 8px;
+    margin-bottom: 4px; transition: background 0.15s;
+    cursor: pointer; user-select: none;
+  }
+  .task:hover { background: #19192a; }
+  .task input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; min-width: 20px;
+    border: 2px solid #444; border-radius: 5px;
+    background: transparent; cursor: pointer;
+    margin-top: 1px; transition: all 0.15s;
+  }
+  .task input[type="checkbox"]:checked {
+    background: #4ade80; border-color: #4ade80;
+  }
+  .task input[type="checkbox"]:checked::after {
+    content: '\2713'; color: #0c0c15; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+  }
+  .task.checked .task-text { text-decoration: line-through; color: #555; }
+  .task-text { font-size: 14px; line-height: 1.5; }
+
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 2px; background: #1e1e35;
+  }
+  .timeline-item { position: relative; margin-bottom: 24px; padding-left: 20px; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -20px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid #7c5cbf; background: #0c0c15;
+  }
+  .timeline-item.current::before { background: #f97316; border-color: #f97316; }
+  .timeline-item.done::before { background: #4ade80; border-color: #4ade80; }
+  .timeline-date { font-size: 12px; color: #f97316; font-weight: 600; margin-bottom: 4px; }
+  .timeline-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .timeline-desc { font-size: 13px; color: #888; }
+
+  .doc-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .doc-card {
+    background: #131321; border: 1px solid #1e1e35; border-radius: 10px;
+    padding: 16px; transition: border-color 0.2s;
+  }
+  .doc-card:hover { border-color: #7c5cbf; }
+  .doc-card .doc-icon { font-size: 24px; margin-bottom: 8px; }
+  .doc-card .doc-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .doc-card .doc-desc { font-size: 12px; color: #888; }
+
+  .brand-strip { display: flex; gap: 8px; margin: 20px 0; }
+  .color-swatch {
+    width: 48px; height: 48px; border-radius: 8px; position: relative;
+    border: 1px solid #333;
+  }
+  .color-swatch .swatch-label {
+    position: absolute; bottom: -18px; left: 0; font-size: 10px; color: #666;
+    white-space: nowrap;
+  }
+
+  .progress-bar-bg {
+    width: 100%; height: 8px; background: #1e1e35; border-radius: 4px;
+    overflow: hidden; margin-top: 8px;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #7c5cbf, #f97316);
+    transition: width 0.5s ease;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+    .header h1 { font-size: 22px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Spontany <span>Launch Dashboard</span></h1>
+  <div class="subtitle">Target: April 15, 2026</div>
+</div>
+
+<div class="stats" id="stats">
+  <div class="stat done"><div class="num" id="doneCount">7</div><div class="label">Done</div></div>
+  <div class="stat todo"><div class="num" id="todoCount">35</div><div class="label">To Do</div></div>
+  <div class="stat progress"><div class="num" id="progressPct">17%</div><div class="label">Progress</div></div>
+  <div class="stat backlog"><div class="num" id="backlogCount">7</div><div class="label">Backlog</div></div>
+</div>
+
+<div class="progress-bar-bg">
+  <div class="progress-bar-fill" id="progressBar" style="width: 17%"></div>
+</div>
+<div style="height:24px"></div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="tasks">Tasks</button>
+  <button class="tab" data-tab="timeline">Timeline</button>
+  <button class="tab" data-tab="docs">Docs & Deliverables</button>
+  <button class="tab" data-tab="brand">Brand</button>
+</div>
+
+<!-- TASKS -->
+<div class="section active" id="tasks">
+  <div class="group">
+    <div class="group-title">Week 1: Test & Fix — April 1–7 <span class="count">8 tasks</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test new user signup flow end-to-end with friends</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test partner invite flow end-to-end (invite → 7 questions → approve → see calendar)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test calendar daily use on mobile (iOS Safari + Android Chrome)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test PWA install on both platforms — icon, splash screen, standalone mode</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test push notifications — delivery reliability</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test URL submission and parsing (event/venue URLs)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Bug triage: classify as P0 (blocker), P1 (launch with), P2 (backlog)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Fix all P0 bugs</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Week 2: Polish & Deploy — April 8–14 <span class="count">6 remaining</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Point spontany.io domain to Railway (DNS at GoDaddy)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Verify HTTPS/SSL on spontany.io</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Set up hello@spontany.io email forwarding (ToS contact)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Set up privacy@spontany.io email forwarding (privacy policy contact)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Add a landing/explainer page before calendar.html for new visitors</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Add privacy policy page</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Add basic terms of service</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Set up database backup strategy</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Review all onboarding copy — match brand voice (smart, fun, mature)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Polish empty states in calendar</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Ad Campaign Setup — April 8–14 <span class="count">14 tasks</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Create Meta Business Suite account + Facebook Page + Ad Account</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Connect Instagram as Professional account</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Install Meta Pixel on spontany.io</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Create TikTok Business account + Ads Manager</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Complete TikTok business verification</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Install TikTok Pixel on spontany.io</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Get X Premium (for ad eligibility verification)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Create X Ads account</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Install X conversion tag on spontany.io</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Build UTM links for all ad variants</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Test all tracking pixels fire correctly</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Download final Canva creatives</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Upload creatives + copy to all ad platforms</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Submit ads for review</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">Launch Day — ~April 15 <span class="count">6 tasks</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Flip ads live</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Monitor server load and error logs</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Day 1 check: signups flowing? Any crashes?</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Day 3: First optimization pass — pause underperforming ads</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Day 7: Full performance review — declare winners, reallocate budget</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Day 14: Final campaign report and learnings</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title" style="color:#4ade80">Completed <span class="count">7 done</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Campaign plan created ("Know Before You Ask")</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Ad copy deck written (4 ad sets × 3 platforms)</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Canva creatives generated (48 designs, organized in Canva folders)</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Tracking & measurement framework created</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Pre-launch setup guide created</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Launch readiness checklist created</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Ad copy updated for pre-launch CTAs</span></div>
+  </div>
+
+  <div class="group">
+    <div class="group-title" style="color:#7c5cbf">Backlog <span class="count">7 items</span></div>
+    <div class="task checked"><input type="checkbox" checked><span class="task-text">Welcome email sequence for new signups</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Email verification for signups</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Friend group features (multi-person availability view)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">App Store listing via PWABuilder</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Onboarding tutorial / tooltips</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Performance optimization (lazy loading, caching)</span></div>
+    <div class="task"><input type="checkbox"><span class="task-text">Build landing page at spontany.io (HTML, matching brand)</span></div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="section" id="timeline">
+  <div class="timeline">
+    <div class="timeline-item done">
+      <div class="timeline-date">March 31 (Today)</div>
+      <div class="timeline-title">Campaign Strategy Complete</div>
+      <div class="timeline-desc">4 ad sets, 48 creatives, tracking framework, setup guide — all done.</div>
+    </div>
+    <div class="timeline-item current">
+      <div class="timeline-date">April 1–7</div>
+      <div class="timeline-title">Week 1: Test & Fix</div>
+      <div class="timeline-desc">Friend testing. Signup flow, partner invites, mobile PWA, push notifications. Bug triage and P0 fixes.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">April 8–14</div>
+      <div class="timeline-title">Week 2: Polish & Deploy + Ad Setup</div>
+      <div class="timeline-desc">DNS pointing, landing page, privacy policy, ToS. Parallel: Meta/TikTok/X ad accounts, pixels, creative uploads.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">~April 15</div>
+      <div class="timeline-title">Launch Day</div>
+      <div class="timeline-desc">Flip ads live. Monitor signups and server health. Target: 500+ signups in 2 weeks.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">April 18</div>
+      <div class="timeline-title">Day 3: First Optimization</div>
+      <div class="timeline-desc">Pause underperformers, double down on winners.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">April 22</div>
+      <div class="timeline-title">Day 7: Performance Review</div>
+      <div class="timeline-desc">Full review. Declare winning ad sets, reallocate budget.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-date">April 29</div>
+      <div class="timeline-title">Day 14: Campaign Wrap</div>
+      <div class="timeline-desc">Final report, learnings doc, decide on next spend cycle.</div>
+    </div>
+  </div>
+</div>
+
+<!-- DOCS -->
+<div class="section" id="docs">
+  <div class="doc-grid">
+    <div class="doc-card">
+      <div class="doc-icon">📋</div>
+      <div class="doc-title">Campaign Plan</div>
+      <div class="doc-desc">Full strategy: audience, messaging, channels, budget, KPIs</div>
+    </div>
+    <div class="doc-card">
+      <div class="doc-icon">✍️</div>
+      <div class="doc-title">Ad Copy Deck</div>
+      <div class="doc-desc">4 ad sets × 3 platforms — Meta, TikTok, X copy</div>
+    </div>
+    <div class="doc-card">
+      <div class="doc-icon">🎨</div>
+      <div class="doc-title">Canva Creatives</div>
+      <div class="doc-desc">48 designs in 4 subfolders on Canva</div>
+    </div>
+    <div class="doc-card">
+      <div class="doc-icon">📊</div>
+      <div class="doc-title">Tracking Framework</div>
+      <div class="doc-desc">UTM conventions, pixel setup, KPI dashboard, decision triggers</div>
+    </div>
+    <div class="doc-card">
+      <div class="doc-icon">🔧</div>
+      <div class="doc-title">Pre-Launch Setup Guide</div>
+      <div class="doc-desc">Account setup steps for Meta, TikTok, X ads</div>
+    </div>
+    <div class="doc-card">
+      <div class="doc-icon">✅</div>
+      <div class="doc-title">Launch Readiness Checklist</div>
+      <div class="doc-desc">2-week sprint plan based on codebase review</div>
+    </div>
+  </div>
+</div>
+
+<!-- BRAND -->
+<div class="section" id="brand">
+  <div style="margin-bottom:24px">
+    <h3 style="color:#fff;margin-bottom:12px">Colors</h3>
+    <div class="brand-strip">
+      <div class="color-swatch" style="background:#0c0c15"><span class="swatch-label">#0c0c15</span></div>
+      <div class="color-swatch" style="background:#131321"><span class="swatch-label">#131321</span></div>
+      <div class="color-swatch" style="background:#f97316"><span class="swatch-label">#f97316</span></div>
+      <div class="color-swatch" style="background:#7c5cbf"><span class="swatch-label">#7c5cbf</span></div>
+      <div class="color-swatch" style="background:#a78bfa"><span class="swatch-label">#a78bfa</span></div>
+    </div>
+  </div>
+  <div style="margin-top:40px;margin-bottom:24px">
+    <h3 style="color:#fff;margin-bottom:8px">Voice</h3>
+    <p style="color:#888;font-size:14px">Smart, fun, mature, sexy</p>
+  </div>
+  <div style="margin-bottom:24px">
+    <h3 style="color:#fff;margin-bottom:8px">Tagline</h3>
+    <p style="color:#f97316;font-size:18px;font-style:italic">"Finds your moments before they slip away."</p>
+  </div>
+  <div style="margin-bottom:24px">
+    <h3 style="color:#fff;margin-bottom:8px">Campaign Hook</h3>
+    <p style="color:#a78bfa;font-size:18px;font-weight:600">"Know before you ask."</p>
+  </div>
+  <div>
+    <h3 style="color:#fff;margin-bottom:8px">Target Audience</h3>
+    <p style="color:#888;font-size:14px">Divorcees aged 35–55 with kids aged 0–14</p>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  function updateStats() {
+    const all = document.querySelectorAll('#tasks .task input[type="checkbox"]');
+    const checked = document.querySelectorAll('#tasks .task input[type="checkbox"]:checked');
+    const total = all.length;
+    const done = checked.length;
+    const todo = total - done;
+    const pct = Math.round((done / total) * 100);
+    document.getElementById('doneCount').textContent = done;
+    document.getElementById('todoCount').textContent = todo;
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressBar').style.width = pct + '%';
+  }
+
+  document.querySelectorAll('.task').forEach(task => {
+    const cb = task.querySelector('input[type="checkbox"]');
+    task.addEventListener('click', (e) => {
+      if (e.target !== cb) cb.checked = !cb.checked;
+      task.classList.toggle('checked', cb.checked);
+      updateStats();
+    });
+  });
+
+  updateStats();
+</script>
+</body>
+</html>

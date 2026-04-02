@@ -27,7 +27,6 @@
   --text:      #e2e2e2;
   --muted:     rgba(226,226,226,0.42);
   --blue:      #e6f952;
-  --btn-primary-text: #0e0e0e;
   --accent:    #e6f952;
   --orange:    #ff7351;
   --r:rgba(230,249,82,0.12); --r-border:rgba(230,249,82,0.35);
@@ -294,7 +293,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
 
 <!-- ── INTRO OVERLAY ── -->
 <div id="intro-overlay" class="intro-overlay">
-  <!-- Slide 0: direct mode = "Welcome to Spontany" | invite mode = personalised after token validation -->
+  <!-- Slide 0: Loading / personalised (invite mode) -->
   <div class="intro-slide active" id="isl-0">
     <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
       <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
@@ -302,7 +301,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
     </div>
     <div class="intro-loading">Loading…</div>
   </div>
-  <!-- Slide 1 -->
+  <!-- Slide 1: General -->
   <div class="intro-slide" id="isl-1">
     <div class="intro-dots">
       <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
@@ -310,7 +309,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
     <div class="intro-headline">Friendships need<br>face-to-face time</div>
     <div class="intro-sub">Real connection happens in person — coffee, walks, just being there.</div>
   </div>
-  <!-- Slide 2 -->
+  <!-- Slide 2: Problem -->
   <div class="intro-slide" id="isl-2">
     <div class="intro-dots">
       <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
@@ -455,8 +454,13 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
 
     <!-- Step personal: age, relationship, parent (sensitive, now with context) -->
     <div class="wizard-step" id="step-personal">
-      <div class="wizard-title">Let's understand your lifestyle rhythm.</div>
+      <div class="wizard-title">A bit about your situation</div>
       <p class="wizard-sub">This helps Spontany set up the right calendar for you.</p>
+
+      <div class="field-group">
+        <label class="field-label" for="user-age">Your age</label>
+        <input id="user-age" class="field-input" type="number" placeholder="e.g. 34" min="18" max="99">
+      </div>
 
       <div class="field-group">
         <label class="field-label">Relationship status</label>
@@ -538,6 +542,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
         <button class="btn btn-outline btn-sm" onclick="goStep('parent')">← Back</button>
         <button class="btn btn-primary" onclick="step2Next()">Looks right →</button>
       </div>
+
     </div>
 
     <!-- Step 3: Review calendar -->
@@ -553,7 +558,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
 
     <!-- Step work: work schedule (day grid + time slider) -->
     <div class="wizard-step" id="step-work">
-      <div class="wizard-title">Work also determines our rhythm — what does your work life look like?</div>
+      <div class="wizard-title">When do you work?</div>
       <p class="wizard-sub">Tap your work days, then set your usual hours. We use this to show when you're <em>actually</em> free.</p>
       <div class="wp-legend" style="margin-bottom:10px;">
         <span><span class="wp-legend-swatch" style="background:rgba(99,102,241,0.20);border-color:rgba(129,140,248,0.55);"></span>Work day</span>
@@ -581,6 +586,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
         <button class="btn btn-primary" onclick="saveAndFinish()">Finish →</button>
       </div>
     </div>
+
 
     <!-- Step done: completion screen (content filled by JS based on mode) -->
     <div class="wizard-step" id="step-done">
@@ -1145,7 +1151,7 @@ async function saveAndFinish() {
   const cityInput    = document.getElementById('user-city');
   const city         = cityInput?.value.trim() || null;
   const city_place_id = cityInput?.dataset?.placeId || null;
-  const age          = null; // removed from onboarding flow
+  const age          = parseInt(document.getElementById('user-age')?.value) || null;
   const workSchedule = getWorkSchedulePayload();
   const hasCustody   = isParent && relStatus === 'separated' && !isMirror && generatedDays.length > 0;
 

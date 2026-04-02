@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spontany — Do your schedules actually work?</title>
+  <meta name="description" content="Two custody schedules. One answer. Find out if your free nights line up.">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#e6f952">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --lime: #e6f952;
+      --lime-dim: #aec013;
+      --bg: #0e0e0e;
+      --surface: #131313;
+      --cell-bg: #1a1a1a;
+      --border: rgba(226,226,226,0.08);
+      --text: #e2e2e2;
+      --muted: rgba(226,226,226,0.42);
+      --overlap: #34d399;
+      --overlap-bg: rgba(52,211,153,0.15);
+      --overlap-border: rgba(52,211,153,0.55);
+      --yours: rgba(230,249,82,0.12);
+      --yours-border: rgba(230,249,82,0.35);
+      --theirs: rgba(129,140,248,0.15);
+      --theirs-border: rgba(129,140,248,0.45);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(145deg, #e6f952, #aec013);
+      color: var(--text); padding: 0 10px 24px; margin: 0; min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app-frame {
+      background: var(--bg); border-radius: 0 0 24px 24px;
+      min-height: calc(100vh - 24px); overflow: clip;
+      max-width: 480px; margin: 0 auto;
+    }
+    @media (min-width: 860px) {
+      body { padding: 0 60px 60px; }
+      #app-frame { border-radius: 0 0 28px 28px; min-height: calc(100vh - 60px); }
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; padding: 0 28px 40px; animation: slideUp 0.4s ease; }
+    .screen.active { display: block; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      height: 3px; background: var(--border); margin: 0 0 0;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .progress-fill {
+      height: 100%; background: var(--lime);
+      transition: width 0.4s ease; width: 0%;
+    }
+
+    /* ── Nav bar ── */
+    .top-nav {
+      padding: 16px 28px 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .top-nav-logo {
+      font-size: 15px; font-weight: 800; color: rgba(255,255,255,0.5);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .top-nav-logo img { border-radius: 6px; }
+
+    /* ── Hero / Hook ── */
+    .hero-screen {
+      display: none; padding: 0 28px 40px;
+      text-align: center;
+      min-height: calc(100vh - 80px);
+      flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .hero-screen.active { display: flex; }
+    .hero-emoji { font-size: 56px; margin-bottom: 28px; }
+    .hero-headline {
+      font-size: clamp(32px, 8vw, 44px);
+      font-weight: 900; color: white; line-height: 1.1;
+      letter-spacing: -0.025em; margin-bottom: 16px;
+    }
+    .hero-sub {
+      font-size: 16px; color: var(--muted); line-height: 1.65;
+      max-width: 320px; margin: 0 auto 40px;
+    }
+    .hero-fine {
+      font-size: 12px; color: rgba(226,226,226,0.25); margin-top: 16px;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 16px 32px;
+      background: var(--lime); color: #0e0e0e;
+      border: none; border-radius: 28px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 6px 24px rgba(230,249,82,0.25);
+      transition: transform 0.12s, box-shadow 0.12s;
+      width: 100%;
+    }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,0.15); }
+    .btn-outline {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 14px 24px;
+      background: transparent; color: var(--text);
+      border: 2px solid var(--border); border-radius: 28px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+      width: 100%;
+    }
+    .btn-outline:hover { border-color: var(--lime); color: var(--lime); }
+    .btn-sm { padding: 10px 18px; font-size: 13px; width: auto; }
+    .btn-wa {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 14px 24px;
+      background: #25d366; color: white;
+      border: none; border-radius: 28px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      font-family: inherit; width: 100%;
+      transition: transform 0.12s;
+    }
+    .btn-wa:active { transform: scale(0.97); }
+
+    /* ── Section headers ── */
+    .screen-header {
+      background: linear-gradient(180deg, var(--bg), var(--surface));
+      margin: 0 -28px 24px; padding: 30px 28px 28px;
+      text-align: center;
+    }
+    .screen-title {
+      font-size: 26px; font-weight: 900; color: white;
+      line-height: 1.2; letter-spacing: -0.01em;
+    }
+    .screen-sub {
+      font-size: 14px; color: var(--muted); line-height: 1.6;
+      margin-top: 8px; max-width: 320px; margin-left: auto; margin-right: auto;
+    }
+
+    /* ── Week picker (reused from onboarding) ── */
+    .week-picker-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 8px; margin: 12px 0;
+    }
+    .week-picker-head {
+      text-align: center; font-size: 11px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; padding-bottom: 4px;
+    }
+    .wp-cell {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      border-radius: 10px; border: 2px solid var(--border);
+      padding: 10px 4px; cursor: pointer; user-select: none;
+      transition: background 0.13s, border-color 0.13s, transform 0.1s;
+      min-height: 64px;
+    }
+    .wp-cell:active { transform: scale(0.95); }
+    .wp-cell .wp-num { font-size: 20px; font-weight: 700; line-height: 1; color: var(--text); }
+    .wp-cell .wp-month { font-size: 10px; font-weight: 600; color: var(--muted); }
+    .wp-cell.selected {
+      background: var(--yours); border-color: var(--yours-border);
+    }
+    .wp-cell.selected .wp-num { color: var(--lime); }
+    .wp-cell.selected .wp-month { color: var(--lime-dim); }
+
+    .wp-legend {
+      display: flex; gap: 14px; font-size: 12px;
+      color: var(--muted); margin-bottom: 12px; align-items: center;
+    }
+    .wp-legend-swatch {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 3px; margin-right: 4px; vertical-align: middle;
+      border: 1px solid var(--border);
+    }
+    .expand-btn {
+      width: 100%; margin-top: 14px; padding: 12px 16px;
+      background: var(--surface); border: 2px dashed var(--border);
+      border-radius: 10px; font-size: 13px; font-weight: 700;
+      color: var(--lime); cursor: pointer; text-align: center;
+      transition: background 0.15s, border-color 0.15s; font-family: inherit;
+    }
+    .expand-btn:hover { background: rgba(230,249,82,0.10); border-color: var(--lime); }
+
+    .week-section-label {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 6px;
+    }
+
+    /* ── Fork cards ── */
+    .fork-cards { display: flex; flex-direction: column; gap: 14px; margin: 24px 0; }
+    .fork-card {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px; border-radius: 14px;
+      border: 2.5px solid var(--border);
+      cursor: pointer; user-select: none;
+      transition: background 0.13s, border-color 0.13s, transform 0.1s;
+    }
+    .fork-card:active { transform: scale(0.98); }
+    .fork-card:hover { border-color: var(--lime); background: rgba(230,249,82,0.05); }
+    .fork-emoji { font-size: 32px; flex-shrink: 0; }
+    .fork-label { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .fork-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Nav row ── */
+    .nav-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 24px; gap: 12px;
+    }
+
+    /* ── Result page ── */
+    .result-hero {
+      text-align: center; padding: 32px 0 24px;
+    }
+    .result-big-num {
+      font-size: clamp(56px, 14vw, 80px);
+      font-weight: 900; color: var(--overlap);
+      line-height: 1; letter-spacing: -3px;
+    }
+    .result-big-label {
+      font-size: 16px; font-weight: 600; color: var(--text);
+      margin-top: 4px;
+    }
+    .result-pct {
+      font-size: 14px; color: var(--muted); margin-top: 8px;
+    }
+    .result-verdict {
+      font-size: 15px; color: var(--text); line-height: 1.6;
+      text-align: center; padding: 20px 0; margin: 0 0 20px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      font-style: italic;
+    }
+
+    /* Rhythm insight */
+    .insight-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; margin-bottom: 16px;
+    }
+    .insight-title {
+      font-size: 12px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px;
+    }
+    .insight-body {
+      font-size: 14px; color: var(--text); line-height: 1.7;
+    }
+    .insight-body strong { color: var(--lime); }
+
+    /* Upcoming dates */
+    .upcoming-dates {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;
+    }
+    .upcoming-chip {
+      display: inline-flex; align-items: center;
+      padding: 10px 14px; border-radius: 10px;
+      background: var(--overlap-bg); border: 1.5px solid var(--overlap-border);
+      font-size: 13px; font-weight: 700; color: var(--overlap);
+      text-decoration: none; cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.15s;
+    }
+    .upcoming-chip:active { transform: scale(0.96); }
+    .upcoming-chip:hover { box-shadow: 0 0 16px rgba(52,211,153,0.2); }
+
+    /* Mini calendar */
+    .mini-cal { margin-bottom: 16px; }
+    .mini-cal-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 8px;
+    }
+    .mini-cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    }
+    .mini-cal-head {
+      text-align: center; font-size: 9px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; padding: 4px 0;
+    }
+    .mini-cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 600; border-radius: 6px;
+      color: var(--muted); background: rgba(255,255,255,0.02);
+    }
+    .mini-cal-day.yours {
+      background: var(--yours); color: var(--lime);
+    }
+    .mini-cal-day.theirs {
+      background: var(--theirs); color: #818cf8;
+    }
+    .mini-cal-day.overlap {
+      background: var(--overlap-bg); color: var(--overlap);
+      box-shadow: 0 0 8px rgba(52,211,153,0.15);
+    }
+    .mini-cal-day.empty { background: transparent; }
+
+    .cal-legend {
+      display: flex; gap: 16px; font-size: 11px; color: var(--muted);
+      margin: 12px 0 20px; flex-wrap: wrap;
+    }
+    .cal-legend-item { display: flex; align-items: center; gap: 5px; }
+    .cal-legend-dot {
+      width: 10px; height: 10px; border-radius: 3px;
+    }
+
+    /* ── Share section ── */
+    .share-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px; margin-top: 20px; margin-bottom: 16px;
+    }
+    .share-msg-box {
+      background: var(--cell-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px; margin: 12px 0;
+      font-size: 13px; color: var(--text); line-height: 1.6;
+    }
+
+    /* ── Signup inline ── */
+    .signup-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px; margin-top: 20px; text-align: center;
+    }
+    .signup-section .screen-title { font-size: 20px; margin-bottom: 6px; }
+    .field-group { margin-bottom: 16px; }
+    .field-label {
+      display: block; font-size: 12px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.04em; margin-bottom: 6px;
+    }
+    .field-input {
+      width: 100%; padding: 14px 16px;
+      background: var(--cell-bg); color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 15px; font-family: inherit; outline: none;
+      transition: border-color 0.15s;
+    }
+    .field-input:focus { border-color: var(--lime); }
+    .field-input::placeholder { color: var(--muted); }
+
+    /* ── Waiting screen ── */
+    .waiting-anim {
+      display: flex; justify-content: center; gap: 16px;
+      margin: 32px 0;
+    }
+    .waiting-cal {
+      width: 64px; height: 64px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .waiting-cal.a { background: var(--yours); border: 2px solid var(--yours-border); }
+    .waiting-cal.b { background: var(--theirs); border: 2px solid var(--theirs-border); }
+    .waiting-arrow {
+      display: flex; align-items: center;
+      font-size: 20px; color: var(--muted);
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); color: var(--lime);
+      border: 1px solid var(--lime-dim);
+      padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      z-index: 9999; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+<div id="app-frame">
+
+  <!-- Top nav -->
+  <div class="top-nav">
+    <div class="top-nav-logo">
+      <img src="/icon-192.png" alt="" width="24" height="24"> SPONTANY
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: HOOK                                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="hero-screen active" id="screen-hook">
+    <div class="hero-emoji">💑</div>
+    <h1 class="hero-headline">Do your schedules actually work?</h1>
+    <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up — before the conversation gets awkward.</p>
+    <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
+    <p class="hero-fine">Free. Private. Takes 30 seconds.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: YOUR SCHEDULE                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-your-schedule">
+    <div class="screen-header">
+      <div class="screen-title">Your custody days</div>
+      <div class="screen-sub">Tap the days your kids are with you. That's it.</div>
+    </div>
+
+    <div class="wp-legend">
+      <span><span class="wp-legend-swatch" style="background:var(--yours);border-color:var(--yours-border);"></span> Your day</span>
+      <span><span class="wp-legend-swatch" style="background:rgba(255,255,255,0.04);"></span> Co-parent's day</span>
+    </div>
+
+    <div id="your-week1-section">
+      <div class="week-section-label" id="your-week1-label"></div>
+      <div class="week-picker-grid" id="your-week1-heads"></div>
+      <div class="week-picker-grid" id="your-week1-cells"></div>
+    </div>
+    <div id="your-week2-section" style="display:none;">
+      <div class="week-section-label" id="your-week2-label"></div>
+      <div class="week-picker-grid" id="your-week2-cells"></div>
+    </div>
+    <button class="expand-btn" id="your-expand-btn" onclick="expandWeeks('your')">
+      ↕ Two-week pattern? Tap to expand
+    </button>
+
+    <div class="nav-row">
+      <button class="btn-outline btn-sm" onclick="go('hook')">← Back</button>
+      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="go('fork')">Next →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: FORK                                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-fork">
+    <div class="screen-header">
+      <div class="screen-title">Now, their schedule.</div>
+      <div class="screen-sub">How do you want to check?</div>
+    </div>
+
+    <div class="fork-cards">
+      <div class="fork-card" onclick="go('their-schedule')">
+        <div class="fork-emoji">🧠</div>
+        <div>
+          <div class="fork-label">I know their days</div>
+          <div class="fork-sub">I'll enter their schedule myself.</div>
+        </div>
+      </div>
+      <div class="fork-card" onclick="go('send-link')">
+        <div class="fork-emoji">📩</div>
+        <div>
+          <div class="fork-label">Let them fill it in</div>
+          <div class="fork-sub">I'll send them a link — more private.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-outline btn-sm" onclick="go('your-schedule')">← Back</button>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PATH A: THEIR SCHEDULE (entered by you)                           -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-their-schedule">
+    <div class="screen-header">
+      <div class="screen-title">Their custody days</div>
+      <div class="screen-sub">Tap the days their kids are with them.</div>
+    </div>
+
+    <div class="wp-legend">
+      <span><span class="wp-legend-swatch" style="background:var(--theirs);border-color:var(--theirs-border);"></span> Their day</span>
+      <span><span class="wp-legend-swatch" style="background:rgba(255,255,255,0.04);"></span> Their co-parent's day</span>
+    </div>
+
+    <div id="their-week1-section">
+      <div class="week-section-label" id="their-week1-label"></div>
+      <div class="week-picker-grid" id="their-week1-heads"></div>
+      <div class="week-picker-grid" id="their-week1-cells"></div>
+    </div>
+    <div id="their-week2-section" style="display:none;">
+      <div class="week-section-label" id="their-week2-label"></div>
+      <div class="week-picker-grid" id="their-week2-cells"></div>
+    </div>
+    <button class="expand-btn" id="their-expand-btn" onclick="expandWeeks('their')">
+      ↕ Two-week pattern? Tap to expand
+    </button>
+
+    <div class="nav-row">
+      <button class="btn-outline btn-sm" onclick="go('fork')">← Back</button>
+      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="showResult()">Show me the match →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PATH B: SEND LINK                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-send-link">
+    <div class="screen-header">
+      <div class="screen-title">Send them a link</div>
+      <div class="screen-sub">They'll enter their own schedule. When they're done, you'll both see the result.</div>
+    </div>
+
+    <div class="share-section">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Message preview</div>
+      <div class="share-msg-box" id="share-msg">Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">spontany.io/match/abc123</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+        <button class="btn-wa" onclick="shareWhatsApp()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Send via WhatsApp
+        </button>
+        <button class="btn-outline" onclick="copyLink()">📋 Copy link</button>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-outline btn-sm" onclick="go('fork')">← Back</button>
+      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="go('signup-wait')">Next →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PATH B: SIGNUP (before waiting)                                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-signup-wait">
+    <div class="screen-header">
+      <div class="screen-title">One last thing</div>
+      <div class="screen-sub">Drop your name and email so we can let you know when they fill theirs in.</div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="wait-name">Your name</label>
+      <input id="wait-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="wait-email">Email</label>
+      <input id="wait-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+
+    <button class="btn-primary" onclick="go('waiting')">Notify me →</button>
+
+    <div class="nav-row">
+      <button class="btn-outline btn-sm" onclick="go('send-link')">← Back</button>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PATH B: WAITING STATE                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-waiting">
+    <div style="text-align:center;padding:40px 0 20px;">
+      <div class="waiting-anim">
+        <div class="waiting-cal a">📅</div>
+        <div class="waiting-arrow">⟷</div>
+        <div class="waiting-cal b">📅</div>
+      </div>
+      <div class="screen-title" style="margin-bottom:8px;">Waiting for them...</div>
+      <div class="screen-sub" style="max-width:280px;margin:0 auto;">We'll send you a notification the moment they fill in their schedule.</div>
+    </div>
+
+    <div style="text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--border);">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">While you wait — want to see your own free days?</p>
+      <button class="btn-outline" onclick="go('result')" style="max-width:260px;margin:0 auto;">Preview my calendar →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- RESULT PAGE                                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-result">
+    <!-- Big number -->
+    <div class="result-hero">
+      <div class="result-big-num" id="result-num">11</div>
+      <div class="result-big-label">free nights this month</div>
+      <div class="result-pct" id="result-pct">That's 37% overlap</div>
+    </div>
+
+    <!-- Verdict -->
+    <div class="result-verdict" id="result-verdict">
+      Your schedules line up more often than not. When you're both free, you'll know.
+    </div>
+
+    <!-- Next shared dates — tappable, links to app -->
+    <div class="insight-card">
+      <div class="insight-title">Your next shared free nights</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Tap a date to plan something.</p>
+      <div class="upcoming-dates" id="result-upcoming"></div>
+    </div>
+
+    <!-- 3-month calendar — overlap only -->
+    <div class="insight-card">
+      <div class="insight-title">3-month view</div>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--overlap-bg);border:1px solid var(--overlap-border);"></div> Both free</div>
+      </div>
+      <div id="result-calendars"></div>
+    </div>
+
+    <!-- Save CTA -->
+    <div class="signup-section" id="result-signup">
+      <div class="screen-title">Save your calendar</div>
+      <div class="screen-sub" style="margin-bottom:16px;">Your schedule is already entered. Add a name and email to keep it.</div>
+      <div class="field-group">
+        <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
+      </div>
+      <div class="field-group">
+        <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <button class="btn-primary" onclick="saveCalendar()">Save my calendar →</button>
+    </div>
+
+    <!-- Share result -->
+    <div style="text-align:center;margin:24px 0 16px;">
+      <button class="btn-outline" onclick="shareResult()">Share this result →</button>
+    </div>
+  </div>
+
+</div><!-- /app-frame -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const state = {
+  your:  { week1: [false,false,false,false,false,false,false], week2: [false,false,false,false,false,false,false], twoWeek: false },
+  their: { week1: [false,false,false,false,false,false,false], week2: [false,false,false,false,false,false,false], twoWeek: false },
+};
+let weekStartDate = null;
+
+// ── Progress map ──────────────────────────────────────────────────────────────
+const PROGRESS = {
+  'hook': 0,
+  'your-schedule': 15,
+  'fork': 35,
+  'their-schedule': 55,
+  'send-link': 55,
+  'signup-wait': 70,
+  'waiting': 85,
+  'result': 100
+};
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function go(screen) {
+  document.querySelectorAll('.screen, .hero-screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + screen);
+  if (el) el.classList.add('active');
+  document.getElementById('progress').style.width = (PROGRESS[screen] ?? 50) + '%';
+  window.scrollTo(0, 0);
+
+  // Init pickers on first visit
+  if (screen === 'your-schedule')  initPicker('your');
+  if (screen === 'their-schedule') initPicker('their');
+}
+
+// ── Week picker ───────────────────────────────────────────────────────────────
+function getNextFullWeekStart() {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const dow = t.getDay();
+  if (dow === 0) return t;
+  const next = new Date(t);
+  next.setDate(t.getDate() + (7 - dow));
+  return next;
+}
+
+function initPicker(who) {
+  if (!weekStartDate) weekStartDate = getNextFullWeekStart();
+  const headsEl = document.getElementById(who + '-week1-heads');
+  if (headsEl && !headsEl.innerHTML) {
+    headsEl.innerHTML = DAY_ABBR.map(d => `<div class="week-picker-head">${d}</div>`).join('');
+  }
+  renderCells(who, 1);
+}
+
+function weekDateAt(weekNum, idx) {
+  const d = new Date(weekStartDate);
+  d.setDate(d.getDate() + (weekNum - 1) * 7 + idx);
+  return d;
+}
+
+function renderCells(who, weekNum) {
+  const sel = state[who]['week' + weekNum];
+  const container = document.getElementById(who + '-week' + weekNum + '-cells');
+  if (!container) return;
+  container.innerHTML = DAY_ABBR.map((_, idx) => {
+    const d = weekDateAt(weekNum, idx);
+    return `<div class="wp-cell ${sel[idx] ? 'selected' : ''}"
+                 onclick="toggleDay('${who}',${weekNum},${idx},this)">
+              <div class="wp-num">${d.getDate()}</div>
+              <div class="wp-month">${MONTH_ABBR[d.getMonth()]}</div>
+            </div>`;
+  }).join('');
+
+  const s = weekDateAt(weekNum, 0), e = weekDateAt(weekNum, 6);
+  const labelEl = document.getElementById(who + '-week' + weekNum + '-label');
+  if (labelEl) {
+    labelEl.textContent = state[who].twoWeek
+      ? 'Week ' + weekNum + ' · ' + MONTH_ABBR[s.getMonth()] + ' ' + s.getDate() + ' – ' + MONTH_ABBR[e.getMonth()] + ' ' + e.getDate()
+      : 'Week of ' + MONTH_ABBR[s.getMonth()] + ' ' + s.getDate() + ' – ' + MONTH_ABBR[e.getMonth()] + ' ' + e.getDate();
+  }
+}
+
+function toggleDay(who, weekNum, idx, el) {
+  const sel = state[who]['week' + weekNum];
+  sel[idx] = !sel[idx];
+  el.classList.toggle('selected', sel[idx]);
+}
+
+function expandWeeks(who) {
+  state[who].twoWeek = true;
+  document.getElementById(who + '-expand-btn').style.display = 'none';
+  document.getElementById(who + '-week2-section').style.display = 'block';
+  renderCells(who, 1);
+  renderCells(who, 2);
+}
+
+// ── Overlap calculation ───────────────────────────────────────────────────────
+function generateDays(who) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(today); end.setMonth(end.getMonth() + 3);
+  const anchorNoon = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate(), 12);
+  const days = [];
+  for (let d = new Date(today); d <= end; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    const dNoon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    const daysDiff = Math.round((dNoon - anchorNoon) / 86400000);
+    const weekOffset = Math.floor(daysDiff / 7);
+    const isCustody = !state[who].twoWeek
+      ? state[who].week1[dow]
+      : (((weekOffset % 2) + 2) % 2 === 0 ? state[who].week1[dow] : state[who].week2[dow]);
+    days.push({
+      date: toDateStr(d),
+      dow: d.getDay(),
+      custody: isCustody,
+      free: !isCustody
+    });
+  }
+  return days;
+}
+
+function toDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function computeOverlap() {
+  const yours  = generateDays('your');
+  const theirs = generateDays('their');
+  const map = {};
+  yours.forEach(d => { map[d.date] = { yours: d.free, theirs: false, dow: d.dow }; });
+  theirs.forEach(d => {
+    if (!map[d.date]) map[d.date] = { yours: false, theirs: false, dow: d.dow };
+    map[d.date].theirs = d.free;
+  });
+
+  const dates = Object.keys(map).sort();
+  const result = dates.map(date => ({
+    date,
+    dow: map[date].dow,
+    yours: map[date].yours,
+    theirs: map[date].theirs,
+    overlap: map[date].yours && map[date].theirs
+  }));
+
+  return result;
+}
+
+// ── Show result ───────────────────────────────────────────────────────────────
+function showResult() {
+  const days = computeOverlap();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const monthStr = toDateStr(monthEnd).slice(0, 7);
+
+  // This month stats
+  const thisMonth = days.filter(d => d.date.slice(0, 7) === toDateStr(today).slice(0, 7));
+  const overlapNights = thisMonth.filter(d => d.overlap).length;
+  const totalDays = thisMonth.length;
+  const pct = totalDays > 0 ? Math.round(overlapNights / totalDays * 100) : 0;
+
+  // Overall stats
+  const allOverlap = days.filter(d => d.overlap);
+  const totalPct = days.length > 0 ? Math.round(allOverlap.length / days.length * 100) : 0;
+
+  // Set big number
+  document.getElementById('result-num').textContent = overlapNights;
+  document.getElementById('result-pct').textContent = `That's ${pct}% overlap this month · ${totalPct}% over 3 months`;
+
+  // Verdict
+  let verdict;
+  if (totalPct >= 60) verdict = "Your schedules line up more often than not. When you're both free, you'll know.";
+  else if (totalPct >= 30) verdict = "Enough overlap to make it work — if you want to.";
+  else if (totalPct >= 10) verdict = "It's tight. But the right nights matter more than the number.";
+  else verdict = "The schedules don't make it easy. But now you know — and that's worth something.";
+  document.getElementById('result-verdict').textContent = verdict;
+
+  // Upcoming dates — tappable, deep-link to app with date + person pre-populated
+  const upcoming = allOverlap.slice(0, 8);
+  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+  document.getElementById('result-upcoming').innerHTML = upcoming.map(d => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const deepLink = `/calendar?action=plan&date=${d.date}` + (partnerName ? `&with=${encodeURIComponent(partnerName)}` : '');
+    return `<a href="${deepLink}" class="upcoming-chip" onclick="handleDateTap(event, '${d.date}')">${DAY_ABBR[dt.getDay()]} ${MONTH_ABBR[dt.getMonth()]} ${dt.getDate()}</a>`;
+  }).join('');
+
+  // 3-month calendars
+  renderResultCalendars(days);
+
+  go('result');
+}
+
+function renderResultCalendars(days) {
+  const dayMap = {};
+  days.forEach(d => { dayMap[d.date] = d; });
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = '';
+  for (let m = 0; m < 3; m++) {
+    const cur = new Date(today.getFullYear(), today.getMonth() + m, 1);
+    const y = cur.getFullYear(), mo = cur.getMonth();
+    const daysInMonth = new Date(y, mo + 1, 0).getDate();
+    const firstDow = new Date(y, mo, 1).getDay();
+
+    html += `<div class="mini-cal"><div class="mini-cal-title">${MONTH_FULL[mo]} ${y}</div><div class="mini-cal-grid">`;
+    html += DAY_ABBR.map(d => `<div class="mini-cal-head">${d}</div>`).join('');
+    for (let i = 0; i < firstDow; i++) html += '<div class="mini-cal-day empty"></div>';
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      const entry = dayMap[ds];
+      const cls = entry?.overlap ? 'overlap' : '';
+      html += `<div class="mini-cal-day ${cls}">${day}</div>`;
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('result-calendars').innerHTML = html;
+}
+
+// ── Sharing ───────────────────────────────────────────────────────────────────
+function shareWhatsApp() {
+  const msg = "Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: " + window.location.origin + "/match/demo";
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function copyLink() {
+  const url = window.location.origin + '/match/demo';
+  navigator.clipboard.writeText(url).then(() => showToast('Link copied!'));
+}
+
+function shareResult() {
+  const text = "We checked our custody compatibility on Spontany — " + document.getElementById('result-pct').textContent;
+  if (navigator.share) {
+    navigator.share({ title: 'Spontany Match', text, url: window.location.origin + '/match' });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+  }
+}
+
+function handleDateTap(e, date) {
+  e.preventDefault();
+  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+  const deepLink = `/calendar?action=plan&date=${date}` + (partnerName ? `&with=${encodeURIComponent(partnerName)}` : '');
+
+  // Check if the app/PWA is likely installed (standalone mode)
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isInstalled) {
+    // Already in the app — go straight to the calendar with plan crafter pre-populated
+    window.location.href = deepLink;
+  } else {
+    // Not installed — prompt signup first, then redirect
+    const signupEl = document.getElementById('result-signup');
+    if (signupEl) {
+      signupEl.scrollIntoView({ behavior: 'smooth' });
+      signupEl.style.borderColor = 'var(--overlap-border)';
+      signupEl.style.boxShadow = '0 0 24px rgba(52,211,153,0.15)';
+      // Store the intended deep link for after signup
+      signupEl.dataset.redirect = deepLink;
+      setTimeout(() => { signupEl.style.borderColor = ''; signupEl.style.boxShadow = ''; }, 2000);
+    }
+  }
+}
+
+function saveCalendar() {
+  const name = document.getElementById('save-name')?.value.trim();
+  const email = document.getElementById('save-email')?.value.trim();
+  if (!name || !email) { showToast('Name and email required'); return; }
+
+  const signupEl = document.getElementById('result-signup');
+  const redirect = signupEl?.dataset?.redirect;
+
+  // In production: POST to /api/users/setup with schedule pre-filled
+  // Then redirect to calendar with plan crafter pre-populated
+  signupEl.innerHTML = `
+    <div style="text-align:center;padding:12px 0;">
+      <div style="font-size:32px;margin-bottom:8px;">✓</div>
+      <div class="screen-title" style="font-size:18px;">Saved!</div>
+      <div class="screen-sub" style="margin-top:4px;">Your calendar is ready.${redirect ? ' Taking you there...' : ''}</div>
+    </div>
+  `;
+  showToast('Calendar saved!');
+
+  if (redirect) {
+    setTimeout(() => { window.location.href = redirect; }, 1200);
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// If URL has /match/:token, this would be Person B's flow (future: fetch from API)
+</script>
+</body>
+</html>

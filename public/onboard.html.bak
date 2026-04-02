@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spontany — Set Up Your Profile</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#e6f952">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Spontany">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+/* ══ Dark theme ══════════════════════════════════════════════════════════ */
+:root {
+  --lime:      #e6f952;
+  --lime-dim:  #aec013;
+  --bg:        #0e0e0e;
+  --surface:   #131313;
+  --cell-bg:   #1a1a1a;
+  --border:    rgba(226,226,226,0.08);
+  --text:      #e2e2e2;
+  --muted:     rgba(226,226,226,0.42);
+  --blue:      #e6f952;
+  --btn-primary-text: #0e0e0e;
+  --accent:    #e6f952;
+  --orange:    #ff7351;
+  --r:rgba(230,249,82,0.12); --r-border:rgba(230,249,82,0.35);
+}
+body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text); padding: 0 10px 24px; margin: 0; min-height: 100vh; }
+#app-frame { background: #0e0e0e; border-radius: 0 0 24px 24px; min-height: calc(100vh - 24px); overflow: clip; }
+@media (min-width: 860px) {
+  body { padding: 0 60px 60px; }
+  #app-frame { border-radius: 0 0 28px 28px; min-height: calc(100vh - 60px); }
+}
+@media (min-width: 1280px) {
+  body { padding: 0 100px 80px; }
+  #app-frame { min-height: calc(100vh - 80px); }
+}
+/* Done screen success icon */
+.success-icon { background: rgba(230,249,82,0.18) !important; color: var(--lime) !important; }
+/* Cards / form surface */
+.card { background:var(--surface) !important; border-color:var(--border) !important; }
+.modal { background:rgba(14,14,14,0.88) !important; backdrop-filter:blur(32px) !important; border:1px solid rgba(226,226,226,0.07) !important; }
+.wizard-card { background:var(--surface) !important; border-color:var(--border) !important; box-shadow:0 4px 32px rgba(0,0,0,0.4) !important; }
+/* Consistent horizontal padding on every step */
+.wizard-step { padding: 0 28px; }
+.step1-header { margin: 0 -28px 24px; }
+.wizard-nav { padding: 0 28px; border-top: none !important; }
+/* Inputs */
+.field-input, input[type="text"], input[type="email"], input[type="tel"], textarea {
+  background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important;
+}
+input::placeholder, textarea::placeholder { color:var(--muted); }
+select { background:#1a1a1a !important; color:var(--text) !important; border-color:var(--border) !important; }
+/* Radio options */
+.radio-option { background:var(--surface) !important; border-color:var(--border) !important; color:var(--text) !important; }
+.radio-option.selected { border-color:var(--lime) !important; background:rgba(230,249,82,0.10) !important; }
+/* Invite tabs */
+.inv-type-tabs { background:#1a1a1a !important; }
+.inv-type-tab { color:var(--muted) !important; }
+.inv-type-tab.active { background:var(--surface) !important; color:var(--text) !important; box-shadow:0 1px 4px rgba(0,0,0,0.5) !important; }
+/* Invite url box */
+.inv-url-box { background:#1a1a1a !important; border-color:var(--border) !important; }
+/* Expand btn */
+.expand-btn:hover { background:rgba(230,249,82,0.10) !important; border-color:var(--lime) !important; }
+/* Time picker */
+.time-section-label { color:var(--muted) !important; }
+.time-option:hover, .time-option.selected { background:rgba(230,249,82,0.12) !important; border-color:var(--lime) !important; color:var(--text) !important; }
+/* ─────────────────────────────────────────────────────────────────────── */
+    /* ── Week picker ── */
+    .week-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .week-picker-head {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding-bottom: 4px;
+      letter-spacing: 0.03em;
+    }
+    .wp-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      padding: 10px 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.13s, border-color 0.13s, transform 0.1s;
+      min-height: 64px;
+    }
+    .wp-cell:active { transform: scale(0.95); }
+    .wp-cell .wp-num {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+    }
+    .wp-cell .wp-month {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .wp-cell.self {
+      background: rgba(52,211,153,0.15);
+      border-color: rgba(52,211,153,0.55);
+    }
+    .wp-cell.self .wp-num   { color: #6ee7b7; }
+    .wp-cell.self .wp-month { color: #34d399; }
+
+    .week-section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 16px 0 6px;
+    }
+    .expand-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--lime);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .expand-btn:hover { background: rgba(230,249,82,0.10); border-color: var(--lime); }
+
+    .wp-legend {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .wp-legend-swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 4px;
+      vertical-align: middle;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Invite tabs + free strip ── */
+    .inv-type-tabs {
+      display: flex; gap: 4px; background: #f0f0f0;
+      border-radius: 9px; padding: 4px; margin-bottom: 12px;
+    }
+    .inv-type-tab {
+      flex: 1; padding: 8px 4px; border: none; border-radius: 7px;
+      background: transparent; font-size: 12px; font-weight: 700;
+      color: #666; cursor: pointer; transition: all 0.15s;
+    }
+    .inv-type-tab.active { background: white; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+    .inv-panel-desc { font-size: 12px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
+    .inv-url-box {
+      background: white; border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px 12px; font-family: monospace; font-size: 11px;
+      word-break: break-all; color: var(--muted);
+    }
+    .wa-send-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+      background: #25d366; color: white; text-decoration: none;
+    }
+    .free-chip {
+      flex: 1; min-width: 32px; border-radius: 7px; padding: 5px 2px;
+      text-align: center; font-size: 9px;
+    }
+
+    /* ── Intro overlay ── */
+    .intro-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(180deg, #0e0e0e 0%, #131313 45%, #1a1a1a 75%, #0e0e0e 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 48px 32px; text-align: center;
+      transition: opacity 0.55s ease;
+    }
+    .intro-overlay.hiding { opacity: 0; pointer-events: none; }
+    .intro-slide {
+      display: none; flex-direction: column; align-items: center;
+      width: 100%; max-width: 340px; animation: iSlideUp 0.5s ease;
+    }
+    .intro-slide.active { display: flex; }
+    @keyframes iSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .intro-logo  { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.5); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 48px; }
+    .intro-big   { font-size: 46px; font-weight: 900; color: white; line-height: 1.1; letter-spacing: -0.025em; margin-bottom: 12px; }
+    .intro-headline { font-size: 30px; font-weight: 800; color: white; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 14px; }
+    .intro-sub   { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.65; margin-bottom: 52px; max-width: 280px; }
+    .intro-loading { color: rgba(255,255,255,0.45); font-size: 15px; margin-top: 24px; }
+    .intro-dots  { display: flex; gap: 9px; margin-bottom: 52px; }
+    .intro-dot   { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); transition: background 0.3s, transform 0.3s; }
+    .intro-dot.active { background: white; transform: scale(1.25); }
+    .intro-cta {
+      background: var(--lime); color: #0e0e0e; border: none; border-radius: 28px;
+      padding: 16px 36px; font-size: 16px; font-weight: 700; cursor: pointer;
+      font-family: inherit; box-shadow: 0 6px 24px rgba(230,249,82,.35);
+      transition: transform .12s, box-shadow .12s;
+    }
+    .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,.2); }
+
+    /* ── Wizard hidden until intro done ── */
+    #wizard-main { transition: opacity 0.4s ease; }
+
+    /* ── Step 1 dark header ── */
+    .step1-header {
+      background: linear-gradient(180deg, #0e0e0e, #131313);
+      margin: -24px -24px 24px; padding: 30px 24px 28px;
+      border-radius: 16px 16px 0 0; text-align: center;
+    }
+    .step1-header-title { font-size: 26px; font-weight: 900; color: white; line-height: 1.2; letter-spacing: -0.01em; }
+
+    /* ── Relationship status chips ── */
+    .rel-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .rel-chip {
+      padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+      font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface);
+      color: var(--muted); user-select: none; transition: all .13s;
+    }
+    .rel-chip.on { background: rgba(230,249,82,0.12); border-color: var(--lime); color: var(--lime); }
+
+    /* ── Parent question ── */
+    .parent-opts-row { display: flex; gap: 14px; margin: 20px 0 28px; }
+    .parent-opt {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; border-radius: 14px; border: 2.5px solid var(--border);
+      padding: 24px 12px; cursor: pointer; user-select: none;
+      transition: background .13s, border-color .13s, transform .1s; text-align: center;
+    }
+    .parent-opt:active { transform: scale(0.96); }
+    .parent-opt.selected { border-color: var(--lime); background: rgba(230,249,82,0.10); }
+    .parent-opt-emoji  { font-size: 38px; line-height: 1; }
+    .parent-opt-label  { font-size: 15px; font-weight: 700; color: var(--text); }
+    .parent-opt-sub    { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    /* ── Work-day grid ── */
+    .wp-cell.work { background: rgba(99,102,241,0.20); border-color: rgba(129,140,248,0.55); }
+    .wp-cell.work .wp-day-lbl { color: #a5b4fc; }
+    .wp-day-lbl  { font-size: 13px; font-weight: 800; color: var(--muted); line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
+    .wp-day-full { font-size: 9px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+    .wp-cell.work .wp-day-full { color: #818cf8; }
+
+    /* ── Time slider ── */
+    .ts-section { margin-top: 22px; }
+    .ts-section-title { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+    .ts-time-display  { text-align: center; font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 18px; letter-spacing: -.01em; }
+    .ts-time-display .ts-highlight { color: var(--lime); }
+    .ts-track-wrap { position: relative; height: 44px; display: flex; align-items: center; padding: 0 14px; margin-bottom: 4px; touch-action: none; }
+    .ts-track  { width: 100%; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
+    .ts-active { position: absolute; height: 6px; background: var(--lime); border-radius: 3px; top: 0; pointer-events: none; }
+    .ts-handle {
+      position: absolute; width: 26px; height: 26px; background: var(--surface);
+      border: 3px solid var(--lime); border-radius: 50%; top: 50%;
+      transform: translate(-50%, -50%); cursor: grab; touch-action: none;
+      box-shadow: 0 2px 8px rgba(230,249,82,.25); z-index: 2;
+    }
+    .ts-handle:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(230,249,82,.4); }
+    .ts-ticks { display: flex; justify-content: space-between; padding: 0 14px; }
+    .ts-tick  { font-size: 9px; color: var(--muted); font-weight: 600; }
+    .ts-skip-link { display: block; text-align: center; font-size: 12px; color: var(--muted); margin-top: 18px; text-decoration: underline; cursor: pointer; }
+    .ts-skip-link:hover { color: var(--lime); }
+  </style>
+</head>
+<body>
+<div id="app-frame">
+
+<!-- ── INTRO OVERLAY ── -->
+<div id="intro-overlay" class="intro-overlay">
+  <!-- Slide 0: direct mode = "Welcome to Spontany" | invite mode = personalised after token validation -->
+  <div class="intro-slide active" id="isl-0">
+    <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
+      SPONTANY
+    </div>
+    <div class="intro-loading">Loading…</div>
+  </div>
+  <!-- Slide 1 -->
+  <div class="intro-slide" id="isl-1">
+    <div class="intro-dots">
+      <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">Friendships need<br>face-to-face time</div>
+    <div class="intro-sub">Real connection happens in person — coffee, walks, just being there.</div>
+  </div>
+  <!-- Slide 2 -->
+  <div class="intro-slide" id="isl-2">
+    <div class="intro-dots">
+      <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">But sometimes it's just too hard to find the right time</div>
+    <div class="intro-sub">Schedules are complex. The back-and-forth is exhausting.</div>
+  </div>
+  <!-- Slide 3: Social calendar concept -->
+  <div class="intro-slide" id="isl-3">
+    <div class="intro-dots">
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">Spontany is your<br>social calendar</div>
+    <div class="intro-sub">It maps everyone's availability so plans happen in seconds, not days. No more polling. No more guessing.</div>
+  </div>
+  <!-- Slide 4: Tagline + CTA -->
+  <div class="intro-slide" id="isl-4">
+    <div class="intro-dots">
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
+    </div>
+    <div class="intro-headline">Know before<br>you ask.</div>
+    <div class="intro-sub">See who's free. Skip the awkward texts. Make the plan.</div>
+    <button class="intro-cta" onclick="startOnboarding()">Let's get started</button>
+  </div>
+</div>
+
+<!-- ── WIZARD (revealed after intro) ── -->
+<div class="wizard" id="wizard-main" style="opacity:0;pointer-events:none;">
+
+  <div class="progress-bar" style="margin-bottom:20px;">
+    <div class="progress-fill" id="progress" style="width:0%"></div>
+  </div>
+
+  <div class="wizard-card" style="padding:0 0 28px;overflow:hidden;">
+
+    <!-- Step 0: error placeholder (invite mode only) -->
+    <div class="wizard-step" id="step-0" style="padding:24px;">
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:32px;margin-bottom:12px;">🔗</div>
+        <p class="text-muted">Checking invite…</p>
+      </div>
+    </div>
+
+    <!-- Step 1: Quick signup (standard fields only) -->
+    <div class="wizard-step" id="step-1">
+      <div class="step1-header">
+        <div class="step1-header-title">Let's set<br>you up</div>
+      </div>
+      <div>
+
+        <div class="field-group">
+          <label class="field-label" for="user-name">Your name <span style="color:#e53935;">*</span></label>
+          <input id="user-name" class="field-input" type="text" placeholder="First name"
+                 autocomplete="given-name" oninput="checkStep1Ready();updatePhotoPreviewInitial()">
+        </div>
+
+        <!-- Shown in invite mode, hidden in direct mode -->
+        <div class="field-group" id="email-group">
+          <label class="field-label" for="user-email">Email address <span style="color:#e53935;">*</span></label>
+          <input id="user-email" class="field-input" type="email" placeholder="you@example.com"
+                 autocomplete="email" autocapitalize="none" oninput="checkStep1Ready()">
+          <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Used to log back in — never shared.</p>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="user-phone">Phone number
+            <span style="color:var(--muted);font-weight:400;">(optional)</span>
+          </label>
+          <input id="user-phone" class="field-input" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
+        </div>
+
+        <div class="field-group" style="position:relative;">
+          <label class="field-label" for="user-city">City <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+          <input id="user-city" class="field-input" type="text" placeholder="e.g. London, New York…" autocomplete="off" oninput="onCityInput()">
+          <div id="city-ac-drop" style="position:absolute;top:100%;left:0;right:0;z-index:300;background:#1a1a1a;border:1px solid rgba(230,249,82,0.20);border-radius:10px;overflow:hidden;display:none;margin-top:2px;"></div>
+        </div>
+
+        <div class="wizard-nav" style="margin-top:24px;">
+          <span></span>
+          <button class="btn btn-primary" id="step1-next-btn" onclick="step1Next()" disabled>Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step photo: profile photo (early, low friction) -->
+    <div class="wizard-step" id="step-photo">
+      <div class="wizard-title" style="text-align:center;">Add a profile photo</div>
+      <p class="wizard-sub" style="text-align:center;">So your connections can recognise you. You can skip this for now.</p>
+
+      <div style="display:flex;justify-content:center;margin:28px 0 32px;">
+        <label for="photo-input" style="cursor:pointer;position:relative;" title="Add photo">
+          <div id="photo-preview" style="
+            width:110px;height:110px;border-radius:50%;
+            background:var(--cell-bg);border:3px dashed var(--border);
+            display:flex;align-items:center;justify-content:center;
+            font-size:40px;font-weight:800;color:var(--muted);
+            overflow:hidden;transition:border-color .15s;
+          ">📷</div>
+          <div style="
+            position:absolute;bottom:4px;right:4px;
+            width:28px;height:28px;border-radius:50%;
+            background:var(--lime);display:flex;align-items:center;justify-content:center;
+            font-size:16px;color:#0e0e0e;box-shadow:0 2px 8px rgba(0,0,0,0.5);
+          ">＋</div>
+          <input id="photo-input" type="file" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+        </label>
+      </div>
+
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep('bridge')">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step bridge: context explainer before personal questions -->
+    <div class="wizard-step" id="step-bridge">
+      <div style="text-align:center;padding:12px 0 0;">
+        <div style="font-size:36px;margin-bottom:16px;">📅</div>
+        <div class="wizard-title" style="text-align:center;margin-bottom:8px;">Now let's build<br>your timeline</div>
+        <p class="wizard-sub" style="text-align:center;margin-bottom:28px;">This is how Spontany knows when you're free — so your friends never have to ask.</p>
+
+        <div style="text-align:left;max-width:320px;margin:0 auto 32px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+            <div style="font-size:20px;flex-shrink:0;margin-top:1px;">🔭</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">You control how far ahead people can see — <strong style="color:var(--lime);">a week, a month, or forever.</strong></p>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+            <div style="font-size:20px;flex-shrink:0;margin-top:1px;">⚡</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">Turn visibility <strong style="color:var(--lime);">on or off</strong> for anyone, instantly.</p>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <div style="font-size:20px;flex-shrink:0;margin-top:1px;">🔒</div>
+            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">Friends see when you're free. <strong style="color:var(--lime);">Not why.</strong></p>
+          </div>
+        </div>
+
+        <div class="wizard-nav" style="justify-content:center;">
+          <button class="btn btn-primary" onclick="goStep('personal')">Set up my timeline →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step personal: age, relationship, parent (sensitive, now with context) -->
+    <div class="wizard-step" id="step-personal">
+      <div class="wizard-title">Let's understand your lifestyle rhythm.</div>
+      <p class="wizard-sub">This helps Spontany set up the right calendar for you.</p>
+
+      <div class="field-group">
+        <label class="field-label">Relationship status</label>
+        <div class="rel-chips">
+          <div class="rel-chip" id="rchip-single"       onclick="selectRelStatus('single')">Single</div>
+          <div class="rel-chip" id="rchip-relationship" onclick="selectRelStatus('relationship')">In a relationship</div>
+          <div class="rel-chip" id="rchip-married"      onclick="selectRelStatus('married')">Married</div>
+          <div class="rel-chip" id="rchip-separated"    onclick="selectRelStatus('separated')">Separated / Divorced</div>
+        </div>
+      </div>
+
+      <div class="wizard-nav" style="margin-top:24px;">
+        <button class="btn btn-outline btn-sm" onclick="goStep('bridge')">← Back</button>
+        <button class="btn btn-primary" onclick="personalNext()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step mirror: invite mode — is schedule a mirror of the inviter's? -->
+    <div class="wizard-step" id="step-mirror">
+      <div class="wizard-title">Is your custody schedule a mirror image of <strong id="mirror-owner-name">your co-parent</strong>'s?</div>
+      <p class="wizard-sub">For example, if they have the kids Mon–Wed, you have them Thu–Sun.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+        <button class="btn btn-primary" style="justify-content:center;" onclick="chooseMirror(true)">
+          Yes — it's the opposite of theirs
+        </button>
+        <button class="btn btn-outline" style="justify-content:center;" onclick="chooseMirror(false)">
+          No — let me set my own schedule
+        </button>
+      </div>
+      <div class="wizard-nav" style="margin-top:16px;">
+        <button class="btn btn-outline btn-sm" onclick="goStep('personal')">← Back</button>
+        <span></span>
+      </div>
+    </div>
+
+    <!-- Step parent: do you have kids? -->
+    <div class="wizard-step" id="step-parent">
+      <div class="wizard-title">Do you have kids?</div>
+      <p class="wizard-sub">This helps us set up the right calendar for you.</p>
+      <div class="parent-opts-row">
+        <div class="parent-opt selected" id="popt-yes" onclick="setParent(true)">
+          <div class="parent-opt-emoji">👨‍👧</div>
+          <div class="parent-opt-label">Yes, I'm a parent</div>
+          <div class="parent-opt-sub">I share custody and want to track my kids' days</div>
+        </div>
+        <div class="parent-opt" id="popt-no" onclick="setParent(false)">
+          <div class="parent-opt-emoji">🙋</div>
+          <div class="parent-opt-label">No kids</div>
+          <div class="parent-opt-sub">I just want to see when I'm free to make plans</div>
+        </div>
+      </div>
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="parentBack()">← Back</button>
+        <button class="btn btn-primary" onclick="parentNext()">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Week picker (parents only) -->
+    <div class="wizard-step" id="step-2">
+      <div class="wizard-title">Which days are the kids with you?</div>
+      <p class="wizard-sub">Tap a day to mark it as yours. Tap again to unmark it.</p>
+      <div class="wp-legend">
+        <span><span class="wp-legend-swatch" style="background:var(--r);border-color:var(--r-border);"></span>Your day</span>
+        <span><span class="wp-legend-swatch" style="background:white;"></span>Co-parent's day</span>
+      </div>
+      <div id="week1-section">
+        <div class="week-section-label" id="week1-label"></div>
+        <div class="week-picker-grid" id="week1-heads"></div>
+        <div class="week-picker-grid" id="week1-cells"></div>
+      </div>
+      <div id="week2-section" class="hidden">
+        <div class="week-section-label" id="week2-label"></div>
+        <div class="week-picker-grid" id="week2-cells"></div>
+      </div>
+      <button class="expand-btn" id="expand-btn" onclick="expandToTwoWeeks()">
+        ↕ Two-week custody pattern? Press here to expand
+      </button>
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep('parent')">← Back</button>
+        <button class="btn btn-primary" onclick="step2Next()">Looks right →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Review calendar -->
+    <div class="wizard-step" id="step-3">
+      <div class="wizard-title">Review your calendar</div>
+      <p class="wizard-sub">Here's the next 3 months based on your pattern. Tap any day to flip it.</p>
+      <div id="review-calendar"></div>
+      <div class="wizard-nav">
+        <button class="btn btn-outline btn-sm" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-primary" onclick="goStep('work')">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step work: work schedule (day grid + time slider) -->
+    <div class="wizard-step" id="step-work">
+      <div class="wizard-title">Work also determines our rhythm — what does your work life look like?</div>
+      <p class="wizard-sub">Tap your work days, then set your usual hours. We use this to show when you're <em>actually</em> free.</p>
+      <div class="wp-legend" style="margin-bottom:10px;">
+        <span><span class="wp-legend-swatch" style="background:rgba(99,102,241,0.20);border-color:rgba(129,140,248,0.55);"></span>Work day</span>
+        <span><span class="wp-legend-swatch" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);"></span>Day off</span>
+      </div>
+      <div class="week-picker-grid" id="work-day-grid"></div>
+      <div class="ts-section">
+        <div class="ts-section-title">Work hours</div>
+        <div class="ts-time-display">
+          <span class="ts-highlight" id="ts-lbl-start">9:00 AM</span>
+          <span style="color:var(--muted);font-size:14px;font-weight:500;"> to </span>
+          <span class="ts-highlight" id="ts-lbl-end">5:00 PM</span>
+        </div>
+        <div class="ts-track-wrap" id="ts-wrap">
+          <div class="ts-track" id="ts-track">
+            <div class="ts-active" id="ts-active"></div>
+          </div>
+          <div class="ts-handle" id="ts-h-start"></div>
+          <div class="ts-handle" id="ts-h-end"></div>
+        </div>
+      </div>
+      <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip — I'll set this up later</span>
+      <div class="wizard-nav" style="margin-top:18px;">
+        <button class="btn btn-outline btn-sm" onclick="workBack()">← Back</button>
+        <button class="btn btn-primary" onclick="saveAndFinish()">Finish →</button>
+      </div>
+    </div>
+
+    <!-- Step done: completion screen (content filled by JS based on mode) -->
+    <div class="wizard-step" id="step-done">
+      <div class="success-icon">✓</div>
+      <div class="wizard-title" style="text-align:center;margin-bottom:4px;" id="done-title">You're all set!</div>
+      <p class="wizard-sub" style="text-align:center;margin-bottom:14px;" id="done-sub">Here are your free days coming up.</p>
+
+      <!-- Invite mode: connection explanation -->
+      <div id="done-connected-box" style="display:none;background:rgba(230,249,82,0.08);border:1.5px solid rgba(230,249,82,0.25);border-radius:10px;padding:14px 16px;margin:0 0 16px;font-size:13px;line-height:1.6;color:var(--lime);"></div>
+
+      <!-- Free days strip (both modes) -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Your upcoming free days</div>
+        <div id="done-free-strip"></div>
+      </div>
+
+      <!-- Direct mode only: invite tabs -->
+      <div id="done-invite-section" style="display:none;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Connect with someone →</div>
+        <div class="inv-type-tabs">
+          <button class="inv-type-tab active" id="itab-coparent" onclick="switchInviteTab('coparent')">Co-parent</button>
+          <button class="inv-type-tab"        id="itab-partner"  onclick="switchInviteTab('partner')">Partner</button>
+          <button class="inv-type-tab"        id="itab-friend"   onclick="switchInviteTab('friend')">Friend</button>
+        </div>
+        <div id="inv-panel-coparent" class="inv-panel">
+          <p class="inv-panel-desc">Share custody schedules and coordinate handoffs.</p>
+          <div id="inv-url-coparent" class="inv-url-box">Generating…</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <a id="inv-wa-coparent" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Send via WhatsApp
+            </a>
+            <button class="btn btn-outline btn-sm" onclick="copyInvite('coparent')">📋 Copy</button>
+          </div>
+        </div>
+        <div id="inv-panel-partner" class="inv-panel" style="display:none;">
+          <p class="inv-panel-desc">Once connected, you'll see when you're both free at the same time.</p>
+          <div id="inv-url-partner" class="inv-url-box">Generating…</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <a id="inv-wa-partner" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Send via WhatsApp
+            </a>
+            <button class="btn btn-outline btn-sm" onclick="copyInvite('partner')">📋 Copy</button>
+          </div>
+        </div>
+        <div id="inv-panel-friend" class="inv-panel" style="display:none;">
+          <p class="inv-panel-desc">A close friend — see when you're both free together.</p>
+          <div id="inv-url-friend" class="inv-url-box">Generating…</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <a id="inv-wa-friend" href="#" target="_blank" rel="noopener" class="wa-send-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Send via WhatsApp
+            </a>
+            <button class="btn btn-outline btn-sm" onclick="copyInvite('friend')">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" onclick="goToCalendar()">
+        Open my calendar →
+      </button>
+      <p id="done-footnote" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">
+        Your schedule is private — only people you approve can see it.
+      </p>
+    </div>
+
+  </div><!-- /.wizard-card -->
+</div><!-- /.wizard#wizard-main -->
+</div><!-- /#app-frame -->
+
+<script>
+// ── Mode detection ─────────────────────────────────────────────────────────────
+const _urlParams   = new URLSearchParams(location.search);
+const INVITE_TOKEN = (window.location.pathname.match(/\/invite\/([^/?]+)/) || [])[1] || null;
+const MAGIC_TOKEN  = _urlParams.get('magic');
+const GOOGLE_NAME  = _urlParams.get('name') || '';
+const GOOGLE_ID    = _urlParams.get('google_id') || '';
+const MODE         = INVITE_TOKEN ? 'invite' : 'direct';
+
+// Guard: direct mode requires magic token
+if (MODE === 'direct' && !MAGIC_TOKEN) { window.location.replace('/'); }
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const FULL_DAYS  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const WD_LETTER  = ['S','M','T','W','T','F','S'];
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let ownerName     = 'your co-parent';
+let inviteRelType = 'friend';   // set from invite validation; drives fast-path
+let createdToken  = null;
+let relStatus     = null;
+let isParent      = true;
+let profilePhotoDataUrl = null;
+
+function handlePhotoUpload(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      // Resize to max 300px and compress to JPEG ~80%
+      const MAX = 300;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width  * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      profilePhotoDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const preview = document.getElementById('photo-preview');
+      if (preview) {
+        preview.innerHTML = `<img src="${profilePhotoDataUrl}" style="width:100%;height:100%;object-fit:cover;">`;
+        preview.style.border = '2px solid var(--accent)';
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updatePhotoPreviewInitial() {
+  if (profilePhotoDataUrl) return; // already has a photo
+  const name = document.getElementById('user-name')?.value?.trim() || '';
+  const preview = document.getElementById('photo-preview');
+  if (!preview) return;
+  preview.innerHTML = name ? `<span style="font-size:30px;font-weight:900;color:var(--accent);">${name[0].toUpperCase()}</span>` : '📷';
+}
+let isMirror      = false;
+let isTwoWeek     = false;
+let weekStartDate = null;
+let week1Selected = [false,false,false,false,false,false,false];
+let week2Selected = [false,false,false,false,false,false,false];
+let generatedDays = [];
+let workDays      = [1,2,3,4,5]; // Mon–Fri default
+let workStartHour = 9;
+let workEndHour   = 17;
+let skipWork      = false;
+let currentStep   = 0;
+
+// ── Progress ──────────────────────────────────────────────────────────────────
+const STEP_PROGRESS = { '0':0, '1':8, 'photo':18, 'bridge':28, 'personal':38, 'mirror':45, 'parent':52, '2':62, '3':72, 'work':85, 'finish':95, 'done':100 };
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('step-' + n);
+  if (el) el.classList.add('active');
+  currentStep = n;
+  document.getElementById('progress').style.width = (STEP_PROGRESS[String(n)] ?? 50) + '%';
+  if (String(n) === '2') ensureWeekInit();
+  if (String(n) === 'work') { renderWorkDayGrid(); initTimeSlider(); }
+  if (String(n) === 'photo') updatePhotoPreviewInitial();
+  if (String(n) === 'bridge') updatePhotoPreviewInitial();
+  window.scrollTo(0, 0);
+}
+
+// ── Intro sequence ─────────────────────────────────────────────────────────────
+const INTRO_DURATIONS = [2400, 4500, 4500, 4500, null];
+let introTimer = null;
+
+function showIntroSlide(n) {
+  clearTimeout(introTimer);
+  document.querySelectorAll('.intro-slide').forEach(s => s.classList.remove('active'));
+  const sl = document.getElementById('isl-' + n);
+  if (sl) sl.classList.add('active');
+  const dur = INTRO_DURATIONS[n];
+  if (dur !== null) introTimer = setTimeout(() => showIntroSlide(n + 1), dur);
+}
+
+function startOnboarding() {
+  const overlay = document.getElementById('intro-overlay');
+  overlay.classList.add('hiding');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    const wiz = document.getElementById('wizard-main');
+    wiz.style.opacity = '1';
+    wiz.style.pointerEvents = 'auto';
+    goStep(1);
+    setTimeout(() => document.getElementById('user-name')?.focus(), 100);
+  }, 560);
+}
+
+function showWizardError(msg) {
+  document.getElementById('intro-overlay').style.display = 'none';
+  const wiz = document.getElementById('wizard-main');
+  wiz.style.opacity = '1'; wiz.style.pointerEvents = 'auto';
+  document.getElementById('step-0').innerHTML = `
+    <div style="text-align:center;padding:24px 0 20px;">
+      <div style="font-size:32px;margin-bottom:12px;">❌</div>
+      <h2 style="font-size:18px;margin:0 0 8px;">Invalid invite link</h2>
+      <p class="text-muted">${msg}</p>
+      <p class="text-muted" style="margin-top:8px;font-size:12px;">Ask the person who invited you to send a new link.</p>
+    </div>`;
+  goStep(0);
+}
+
+// ── Step 1 ─────────────────────────────────────────────────────────────────────
+// ── City autocomplete (public endpoint, no auth needed) ──────────────────
+let _cityAcTimer = null;
+let _cityPredictions = [];
+
+function onCityInput() {
+  checkStep1Ready();
+  clearTimeout(_cityAcTimer);
+  const q = document.getElementById('user-city')?.value.trim();
+  const drop = document.getElementById('city-ac-drop');
+  if (!q || q.length < 2) { if (drop) drop.style.display = 'none'; return; }
+  _cityAcTimer = setTimeout(() => _fetchCities(q), 300);
+}
+
+async function _fetchCities(query) {
+  const drop = document.getElementById('city-ac-drop');
+  if (!drop) return;
+  try {
+    const res = await fetch(`/api/places/cities?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    _cityPredictions = data.predictions || [];
+    if (!_cityPredictions.length) { drop.style.display = 'none'; return; }
+    drop.innerHTML = _cityPredictions.map((p, i) => {
+      return `<div onclick="_selectCity(${i})" style="padding:11px 14px;font-size:14px;color:#e2e2e2;cursor:pointer;border-bottom:1px solid rgba(226,226,226,0.06);" onmouseover="this.style.background='rgba(230,249,82,0.10)'" onmouseout="this.style.background=''">${p.name}<span style="font-size:11px;color:rgba(226,226,226,0.42);margin-left:6px;">${(p.description||'').replace(p.name,'').replace(/^,\s*/,'')}</span></div>`;
+    }).join('');
+    drop.style.display = 'block';
+  } catch(e) {}
+}
+
+function _selectCity(idx) {
+  const p = _cityPredictions[idx];
+  if (!p) return;
+  const input = document.getElementById('user-city');
+  if (input) {
+    input.value = p.name;
+    input.dataset.placeId = p.place_id || '';
+  }
+  const drop = document.getElementById('city-ac-drop');
+  if (drop) drop.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-city') && !e.target.closest('#city-ac-drop')) {
+    const drop = document.getElementById('city-ac-drop');
+    if (drop) drop.style.display = 'none';
+  }
+});
+
+function checkStep1Ready() {
+  const name = document.getElementById('user-name')?.value.trim();
+  const btn  = document.getElementById('step1-next-btn');
+  if (!btn) return;
+  if (MODE === 'invite') {
+    const email = document.getElementById('user-email')?.value.trim();
+    btn.disabled = !(name && email && email.includes('@'));
+  } else {
+    btn.disabled = !name;
+  }
+}
+
+function selectRelStatus(val) {
+  relStatus = val;
+  ['single','relationship','married','separated'].forEach(v =>
+    document.getElementById('rchip-' + v)?.classList.toggle('on', v === val)
+  );
+}
+
+function step1Next() {
+  const name = document.getElementById('user-name')?.value.trim();
+  if (!name) return;
+  if (MODE === 'invite') {
+    const email = document.getElementById('user-email')?.value.trim();
+    if (!email || !email.includes('@')) return;
+  }
+  goStep('photo');
+}
+
+// ── Personal step → routing ────────────────────────────────────────────────────
+function personalNext() {
+  // Only separated/divorced users see the parent/custody flow
+  if (relStatus === 'separated') {
+    if (MODE === 'invite' && inviteRelType === 'coparent') {
+      document.getElementById('mirror-owner-name').textContent = ownerName;
+      goStep('mirror');
+    } else {
+      goStep('parent');
+    }
+  } else {
+    // Not divorced — skip custody entirely, go to work schedule
+    isParent = false;
+    goStep('work');
+  }
+}
+
+// ── Mirror (invite mode) ───────────────────────────────────────────────────────
+function chooseMirror(yes) {
+  isMirror = yes;
+  // Mirror: skip custody setup, go straight to work schedule
+  if (yes) goStep('work');
+  else     goStep('parent');
+}
+
+// ── Parent step ────────────────────────────────────────────────────────────────
+function setParent(val) {
+  isParent = val;
+  document.getElementById('popt-yes').classList.toggle('selected',  val);
+  document.getElementById('popt-no').classList.toggle('selected',  !val);
+}
+
+function parentBack() {
+  if (MODE === 'invite' && inviteRelType === 'coparent') goStep('mirror');
+  else goStep('personal');
+}
+
+function parentNext() {
+  // Only separated/divorced parents have custody — everyone else skips
+  const hasCustodySplit = isParent && relStatus === 'separated';
+  if (hasCustodySplit) { ensureWeekInit(); goStep(2); }
+  else                 goStep('work');
+}
+
+// ── Work step ──────────────────────────────────────────────────────────────────
+function workBack() {
+  const hasCustodySplit = isParent && relStatus === 'separated';
+  if (hasCustodySplit) goStep(3);
+  else if (isMirror)   goStep('mirror');
+  else                 goStep('parent');
+}
+
+function skipWorkSchedule() {
+  skipWork = true;
+  saveAndFinish();
+}
+
+function getWorkSchedulePayload() {
+  if (skipWork) return { type: 'none' };
+  return { type: 'custom', days: [...workDays], start_hour: workStartHour, end_hour: workEndHour };
+}
+
+// ── Week picker ────────────────────────────────────────────────────────────────
+function getNextFullWeekStart() {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const dow = t.getDay();
+  if (dow === 0) return t;
+  const next = new Date(t);
+  next.setDate(t.getDate() + (7 - dow));
+  return next;
+}
+
+function ensureWeekInit() {
+  if (!weekStartDate) {
+    weekStartDate = getNextFullWeekStart();
+    renderWeekHeads();
+    renderWeekCells(1);
+  }
+}
+
+function weekDateAt(weekNum, idx) {
+  const d = new Date(weekStartDate);
+  d.setDate(d.getDate() + (weekNum - 1) * 7 + idx);
+  return d;
+}
+
+function renderWeekHeads() {
+  document.getElementById('week1-heads').innerHTML =
+    DAY_ABBR.map(d => `<div class="week-picker-head">${d}</div>`).join('');
+}
+
+function renderWeekCells(weekNum) {
+  const selected = weekNum === 1 ? week1Selected : week2Selected;
+  document.getElementById('week' + weekNum + '-cells').innerHTML =
+    DAY_ABBR.map((_, idx) => {
+      const d = weekDateAt(weekNum, idx);
+      return `<div class="wp-cell ${selected[idx] ? 'self' : ''}" onclick="toggleWpDay(${weekNum},${idx},this)">
+                <div class="wp-num">${d.getDate()}</div>
+                <div class="wp-month">${MONTH_ABBR[d.getMonth()]}</div>
+              </div>`;
+    }).join('');
+  const s = weekDateAt(weekNum, 0), e = weekDateAt(weekNum, 6);
+  document.getElementById('week' + weekNum + '-label').textContent = isTwoWeek
+    ? 'Week ' + weekNum + ' · ' + MONTH_ABBR[s.getMonth()] + ' ' + s.getDate() + ' – ' + MONTH_ABBR[e.getMonth()] + ' ' + e.getDate()
+    : 'Week of ' + MONTH_ABBR[s.getMonth()] + ' ' + s.getDate() + ' – ' + MONTH_ABBR[e.getMonth()] + ' ' + e.getDate();
+}
+
+function toggleWpDay(weekNum, idx, el) {
+  const sel = weekNum === 1 ? week1Selected : week2Selected;
+  sel[idx] = !sel[idx];
+  el.className = 'wp-cell ' + (sel[idx] ? 'self' : '');
+}
+
+function expandToTwoWeeks() {
+  isTwoWeek = true;
+  document.getElementById('expand-btn').classList.add('hidden');
+  document.getElementById('week2-section').classList.remove('hidden');
+  const s1 = weekDateAt(1,0), e1 = weekDateAt(1,6);
+  document.getElementById('week1-label').textContent =
+    'Week 1 · ' + MONTH_ABBR[s1.getMonth()] + ' ' + s1.getDate() + ' – ' + MONTH_ABBR[e1.getMonth()] + ' ' + e1.getDate();
+  renderWeekCells(2);
+}
+
+function step2Next() {
+  buildGeneratedDays();
+  renderReviewCalendar();
+  goStep(3);
+}
+
+function toDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function buildGeneratedDays() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yearOut = new Date(today); yearOut.setFullYear(yearOut.getFullYear() + 1);
+  const anchorNoon = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate(), 12);
+  const days = [];
+  for (let d = new Date(today); d <= yearOut; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    const dNoon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+    const daysDiff = Math.round((dNoon - anchorNoon) / 86400000);
+    const weekOffset = Math.floor(daysDiff / 7);
+    const isSelf = !isTwoWeek ? week1Selected[dow]
+      : (((weekOffset % 2) + 2) % 2 === 0 ? week1Selected[dow] : week2Selected[dow]);
+    days.push({ date: toDateStr(d), owner: isSelf ? 'self' : 'coparent', tags: [] });
+  }
+  generatedDays = days;
+}
+
+function renderReviewCalendar() {
+  const dayMap = {};
+  generatedDays.forEach(d => { dayMap[d.date] = d; });
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+  let html = '', cur = new Date(today.getFullYear(), today.getMonth(), 1);
+  while (cur <= end) {
+    const y = cur.getFullYear(), m = cur.getMonth();
+    const label = cur.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    html += `<div class="mini-calendar-preview" style="margin-bottom:12px;">
+      <div class="mini-cal-title">${label}</div><div class="mini-cal-grid">`;
+    html += DAY_ABBR.map(d => `<div class="mini-cal-head">${d}</div>`).join('');
+    for (let i = 0; i < new Date(y, m, 1).getDay(); i++) html += '<div class="mini-cal-day empty"></div>';
+    for (let day = 1; day <= daysInMonth; day++) {
+      const ds = y + '-' + String(m+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+      const entry = dayMap[ds];
+      const cls = entry?.owner === 'self' ? 'self' : (entry?.owner === 'coparent' ? 'coparent' : '');
+      html += `<div class="mini-cal-day ${cls}" data-date="${ds}" data-owner="${entry?.owner||'coparent'}"
+                    onclick="toggleReviewDay(this)" style="cursor:pointer;">${day}</div>`;
+    }
+    html += '</div></div>';
+    cur.setMonth(cur.getMonth() + 1); cur.setDate(1);
+  }
+  html += `<p class="text-muted" style="font-size:12px;margin-top:4px;">
+    <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid var(--r-border);border-radius:2px;margin-right:4px;"></span>Your days &nbsp;
+    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid var(--z-border);border-radius:2px;margin-right:4px;"></span>Co-parent's days — tap any day to flip it.
+  </p>`;
+  document.getElementById('review-calendar').innerHTML = html;
+}
+
+function toggleReviewDay(el) {
+  const next = el.dataset.owner === 'self' ? 'coparent' : 'self';
+  el.dataset.owner = next;
+  el.className = 'mini-cal-day ' + next;
+  const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
+  if (idx !== -1) generatedDays[idx].owner = next;
+  else generatedDays.push({ date: el.dataset.date, owner: next, tags: [] });
+}
+
+// ── Work day grid ──────────────────────────────────────────────────────────────
+function renderWorkDayGrid() {
+  const grid = document.getElementById('work-day-grid');
+  if (!grid) return;
+  grid.innerHTML = [0,1,2,3,4,5,6].map(dow => {
+    const on = workDays.includes(dow);
+    return `<div class="wp-cell${on ? ' work' : ''}" id="wwd-${dow}" onclick="toggleWorkDayCell(${dow})">
+      <div class="wp-day-lbl">${WD_LETTER[dow]}</div>
+      <div class="wp-day-full">${DAY_ABBR[dow]}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWorkDayCell(dow) {
+  const idx = workDays.indexOf(dow);
+  if (idx === -1) workDays.push(dow);
+  else            workDays.splice(idx, 1);
+  document.getElementById('wwd-' + dow)?.classList.toggle('work', workDays.includes(dow));
+}
+
+// ── Time slider ────────────────────────────────────────────────────────────────
+const TS_MIN = 6, TS_MAX = 23;
+
+function formatHour(h) {
+  if (h === 0)  return '12:00 AM';
+  if (h === 12) return '12:00 PM';
+  return h < 12 ? h + ':00 AM' : (h - 12) + ':00 PM';
+}
+
+function updateTimeSliderUI() {
+  if (!document.getElementById('ts-track')) return;
+  const pctS = (workStartHour - TS_MIN) / (TS_MAX - TS_MIN) * 100;
+  const pctE = (workEndHour   - TS_MIN) / (TS_MAX - TS_MIN) * 100;
+  document.getElementById('ts-active').style.cssText  = 'left:' + pctS + '%;width:' + (pctE - pctS) + '%';
+  document.getElementById('ts-h-start').style.left    = 'calc(' + pctS + '% + 14px - 13px)';
+  document.getElementById('ts-h-end').style.left      = 'calc(' + pctE + '% + 14px - 13px)';
+  document.getElementById('ts-lbl-start').textContent = formatHour(workStartHour);
+  document.getElementById('ts-lbl-end').textContent   = formatHour(workEndHour);
+}
+
+function initTimeSlider() {
+  const wrap = document.getElementById('ts-wrap');
+  if (!wrap || wrap.dataset.init) return;
+  wrap.dataset.init = '1';
+  function hourFromX(clientX) {
+    const rect = document.getElementById('ts-track').getBoundingClientRect();
+    return Math.round(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * (TS_MAX - TS_MIN) + TS_MIN);
+  }
+  function makeHandle(id, isStart) {
+    const el = document.getElementById(id);
+    let dragging = false;
+    el.addEventListener('mousedown',  e => { dragging = true; e.preventDefault(); });
+    el.addEventListener('touchstart', () => { dragging = true; }, { passive: true });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const h = hourFromX(e.clientX);
+      if (isStart) workStartHour = Math.max(TS_MIN, Math.min(h, workEndHour - 1));
+      else         workEndHour   = Math.min(TS_MAX, Math.max(h, workStartHour + 1));
+      updateTimeSliderUI();
+    });
+    document.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const h = hourFromX(e.touches[0].clientX);
+      if (isStart) workStartHour = Math.max(TS_MIN, Math.min(h, workEndHour - 1));
+      else         workEndHour   = Math.min(TS_MAX, Math.max(h, workStartHour + 1));
+      updateTimeSliderUI();
+    }, { passive: true });
+    document.addEventListener('mouseup',  () => { dragging = false; });
+    document.addEventListener('touchend', () => { dragging = false; });
+  }
+  makeHandle('ts-h-start', true);
+  makeHandle('ts-h-end',   false);
+  updateTimeSliderUI();
+}
+
+// ── Save & finish ──────────────────────────────────────────────────────────────
+async function saveAndFinish() {
+  const name = document.getElementById('user-name').value.trim();
+  if (!name) { goStep(1); return; }
+
+  // Sync any last-minute review calendar edits
+  document.querySelectorAll('#review-calendar .mini-cal-day[data-date]').forEach(el => {
+    const idx = generatedDays.findIndex(d => d.date === el.dataset.date);
+    if (idx !== -1) generatedDays[idx].owner = el.dataset.owner;
+  });
+
+  const patternType = isTwoWeek ? 'alternating_weeks' : 'specific_days';
+  const patternData = isTwoWeek
+    ? { week_a_days: week1Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean),
+        week_b_days: week2Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean) }
+    : { self_days:   week1Selected.map((s,i) => s ? FULL_DAYS[i] : null).filter(Boolean) };
+
+  const phone        = document.getElementById('user-phone')?.value.trim() || null;
+  const cityInput    = document.getElementById('user-city');
+  const city         = cityInput?.value.trim() || null;
+  const city_place_id = cityInput?.dataset?.placeId || null;
+  const age          = null; // removed from onboarding flow
+  const workSchedule = getWorkSchedulePayload();
+  const hasCustody   = isParent && relStatus === 'separated' && !isMirror && generatedDays.length > 0;
+
+  let endpoint, body;
+  if (MODE === 'invite') {
+    const email = document.getElementById('user-email').value.trim().toLowerCase();
+    endpoint = '/api/users/register';
+    body = {
+      invite_token:        INVITE_TOKEN,
+      name, email,
+      mobile:              phone, age, city, city_place_id,
+      relationship_status: relStatus,
+      work_schedule:       workSchedule,
+      pattern_type:        hasCustody ? patternType : null,
+      pattern_data:        hasCustody ? patternData : null,
+      anchor_date:         hasCustody && weekStartDate ? toDateStr(weekStartDate) : null,
+      days:                hasCustody ? generatedDays : [],
+      is_mirror:           isMirror,
+      photo:               profilePhotoDataUrl || null
+    };
+  } else {
+    endpoint = '/api/users/setup';
+    body = {
+      magic:               MAGIC_TOKEN,
+      name,
+      google_id:           GOOGLE_ID || undefined,
+      mobile:              phone, age, city, city_place_id,
+      relationship_status: relStatus,
+      work_schedule:       workSchedule,
+      pattern_type:        hasCustody ? patternType : 'none',
+      pattern_data:        hasCustody ? patternData : {},
+      anchor_date:         weekStartDate ? toDateStr(weekStartDate) : null,
+      days:                hasCustody ? generatedDays : [],
+      photo:               profilePhotoDataUrl || null
+    };
+  }
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || 'Setup failed — please try again');
+    return;
+  }
+
+  const data = await res.json();
+  createdToken = data.token;
+  localStorage.setItem('myToken', createdToken);
+  localStorage.setItem('myRole', MODE === 'invite' ? 'partner' : 'owner');
+
+  await renderDoneScreen();
+  goStep('done');
+}
+
+// ── Done screen ────────────────────────────────────────────────────────────────
+async function renderDoneScreen() {
+  if (MODE === 'invite') {
+    document.getElementById('done-title').textContent = "You're in! 🎉";
+    document.getElementById('done-sub').textContent   = `Finding days you and ${ownerName} are both free…`;
+    document.getElementById('done-footnote').textContent = 'Your schedule is private — only people you approve can see it.';
+    await renderOverlapSection();
+  } else {
+    document.getElementById('done-title').textContent = 'Your calendar is ready!';
+    document.getElementById('done-sub').textContent   = 'Here are your upcoming free days.';
+    renderFreeStrip();
+    document.getElementById('done-invite-section').style.display = 'block';
+    document.getElementById('done-footnote').textContent = 'You can invite more people from your calendar any time.';
+    await generateInviteLinks(createdToken);
+  }
+}
+
+async function renderOverlapSection() {
+  const container = document.getElementById('done-connected-box');
+  container.style.display = 'block';
+  container.innerHTML = '<p style="font-size:13px;color:#1967d2;text-align:center;margin:0;">Checking schedules…</p>';
+
+  try {
+    const res  = await fetch(`/api/overlap?token=${createdToken}`);
+    if (!res.ok) throw new Error('overlap fetch failed');
+    const data = await res.json();
+
+    const entry = data.overlap?.[0]; // first (and likely only) connection after fresh register
+    if (!entry || entry.overlap_days.length === 0) {
+      container.style.display = 'none';
+      document.getElementById('done-sub').textContent = `You're connected with ${ownerName}. Your schedules will sync and we'll show you free days as they come up.`;
+      return;
+    }
+
+    const DOW   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const dayCards = entry.overlap_days.map(ds => {
+      const d   = new Date(ds + 'T12:00:00');
+      const dow  = DOW[d.getDay()];
+      const day  = d.getDate();
+      const mon  = MONTH[d.getMonth()];
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:10px 12px;background:white;border-radius:10px;
+                    border:1.5px solid #c5d8f8;margin-bottom:8px;">
+          <div>
+            <span style="font-size:14px;font-weight:800;color:#1a3a6e;">${dow}, ${mon} ${day}</span>
+            <span style="font-size:11px;color:#5585c8;margin-left:8px;">You're both free</span>
+          </div>
+          <button onclick="suggestPlan('${ds}','${entry.other_user_id}','${(entry.other_name||'').replace(/'/g,"\\'")}',this)"
+                  style="background:#4285f4;color:white;border:none;border-radius:20px;
+                         padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;
+                         font-family:inherit;white-space:nowrap;">
+            Plan this →
+          </button>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      <p style="font-size:13px;font-weight:700;color:#1967d2;margin:0 0 10px;">
+        🎉 You and ${entry.other_name} have <strong>${entry.overlap_days.length}</strong> free day${entry.overlap_days.length !== 1 ? 's' : ''} coming up:
+      </p>
+      ${dayCards}`;
+
+    document.getElementById('done-sub').textContent = `Pick a day and make it happen.`;
+  } catch(e) {
+    container.innerHTML = `<p style="font-size:12px;color:#1967d2;margin:0;">Couldn't load overlaps right now — check back in the app.</p>`;
+  }
+}
+
+async function suggestPlan(date, otherUserId, otherName, btn) {
+  btn.textContent = '…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/outings?token=${createdToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, message: `Let's do something on ${date}!`, invitees: [{ user_id: otherUserId, name: otherName }] })
+    });
+    if (res.ok) {
+      btn.textContent = '✓ Sent!';
+      btn.style.background = '#34a853';
+    } else {
+      btn.textContent = 'Plan this →';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = 'Plan this →';
+    btn.disabled = false;
+  }
+}
+
+function renderFreeStrip() {
+  const el = document.getElementById('done-free-strip');
+  if (!el) return;
+  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  const dayMap = {};
+  generatedDays.forEach(d => { dayMap[d.date] = d.owner; });
+  let chips = '';
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const ds = toDateStr(d);
+    const free = dayMap[ds] === 'coparent';
+    const outline = ds === todayStr ? 'outline:2px solid #1967d2;outline-offset:-2px;' : '';
+    chips += `<div class="free-chip" style="background:${free ? '#e6f4ea' : '#f5f5f5'};${outline}">
+      <div style="font-size:9px;font-weight:700;color:#aaa;text-transform:uppercase;">${DOW[d.getDay()]}</div>
+      <div style="font-size:15px;line-height:1.3;${free ? 'color:#1a7340;font-weight:800' : 'color:#bbb;font-weight:600'}">${d.getDate()}</div>
+      ${free ? '<div style="font-size:8px;font-weight:800;color:#1a7340;">FREE</div>' : '<div style="font-size:8px;color:#ddd;">·</div>'}
+    </div>`;
+  }
+  el.innerHTML = `<div style="display:flex;gap:3px;">${chips}</div>`;
+}
+
+async function generateInviteLinks(token) {
+  // Fetch my own free day count to personalise the invite message
+  let freeCount = 0;
+  try {
+    const ov = await fetch(`/api/overlap?token=${token}`).then(r => r.json());
+    freeCount = ov.my_free_count || 0;
+  } catch(e) { /* non-critical */ }
+
+  const freeSnippet = freeCount > 0 ? ` I have ${freeCount} free days in the next month.` : '';
+  const msgs = {
+    coparent: u => `Hi! I'm using Spontany to coordinate our custody schedule and find time to connect.${freeSnippet} Set up your side here: ${u}`,
+    partner:  u => `Hey! I'm using Spontany to find when we're both free at the same time.${freeSnippet} Connect your schedule here: ${u}`,
+    friend:   u => `Hey!${freeSnippet} I use Spontany to find when friends are free — join so we can see our overlap: ${u}`
+  };
+  for (const type of ['coparent','partner','friend']) {
+    try {
+      const r = await fetch(`/api/invites/generate?token=${token}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ relationship_type: type })
+      });
+      if (!r.ok) continue;
+      const { invite_url } = await r.json();
+      document.getElementById('inv-url-' + type).textContent = invite_url;
+      document.getElementById('inv-wa-' + type).href = 'https://wa.me/?text=' + encodeURIComponent(msgs[type](invite_url));
+    } catch(e) { /* silent */ }
+  }
+}
+
+function switchInviteTab(type) {
+  ['coparent','partner','friend'].forEach(t => {
+    document.getElementById('itab-' + t)?.classList.toggle('active', t === type);
+    const p = document.getElementById('inv-panel-' + t);
+    if (p) p.style.display = t === type ? 'block' : 'none';
+  });
+}
+
+function copyInvite(type) {
+  const url = document.getElementById('inv-url-' + type)?.textContent || '';
+  navigator.clipboard.writeText(url).then(() => showToast('✓ Link copied!'));
+}
+
+function showToast(msg) {
+  let t = document.getElementById('ob-toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'ob-toast';
+    t.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#202124;color:white;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;transition:opacity 0.3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+function goToCalendar() {
+  window.location.href = '/calendar?token=' + createdToken;
+}
+
+// ── Invite validation ──────────────────────────────────────────────────────────
+async function validateInvite() {
+  if (!INVITE_TOKEN || INVITE_TOKEN === 'undefined') {
+    showWizardError('Missing invite token — the link may be broken.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/invites/' + INVITE_TOKEN);
+    if (res.status === 409) {
+      const saved = localStorage.getItem('myToken');
+      if (saved) { window.location.href = '/calendar?token=' + saved; return; }
+      showWizardError('This invite has already been used. Ask for a new one.');
+      return;
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || 'HTTP ' + res.status);
+    }
+    const data = await res.json();
+    ownerName     = data.owner_name        || 'your co-parent';
+    inviteRelType = data.relationship_type || 'friend';
+    document.getElementById('isl-0').innerHTML = `
+      <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
+      SPONTANY
+    </div>
+      <div class="intro-big">${ownerName}<br>invited you 👋</div>
+      <div class="intro-sub" style="margin-top:10px;">You're joining ${ownerName} on Spontany.</div>
+    `;
+    showIntroSlide(0);
+  } catch(err) {
+    console.error('[onboard] validateInvite error:', err);
+    showWizardError('Could not validate this invite link. (' + err.message + ')');
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (MODE === 'direct') {
+    if (GOOGLE_NAME) {
+      const el = document.getElementById('user-name');
+      if (el) { el.value = GOOGLE_NAME; checkStep1Ready(); }
+    }
+    // Hide email field — already verified via magic link
+    document.getElementById('email-group').style.display = 'none';
+    // Generic welcome intro
+    document.getElementById('isl-0').innerHTML = `
+      <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
+      SPONTANY
+    </div>
+      <div class="intro-big">Welcome to<br>Spontany</div>
+    `;
+    showIntroSlide(0);
+  } else {
+    validateInvite();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && currentStep === 1) step1Next();
+});
+</script>
+</body>
+</html>
