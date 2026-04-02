@@ -2237,6 +2237,14 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
             <span class="sc-leg-swatch" style="outline:2px solid var(--lime);outline-offset:-1px;background:rgba(230,249,82,0.18);"></span> Selected
           </div>
         </div>
+        <!-- Time picker -->
+        <div class="sc-time-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:0 2px;">
+          <span style="font-size:12px;color:var(--muted);white-space:nowrap;">🕐 Time</span>
+          <input id="sc-time-input" type="text" inputmode="text" placeholder="e.g. 7:30 PM"
+            style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);font-family:inherit;outline:none;min-width:0;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'; _scTimeChanged(this.value);">
+          <button onclick="_scSkipTime()" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">All day</button>
+        </div>
       </div>
     </div>
 
@@ -7052,6 +7060,7 @@ const _sc = {
   data:           null,       // response from /api/smart-suggest
   selWho:         new Set(),  // selected connection IDs
   selDate:        null,       // 'YYYY-MM-DD'
+  selTime:        null,       // '7:30 PM' or null (all-day)
   selWhat:        null,       // {emoji,title,category} | {custom:'text'} | null
   whatInputVal:   '',
   removed:        new Set(),  // connection IDs removed at review
@@ -7067,6 +7076,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   _sc.data         = null;
   _sc.selWho       = new Set();
   _sc.selDate      = prefillSaved?.date || prefillDate || null;
+  _sc.selTime      = null;
   _sc.selWhat      = prefillOpp ? { custom: prefillOpp } : null;
   _sc.whatInputVal = '';
   _sc.removed        = new Set();
@@ -7342,6 +7352,20 @@ let _scCalYear = null, _scCalMonth = null;
 
 function renderSCWhen() { renderSCCal(); } // alias kept for legacy calls
 
+function _scTimeChanged(val) {
+  val = val.trim();
+  if (!val) { _sc.selTime = null; renderSCSummary(); return; }
+  _sc.selTime = val;
+  renderSCSummary();
+}
+
+function _scSkipTime() {
+  _sc.selTime = null;
+  const inp = document.getElementById('sc-time-input');
+  if (inp) inp.value = '';
+  renderSCSummary();
+}
+
 function renderSCCal() {
   const grid = document.getElementById('sc-cal-grid');
   if (!grid || !_sc.data) return;
@@ -7569,13 +7593,21 @@ async function _scUnfurlUrl(url) {
       renderSCWhen();
     }
 
+    // ── Auto-apply time if found ──
+    if (data.time) {
+      _sc.selTime = data.time;
+      const timeEl = document.getElementById('sc-time-input');
+      if (timeEl) timeEl.value = data.time;
+    }
+
     const { main: dateMain } = dateApplied ? _scFmtDate(data.date) : {};
+    const timeBadge = data.time ? ` · 🕐 ${data.time}` : '';
 
     box.innerHTML = `<div class="sc-what-unfurl">
       ${data.image ? `<img class="sc-what-unfurl-img" src="${data.image}" onerror="this.style.display='none'">` : ''}
       <div class="sc-what-unfurl-info">
         <div class="sc-what-unfurl-title">${data.title}</div>
-        <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}${dateApplied ? ` · 📅 ${dateMain}` : ''}</div>
+        <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}${dateApplied ? ` · 📅 ${dateMain}` : ''}${timeBadge}</div>
       </div>
       <span class="sc-what-unfurl-close" onclick="_scClearUnfurl()">✕</span>
     </div>`;
@@ -7599,7 +7631,10 @@ function _scClearUnfurl() {
   document.getElementById('sc-what-unfurl').style.display = 'none';
   document.getElementById('sc-what-input').value = '';
   _sc.selWhat = null;
+  _sc.selTime = null;
   _sc.whatInputVal = '';
+  const timeInp = document.getElementById('sc-time-input');
+  if (timeInp) timeInp.value = '';
   renderSCSummary();
 }
 
@@ -7688,7 +7723,7 @@ function renderSCSummary() {
 
   if (_sc.selDate) {
     const { main } = _scFmtDate(_sc.selDate);
-    parts.push(main);
+    parts.push(main + (_sc.selTime ? ` ${_sc.selTime}` : ''));
   }
 
   if (_sc.selWhat) {
@@ -7798,7 +7833,7 @@ function renderSCReview() {
       <div class="sc-review-summary-line" style="font-size:16px;font-weight:800;text-align:center;margin-bottom:10px;">
         ${whatText || 'Hangout'}
       </div>
-      <div class="sc-review-summary-line" style="text-align:center;">📅 <strong>${dateMain}</strong></div>
+      <div class="sc-review-summary-line" style="text-align:center;">📅 <strong>${dateMain}</strong>${_sc.selTime ? ` · 🕐 ${_sc.selTime}` : ''}</div>
       ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">No fixed date — soft invite</div>` : ''}
     </div>
     <div style="margin:16px 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Inviting</div>
@@ -7929,7 +7964,7 @@ async function _scPreCreateOuting() {
     const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl }),
+      body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -7969,7 +8004,7 @@ async function finalizeSC() {
       fetch(`/api/outings?token=${MY_TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl }),
+        body: JSON.stringify({ date: _sc.selDate, message: whatText, invitees, image_url: imageUrl, event_time: _sc.selTime || null }),
       }).then(r => { if (r.ok) loadOutings(); });
     }
   }

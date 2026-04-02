@@ -90,27 +90,24 @@ router.post('/opportunities/direct', (req, res) => {
     if (existing) return res.json({ id: existing.id, ok: true, duplicate: true });
   }
 
-  const { randomUUID } = require('crypto');
-  const id = randomUUID();
-  createOpportunity(
-    id,
-    title.slice(0, 200),
-    type || 'venue',
-    category || null,
-    JSON.stringify(tags || []),
-    start_time || null,
-    end_time   || null,
-    location_name  || null,
-    location_lat   || null,
-    location_lng   || null,
-    price_tier     || null,
-    'manual',                  // source_type
-    null,                      // source_domain
-    source_url     || null,    // source_url
-    confidence_score ?? 0.70,  // confidence_score
-    'public',                  // visibility
-    user.id                    // created_by
-  );
+  const draft = {
+    title:            title.slice(0, 200),
+    type:             type || 'venue',
+    category:         category || null,
+    tags:             tags || [],
+    start_time:       start_time || null,
+    end_time:         end_time || null,
+    location_name:    location_name || null,
+    location_lat:     location_lat || null,
+    location_lng:     location_lng || null,
+    price_tier:       price_tier || null,
+    source_type:      'manual',
+    source_domain:    null,
+    source_url:       source_url || null,
+    confidence_score: confidence_score ?? 0.70,
+    visibility:       'public',
+  };
+  const id = createOpportunity(draft, user.id);
   res.json({ id, ok: true });
 });
 

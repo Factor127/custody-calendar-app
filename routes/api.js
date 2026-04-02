@@ -1238,7 +1238,7 @@ router.post('/outings', (req, res) => {
   if (!me) return;
 
   const { id: pregenId, date, message, invitees,
-          venue, venue_address, venue_place_id, opportunity_id, image_url, status } = req.body;
+          venue, venue_address, venue_place_id, opportunity_id, image_url, status, event_time } = req.body;
   if (!Array.isArray(invitees) || (invitees.length === 0 && status !== 'saved')) {
     return res.status(400).json({ error: 'invitees required' });
   }
@@ -1247,7 +1247,7 @@ router.post('/outings', (req, res) => {
   q.createOuting.run(
     outingId, me.id, date, message || null,
     venue || null, venue_address || null, venue_place_id || null, opportunity_id || null, image_url || null,
-    status || 'pending'
+    status || 'pending', event_time || null
   );
 
   for (const inv of invitees) {
@@ -1499,6 +1499,25 @@ function _parseDateFromText(text) {
   return `${year}-${String(mon + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 }
 
+// Extract a time string like "7:30 PM" or "19:30" from text
+function _parseTimeFromText(text) {
+  if (!text) return null;
+  // 12-hour: "7:30 PM", "7:30PM", "7 PM", "7PM"
+  const m12 = text.match(/\b(\d{1,2}):?(\d{2})?\s*(AM|PM)\b/i);
+  if (m12) {
+    let h = parseInt(m12[1], 10);
+    const min = m12[2] ? parseInt(m12[2], 10) : 0;
+    const ampm = m12[3].toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+  }
+  // 24-hour: "19:30", "20:00" (but not things like years "2026")
+  const m24 = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if (m24) return `${m24[1].padStart(2,'0')}:${m24[2]}`;
+  return null;
+}
+
 // Return venue UTC offset in hours for cities found in text (daylight-saving adjusted).
 // Returns null if venue city not recognised.
 function _venueUtcOffset(text) {
@@ -1555,19 +1574,34 @@ router.get('/unfurl', async (req, res) => {
     const image       = meta('og:image') || meta('twitter:image') || null;
     const siteName    = meta('og:site_name') || null;
 
-    // Date: structured tags first → JSON-LD → natural-language in description/title → URL pattern
+    // Date + Time: structured tags first → JSON-LD → natural-language in description/title → URL pattern
     let date = meta('article:published_time') || meta('og:updated_time')
              || meta('event:start_time') || meta('datePublished') || null;
+    let time = null; // extracted event time e.g. "20:00"
     let textParsed = false; // true when date came from natural-language (venue local time, no tz info)
     if (!date) {
       const jld = html.match(/"startDate"\s*:\s*"([^"]{6,30})"/i);
       if (jld) date = jld[1];
+    }
+    // Extract time from structured datetime before truncating to date-only
+    if (date && date.length >= 16) {
+      // ISO datetime like "2026-04-13T20:00:00" — extract HH:MM
+      const tMatch = date.match(/T(\d{2}):(\d{2})/);
+      if (tMatch) time = `${tMatch[1]}:${tMatch[2]}`;
     }
     if (!date) { date = _parseDateFromText(description); if (date) textParsed = true; }
     if (!date) { date = _parseDateFromText(title);       if (date) textParsed = true; }
     if (!date) {
       const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    }
+    // If no time found from structured data, try natural-language extraction
+    if (!time) time = _parseTimeFromText(description);
+    if (!time) time = _parseTimeFromText(title);
+    // Also try JSON-LD "doorTime" or "startTime" fields
+    if (!time) {
+      const doorTime = html.match(/"(?:doorTime|startTime)"\s*:\s*"([^"]{3,20})"/i);
+      if (doorTime) time = _parseTimeFromText(doorTime[1]);
     }
     if (date) {
       const d = new Date(date);
@@ -1594,8 +1628,17 @@ router.get('/unfurl', async (req, res) => {
       }
     }
 
+    // Format time for display (e.g. "20:00" → "8:00 PM")
+    let timeDisplay = null;
+    if (time) {
+      const [hh, mm] = time.split(':').map(Number);
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+      timeDisplay = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+    }
+
     if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });
-    res.json({ title, description, image, siteName, date, url });
+    res.json({ title, description, image, siteName, date, time: timeDisplay, url });
   } catch (err) {
     res.status(500).json({ error: 'Could not fetch URL: ' + err.message });
   }
