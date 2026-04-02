@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spontany — Issue Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0c0c15;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  h1 { color: #f97316; font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .tab {
+    padding: 8px 16px; border: none; border-radius: 6px 6px 0 0;
+    background: #1e1e2e; color: #94a3b8; cursor: pointer; font-size: 0.9rem;
+  }
+  .tab.active { background: #131321; color: #f97316; border-bottom: 2px solid #f97316; }
+
+  /* New Issue */
+  .new-issue { background: #131321; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .new-issue h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 12px; }
+  .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .input-row input, .input-row select, .input-row textarea {
+    flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #2d2d44;
+    background: #1e1e2e; color: #e2e8f0; font-size: 0.9rem;
+  }
+  textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+  .mic-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: #2d2d44; color: #94a3b8; font-size: 1.2rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .mic-btn.recording { background: #dc2626; color: #fff; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  .btn {
+    padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 600;
+  }
+  .btn-primary { background: #f97316; color: #fff; }
+  .btn-primary:hover { background: #ea580c; }
+  .btn-secondary { background: #7c5cbf; color: #fff; }
+  .btn-secondary:hover { background: #6d4daa; }
+  .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+  .btn-ghost { background: transparent; color: #94a3b8; border: 1px solid #2d2d44; }
+  .btn-ghost:hover { border-color: #94a3b8; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .actions-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+  /* Filters */
+  .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filters select, .filters input {
+    padding: 6px 10px; border-radius: 6px; border: 1px solid #2d2d44;
+    background: #1e1e2e; color: #e2e8f0; font-size: 0.85rem;
+  }
+  .filters input { flex: 1; min-width: 150px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .badge-critical { background: #dc2626; color: #fff; }
+  .badge-high { background: #f97316; color: #fff; }
+  .badge-medium { background: #eab308; color: #000; }
+  .badge-low { background: #22c55e; color: #000; }
+  .badge-open { background: #3b82f6; color: #fff; }
+  .badge-in-progress { background: #a855f7; color: #fff; }
+  .badge-done { background: #22c55e; color: #000; }
+  .badge-wont-fix { background: #6b7280; color: #fff; }
+
+  /* Issue list */
+  .issue-list { display: flex; flex-direction: column; gap: 8px; }
+  .issue-card {
+    background: #131321; border-radius: 8px; padding: 14px; border-left: 4px solid #2d2d44;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .issue-card:hover { border-left-color: #f97316; }
+  .issue-card.priority-critical { border-left-color: #dc2626; }
+  .issue-card.priority-high { border-left-color: #f97316; }
+  .issue-card.priority-medium { border-left-color: #eab308; }
+  .issue-card.priority-low { border-left-color: #22c55e; }
+  .issue-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .issue-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+  .issue-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .issue-date { color: #64748b; font-size: 0.75rem; margin-top: 4px; }
+  .issue-card.status-done { opacity: 0.5; }
+
+  /* Expanded issue */
+  .issue-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d2d44; }
+  .issue-card.expanded .issue-detail { display: block; }
+  .notes-list { margin: 8px 0; }
+  .note-item {
+    background: #1e1e2e; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;
+    font-size: 0.85rem;
+  }
+  .note-item .note-date { color: #64748b; font-size: 0.7rem; }
+  .note-input-row { display: flex; gap: 6px; margin-top: 8px; }
+  .note-input-row input { flex: 1; }
+  .detail-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .detail-actions select {
+    padding: 4px 8px; border-radius: 6px; border: 1px solid #2d2d44;
+    background: #1e1e2e; color: #e2e8f0; font-size: 0.8rem;
+  }
+
+  /* Insights panel */
+  .insights { background: #131321; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .insights h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 12px; }
+  .insight-section { margin-bottom: 14px; }
+  .insight-section h3 { font-size: 0.85rem; color: #f97316; margin-bottom: 6px; }
+  .insight-item {
+    background: #1e1e2e; border-radius: 6px; padding: 8px 10px; margin-bottom: 4px;
+    font-size: 0.85rem; color: #cbd5e1;
+  }
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 1.5rem; font-weight: 700; color: #f97316; }
+  .stat-label { font-size: 0.75rem; color: #94a3b8; }
+
+  .empty-state { text-align: center; padding: 40px; color: #64748b; }
+  .speech-unsupported { background: #7f1d1d; color: #fca5a5; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Duplicate group */
+  .dup-group { border: 1px dashed #7c5cbf; border-radius: 6px; padding: 8px; margin-bottom: 6px; }
+  .dup-group-title { font-size: 0.8rem; color: #a78bfa; margin-bottom: 4px; }
+
+  /* Prompt toggle */
+  .prompt-toggle {
+    width: 32px; height: 32px; border-radius: 6px; border: 2px solid #2d2d44;
+    background: transparent; color: #64748b; cursor: pointer; font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .prompt-toggle:hover { border-color: #a78bfa; color: #a78bfa; }
+  .prompt-toggle.active { background: #7c5cbf; border-color: #7c5cbf; color: #fff; }
+
+  /* Prompt builder */
+  .prompt-builder {
+    background: #131321; border-radius: 8px; padding: 16px; margin-bottom: 20px;
+    border: 1px solid #2d2d44;
+  }
+  .prompt-builder h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 4px; }
+  .prompt-builder .prompt-count { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; }
+  .prompt-builder textarea {
+    width: 100%; min-height: 200px; padding: 12px; border-radius: 6px;
+    border: 1px solid #2d2d44; background: #1e1e2e; color: #e2e8f0;
+    font-family: 'Consolas', 'Monaco', monospace; font-size: 0.85rem;
+    resize: vertical; line-height: 1.5;
+  }
+  .prompt-actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .copy-feedback { color: #22c55e; font-size: 0.8rem; opacity: 0; transition: opacity 0.3s; }
+  .copy-feedback.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Spontany Issue Tracker</h1>
+<p class="subtitle">Voice-powered issue logging with smart prioritization</p>
+
+<div id="speechWarning" class="speech-unsupported" style="display:none;">
+  Speech recognition is not supported in this browser. Use Chrome or Edge for voice input.
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="issues" onclick="switchTab('issues')">Issues</button>
+  <button class="tab" data-tab="insights" onclick="switchTab('insights')">Insights</button>
+</div>
+
+<!-- ISSUES TAB -->
+<div id="tab-issues" class="tab-content active">
+  <!-- New Issue Form -->
+  <div class="new-issue">
+    <h2>Log New Issue</h2>
+    <div class="input-row">
+      <textarea id="newDesc" placeholder="Describe the issue (or use mic)..."></textarea>
+      <button class="mic-btn" id="micDesc" onclick="toggleSpeech('newDesc', 'micDesc')" title="Speak issue description">&#127908;</button>
+    </div>
+    <div class="input-row">
+      <select id="newPriority">
+        <option value="medium">Medium Priority</option>
+        <option value="critical">Critical</option>
+        <option value="high">High</option>
+        <option value="low">Low</option>
+      </select>
+      <select id="newCategory">
+        <option value="bug">Bug</option>
+        <option value="feature">Feature</option>
+        <option value="ux">UX</option>
+        <option value="infra">Infrastructure</option>
+        <option value="content">Content</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary" onclick="addIssue()">Add Issue</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search issues..." oninput="renderIssues()" />
+    <select id="filterStatus" onchange="renderIssues()">
+      <option value="all">All Status</option>
+      <option value="open">Open</option>
+      <option value="in-progress">In Progress</option>
+      <option value="done">Done</option>
+      <option value="wont-fix">Won't Fix</option>
+    </select>
+    <select id="filterPriority" onchange="renderIssues()">
+      <option value="all">All Priority</option>
+      <option value="critical">Critical</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <select id="sortBy" onchange="renderIssues()">
+      <option value="priority">Sort: Priority</option>
+      <option value="newest">Sort: Newest</option>
+      <option value="oldest">Sort: Oldest</option>
+      <option value="status">Sort: Status</option>
+    </select>
+  </div>
+
+  <div id="issueList" class="issue-list"></div>
+
+  <!-- Prompt Builder -->
+  <div class="prompt-builder" id="promptBuilder" style="display:none;">
+    <h2>Prompt Builder</h2>
+    <div class="prompt-count" id="promptCount">0 issues selected</div>
+    <textarea id="promptText"></textarea>
+    <div class="prompt-actions">
+      <button class="btn btn-primary" onclick="copyPrompt()">Copy All</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearPromptSelections()">Clear Selections</button>
+      <span class="copy-feedback" id="copyFeedback">Copied!</span>
+    </div>
+  </div>
+</div>
+
+<!-- INSIGHTS TAB -->
+<div id="tab-insights" class="tab-content">
+  <div class="insights" id="insightsPanel"></div>
+</div>
+
+<script>
+// --- Data ---
+const STORAGE_KEY = 'spontany_issues';
+let issues = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let activeRecognition = null;
+let activeTargetId = null;
+const promptSelected = new Set();
+
+const PRIORITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+const STATUS_ORDER = { open: 0, 'in-progress': 1, done: 2, 'wont-fix': 3 };
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// --- Speech ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+  document.getElementById('speechWarning').style.display = 'block';
+}
+
+function toggleSpeech(targetId, btnId) {
+  if (!SpeechRecognition) return;
+  const btn = document.getElementById(btnId);
+
+  if (activeRecognition && activeTargetId === targetId) {
+    activeRecognition.stop();
+    return;
+  }
+  if (activeRecognition) {
+    activeRecognition.stop();
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  const target = document.getElementById(targetId);
+  const existingText = target.value;
+  let finalTranscript = '';
+
+  recognition.onstart = () => {
+    btn.classList.add('recording');
+    activeRecognition = recognition;
+    activeTargetId = targetId;
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalTranscript += e.results[i][0].transcript;
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    target.value = (existingText ? existingText + ' ' : '') + finalTranscript + interim;
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('recording');
+    target.value = (existingText ? existingText + ' ' : '') + finalTranscript;
+    if (activeTargetId === targetId) {
+      activeRecognition = null;
+      activeTargetId = null;
+    }
+  };
+
+  recognition.onerror = (e) => {
+    btn.classList.remove('recording');
+    activeRecognition = null;
+    activeTargetId = null;
+    if (e.error !== 'aborted') console.error('Speech error:', e.error);
+  };
+
+  recognition.start();
+}
+
+// --- Issues ---
+function addIssue() {
+  const desc = document.getElementById('newDesc').value.trim();
+  if (!desc) return;
+  const priority = document.getElementById('newPriority').value;
+  const category = document.getElementById('newCategory').value;
+
+  issues.unshift({
+    id: genId(),
+    description: desc,
+    priority,
+    category,
+    status: 'open',
+    notes: [],
+    created: Date.now(),
+    updated: Date.now()
+  });
+  save();
+  document.getElementById('newDesc').value = '';
+  document.getElementById('newPriority').value = 'medium';
+  renderIssues();
+}
+
+function renderIssues() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filterStatus = document.getElementById('filterStatus').value;
+  const filterPriority = document.getElementById('filterPriority').value;
+  const sortBy = document.getElementById('sortBy').value;
+
+  let filtered = issues.filter(i => {
+    if (filterStatus !== 'all' && i.status !== filterStatus) return false;
+    if (filterPriority !== 'all' && i.priority !== filterPriority) return false;
+    if (search && !(i.description || '').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (sortBy === 'priority') return (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
+    if (sortBy === 'newest') return b.created - a.created;
+    if (sortBy === 'oldest') return a.created - b.created;
+    if (sortBy === 'status') return (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+    return 0;
+  });
+
+  const list = document.getElementById('issueList');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state">No issues found. Use the mic or type to log one.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(i => `
+    <div class="issue-card priority-${i.priority} status-${i.status}" id="card-${i.id}" onclick="toggleExpand('${i.id}')">
+      <div class="issue-header">
+        <button class="prompt-toggle ${promptSelected.has(i.id)?'active':''}" onclick="togglePrompt('${i.id}'); event.stopPropagation();" title="Add to prompt">+</button>
+        <span class="issue-title">${esc(i.description)}</span>
+        <span class="badge badge-${i.status}">${i.status}</span>
+      </div>
+      <div class="issue-meta">
+        <span class="badge badge-${i.priority}">${i.priority}</span>
+        <span class="badge" style="background:#2d2d44;color:#94a3b8;">${i.category}</span>
+        <span class="issue-date">${fmtDate(i.created)}</span>
+      </div>
+
+      <div class="issue-detail">
+        <div class="detail-actions">
+          <select onchange="updateStatus('${i.id}', this.value); event.stopPropagation();" onclick="event.stopPropagation();">
+            <option value="open" ${i.status==='open'?'selected':''}>Open</option>
+            <option value="in-progress" ${i.status==='in-progress'?'selected':''}>In Progress</option>
+            <option value="done" ${i.status==='done'?'selected':''}>Done</option>
+            <option value="wont-fix" ${i.status==="wont-fix"?'selected':''}>Won't Fix</option>
+          </select>
+          <select onchange="updatePriority('${i.id}', this.value); event.stopPropagation();" onclick="event.stopPropagation();">
+            <option value="critical" ${i.priority==='critical'?'selected':''}>Critical</option>
+            <option value="high" ${i.priority==='high'?'selected':''}>High</option>
+            <option value="medium" ${i.priority==='medium'?'selected':''}>Medium</option>
+            <option value="low" ${i.priority==='low'?'selected':''}>Low</option>
+          </select>
+          <button class="btn btn-sm btn-danger" onclick="deleteIssue('${i.id}'); event.stopPropagation();">Delete</button>
+        </div>
+
+        <h4 style="margin-top:10px;font-size:0.85rem;color:#a78bfa;">Notes (${i.notes.length})</h4>
+        <div class="notes-list">
+          ${i.notes.map(n => `
+            <div class="note-item">
+              <span class="note-date">${fmtDate(n.ts)}</span>
+              <p>${esc(n.text)}</p>
+            </div>
+          `).join('')}
+        </div>
+        <div class="note-input-row" onclick="event.stopPropagation();">
+          <input type="text" id="note-${i.id}" placeholder="Add a note..." onkeydown="if(event.key==='Enter'){addNote('${i.id}');}" />
+          <button class="mic-btn" id="mic-note-${i.id}" onclick="toggleSpeech('note-${i.id}', 'mic-note-${i.id}')">&#127908;</button>
+          <button class="btn btn-sm btn-secondary" onclick="addNote('${i.id}')">Add</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleExpand(id) {
+  const card = document.getElementById('card-' + id);
+  card.classList.toggle('expanded');
+}
+
+function updateStatus(id, status) {
+  const i = issues.find(x => x.id === id);
+  if (i) { i.status = status; i.updated = Date.now(); save(); renderIssues(); }
+}
+
+function updatePriority(id, priority) {
+  const i = issues.find(x => x.id === id);
+  if (i) { i.priority = priority; i.updated = Date.now(); save(); renderIssues(); }
+}
+
+function addNote(id) {
+  const input = document.getElementById('note-' + id);
+  const text = input.value.trim();
+  if (!text) return;
+  const i = issues.find(x => x.id === id);
+  if (i) {
+    i.notes.push({ text, ts: Date.now() });
+    i.updated = Date.now();
+    save();
+    renderIssues();
+    // Re-expand after render
+    setTimeout(() => {
+      const card = document.getElementById('card-' + id);
+      if (card) card.classList.add('expanded');
+    }, 10);
+  }
+}
+
+function deleteIssue(id) {
+  if (!confirm('Delete this issue?')) return;
+  issues = issues.filter(x => x.id !== id);
+  save();
+  renderIssues();
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Prompt Builder ---
+function togglePrompt(id) {
+  if (promptSelected.has(id)) {
+    promptSelected.delete(id);
+  } else {
+    promptSelected.add(id);
+  }
+  renderIssues();
+  buildPrompt();
+}
+
+function buildPrompt() {
+  const builder = document.getElementById('promptBuilder');
+  const textarea = document.getElementById('promptText');
+  const countEl = document.getElementById('promptCount');
+
+  if (promptSelected.size === 0) {
+    builder.style.display = 'none';
+    return;
+  }
+
+  builder.style.display = 'block';
+  countEl.textContent = `${promptSelected.size} issue${promptSelected.size > 1 ? 's' : ''} selected`;
+
+  const selected = issues.filter(i => promptSelected.has(i.id));
+  const lines = ['Please address the following issues in the Spontany codebase:\n'];
+
+  selected.forEach((issue, idx) => {
+    lines.push(`${idx + 1}. [${issue.priority.toUpperCase()}] [${issue.category}] ${issue.description}`);
+    if (issue.notes.length) {
+      issue.notes.forEach(n => {
+        lines.push(`   - Note: ${n.text}`);
+      });
+    }
+    lines.push('');
+  });
+
+  lines.push('For each issue:');
+  lines.push('- Identify the relevant file(s)');
+  lines.push('- Implement the fix or feature');
+  lines.push('- Confirm what was changed');
+
+  textarea.value = lines.join('\n');
+}
+
+function copyPrompt() {
+  const textarea = document.getElementById('promptText');
+  navigator.clipboard.writeText(textarea.value).then(() => {
+    const fb = document.getElementById('copyFeedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 1500);
+  });
+}
+
+function clearPromptSelections() {
+  promptSelected.clear();
+  renderIssues();
+  buildPrompt();
+}
+
+// --- Insights ---
+function renderInsights() {
+  const panel = document.getElementById('insightsPanel');
+  const total = issues.length;
+  const open = issues.filter(i => i.status === 'open').length;
+  const inProg = issues.filter(i => i.status === 'in-progress').length;
+  const done = issues.filter(i => i.status === 'done').length;
+  const critical = issues.filter(i => i.priority === 'critical' && i.status !== 'done' && i.status !== 'wont-fix').length;
+  const high = issues.filter(i => i.priority === 'high' && i.status !== 'done' && i.status !== 'wont-fix').length;
+
+  // Find potential duplicates (simple word overlap)
+  const dupes = findDuplicates();
+
+  // Suggested next steps
+  const nextSteps = suggestNextSteps();
+
+  // Category breakdown
+  const cats = {};
+  issues.filter(i => i.status !== 'done' && i.status !== 'wont-fix').forEach(i => {
+    cats[i.category] = (cats[i.category] || 0) + 1;
+  });
+
+  panel.innerHTML = `
+    <h2>Project Insights</h2>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num" style="color:#3b82f6">${open}</div><div class="stat-label">Open</div></div>
+      <div class="stat"><div class="stat-num" style="color:#a855f7">${inProg}</div><div class="stat-label">In Progress</div></div>
+      <div class="stat"><div class="stat-num" style="color:#22c55e">${done}</div><div class="stat-label">Done</div></div>
+      <div class="stat"><div class="stat-num" style="color:#dc2626">${critical}</div><div class="stat-label">Critical</div></div>
+    </div>
+
+    ${critical + high > 0 ? `
+    <div class="insight-section">
+      <h3>Priority Queue (Critical + High, Open)</h3>
+      ${issues
+        .filter(i => (i.priority === 'critical' || i.priority === 'high') && (i.status === 'open' || i.status === 'in-progress'))
+        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+        .map(i => `<div class="insight-item"><span class="badge badge-${i.priority}" style="margin-right:6px;">${i.priority}</span> ${esc(i.description)} <span class="badge badge-${i.status}" style="margin-left:6px;">${i.status}</span></div>`)
+        .join('')}
+    </div>` : ''}
+
+    ${nextSteps.length ? `
+    <div class="insight-section">
+      <h3>Suggested Next Steps</h3>
+      ${nextSteps.map(s => `<div class="insight-item">${s}</div>`).join('')}
+    </div>` : ''}
+
+    ${dupes.length ? `
+    <div class="insight-section">
+      <h3>Potential Duplicates</h3>
+      ${dupes.map(g => `
+        <div class="dup-group">
+          <div class="dup-group-title">Similar issues:</div>
+          ${g.map(i => `<div class="insight-item" style="cursor:pointer" onclick="switchTab('issues');setTimeout(()=>{const c=document.getElementById('card-${i.id}');if(c){c.scrollIntoView({behavior:'smooth'});c.classList.add('expanded');}},100);">${esc(i.description)}</div>`).join('')}
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <div class="insight-section">
+      <h3>Open Issues by Category</h3>
+      ${Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([cat, count]) =>
+        `<div class="insight-item">${cat}: ${count} open</div>`
+      ).join('') || '<div class="insight-item">No open issues</div>'}
+    </div>
+
+    <div class="insight-section">
+      <h3>Stale Issues (no updates in 3+ days)</h3>
+      ${issues.filter(i => i.status !== 'done' && i.status !== 'wont-fix' && (Date.now() - i.updated > 3 * 86400000))
+        .map(i => `<div class="insight-item">${esc(i.description)} — last updated ${fmtDate(i.updated)}</div>`)
+        .join('') || '<div class="insight-item">None</div>'}
+    </div>
+  `;
+}
+
+function findDuplicates() {
+  const groups = [];
+  const used = new Set();
+  const active = issues.filter(i => i.status !== 'done' && i.status !== 'wont-fix');
+
+  for (let i = 0; i < active.length; i++) {
+    if (used.has(active[i].id)) continue;
+    const group = [active[i]];
+    const wordsA = getWords(active[i].title);
+
+    for (let j = i + 1; j < active.length; j++) {
+      if (used.has(active[j].id)) continue;
+      const wordsB = getWords(active[j].title);
+      const overlap = wordsA.filter(w => wordsB.includes(w));
+      const similarity = overlap.length / Math.max(wordsA.length, wordsB.length);
+      if (similarity >= 0.5 && overlap.length >= 2) {
+        group.push(active[j]);
+        used.add(active[j].id);
+      }
+    }
+    if (group.length > 1) {
+      used.add(active[i].id);
+      groups.push(group);
+    }
+  }
+  return groups;
+}
+
+function getWords(text) {
+  return text.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(w => w.length > 2);
+}
+
+function suggestNextSteps() {
+  const steps = [];
+  const active = issues.filter(i => i.status !== 'done' && i.status !== 'wont-fix');
+  const critical = active.filter(i => i.priority === 'critical');
+  const inProg = active.filter(i => i.status === 'in-progress');
+
+  if (critical.length > 0) {
+    steps.push(`Tackle ${critical.length} critical issue${critical.length > 1 ? 's' : ''} first: "${esc(critical[0].title)}"`);
+  }
+  if (inProg.length > 3) {
+    steps.push(`You have ${inProg.length} issues in progress — consider finishing some before starting new ones.`);
+  }
+  if (inProg.length === 0 && active.length > 0) {
+    const next = active.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])[0];
+    steps.push(`Nothing in progress. Start with: "${esc(next.title)}" (${next.priority})`);
+  }
+
+  const cats = {};
+  active.forEach(i => { cats[i.category] = (cats[i.category] || 0) + 1; });
+  const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+  if (topCat && topCat[1] >= 3) {
+    steps.push(`Most issues are in "${topCat[0]}" (${topCat[1]}) — consider a focused sprint on that area.`);
+  }
+
+  const dupes = findDuplicates();
+  if (dupes.length > 0) {
+    steps.push(`${dupes.length} potential duplicate group${dupes.length > 1 ? 's' : ''} found — review and merge.`);
+  }
+
+  return steps;
+}
+
+// --- Tabs ---
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
+  if (tab === 'insights') renderInsights();
+}
+
+// --- Init ---
+renderIssues();
+</script>
+</body>
+</html>
