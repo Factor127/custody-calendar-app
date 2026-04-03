@@ -1705,7 +1705,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-what-opts { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
 
     /* MIDDLE — Who + When side by side */
-    .sc-middle { display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
+    .sc-middle { display:flex; flex-direction:column; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
 
     /* WHO row — horizontal scrollable below calendar */
     .sc-who-col { flex-shrink:0; border-top:1px solid var(--border); overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:8px 10px; display:flex; flex-direction:row; align-items:flex-start; gap:10px; scrollbar-width:none; }
@@ -1721,7 +1721,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-who-name { font-size:10px; color:var(--text); text-align:center; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* WHEN col — full width mini calendar */
-    .sc-when-col { flex:1; min-width:0; min-height:0; overflow:hidden; padding:10px 8px; display:flex; flex-direction:column; }
+    .sc-when-col { flex-shrink:0; padding:10px 8px; display:flex; flex-direction:column; }
     .sc-cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-shrink:0; }
     .sc-cal-month-label { font-size:12px; font-weight:700; color:var(--text); }
     .sc-cal-nav-btn { background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1; font-family:inherit; }
