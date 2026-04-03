@@ -7202,7 +7202,8 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   document.getElementById('sc-who-row').innerHTML =
     '<span style="color:var(--muted);font-size:12px;padding:4px;">Loading…</span>';
   document.getElementById('sc-cal-grid').innerHTML = '';
-  document.getElementById('sc-what-opts').innerHTML  = '';
+  const _optsEl = document.getElementById('sc-what-opts');
+  if (_optsEl) _optsEl.innerHTML = '';
   document.getElementById('sc-what-input').value     = '';
   document.getElementById('sc-clash-bar-when').innerHTML = '';
   document.getElementById('sc-what-unfurl').style.display = 'none';
