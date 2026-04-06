@@ -3,13 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Spontany — Do your schedules actually work?</title>
+  <title>Spontany - Do your schedules actually work?</title>
   <meta name="description" content="Two custody schedules. One answer. Find out if your free nights line up.">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#e6f952">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Meta Pixel - replace YOUR_PIXEL_ID with your actual pixel ID from Events Manager -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', 'YOUR_PIXEL_ID');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
+
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -75,7 +92,49 @@
       letter-spacing: 0.1em; text-transform: uppercase;
       display: flex; align-items: center; gap: 8px;
     }
-    .top-nav-logo img { border-radius: 6px; }
+    .top-nav-logo img { border-radius: 0; }
+
+    /* ── Splash screen ── */
+    .splash-screen {
+      display: none; padding: 0 28px 40px;
+      text-align: center;
+      min-height: calc(100vh - 80px);
+      flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .splash-screen.active { display: flex; }
+    .splash-logo {
+      width: 56px; height: 56px; border-radius: 14px; margin-bottom: 12px;
+    }
+    .splash-brand {
+      font-size: 13px; font-weight: 800; color: var(--muted);
+      letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 32px;
+    }
+    .splash-headline {
+      font-size: clamp(28px, 7vw, 38px);
+      font-weight: 900; color: white; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 32px;
+    }
+    .splash-headline em {
+      font-style: normal; color: var(--lime);
+    }
+    .splash-props {
+      display: flex; flex-direction: column; gap: 16px;
+      margin-bottom: 36px; text-align: left; width: 100%; max-width: 320px;
+    }
+    .splash-prop {
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .splash-prop-icon {
+      font-size: 20px; flex-shrink: 0; margin-top: 1px;
+    }
+    .splash-prop-text {
+      font-size: 14px; color: var(--text); line-height: 1.5;
+    }
+    .splash-prop-text strong { color: var(--lime); font-weight: 700; }
+    .splash-fine {
+      font-size: 12px; color: rgba(226,226,226,0.25); margin-top: 16px;
+    }
 
     /* ── Hero / Hook ── */
     .hero-screen {
@@ -323,12 +382,29 @@
       font-size: 13px; color: var(--text); line-height: 1.6;
     }
 
-    /* ── Signup inline ── */
+    /* ── Signup / Pitch section ── */
     .signup-section {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 14px; padding: 24px; margin-top: 20px; text-align: center;
     }
     .signup-section .screen-title { font-size: 20px; margin-bottom: 6px; }
+    .pitch-divider {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin: 28px 0 16px; text-align: center;
+    }
+    .pitch-cards {
+      display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 24px; text-align: left;
+    }
+    .pitch-card {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px; border-radius: 12px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    }
+    .pitch-card-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .pitch-card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .pitch-card-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
     .field-group { margin-bottom: 16px; }
     .field-label {
       display: block; font-size: 12px; font-weight: 700;
@@ -385,7 +461,7 @@
   <!-- Top nav -->
   <div class="top-nav">
     <div class="top-nav-logo">
-      <img src="/icon-192.png" alt="" width="24" height="24"> SPONTANY
+      <img src="/logo-wordmark.svg" alt="Spontany" height="28" style="display:block;">
     </div>
   </div>
 
@@ -393,12 +469,36 @@
   <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="splash-screen active" id="screen-splash">
+    <img src="/logo-wordmark.svg" alt="Spontany" style="height:48px;margin-bottom:32px;display:block;">
+    <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
+    <div class="splash-props">
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>See when you're both free</strong> - no awkward "do you have the kids?" texts</div>
+      </div>
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>Know before you ask</strong> - custody schedules overlaid in one view</div>
+      </div>
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>Plan dates in seconds</strong>, not days of back-and-forth</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="go('hook')">Check your match →</button>
+    <p class="splash-fine">Free. Private. 30 seconds.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: HOOK                                                       -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="hero-screen active" id="screen-hook">
-    <div class="hero-emoji">💑</div>
+  <div class="hero-screen" id="screen-hook">
+    <img src="/logo.svg" alt="Spontany" style="width:64px;height:64px;margin-bottom:28px;">
     <h1 class="hero-headline">Do your schedules actually work?</h1>
-    <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up — before the conversation gets awkward.</p>
+    <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up - before the conversation gets awkward.</p>
     <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
     <p class="hero-fine">Free. Private. Takes 30 seconds.</p>
   </div>
@@ -447,17 +547,17 @@
 
     <div class="fork-cards">
       <div class="fork-card" onclick="go('their-schedule')">
-        <div class="fork-emoji">🧠</div>
+        <img src="/logo.svg" alt="" class="fork-emoji" style="width:32px;height:32px;">
         <div>
           <div class="fork-label">I know their days</div>
           <div class="fork-sub">I'll enter their schedule myself.</div>
         </div>
       </div>
       <div class="fork-card" onclick="go('send-link')">
-        <div class="fork-emoji">📩</div>
+        <img src="/logo.svg" alt="" class="fork-emoji" style="width:32px;height:32px;">
         <div>
           <div class="fork-label">Let them fill it in</div>
-          <div class="fork-sub">I'll send them a link — more private.</div>
+          <div class="fork-sub">I'll send them a link - more private.</div>
         </div>
       </div>
     </div>
@@ -512,13 +612,13 @@
 
     <div class="share-section">
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Message preview</div>
-      <div class="share-msg-box" id="share-msg">Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">spontany.io/match/abc123</span></div>
+      <div class="share-msg-box" id="share-msg">Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">spontany.io/match/abc123</span></div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
         <button class="btn-wa" onclick="shareWhatsApp()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Send via WhatsApp
         </button>
-        <button class="btn-outline" onclick="copyLink()">📋 Copy link</button>
+        <button class="btn-outline" onclick="copyLink()">Copy link</button>
       </div>
     </div>
 
@@ -560,9 +660,9 @@
   <div class="screen" id="screen-waiting">
     <div style="text-align:center;padding:40px 0 20px;">
       <div class="waiting-anim">
-        <div class="waiting-cal a">📅</div>
+        <div class="waiting-cal a"><img src="/logo.svg" style="width:28px;height:28px;"></div>
         <div class="waiting-arrow">⟷</div>
-        <div class="waiting-cal b">📅</div>
+        <div class="waiting-cal b"><img src="/logo.svg" style="width:28px;height:28px;"></div>
       </div>
       <div class="screen-title" style="margin-bottom:8px;">Waiting for them...</div>
       <div class="screen-sub" style="max-width:280px;margin:0 auto;">We'll send you a notification the moment they fill in their schedule.</div>
@@ -577,12 +677,12 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           WhatsApp
         </button>
-        <button class="btn-outline" style="font-size:13px;padding:10px;" onclick="copyLink()">📋 Copy</button>
+        <button class="btn-outline" style="font-size:13px;padding:10px;" onclick="copyLink()">Copy</button>
       </div>
     </div>
 
     <div style="text-align:center;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">While you wait — want to see your own free days?</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">While you wait - want to see your own free days?</p>
       <button class="btn-outline" onclick="go('result')" style="max-width:260px;margin:0 auto;">Preview my calendar →</button>
     </div>
   </div>
@@ -603,14 +703,14 @@
       Your schedules line up more often than not. When you're both free, you'll know.
     </div>
 
-    <!-- Next shared dates — tappable, links to app -->
+    <!-- Next shared dates - tappable, links to app -->
     <div class="insight-card">
       <div class="insight-title">Your next shared free nights</div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Tap a date to plan something.</p>
       <div class="upcoming-dates" id="result-upcoming"></div>
     </div>
 
-    <!-- 3-month calendar — overlap only -->
+    <!-- 3-month calendar - overlap only -->
     <div class="insight-card">
       <div class="insight-title">3-month view</div>
       <div class="cal-legend">
@@ -619,17 +719,52 @@
       <div id="result-calendars"></div>
     </div>
 
-    <!-- Save CTA -->
+    <!-- Pitch + Signup CTA -->
+    <div class="pitch-divider">This was just the match</div>
+
     <div class="signup-section" id="result-signup">
-      <div class="screen-title">Save your calendar</div>
-      <div class="screen-sub" style="margin-bottom:16px;">Your schedule is already entered. Add a name and email to keep it.</div>
+      <div class="screen-title">Here's what Spontany does.</div>
+      <div class="screen-sub" style="margin-bottom:20px;">The match check is just the start. Spontany handles the rest.</div>
+
+      <div class="pitch-cards">
+        <div class="pitch-card">
+          <img src="/logo.svg" alt="" class="pitch-card-icon" style="width:24px;height:24px;">
+          <div>
+            <div class="pitch-card-title">See months ahead</div>
+            <div class="pitch-card-sub">Your custody calendar + theirs, overlaid in one view</div>
+          </div>
+        </div>
+        <div class="pitch-card">
+          <img src="/logo.svg" alt="" class="pitch-card-icon" style="width:24px;height:24px;">
+          <div>
+            <div class="pitch-card-title">One tap invites</div>
+            <div class="pitch-card-sub">Drop a link, see who's free, plan instantly</div>
+          </div>
+        </div>
+        <div class="pitch-card">
+          <img src="/logo.svg" alt="" class="pitch-card-icon" style="width:24px;height:24px;">
+          <div>
+            <div class="pitch-card-title">Group plans</div>
+            <div class="pitch-card-sub">6 friends, 6 custody schedules, 1 answer</div>
+          </div>
+        </div>
+        <div class="pitch-card">
+          <img src="/logo.svg" class="pitch-card-icon" style="width:28px;height:28px;">
+          <div>
+            <div class="pitch-card-title">Private by default</div>
+            <div class="pitch-card-sub">You control who sees what, and for how long</div>
+          </div>
+        </div>
+      </div>
+
       <div class="field-group">
         <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
       </div>
       <div class="field-group">
         <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
       </div>
-      <button class="btn-primary" onclick="saveCalendar()">Save my calendar →</button>
+      <button class="btn-primary" onclick="saveCalendar()">Get early access →</button>
+      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free forever. No app store. Works on any device.</p>
     </div>
 
     <!-- Share result -->
@@ -658,7 +793,8 @@ let weekStartDate = null;
 
 // ── Progress map ──────────────────────────────────────────────────────────────
 const PROGRESS = {
-  'hook': 0,
+  'splash': 0,
+  'hook': 5,
   'your-schedule': 15,
   'fork': 35,
   'their-schedule': 55,
@@ -670,11 +806,17 @@ const PROGRESS = {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function go(screen) {
-  document.querySelectorAll('.screen, .hero-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen, .hero-screen, .splash-screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
   if (el) el.classList.add('active');
   document.getElementById('progress').style.width = (PROGRESS[screen] ?? 50) + '%';
   window.scrollTo(0, 0);
+
+  // Meta Pixel events
+  if (typeof fbq !== 'undefined') {
+    if (screen === 'your-schedule') fbq('trackCustom', 'MatchStarted');
+    if (screen === 'result') fbq('trackCustom', 'MatchCompleted');
+  }
 
   // Init pickers on first visit
   if (screen === 'your-schedule')  initPicker('your');
@@ -816,12 +958,12 @@ function showResult() {
   // Verdict
   let verdict;
   if (totalPct >= 60) verdict = "Your schedules line up more often than not. When you're both free, you'll know.";
-  else if (totalPct >= 30) verdict = "Enough overlap to make it work — if you want to.";
+  else if (totalPct >= 30) verdict = "Enough overlap to make it work - if you want to.";
   else if (totalPct >= 10) verdict = "It's tight. But the right nights matter more than the number.";
-  else verdict = "The schedules don't make it easy. But now you know — and that's worth something.";
+  else verdict = "The schedules don't make it easy. But now you know - and that's worth something.";
   document.getElementById('result-verdict').textContent = verdict;
 
-  // Upcoming dates — tappable, deep-link to app with date + person pre-populated
+  // Upcoming dates - tappable, deep-link to app with date + person pre-populated
   const upcoming = allOverlap.slice(0, 8);
   const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
   document.getElementById('result-upcoming').innerHTML = upcoming.map(d => {
@@ -864,7 +1006,7 @@ function renderResultCalendars(days) {
 // ── Sharing ───────────────────────────────────────────────────────────────────
 function shareWhatsApp() {
   const url = matchShareUrl || (window.location.origin + '/match');
-  const msg = "Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: " + url;
+  const msg = "Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: " + url;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
@@ -874,7 +1016,7 @@ function copyLink() {
 }
 
 function shareResult() {
-  const text = "We checked our custody compatibility on Spontany — " + document.getElementById('result-pct').textContent;
+  const text = "We checked our custody compatibility on Spontany - " + document.getElementById('result-pct').textContent;
   if (navigator.share) {
     navigator.share({ title: 'Spontany Match', text, url: window.location.origin + '/match' });
   } else {
@@ -890,10 +1032,10 @@ function handleDateTap(e, date) {
   // Check if the app/PWA is likely installed (standalone mode)
   const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if (isInstalled) {
-    // Already in the app — go straight to the calendar with plan crafter pre-populated
+    // Already in the app - go straight to the calendar with plan crafter pre-populated
     window.location.href = deepLink;
   } else {
-    // Not installed — prompt signup first, then redirect
+    // Not installed - prompt signup first, then redirect
     const signupEl = document.getElementById('result-signup');
     if (signupEl) {
       signupEl.scrollIntoView({ behavior: 'smooth' });
@@ -911,6 +1053,11 @@ function saveCalendar() {
   const email = document.getElementById('save-email')?.value.trim();
   if (!name || !email) { showToast('Name and email required'); return; }
 
+  // Meta Pixel - track signup as Lead event
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'Lead', { content_name: 'match_signup', ...getUtmData() });
+  }
+
   const signupEl = document.getElementById('result-signup');
   const redirect = signupEl?.dataset?.redirect;
 
@@ -918,7 +1065,7 @@ function saveCalendar() {
   // Then redirect to calendar with plan crafter pre-populated
   signupEl.innerHTML = `
     <div style="text-align:center;padding:12px 0;">
-      <div style="font-size:32px;margin-bottom:8px;">✓</div>
+      <div style="margin-bottom:8px;"><img src="/logo.svg" style="width:32px;height:32px;"></div>
       <div class="screen-title" style="font-size:18px;">Saved!</div>
       <div class="screen-sub" style="margin-top:4px;">Your calendar is ready.${redirect ? ' Taking you there...' : ''}</div>
     </div>
@@ -950,6 +1097,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (parts[0] === 'match' && parts[1]) {
     matchToken = parts[1];
     isPersonB  = true;
+    // Skip splash for Person B - they arrived via a direct match link
+    document.getElementById('screen-splash')?.classList.remove('active');
+    document.getElementById('screen-hook')?.classList.add('active');
     initPersonB(matchToken);
   }
 });
@@ -957,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initPersonB(token) {
   try {
     const res  = await fetch(`/api/match/${token}`);
-    if (!res.ok) return; // bad token — fall through to normal hero screen
+    if (!res.ok) return; // bad token - fall through to normal hero screen
     const data = await res.json();
 
     if (data.status === 'completed') {
@@ -971,7 +1121,7 @@ async function initPersonB(token) {
     document.querySelector('#screen-hook .hero-headline').textContent = `${name} wants to check your match`;
     document.querySelector('#screen-hook .hero-sub').textContent      = `${name} is already waiting. Tap in your custody days and you'll both see if your free nights line up.`;
     document.querySelector('#screen-hook .btn-primary').textContent   = 'Enter my schedule →';
-  } catch(e) { /* network error — show normal screen */ }
+  } catch(e) { /* network error - show normal screen */ }
 }
 
 // ── yourScheduleNext: skips fork for Person B ─────────────────────────────────
@@ -1018,7 +1168,7 @@ async function createMatch() {
     // Update share message text
     const msgEl = document.getElementById('share-msg');
     if (msgEl) {
-      msgEl.innerHTML = `Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">${matchShareUrl}</span>`;
+      msgEl.innerHTML = `Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">${matchShareUrl}</span>`;
     }
 
     // Reveal real URL on waiting screen
@@ -1029,7 +1179,7 @@ async function createMatch() {
   } catch(e) {
     btn.disabled    = false;
     btn.textContent = 'Notify me →';
-    showToast('Something went wrong — please try again.');
+    showToast('Something went wrong - please try again.');
   }
 }
 
@@ -1069,11 +1219,29 @@ async function completeMatch() {
   } catch(e) {
     btn.disabled    = false;
     btn.textContent = 'Notify me →';
-    showToast('Something went wrong — please try again.');
+    showToast('Something went wrong - please try again.');
   }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ── UTM tracking ─────────────────────────────────────────────────────────────
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
+    const v = params.get(k);
+    if (v) sessionStorage.setItem(k, v);
+  });
+})();
+
+function getUtmData() {
+  const utm = {};
+  ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
+    const v = sessionStorage.getItem(k);
+    if (v) utm[k] = v;
+  });
+  return utm;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>
