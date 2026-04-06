@@ -3,29 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Spontany — Do your schedules actually work?</title>
+  <title>Spontany - Do your schedules actually work?</title>
   <meta name="description" content="Two custody schedules. One answer. Find out if your free nights line up.">
+  <meta property="og:title" content="Spontany - Do your schedules actually work?">
+  <meta property="og:description" content="Two custody schedules. One answer. Find out if your free nights line up.">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:type" content="website">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#e6f952">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Meta Pixel - replace 2161239351358950 with your actual pixel ID from Events Manager -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '2161239351358950');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --lime: #e6f952;
       --lime-dim: #aec013;
-      --bg: #0e0e0e;
+      --bg: #0a0a0a;
       --surface: #131313;
       --cell-bg: #1a1a1a;
       --border: rgba(226,226,226,0.08);
       --text: #e2e2e2;
       --muted: rgba(226,226,226,0.42);
-      --overlap: #34d399;
-      --overlap-bg: rgba(52,211,153,0.15);
-      --overlap-border: rgba(52,211,153,0.55);
-      --yours: rgba(230,249,82,0.12);
-      --yours-border: rgba(230,249,82,0.35);
+      --accent: #c9b3f5;
+      --accent-bg: rgba(201,179,245,0.10);
+      --accent-border: rgba(201,179,245,0.35);
+      --overlap: #c9b3f5;
+      --overlap-bg: rgba(201,179,245,0.12);
+      --overlap-border: rgba(201,179,245,0.40);
+      --yours: rgba(201,179,245,0.12);
+      --yours-border: rgba(201,179,245,0.35);
       --theirs: rgba(129,140,248,0.15);
       --theirs-border: rgba(129,140,248,0.45);
     }
@@ -61,7 +85,7 @@
       position: sticky; top: 0; z-index: 50;
     }
     .progress-fill {
-      height: 100%; background: var(--lime);
+      height: 100%; background: var(--accent);
       transition: width 0.4s ease; width: 0%;
     }
 
@@ -75,7 +99,49 @@
       letter-spacing: 0.1em; text-transform: uppercase;
       display: flex; align-items: center; gap: 8px;
     }
-    .top-nav-logo img { border-radius: 6px; }
+    .top-nav-logo img { border-radius: 0; }
+
+    /* ── Splash screen ── */
+    .splash-screen {
+      display: none; padding: 0 28px 40px;
+      text-align: center;
+      min-height: calc(100vh - 80px);
+      flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .splash-screen.active { display: flex; }
+    .splash-logo {
+      width: 56px; height: 56px; border-radius: 14px; margin-bottom: 12px;
+    }
+    .splash-brand {
+      font-size: 13px; font-weight: 800; color: var(--muted);
+      letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 32px;
+    }
+    .splash-headline {
+      font-size: clamp(28px, 7vw, 38px);
+      font-weight: 900; color: white; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 32px;
+    }
+    .splash-headline em {
+      font-style: normal; color: var(--accent);
+    }
+    .splash-props {
+      display: flex; flex-direction: column; gap: 16px;
+      margin-bottom: 36px; text-align: left; width: 100%; max-width: 320px;
+    }
+    .splash-prop {
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .splash-prop-icon {
+      font-size: 20px; flex-shrink: 0; margin-top: 1px;
+    }
+    .splash-prop-text {
+      font-size: 14px; color: var(--text); line-height: 1.5;
+    }
+    .splash-prop-text strong { color: var(--accent); font-weight: 700; }
+    .splash-fine {
+      font-size: 12px; color: rgba(226,226,226,0.25); margin-top: 16px;
+    }
 
     /* ── Hero / Hook ── */
     .hero-screen {
@@ -104,15 +170,15 @@
     .btn-primary {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding: 16px 32px;
-      background: var(--lime); color: #0e0e0e;
+      background: var(--accent); color: #0a0a0a;
       border: none; border-radius: 28px;
       font-size: 16px; font-weight: 700; cursor: pointer;
       font-family: inherit;
-      box-shadow: 0 6px 24px rgba(230,249,82,0.25);
+      box-shadow: 0 6px 24px rgba(201,179,245,0.25);
       transition: transform 0.12s, box-shadow 0.12s;
       width: 100%;
     }
-    .btn-primary:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,0.15); }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(201,179,245,0.15); }
     .btn-outline {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding: 14px 24px;
@@ -122,7 +188,7 @@
       font-family: inherit; transition: all 0.15s;
       width: 100%;
     }
-    .btn-outline:hover { border-color: var(--lime); color: var(--lime); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
     .btn-sm { padding: 10px 18px; font-size: 13px; width: auto; }
     .btn-wa {
       display: inline-flex; align-items: center; justify-content: center;
@@ -173,8 +239,8 @@
     .wp-cell.selected {
       background: var(--yours); border-color: var(--yours-border);
     }
-    .wp-cell.selected .wp-num { color: var(--lime); }
-    .wp-cell.selected .wp-month { color: var(--lime-dim); }
+    .wp-cell.selected .wp-num { color: var(--accent); }
+    .wp-cell.selected .wp-month { color: var(--accent); }
 
     .wp-legend {
       display: flex; gap: 14px; font-size: 12px;
@@ -189,10 +255,10 @@
       width: 100%; margin-top: 14px; padding: 12px 16px;
       background: var(--surface); border: 2px dashed var(--border);
       border-radius: 10px; font-size: 13px; font-weight: 700;
-      color: var(--lime); cursor: pointer; text-align: center;
+      color: var(--accent); cursor: pointer; text-align: center;
       transition: background 0.15s, border-color 0.15s; font-family: inherit;
     }
-    .expand-btn:hover { background: rgba(230,249,82,0.10); border-color: var(--lime); }
+    .expand-btn:hover { background: rgba(201,179,245,0.10); border-color: var(--accent); }
 
     .week-section-label {
       font-size: 12px; font-weight: 700; color: var(--muted);
@@ -209,7 +275,7 @@
       transition: background 0.13s, border-color 0.13s, transform 0.1s;
     }
     .fork-card:active { transform: scale(0.98); }
-    .fork-card:hover { border-color: var(--lime); background: rgba(230,249,82,0.05); }
+    .fork-card:hover { border-color: var(--accent); background: rgba(201,179,245,0.05); }
     .fork-emoji { font-size: 32px; flex-shrink: 0; }
     .fork-label { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
     .fork-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
@@ -221,27 +287,36 @@
     }
 
     /* ── Result page ── */
+    .pulse-dot {
+      position: absolute; top: 3px; right: 3px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--overlap);
+      animation: pulse-dot 2s ease infinite;
+      will-change: transform;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
     .result-hero {
-      text-align: center; padding: 32px 0 24px;
+      text-align: center; padding: 40px 0 20px;
     }
-    .result-big-num {
-      font-size: clamp(56px, 14vw, 80px);
-      font-weight: 900; color: var(--overlap);
-      line-height: 1; letter-spacing: -3px;
+    .result-headline {
+      font-size: clamp(26px, 7vw, 34px);
+      font-weight: 900; color: white; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 12px;
     }
-    .result-big-label {
-      font-size: 16px; font-weight: 600; color: var(--text);
-      margin-top: 4px;
+    .result-headline em {
+      font-style: normal; color: var(--overlap);
     }
-    .result-pct {
-      font-size: 14px; color: var(--muted); margin-top: 8px;
+    .result-sub {
+      font-size: 15px; color: var(--muted); line-height: 1.6;
+      max-width: 300px; margin: 0 auto;
     }
     .result-verdict {
-      font-size: 15px; color: var(--text); line-height: 1.6;
-      text-align: center; padding: 20px 0; margin: 0 0 20px;
+      font-size: 16px; color: var(--text); line-height: 1.7;
+      text-align: center; padding: 24px 0; margin: 0 0 20px;
       border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      font-style: italic;
     }
 
     /* Rhythm insight */
@@ -256,7 +331,7 @@
     .insight-body {
       font-size: 14px; color: var(--text); line-height: 1.7;
     }
-    .insight-body strong { color: var(--lime); }
+    .insight-body strong { color: var(--accent); }
 
     /* Upcoming dates */
     .upcoming-dates {
@@ -292,7 +367,7 @@
       color: var(--muted); background: rgba(255,255,255,0.02);
     }
     .mini-cal-day.yours {
-      background: var(--yours); color: var(--lime);
+      background: var(--yours); color: var(--accent);
     }
     .mini-cal-day.theirs {
       background: var(--theirs); color: #818cf8;
@@ -323,12 +398,29 @@
       font-size: 13px; color: var(--text); line-height: 1.6;
     }
 
-    /* ── Signup inline ── */
+    /* ── Signup / Pitch section ── */
     .signup-section {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 14px; padding: 24px; margin-top: 20px; text-align: center;
     }
     .signup-section .screen-title { font-size: 20px; margin-bottom: 6px; }
+    .pitch-divider {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin: 28px 0 16px; text-align: center;
+    }
+    .pitch-cards {
+      display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 24px; text-align: left;
+    }
+    .pitch-card {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px; border-radius: 12px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    }
+    .pitch-card-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .pitch-card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .pitch-card-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
     .field-group { margin-bottom: 16px; }
     .field-label {
       display: block; font-size: 12px; font-weight: 700;
@@ -342,7 +434,7 @@
       font-size: 15px; font-family: inherit; outline: none;
       transition: border-color 0.15s;
     }
-    .field-input:focus { border-color: var(--lime); }
+    .field-input:focus { border-color: var(--accent); }
     .field-input::placeholder { color: var(--muted); }
 
     /* ── Waiting screen ── */
@@ -370,8 +462,8 @@
     /* ── Toast ── */
     .toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: var(--surface); color: var(--lime);
-      border: 1px solid var(--lime-dim);
+      background: var(--surface); color: var(--accent);
+      border: 1px solid var(--accent);
       padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
       z-index: 9999; opacity: 0; transition: opacity 0.3s;
       pointer-events: none;
@@ -385,7 +477,7 @@
   <!-- Top nav -->
   <div class="top-nav">
     <div class="top-nav-logo">
-      <img src="/icon-192.png" alt="" width="24" height="24"> SPONTANY
+      <img src="/logo-wordmark.svg" alt="Spontany" height="28" style="display:block;">
     </div>
   </div>
 
@@ -393,15 +485,33 @@
   <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- SCREEN: HOOK                                                       -->
+  <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="hero-screen active" id="screen-hook">
-    <div class="hero-emoji">💑</div>
-    <h1 class="hero-headline">Do your schedules actually work?</h1>
-    <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up — before the conversation gets awkward.</p>
+  <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="splash-screen active" id="screen-splash">
+    <img src="/logo.svg" class="splash-logo" alt="Spontany" style="width:56px;height:56px;margin-bottom:12px;">
+    <div class="splash-brand">Spontany</div>
+    <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
+    <div class="splash-props">
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>See when you're both free</strong> - no awkward "do you have the kids?" texts</div>
+      </div>
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>Know before you ask</strong> - custody schedules overlaid in one view</div>
+      </div>
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>Plan dates in seconds</strong>, not days of back-and-forth</div>
+      </div>
+    </div>
     <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
-    <p class="hero-fine">Free. Private. Takes 30 seconds.</p>
+    <p class="splash-fine">Free. Private. 30 seconds.</p>
   </div>
+
+  <!-- Hero screen removed - splash goes directly to your-schedule -->
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: YOUR SCHEDULE                                              -->
@@ -432,7 +542,7 @@
 
     <div class="nav-row">
       <button class="btn-outline btn-sm" onclick="go('hook')">← Back</button>
-      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="go('fork')">Next →</button>
+      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="yourScheduleNext()">Next →</button>
     </div>
   </div>
 
@@ -447,17 +557,17 @@
 
     <div class="fork-cards">
       <div class="fork-card" onclick="go('their-schedule')">
-        <div class="fork-emoji">🧠</div>
+        <img src="/logo.svg" alt="" class="fork-emoji" style="width:32px;height:32px;">
         <div>
           <div class="fork-label">I know their days</div>
           <div class="fork-sub">I'll enter their schedule myself.</div>
         </div>
       </div>
       <div class="fork-card" onclick="go('send-link')">
-        <div class="fork-emoji">📩</div>
+        <img src="/logo.svg" alt="" class="fork-emoji" style="width:32px;height:32px;">
         <div>
           <div class="fork-label">Let them fill it in</div>
-          <div class="fork-sub">I'll send them a link — more private.</div>
+          <div class="fork-sub">I'll send them a link - more private.</div>
         </div>
       </div>
     </div>
@@ -511,14 +621,15 @@
     </div>
 
     <div class="share-section">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Message preview</div>
-      <div class="share-msg-box" id="share-msg">Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">spontany.io/match/abc123</span></div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Personalise your message</div>
+      <textarea id="share-custom-msg" maxlength="300" rows="3" style="width:100%;padding:12px;background:rgba(255,255,255,0.04);border:1.5px solid var(--accent-border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;resize:none;margin-bottom:8px;box-sizing:border-box;">Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer:</textarea>
+      <div class="share-msg-box" id="share-msg" style="display:none;"></div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
         <button class="btn-wa" onclick="shareWhatsApp()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Send via WhatsApp
         </button>
-        <button class="btn-outline" onclick="copyLink()">📋 Copy link</button>
+        <button class="btn-outline" onclick="copyLink()">Copy link</button>
       </div>
     </div>
 
@@ -546,7 +657,7 @@
       <input id="wait-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
     </div>
 
-    <button class="btn-primary" onclick="go('waiting')">Notify me →</button>
+    <button class="btn-primary" id="signup-submit-btn" onclick="submitSignup()">Notify me →</button>
 
     <div class="nav-row">
       <button class="btn-outline btn-sm" onclick="go('send-link')">← Back</button>
@@ -560,17 +671,30 @@
   <div class="screen" id="screen-waiting">
     <div style="text-align:center;padding:40px 0 20px;">
       <div class="waiting-anim">
-        <div class="waiting-cal a">📅</div>
+        <div class="waiting-cal a"><img src="/logo.svg" style="width:28px;height:28px;"></div>
         <div class="waiting-arrow">⟷</div>
-        <div class="waiting-cal b">📅</div>
+        <div class="waiting-cal b"><img src="/logo.svg" style="width:28px;height:28px;"></div>
       </div>
       <div class="screen-title" style="margin-bottom:8px;">Waiting for them...</div>
       <div class="screen-sub" style="max-width:280px;margin:0 auto;">We'll send you a notification the moment they fill in their schedule.</div>
     </div>
 
-    <div style="text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--border);">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">While you wait — want to see your own free days?</p>
-      <button class="btn-outline" onclick="go('result')" style="max-width:260px;margin:0 auto;">Preview my calendar →</button>
+    <!-- Real share link (populated after API call) -->
+    <div id="waiting-share" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin:0 0 24px;text-align:center;">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">Send this link</div>
+      <div style="background:var(--cell-bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;color:var(--accent);word-break:break-all;margin-bottom:12px;" id="waiting-share-url"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-wa" style="font-size:13px;padding:10px;" onclick="shareWhatsApp()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </button>
+        <button class="btn-outline" style="font-size:13px;padding:10px;" onclick="copyLink()">Copy</button>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Know someone else with a custody schedule?</p>
+      <button class="btn-outline" onclick="inviteToMatch()" style="max-width:280px;margin:0 auto;">Invite them to try Spontany Match →</button>
     </div>
   </div>
 
@@ -578,52 +702,101 @@
   <!-- RESULT PAGE                                                        -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-result">
-    <!-- Big number -->
-    <div class="result-hero">
-      <div class="result-big-num" id="result-num">11</div>
-      <div class="result-big-label">free nights this month</div>
-      <div class="result-pct" id="result-pct">That's 37% overlap</div>
-    </div>
+    <!-- Match type carousel -->
+    <div style="text-align:center;padding-top:32px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;">You two are set up to be...</div>
 
-    <!-- Verdict -->
-    <div class="result-verdict" id="result-verdict">
-      Your schedules line up more often than not. When you're both free, you'll know.
-    </div>
-
-    <!-- Next shared dates — tappable, links to app -->
-    <div class="insight-card">
-      <div class="insight-title">Your next shared free nights</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Tap a date to plan something.</p>
-      <div class="upcoming-dates" id="result-upcoming"></div>
-    </div>
-
-    <!-- 3-month calendar — overlap only -->
-    <div class="insight-card">
-      <div class="insight-title">3-month view</div>
-      <div class="cal-legend">
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--overlap-bg);border:1px solid var(--overlap-border);"></div> Both free</div>
+      <!-- Swipeable type cards -->
+      <div id="match-carousel" style="position:relative;overflow:hidden;margin:0 -28px;">
+        <div id="match-carousel-track" style="display:flex;transition:transform 0.35s ease;"></div>
       </div>
-      <div id="result-calendars"></div>
+
+      <!-- Dots -->
+      <div id="match-carousel-dots" style="display:flex;justify-content:center;gap:6px;margin-top:14px;"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Swipe to explore other overlap types</div>
     </div>
 
-    <!-- Save CTA -->
+    <!-- Two-week pattern -->
+    <div class="insight-card" style="position:relative;">
+      <div class="insight-title">Your weekly rhythm</div>
+      <div id="result-pattern" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+      <!-- Hover popup -->
+      <div id="day-outlook" style="display:none;position:absolute;left:50%;transform:translateX(-50%);background:var(--surface);border:1.5px solid var(--overlap-border);border-radius:14px;padding:16px;width:calc(100% - 16px);z-index:10;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+        <div style="font-size:12px;font-weight:800;color:var(--overlap);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;" id="day-outlook-title"></div>
+        <div id="day-outlook-items" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:12px;text-align:center;font-style:italic;">Spontany surfaces ideas like these for your free nights.</div>
+      </div>
+    </div>
+
+    <!-- Share actions (above signup) -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin:20px 0 16px;padding:0 4px;">
+      <button class="btn-primary" onclick="shareResult()" id="result-share-btn" style="width:100%;">Share this report →</button>
+      <button class="btn-outline" onclick="inviteToMatch()" style="width:100%;">Invite someone to try Spontany Match →</button>
+    </div>
+
+    <!-- Signup CTA -->
     <div class="signup-section" id="result-signup">
-      <div class="screen-title">Save your calendar</div>
-      <div class="screen-sub" style="margin-bottom:16px;">Your schedule is already entered. Add a name and email to keep it.</div>
-      <div class="field-group">
+      <div class="screen-title" style="font-size:18px;">This was just the match.</div>
+      <div class="screen-sub" style="margin-bottom:16px;font-size:13px;">Here's what Spontany does for you.</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">📅</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">See months ahead</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">Your custody calendar + theirs, overlaid</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">💌</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">One-tap invites</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">Drop a link, see who's free, plan instantly</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">👥</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">Group plans</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">6 friends, 6 schedules, 1 answer</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">🔒</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">Private by default</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">You control who sees what, and for how long</div></div>
+        </div>
+      </div>
+
+      <div class="field-group" id="save-name-group">
         <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
       </div>
-      <div class="field-group">
+      <div class="field-group" id="save-email-group">
         <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
       </div>
-      <button class="btn-primary" onclick="saveCalendar()">Save my calendar →</button>
-    </div>
-
-    <!-- Share result -->
-    <div style="text-align:center;margin:24px 0 16px;">
-      <button class="btn-outline" onclick="shareResult()">Share this result →</button>
+      <button class="btn-primary" id="save-calendar-btn" onclick="saveCalendar()">Get early access →</button>
+      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free forever. No app store. Works on any device.</p>
     </div>
   </div>
+
+<!-- Invite bottom sheet -->
+<div id="invite-sheet" style="display:none;position:fixed;inset:0;z-index:100;">
+  <div onclick="closeInviteSheet()" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);"></div>
+  <div id="invite-sheet-content" style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 24px 32px;max-width:480px;margin:0 auto;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.35s ease;">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--overlap);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;" id="invite-sheet-date"></div>
+    <div id="invite-sheet-opp" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(201,179,245,0.08);border:1.5px solid var(--overlap-border);border-radius:12px;margin-bottom:20px;"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Your message</div>
+    <div id="invite-chips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:4px;"></div>
+    <input type="text" id="invite-custom-msg" maxlength="120" placeholder="Or write your own..." style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1.5px solid var(--overlap-border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;margin-bottom:12px;">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px;">Preview</div>
+    <div id="invite-preview" style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;"></div>
+    <button id="invite-send-btn" onclick="sendMatchInvite()" style="width:100%;padding:16px;border-radius:28px;border:none;background:var(--overlap);color:#0a0a0a;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform 0.12s;">Share this &#8594;</button>
+    <div id="invite-delivery" style="display:none;margin-top:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;text-align:center;">How should they get this?</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="deliverViaWhatsApp()" style="flex:1;padding:14px;border-radius:14px;border:none;background:#25d366;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">WhatsApp</button>
+        <button onclick="deliverViaCopy()" style="flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Copy link</button>
+      </div>
+    </div>
+    <div id="invite-sent" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:40px;margin-bottom:12px;">&#10003;</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px;">Shared!</div>
+      <div style="font-size:13px;color:var(--muted);">You'll know when they respond.</div>
+      <button onclick="closeInviteSheet();scrollToRhythm()" style="margin-top:16px;padding:12px 24px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Plan another evening?</button>
+    </div>
+  </div>
+</div>
 
 </div><!-- /app-frame -->
 
@@ -645,7 +818,8 @@ let weekStartDate = null;
 
 // ── Progress map ──────────────────────────────────────────────────────────────
 const PROGRESS = {
-  'hook': 0,
+  'splash': 0,
+  'hook': 5,
   'your-schedule': 15,
   'fork': 35,
   'their-schedule': 55,
@@ -657,11 +831,17 @@ const PROGRESS = {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function go(screen) {
-  document.querySelectorAll('.screen, .hero-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen, .hero-screen, .splash-screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
   if (el) el.classList.add('active');
   document.getElementById('progress').style.width = (PROGRESS[screen] ?? 50) + '%';
   window.scrollTo(0, 0);
+
+  // Meta Pixel events
+  if (typeof fbq !== 'undefined') {
+    if (screen === 'your-schedule') fbq('trackCustom', 'MatchStarted');
+    if (screen === 'result') fbq('trackCustom', 'MatchCompleted');
+  }
 
   // Init pickers on first visit
   if (screen === 'your-schedule')  initPicker('your');
@@ -780,45 +960,272 @@ function computeOverlap() {
 }
 
 // ── Show result ───────────────────────────────────────────────────────────────
-function showResult() {
+async function showResult() {
+  // Save match to backend if not already saved (manual entry path)
+  if (!matchToken && !isPersonB) {
+    try {
+      const name = document.getElementById('wait-name')?.value?.trim()
+        || document.getElementById('save-name')?.value?.trim() || '';
+      const email = document.getElementById('wait-email')?.value?.trim()
+        || document.getElementById('save-email')?.value?.trim() || '';
+      const mySchedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
+      const theirSchedule = { week1: state.their.week1, week2: state.their.week2, twoWeek: state.their.twoWeek };
+      const res = await fetch('/api/match/create', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name || null, email: email || null, schedule: JSON.stringify(mySchedule), partner_schedule: JSON.stringify(theirSchedule) })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        matchToken = data.token;
+        matchShareUrl = window.location.origin + data.match_url;
+      }
+    } catch(e) { /* non-critical — result still shows */ }
+  }
+
   const days = computeOverlap();
   const today = new Date(); today.setHours(0,0,0,0);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const monthStr = toDateStr(monthEnd).slice(0, 7);
 
-  // This month stats
-  const thisMonth = days.filter(d => d.date.slice(0, 7) === toDateStr(today).slice(0, 7));
-  const overlapNights = thisMonth.filter(d => d.overlap).length;
-  const totalDays = thisMonth.length;
-  const pct = totalDays > 0 ? Math.round(overlapNights / totalDays * 100) : 0;
-
-  // Overall stats
+  // Stats
   const allOverlap = days.filter(d => d.overlap);
   const totalPct = days.length > 0 ? Math.round(allOverlap.length / days.length * 100) : 0;
 
-  // Set big number
-  document.getElementById('result-num').textContent = overlapNights;
-  document.getElementById('result-pct').textContent = `That's ${pct}% overlap this month · ${totalPct}% over 3 months`;
+  // Find the most common overlapping day-of-week for the headline
+  const dowCounts = [0,0,0,0,0,0,0];
+  allOverlap.forEach(d => { const dt = new Date(d.date + 'T12:00:00'); dowCounts[dt.getDay()]++; });
+  const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
+  const DOW_NAMES = ['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
+  const bestDayName = DOW_NAMES[bestDow];
 
-  // Verdict
-  let verdict;
-  if (totalPct >= 60) verdict = "Your schedules line up more often than not. When you're both free, you'll know.";
-  else if (totalPct >= 30) verdict = "Enough overlap to make it work — if you want to.";
-  else if (totalPct >= 10) verdict = "It's tight. But the right nights matter more than the number.";
-  else verdict = "The schedules don't make it easy. But now you know — and that's worth something.";
-  document.getElementById('result-verdict').textContent = verdict;
+  // Upcoming dates - just first 3 for focus
+  const upcoming = allOverlap.slice(0, 3);
+  partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
 
-  // Upcoming dates — tappable, deep-link to app with date + person pre-populated
-  const upcoming = allOverlap.slice(0, 8);
-  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
-  document.getElementById('result-upcoming').innerHTML = upcoming.map(d => {
-    const dt = new Date(d.date + 'T12:00:00');
-    const deepLink = `/calendar?action=plan&date=${d.date}` + (partnerName ? `&with=${encodeURIComponent(partnerName)}` : '');
-    return `<a href="${deepLink}" class="upcoming-chip" onclick="handleDateTap(event, '${d.date}')">${DAY_ABBR[dt.getDay()]} ${MONTH_ABBR[dt.getMonth()]} ${dt.getDate()}</a>`;
+  // Determine day type: weekend-heavy, weekday-heavy, or mixed
+  const weekendOverlap = allOverlap.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow === 0 || dow === 5 || dow === 6; }).length;
+  const weekdayOverlap = allOverlap.length - weekendOverlap;
+  const weekendRatio = allOverlap.length > 0 ? weekendOverlap / allOverlap.length : 0;
+  let dayType; // 'weekend', 'weekday', 'mixed'
+  if (weekendRatio > 0.65) dayType = 'weekend';
+  else if (weekendRatio < 0.25) dayType = 'weekday';
+  else dayType = 'mixed';
+
+  // 6-type system
+  const ALL_TYPES = [
+    { id: 'slow-burn', name: 'Slow Burn', desc: "Rare but potentially intentional. Every meet-up could become an event - a rhythm that makes it hard to take each other for granted." },
+    { id: 'weekend-escape', name: 'Weekend Escape', desc: "Your time together could be about adventures - weekends open up space for trips, markets, brunches." },
+    { id: 'weeknight-regulars', name: 'Weeknight Regulars', desc: "A chance for connection in the everyday - dinners, walks, couch nights. The kind of intimacy that can build quietly." },
+    { id: 'best-of-both', name: 'Best of Both', desc: "Some weeknights for the easy stuff, some weekends for bigger plans. An opportunity for something well-rounded." },
+    { id: 'easy-rhythm', name: 'Easy Rhythm', desc: "Plenty of overlap to play with. Room for spontaneity - not every night needs a plan, and that's where the good stuff can happen." },
+    { id: 'all-in', name: 'All In', desc: "Wide open. Weeknights and weekends. The kind of schedule that could let things flow naturally." },
+  ];
+
+  // Determine user's type
+  if (totalPct < 15) {
+    matchTypeId = 'slow-burn';
+  } else if (totalPct <= 45) {
+    if (dayType === 'weekend') matchTypeId = 'weekend-escape';
+    else if (dayType === 'weekday') matchTypeId = 'weeknight-regulars';
+    else matchTypeId = 'best-of-both';
+  } else {
+    if (weekendRatio > 0.55) matchTypeId = 'all-in';
+    else matchTypeId = 'easy-rhythm';
+  }
+
+  const userType = ALL_TYPES.find(t => t.id === matchTypeId);
+  const userTypeIdx = ALL_TYPES.indexOf(userType);
+
+  // Build carousel
+  const track = document.getElementById('match-carousel-track');
+  track.innerHTML = ALL_TYPES.map((t, i) => {
+    const isUser = t.id === matchTypeId;
+    return `<div class="match-type-card" style="min-width:100%;padding:0 36px;box-sizing:border-box;text-align:center;flex-shrink:0;">
+      <div style="display:inline-block;font-size:${isUser ? '15' : '13'}px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:8px 20px;border-radius:20px;margin-bottom:12px;
+        ${isUser
+          ? 'color:var(--overlap);border:1.5px solid var(--overlap-border);background:var(--overlap-bg);'
+          : 'color:var(--muted);border:1.5px solid var(--border);background:transparent;'
+        }">${t.name}</div>
+      ${isUser ? '<div style="font-size:10px;font-weight:700;color:var(--overlap);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">← Your result</div>' : '<div style="height:22px;"></div>'}
+      <div style="font-size:13px;color:${isUser ? 'var(--text)' : 'var(--muted)'};line-height:1.6;max-width:280px;margin:0 auto;">${t.desc}</div>
+    </div>`;
   }).join('');
 
-  // 3-month calendars
-  renderResultCalendars(days);
+  // Dots
+  const dotsEl = document.getElementById('match-carousel-dots');
+  dotsEl.innerHTML = ALL_TYPES.map((t, i) => {
+    const isUser = t.id === matchTypeId;
+    return `<div class="carousel-dot${i === userTypeIdx ? ' active' : ''}" data-idx="${i}" style="width:${isUser ? '20px' : '8px'};height:8px;border-radius:4px;cursor:pointer;transition:all 0.2s;
+      ${i === userTypeIdx
+        ? 'background:var(--overlap);'
+        : (isUser ? 'background:var(--overlap-border);' : 'background:var(--border);')
+      }"></div>`;
+  }).join('');
+
+  // Carousel state
+  let currentSlide = userTypeIdx;
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+  function goToSlide(idx) {
+    currentSlide = Math.max(0, Math.min(ALL_TYPES.length - 1, idx));
+    track.style.transform = `translateX(-${currentSlide * 100}%)`;
+    dotsEl.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+      const isUserDot = i === userTypeIdx;
+      dot.style.background = i === currentSlide
+        ? 'var(--overlap)'
+        : (isUserDot ? 'var(--overlap-border)' : 'var(--border)');
+    });
+  }
+
+  // Dot clicks
+  dotsEl.querySelectorAll('.carousel-dot').forEach(dot => {
+    dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.idx)));
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  const carousel = document.getElementById('match-carousel');
+  carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  carousel.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) goToSlide(currentSlide + (diff > 0 ? 1 : -1));
+  });
+
+  // Render two-week pattern - only highlight "both free" days
+  const patternDays = days.slice(0, 14);
+  const DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let patternHtml = DOW_SHORT.map(d => `<div style="text-align:center;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:4px 0;">${d}</div>`).join('');
+  if (patternDays.length > 0) {
+    const firstDow = new Date(patternDays[0].date + 'T12:00:00').getDay();
+    for (let i = 0; i < firstDow; i++) patternHtml += '<div></div>';
+  }
+  // Fetch real suggestions for overlap days
+  const DAY_ABBR_LC = ['sun','mon','tue','wed','thu','fri','sat'];
+  const overlapDows = [...new Set(
+    patternDays.filter(d => d.overlap).map(d => DAY_ABBR_LC[new Date(d.date + 'T12:00:00').getDay()])
+  )];
+  let realSuggestions = {};
+  try {
+    const sugRes = await fetch(`/api/match/suggestions?days=${overlapDows.join(',')}`);
+    if (sugRes.ok) realSuggestions = (await sugRes.json()).suggestions || {};
+  } catch(e) {}
+
+  // Fallback mocks
+  const FALLBACK = [
+    { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true },
+    { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true },
+    { icon: '🎬', title: 'Late night screening', vibe: 'Indie cinema · Cozy', mock: true },
+    { icon: '🍽', title: 'New Italian on 5th', vibe: 'Restaurant · Date night', mock: true },
+    { icon: '🎤', title: 'Open mic comedy night', vibe: 'Comedy · Free entry', mock: true },
+    { icon: '🌮', title: 'Taco pop-up at the park', vibe: 'Street food · Live DJ', mock: true },
+  ];
+  let fallbackIdx = 0;
+
+  patternDays.forEach(d => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const dayNum = dt.getDate();
+    if (d.overlap) {
+      const dow = DAY_ABBR_LC[dt.getDay()];
+      let s1, s2;
+      if (realSuggestions[dow] && realSuggestions[dow].length >= 2) {
+        s1 = realSuggestions[dow][0];
+        s2 = realSuggestions[dow][1];
+      } else {
+        s1 = FALLBACK[fallbackIdx++ % FALLBACK.length];
+        s2 = FALLBACK[fallbackIdx++ % FALLBACK.length];
+      }
+      patternHtml += `<div class="rhythm-day free" data-date="${DAY_ABBR[dt.getDay()]}, ${MONTH_ABBR[dt.getMonth()]} ${dayNum}" data-s1='${JSON.stringify(s1)}' data-s2='${JSON.stringify(s2)}' style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);color:var(--overlap);transition:transform 0.1s,box-shadow 0.15s;">${dayNum}<span class="pulse-dot"></span></div>`;
+    } else {
+      patternHtml += `<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.02);border:1.5px solid transparent;color:rgba(255,255,255,0.15);">${dayNum}</div>`;
+    }
+  });
+  document.getElementById('result-pattern').innerHTML = patternHtml;
+
+  // Tap/hover interactions on free days — show actionable popup
+  let _activeRhythmDay = null;
+  let _lockedDay = null;
+  const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  function deselectAll() {
+    document.querySelectorAll('.rhythm-day.free').forEach(d => {
+      d.style.transform = '';
+      d.style.boxShadow = '';
+      d.style.background = 'var(--overlap-bg)';
+      d.style.borderColor = '';
+    });
+    document.getElementById('day-outlook').style.display = 'none';
+    _activeRhythmDay = null;
+    _lockedDay = null;
+  }
+
+  function selectDay(el) {
+    const s1 = JSON.parse(el.dataset.s1);
+    const s2 = JSON.parse(el.dataset.s2);
+    document.getElementById('day-outlook-title').textContent = el.dataset.date + ' - You\'re both free';
+    document.getElementById('day-outlook-items').innerHTML = [s1, s2].map(s =>
+      `<div onclick="openInviteSheet(this)" data-opp='${JSON.stringify(s).replace(/'/g, '&#39;')}'
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background 0.15s;">
+        <span style="font-size:20px;">${s.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${s.title}</div>
+          <div style="font-size:11px;color:var(--muted);">${s.vibe || s.sub || ''}</div>
+          ${s.contributor_note ? `<div style="font-size:10px;color:var(--muted);font-style:italic;margin-top:2px;">"${s.contributor_note}"</div>` : ''}
+        </div>
+        <span style="font-size:16px;color:var(--overlap);">&#8594;</span>
+      </div>`
+    ).join('');
+    document.getElementById('day-outlook').style.display = 'block';
+    el.style.transform = 'scale(1.15)';
+    el.style.boxShadow = '0 0 16px rgba(201,179,245,0.3)';
+    el.style.background = 'rgba(201,179,245,0.25)';
+    el.style.borderColor = 'var(--overlap)';
+    _activeRhythmDay = el;
+  }
+
+  document.querySelectorAll('.rhythm-day.free').forEach(el => {
+    if (isDesktop) {
+      el.addEventListener('mouseenter', () => { if (!_lockedDay) { deselectAll(); selectDay(el); } });
+      el.addEventListener('mouseleave', () => { if (!_lockedDay) deselectAll(); });
+    }
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (_lockedDay === el) {
+        // Second click on same day — deselect
+        deselectAll();
+      } else {
+        // Click to lock this day
+        deselectAll();
+        _lockedDay = el;
+        selectDay(el);
+      }
+    });
+  });
+
+  // Dismiss popup on outside click (not on popup itself)
+  document.addEventListener('click', (e) => {
+    const popup = document.getElementById('day-outlook');
+    if (popup.style.display === 'block' && !popup.contains(e.target) && !e.target.closest('.rhythm-day')) {
+      deselectAll();
+    }
+  });
+
+  // Share button text
+  const shareBtn = document.getElementById('result-share-btn');
+  if (shareBtn && partnerName) shareBtn.textContent = `Tell ${partnerName} about it →`;
+
+  // Pre-fill signup fields from waiting screen if already collected
+  const waitName = document.getElementById('wait-name')?.value?.trim();
+  const waitEmail = document.getElementById('wait-email')?.value?.trim();
+  const saveName = document.getElementById('save-name');
+  const saveEmail = document.getElementById('save-email');
+  if (waitName && saveName && !saveName.value) saveName.value = waitName;
+  if (waitEmail && saveEmail && !saveEmail.value) saveEmail.value = waitEmail;
+
+  // If both fields are pre-filled (Person B or returning Person A), collapse to one-tap CTA
+  if (saveName?.value && saveEmail?.value) {
+    document.getElementById('save-name-group').style.display = 'none';
+    document.getElementById('save-email-group').style.display = 'none';
+    const btn = document.getElementById('save-calendar-btn');
+    btn.textContent = `Continue as ${saveName.value} →`;
+  }
 
   go('result');
 }
@@ -850,21 +1257,34 @@ function renderResultCalendars(days) {
 
 // ── Sharing ───────────────────────────────────────────────────────────────────
 function shareWhatsApp() {
-  const msg = "Hey — I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: " + window.location.origin + "/match/demo";
+  const url = matchShareUrl || (window.location.origin + '/match');
+  const custom = document.getElementById('share-custom-msg')?.value?.trim() || '';
+  const msg = custom ? custom + ' ' + url : url;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function copyLink() {
-  const url = window.location.origin + '/match/demo';
+  const url = matchShareUrl || (window.location.origin + '/match');
   navigator.clipboard.writeText(url).then(() => showToast('Link copied!'));
 }
 
 function shareResult() {
-  const text = "We checked our custody compatibility on Spontany — " + document.getElementById('result-pct').textContent;
+  const text = "Just checked our schedule overlap on Spontany. See how yours lines up:";
+  const url = matchShareUrl || (window.location.origin + '/match');
   if (navigator.share) {
-    navigator.share({ title: 'Spontany Match', text, url: window.location.origin + '/match' });
+    navigator.share({ title: 'Spontany', text, url });
   } else {
-    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+    navigator.clipboard.writeText(text + ' ' + url).then(() => showToast('Copied to clipboard!'));
+  }
+}
+
+function inviteToMatch() {
+  const url = window.location.origin + '/match';
+  const text = "I just tried this - it checks if your custody schedules actually line up for date nights. Give it a go:";
+  if (navigator.share) {
+    navigator.share({ title: 'Spontany Match', text, url });
+  } else {
+    navigator.clipboard.writeText(text + ' ' + url).then(() => showToast('Link copied!'));
   }
 }
 
@@ -876,10 +1296,10 @@ function handleDateTap(e, date) {
   // Check if the app/PWA is likely installed (standalone mode)
   const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if (isInstalled) {
-    // Already in the app — go straight to the calendar with plan crafter pre-populated
+    // Already in the app - go straight to the calendar with plan crafter pre-populated
     window.location.href = deepLink;
   } else {
-    // Not installed — prompt signup first, then redirect
+    // Not installed - prompt signup first, then redirect
     const signupEl = document.getElementById('result-signup');
     if (signupEl) {
       signupEl.scrollIntoView({ behavior: 'smooth' });
@@ -892,29 +1312,245 @@ function handleDateTap(e, date) {
   }
 }
 
-function saveCalendar() {
+async function saveCalendar() {
   const name = document.getElementById('save-name')?.value.trim();
   const email = document.getElementById('save-email')?.value.trim();
   if (!name || !email) { showToast('Name and email required'); return; }
 
-  const signupEl = document.getElementById('result-signup');
-  const redirect = signupEl?.dataset?.redirect;
+  const btn = document.getElementById('save-calendar-btn');
+  btn.disabled = true;
+  btn.textContent = 'Setting up...';
 
-  // In production: POST to /api/users/setup with schedule pre-filled
-  // Then redirect to calendar with plan crafter pre-populated
-  signupEl.innerHTML = `
-    <div style="text-align:center;padding:12px 0;">
-      <div style="font-size:32px;margin-bottom:8px;">✓</div>
-      <div class="screen-title" style="font-size:18px;">Saved!</div>
-      <div class="screen-sub" style="margin-top:4px;">Your calendar is ready.${redirect ? ' Taking you there...' : ''}</div>
-    </div>
-  `;
-  showToast('Calendar saved!');
+  // Meta Pixel - track signup as Lead event
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'Lead', { content_name: 'match_signup', ...getUtmData() });
+  }
 
-  if (redirect) {
-    setTimeout(() => { window.location.href = redirect; }, 1200);
+  try {
+    const res = await fetch('/api/auth/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.magic) {
+        window.location.href = `/setup?magic=${data.magic}&email=${encodeURIComponent(email)}`;
+        return;
+      }
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Get early access →';
+      showToast('Something went wrong - please try again.');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Get early access →';
+    showToast('Something went wrong - please try again.');
   }
 }
+
+// ── Invite sheet ──────────────────────────────────────────────────────────────
+let _inviteOpp = null;
+let _inviteDate = '';
+let _inviteMsg = '';
+let _inviteToken = null;
+let _inviteUrl = null;
+
+const INVITE_MESSAGES = [
+  "Saw this and thought of you - what do you think?",
+  "This looks like a good time - what do you think?",
+  "I've been wanting to try this - what do you think?"
+];
+
+function openInviteSheet(el) {
+  const opp = JSON.parse(el.dataset.opp);
+  const dateLabel = document.getElementById('day-outlook-title').textContent.replace(" - You're both free", '');
+  _inviteOpp = opp;
+  _inviteDate = dateLabel + ' evening';
+  _inviteMsg = INVITE_MESSAGES[0];
+  _inviteToken = null;
+  _inviteUrl = null;
+
+  document.getElementById('invite-sheet-date').textContent = _inviteDate;
+  document.getElementById('invite-sheet-opp').innerHTML = `
+    <span style="font-size:24px;">${opp.icon || '✨'}</span>
+    <div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);">${opp.title}</div>
+      <div style="font-size:12px;color:var(--muted);">${opp.vibe || opp.sub || ''}</div>
+      ${opp.contributor_note ? `<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:3px;">"${opp.contributor_note}"</div>` : ''}
+    </div>`;
+
+  document.getElementById('invite-chips').innerHTML = INVITE_MESSAGES.map((m, i) =>
+    `<button onclick="selectInviteMsg(${i}, this)"
+      style="flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;
+      cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;
+      ${i === 0
+        ? 'background:var(--overlap);color:#0a0a0a;border:1.5px solid var(--overlap);'
+        : 'background:transparent;color:var(--text);border:1.5px solid var(--border);'
+      }">${m}</button>`
+  ).join('');
+
+  const customInput = document.getElementById('invite-custom-msg');
+  customInput.value = '';
+  customInput.oninput = () => {
+    if (customInput.value.trim()) {
+      _inviteMsg = customInput.value;
+      // Deselect all chips
+      document.querySelectorAll('#invite-chips button').forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--text)';
+        btn.style.borderColor = 'var(--border)';
+      });
+      _lastChipIdx = -1;
+    }
+    updateInvitePreview();
+  };
+  updateInvitePreview();
+
+  const sendBtn = document.getElementById('invite-send-btn');
+  sendBtn.style.display = '';
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Share this \u2192';
+  document.getElementById('invite-delivery').style.display = 'none';
+  document.getElementById('invite-sent').style.display = 'none';
+
+  const sheet = document.getElementById('invite-sheet');
+  sheet.style.display = '';
+  requestAnimationFrame(() => {
+    document.getElementById('invite-sheet-content').style.transform = 'translateY(0)';
+  });
+
+  document.getElementById('day-outlook').style.display = 'none';
+}
+
+function closeInviteSheet() {
+  document.getElementById('invite-sheet-content').style.transform = 'translateY(100%)';
+  setTimeout(() => { document.getElementById('invite-sheet').style.display = 'none'; }, 350);
+}
+
+function scrollToRhythm() {
+  document.querySelector('.insight-card')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+let _lastChipIdx = -1;
+function selectInviteMsg(idx, el) {
+  _lastChipIdx = idx;
+  _inviteMsg = INVITE_MESSAGES[idx];
+  document.getElementById('invite-custom-msg').value = '';
+
+  document.querySelectorAll('#invite-chips button').forEach((btn, i) => {
+    if (i === idx) {
+      btn.style.background = 'var(--overlap)';
+      btn.style.color = '#0a0a0a';
+      btn.style.borderColor = 'var(--overlap)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text)';
+      btn.style.borderColor = 'var(--border)';
+    }
+  });
+  updateInvitePreview();
+}
+
+function updateInvitePreview() {
+  const recipientName = partnerName || 'them';
+  document.getElementById('invite-preview').innerHTML = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">To ${recipientName}</div>
+    <div style="font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.5;">${_inviteMsg || '...'}</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(201,179,245,0.06);
+      border:1px solid rgba(201,179,245,0.2);border-radius:8px;">
+      <span style="font-size:18px;">${_inviteOpp?.icon || '✨'}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${_inviteOpp?.title || ''}</div>
+        <div style="font-size:11px;color:var(--muted);">${_inviteDate}</div>
+      </div>
+    </div>`;
+}
+
+async function sendMatchInvite() {
+  const btn = document.getElementById('invite-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
+  const senderName = document.getElementById('save-name')?.value.trim()
+    || document.getElementById('wait-name')?.value.trim()
+    || 'Someone';
+
+  try {
+    const res = await fetch('/api/match/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender_name: senderName,
+        recipient_name: partnerName || null,
+        opportunity_id: _inviteOpp?.mock ? null : (_inviteOpp?.id || null),
+        opportunity_title: _inviteOpp?.title,
+        opportunity_vibe: _inviteOpp?.vibe || _inviteOpp?.sub || '',
+        date_label: _inviteDate,
+        message: _inviteMsg,
+        match_token: matchToken || null
+      })
+    });
+
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    _inviteToken = data.invite_token;
+    _inviteUrl = window.location.origin + data.invite_url;
+
+    btn.style.display = 'none';
+    document.getElementById('invite-delivery').style.display = '';
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Share this →';
+    showToast('Something went wrong - try again');
+  }
+}
+
+function deliverViaWhatsApp() {
+  const msg = `${_inviteMsg}\n\n${_inviteOpp?.title} · ${_inviteDate}\n\n${_inviteUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  showSentConfirmation();
+}
+
+function deliverViaCopy() {
+  navigator.clipboard.writeText(_inviteUrl).then(() => {
+    showToast('Link copied!');
+    showSentConfirmation();
+  });
+}
+
+function showSentConfirmation() {
+  document.getElementById('invite-delivery').style.display = 'none';
+  document.getElementById('invite-sent').style.display = '';
+
+  const signupEl = document.getElementById('result-signup');
+  if (signupEl && partnerName) {
+    const title = signupEl.querySelector('.screen-title');
+    const sub = signupEl.querySelector('.screen-sub');
+    if (title) title.textContent = `See when ${partnerName} responds.`;
+    if (sub) sub.textContent = `Save your calendar and we'll notify you the moment they reply.`;
+  }
+
+  if (typeof fbq !== 'undefined') {
+    fbq('trackCustom', 'MatchInviteSent', { match_type: matchTypeId, ...getUtmData() });
+  }
+}
+
+// Swipe-down to dismiss invite sheet
+(function() {
+  let _sheetTouchY = 0;
+  const sc = document.getElementById('invite-sheet-content');
+  if (sc) {
+    sc.addEventListener('touchstart', e => { _sheetTouchY = e.touches[0].clientY; }, { passive: true });
+    sc.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].clientY - _sheetTouchY;
+      if (diff > 80) closeInviteSheet();
+    }, { passive: true });
+  }
+})();
 
 // ── Toast ──────────────────────────────────────────────────────────────────────
 function showToast(msg) {
@@ -924,8 +1560,205 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-// If URL has /match/:token, this would be Person B's flow (future: fetch from API)
+// ── API integration ───────────────────────────────────────────────────────────
+let matchToken   = null;
+let matchTypeId  = null;
+let partnerName  = '';
+let matchShareUrl = null;
+let isPersonB    = false;
+
+// ── Route-based init: detect Person B ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  // URL: /match/:token → parts = ['match', 'sometoken']
+  if (parts[0] === 'match' && parts[1]) {
+    matchToken = parts[1];
+    isPersonB  = true;
+    // Person B - arrived via a direct match link
+    initPersonB(matchToken);
+  }
+});
+
+async function initPersonB(token) {
+  try {
+    const res  = await fetch(`/api/match/${token}`);
+    if (!res.ok) return; // bad token - fall through to splash screen
+    const data = await res.json();
+
+    const headline = document.querySelector('#screen-splash .splash-headline');
+    const btn = document.querySelector('#screen-splash .btn-primary');
+    const props = document.querySelector('#screen-splash .splash-props');
+    const fine = document.querySelector('#screen-splash .splash-fine');
+
+    if (data.status === 'completed') {
+      headline.innerHTML = 'This match is<br><em>already done.</em>';
+      if (props) props.innerHTML = `
+        <div class="splash-prop"><span class="splash-prop-icon">✅</span><div class="splash-prop-text">Ask ${data.person_a_name || 'them'} to share the result with you</div></div>
+        <div class="splash-prop"><span class="splash-prop-icon">🔄</span><div class="splash-prop-text">Or start your own match with someone new</div></div>
+      `;
+      if (fine) fine.textContent = '';
+      btn.textContent = 'Start my own match →';
+      btn.onclick = () => { isPersonB = false; matchToken = null; go('hook'); };
+      return;
+    }
+
+    const name = data.person_a_name || 'Someone';
+    headline.innerHTML = `${name} wants to check<br><em>your match.</em>`;
+    if (props) props.style.display = 'none';
+    if (fine) fine.textContent = `${name} is already waiting. Tap in your custody days and you'll both see if your free nights line up.`;
+    btn.textContent = 'Enter my schedule →';
+  } catch(e) { /* network error - show normal splash screen */ }
+}
+
+// ── yourScheduleNext: skips fork for Person B ─────────────────────────────────
+function yourScheduleNext() {
+  if (isPersonB) {
+    go('signup-wait');
+  } else {
+    go('fork');
+  }
+}
+
+// ── submitSignup: branches on Person A vs B ───────────────────────────────────
+async function submitSignup() {
+  if (isPersonB) {
+    await completeMatch();
+  } else {
+    await createMatch();
+  }
+}
+
+// ── Person A: create match request ───────────────────────────────────────────
+async function createMatch() {
+  const name  = document.getElementById('wait-name').value.trim();
+  const email = document.getElementById('wait-email').value.trim();
+  if (!name || !email) { showToast('Name and email required'); return; }
+
+  const schedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
+  const btn = document.getElementById('signup-submit-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const res  = await fetch('/api/match/create', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, email, schedule: JSON.stringify(schedule) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+
+    matchToken   = data.token;
+    matchShareUrl = window.location.origin + data.match_url;
+
+    // Update share message text
+    const msgEl = document.getElementById('share-msg');
+    if (msgEl) {
+      msgEl.innerHTML = `Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--accent);">${matchShareUrl}</span>`;
+    }
+
+    // Reveal real URL on waiting screen
+    document.getElementById('waiting-share').style.display = 'block';
+    document.getElementById('waiting-share-url').textContent = matchShareUrl;
+
+    go('waiting');
+    startWaitingPoll();
+  } catch(e) {
+    btn.disabled    = false;
+    btn.textContent = 'Notify me →';
+    showToast('Something went wrong - please try again.');
+  }
+}
+
+// ── Poll for Person B completion ────────────────────────────────────────────
+let _pollInterval = null;
+function startWaitingPoll() {
+  if (_pollInterval) clearInterval(_pollInterval);
+  _pollInterval = setInterval(async () => {
+    if (!matchToken) return;
+    try {
+      const res = await fetch(`/api/match/${matchToken}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'completed') {
+        clearInterval(_pollInterval);
+        _pollInterval = null;
+        // Load Person B's schedule and show result
+        if (data.person_a_schedule) {
+          const bSchedule = JSON.parse(data.person_b_schedule || '{}');
+          if (bSchedule.week1) {
+            state.their.week1 = bSchedule.week1;
+            state.their.week2 = bSchedule.week2 || state.their.week1;
+            state.their.twoWeek = bSchedule.twoWeek || false;
+          }
+        }
+        weekStartDate = weekStartDate || getNextFullWeekStart();
+        showToast(`${data.person_b_name || 'They'} filled in their schedule!`);
+        showResult();
+      }
+    } catch(e) {}
+  }, 10000);
+}
+
+// ── Person B: complete match + show result ────────────────────────────────────
+async function completeMatch() {
+  const name  = document.getElementById('wait-name').value.trim();
+  const email = document.getElementById('wait-email').value.trim();
+  if (!name || !email) { showToast('Name and email required'); return; }
+
+  const schedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
+  const btn = document.getElementById('signup-submit-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Computing match…';
+
+  try {
+    // Submit Person B's schedule
+    const completeRes = await fetch(`/api/match/${matchToken}/complete`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, email, schedule: JSON.stringify(schedule) })
+    });
+    if (!completeRes.ok) throw new Error('Failed to submit');
+
+    // Fetch Person A's schedule to compute overlap client-side
+    const matchRes  = await fetch(`/api/match/${matchToken}`);
+    const matchData = await matchRes.json();
+
+    if (matchData.person_a_schedule) {
+      const aSchedule     = JSON.parse(matchData.person_a_schedule);
+      state.their.week1   = aSchedule.week1;
+      state.their.week2   = aSchedule.week2;
+      state.their.twoWeek = aSchedule.twoWeek;
+    }
+
+    weekStartDate = weekStartDate || getNextFullWeekStart();
+    showResult();
+  } catch(e) {
+    btn.disabled    = false;
+    btn.textContent = 'Notify me →';
+    showToast('Something went wrong - please try again.');
+  }
+}
+
+// ── UTM tracking ─────────────────────────────────────────────────────────────
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
+    const v = params.get(k);
+    if (v) sessionStorage.setItem(k, v);
+  });
+})();
+
+function getUtmData() {
+  const utm = {};
+  ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
+    const v = sessionStorage.getItem(k);
+    if (v) utm[k] = v;
+  });
+  return utm;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>
