@@ -686,7 +686,7 @@
   <div class="screen" id="screen-result">
     <!-- Match type label -->
     <div style="text-align:center;padding-top:32px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">Your calendar rhythm</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">Your calendar overlap</div>
       <div id="result-match-label" style="display:inline-block;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--overlap);padding:8px 20px;border:1.5px solid var(--overlap-border);border-radius:20px;background:var(--overlap-bg);"></div>
       <div id="result-match-scale" style="display:flex;justify-content:center;gap:6px;margin-top:12px;font-size:10px;color:var(--muted);letter-spacing:0.02em;"></div>
     </div>
@@ -1010,12 +1010,7 @@ function showResult() {
     });
   });
 
-  // Render upcoming dates
-  document.getElementById('result-upcoming').innerHTML = upcoming.map(d => {
-    const dt = new Date(d.date + 'T12:00:00');
-    const deepLink = `/calendar?action=plan&date=${d.date}` + (partnerName ? `&with=${encodeURIComponent(partnerName)}` : '');
-    return `<a href="${deepLink}" class="upcoming-chip" onclick="handleDateTap(event, '${d.date}')">${DAY_ABBR[dt.getDay()]} ${MONTH_ABBR[dt.getMonth()]} ${dt.getDate()}</a>`;
-  }).join('');
+  // Upcoming dates removed - calendar hover serves this purpose now
 
   // Share button text
   const shareBtn = document.getElementById('result-share-btn');
