@@ -38,9 +38,9 @@
       --border: rgba(226,226,226,0.08);
       --text: #e2e2e2;
       --muted: rgba(226,226,226,0.42);
-      --overlap: #f5c563;
-      --overlap-bg: rgba(245,197,99,0.12);
-      --overlap-border: rgba(245,197,99,0.45);
+      --overlap: #c9b3f5;
+      --overlap-bg: rgba(201,179,245,0.12);
+      --overlap-border: rgba(201,179,245,0.40);
       --yours: rgba(230,249,82,0.12);
       --yours-border: rgba(230,249,82,0.35);
       --theirs: rgba(129,140,248,0.15);
@@ -469,10 +469,34 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- SCREEN: HOOK (first and only landing screen)                      -->
+  <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                  -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="hero-screen active" id="screen-hook">
-    <img src="/logo-wordmark.svg" alt="Spontany" style="height:40px;margin-bottom:32px;display:block;">
+  <div class="splash-screen active" id="screen-splash">
+    <img src="/logo-wordmark.svg" alt="Spontany" style="height:48px;margin-bottom:32px;display:block;">
+    <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
+    <div class="splash-props">
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>See when you're both free</strong> - no awkward "do you have the kids?" texts</div>
+      </div>
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>Know before you ask</strong> - custody schedules overlaid in one view</div>
+      </div>
+      <div class="splash-prop">
+        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <div class="splash-prop-text"><strong>Plan dates in seconds</strong>, not days of back-and-forth</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="go('hook')">Check your match →</button>
+    <p class="splash-fine">Free. Private. 30 seconds.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: HOOK                                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="hero-screen" id="screen-hook">
+    <img src="/logo.svg" alt="Spontany" style="width:64px;height:64px;margin-bottom:28px;">
     <h1 class="hero-headline">Do your schedules actually work?</h1>
     <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up - before the conversation gets awkward.</p>
     <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
@@ -667,6 +691,11 @@
   <!-- RESULT PAGE                                                        -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-result">
+    <!-- Match type label -->
+    <div style="text-align:center;padding-top:32px;">
+      <div id="result-match-label" style="display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--overlap);padding:6px 16px;border:1.5px solid var(--overlap-border);border-radius:20px;background:var(--overlap-bg);"></div>
+    </div>
+
     <!-- Emotional headline -->
     <div class="result-hero">
       <div class="result-headline" id="result-headline">You've got <em>Thursday nights.</em></div>
@@ -676,17 +705,17 @@
     <!-- Verdict - the vision -->
     <div class="result-verdict" id="result-verdict"></div>
 
-    <!-- Your first dates -->
-    <div class="insight-card">
+    <!-- Your first dates - centered -->
+    <div class="insight-card" style="text-align:center;">
       <div class="insight-title">Your first dates</div>
-      <div class="upcoming-dates" id="result-upcoming"></div>
+      <div class="upcoming-dates" id="result-upcoming" style="justify-content:center;"></div>
       <p style="font-size:12px;color:var(--muted);margin-top:14px;">Tap one to start planning.</p>
     </div>
 
-    <!-- Signup CTA - tight, warm -->
+    <!-- Signup CTA -->
     <div class="signup-section" id="result-signup">
-      <div class="screen-title" style="font-size:18px;">Don't lose this.</div>
-      <div class="screen-sub" style="margin-bottom:20px;font-size:13px;">Spontany keeps your calendars in sync - so you never miss a window.</div>
+      <div class="screen-title" style="font-size:18px;">This is just the beginning.</div>
+      <div class="screen-sub" style="margin-bottom:20px;font-size:13px;">Spontany gives you a clear view of your social calendar - who's free when, plans that fit, and zero back-and-forth.</div>
       <div class="field-group">
         <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
       </div>
@@ -694,12 +723,13 @@
         <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
       </div>
       <button class="btn-primary" onclick="saveCalendar()">Save my calendar →</button>
-      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free. Private. No app store needed.</p>
+      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free. Private. 2 minutes to set up.</p>
     </div>
 
     <!-- Share -->
     <div style="text-align:center;margin:20px 0 16px;">
-      <button class="btn-outline" onclick="shareResult()" id="result-share-btn">Tell them about it →</button>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Want to share this result?</p>
+      <button class="btn-outline" onclick="shareResult()" id="result-share-btn">Share →</button>
     </div>
   </div>
 
@@ -723,7 +753,8 @@ let weekStartDate = null;
 
 // ── Progress map ──────────────────────────────────────────────────────────────
 const PROGRESS = {
-  'hook': 0,
+  'splash': 0,
+  'hook': 5,
   'your-schedule': 15,
   'fork': 35,
   'their-schedule': 55,
@@ -735,7 +766,7 @@ const PROGRESS = {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function go(screen) {
-  document.querySelectorAll('.screen, .hero-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen, .hero-screen, .splash-screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
   if (el) el.classList.add('active');
   document.getElementById('progress').style.width = (PROGRESS[screen] ?? 50) + '%';
@@ -883,27 +914,32 @@ function showResult() {
   const upcoming = allOverlap.slice(0, 3);
   const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
 
-  // Emotional headline + sub based on overlap quality
-  let headline, sub, verdict;
+  // Match type naming + rhythm-based framing
+  let headline, sub, verdict, matchLabel;
 
   if (totalPct >= 60) {
+    matchLabel = "All In";
     headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
-    sub = `${allOverlap.length} nights over the next 3 months where you're both free.`;
-    verdict = "Weeknight dinners. Lazy mornings. Room to just be together. Your schedules leave space for something real.";
+    sub = `Your weeks overlap often - there's real room here for something easy and natural.`;
+    verdict = "Weeknight dinners. Lazy mornings. The kind of rhythm where things just happen. Keep some nights for yourself too - the best relationships leave room to breathe.";
   } else if (totalPct >= 35) {
+    matchLabel = "Sweet Spot";
     headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `${allOverlap.length} shared free nights over the next 3 months.`;
-    verdict = "Enough overlap to build something meaningful. The best relationships don't need every night - they need the right ones.";
+    sub = `A well-balanced rhythm - enough overlap to connect, enough space to live your own lives.`;
+    verdict = "This is where the best relationships tend to live. Enough time to build something real, without losing yourselves in the process.";
   } else if (totalPct >= 15) {
+    matchLabel = "Slow Burn";
     headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `${allOverlap.length} nights where you're both free.`;
-    verdict = "Every date will feel intentional. No autopilot, no taking it for granted. Some people wait years for that kind of presence.";
+    sub = `Your schedules don't cross often - but when they do, it counts.`;
+    verdict = "Every date will feel intentional. No autopilot, no taking it for granted. Build anticipation, make the time together something you both look forward to.";
   } else {
-    headline = `It's a tight window.`;
-    sub = `${allOverlap.length} shared free nights over 3 months.`;
-    verdict = "Rare nights make for memorable ones. And now you know exactly when they are - no more guessing, no more awkward asks.";
+    matchLabel = "Rare Spark";
+    headline = `It's a <em>tight window.</em>`;
+    sub = `Your schedules rarely overlap - but now you know exactly when they do.`;
+    verdict = "Rare nights make for memorable ones. This works best when you build up to the time together - and really make it count when it lands.";
   }
 
+  document.getElementById('result-match-label').textContent = matchLabel;
   document.getElementById('result-headline').innerHTML = headline;
   document.getElementById('result-sub').textContent = sub;
   document.getElementById('result-verdict').textContent = verdict;
@@ -1042,7 +1078,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (parts[0] === 'match' && parts[1]) {
     matchToken = parts[1];
     isPersonB  = true;
-    // Person B - arrived via a direct match link
+    // Skip splash for Person B - they arrived via a direct match link
+    document.getElementById('screen-splash')?.classList.remove('active');
     document.getElementById('screen-hook')?.classList.add('active');
     initPersonB(matchToken);
   }
