@@ -38,11 +38,14 @@
       --border: rgba(226,226,226,0.08);
       --text: #e2e2e2;
       --muted: rgba(226,226,226,0.42);
+      --accent: #c9b3f5;
+      --accent-bg: rgba(201,179,245,0.10);
+      --accent-border: rgba(201,179,245,0.35);
       --overlap: #c9b3f5;
       --overlap-bg: rgba(201,179,245,0.12);
       --overlap-border: rgba(201,179,245,0.40);
-      --yours: rgba(230,249,82,0.12);
-      --yours-border: rgba(230,249,82,0.35);
+      --yours: rgba(201,179,245,0.12);
+      --yours-border: rgba(201,179,245,0.35);
       --theirs: rgba(129,140,248,0.15);
       --theirs-border: rgba(129,140,248,0.45);
     }
@@ -78,7 +81,7 @@
       position: sticky; top: 0; z-index: 50;
     }
     .progress-fill {
-      height: 100%; background: var(--lime);
+      height: 100%; background: var(--accent);
       transition: width 0.4s ease; width: 0%;
     }
 
@@ -116,7 +119,7 @@
       letter-spacing: -0.02em; margin-bottom: 32px;
     }
     .splash-headline em {
-      font-style: normal; color: var(--lime);
+      font-style: normal; color: var(--accent);
     }
     .splash-props {
       display: flex; flex-direction: column; gap: 16px;
@@ -131,7 +134,7 @@
     .splash-prop-text {
       font-size: 14px; color: var(--text); line-height: 1.5;
     }
-    .splash-prop-text strong { color: var(--lime); font-weight: 700; }
+    .splash-prop-text strong { color: var(--accent); font-weight: 700; }
     .splash-fine {
       font-size: 12px; color: rgba(226,226,226,0.25); margin-top: 16px;
     }
@@ -163,15 +166,15 @@
     .btn-primary {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding: 16px 32px;
-      background: var(--lime); color: #0e0e0e;
+      background: var(--accent); color: #0e0e0e;
       border: none; border-radius: 28px;
       font-size: 16px; font-weight: 700; cursor: pointer;
       font-family: inherit;
-      box-shadow: 0 6px 24px rgba(230,249,82,0.25);
+      box-shadow: 0 6px 24px rgba(201,179,245,0.25);
       transition: transform 0.12s, box-shadow 0.12s;
       width: 100%;
     }
-    .btn-primary:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,0.15); }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(201,179,245,0.15); }
     .btn-outline {
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding: 14px 24px;
@@ -181,7 +184,7 @@
       font-family: inherit; transition: all 0.15s;
       width: 100%;
     }
-    .btn-outline:hover { border-color: var(--lime); color: var(--lime); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
     .btn-sm { padding: 10px 18px; font-size: 13px; width: auto; }
     .btn-wa {
       display: inline-flex; align-items: center; justify-content: center;
@@ -232,8 +235,8 @@
     .wp-cell.selected {
       background: var(--yours); border-color: var(--yours-border);
     }
-    .wp-cell.selected .wp-num { color: var(--lime); }
-    .wp-cell.selected .wp-month { color: var(--lime-dim); }
+    .wp-cell.selected .wp-num { color: var(--accent); }
+    .wp-cell.selected .wp-month { color: var(--accent); }
 
     .wp-legend {
       display: flex; gap: 14px; font-size: 12px;
@@ -248,10 +251,10 @@
       width: 100%; margin-top: 14px; padding: 12px 16px;
       background: var(--surface); border: 2px dashed var(--border);
       border-radius: 10px; font-size: 13px; font-weight: 700;
-      color: var(--lime); cursor: pointer; text-align: center;
+      color: var(--accent); cursor: pointer; text-align: center;
       transition: background 0.15s, border-color 0.15s; font-family: inherit;
     }
-    .expand-btn:hover { background: rgba(230,249,82,0.10); border-color: var(--lime); }
+    .expand-btn:hover { background: rgba(201,179,245,0.10); border-color: var(--accent); }
 
     .week-section-label {
       font-size: 12px; font-weight: 700; color: var(--muted);
@@ -268,7 +271,7 @@
       transition: background 0.13s, border-color 0.13s, transform 0.1s;
     }
     .fork-card:active { transform: scale(0.98); }
-    .fork-card:hover { border-color: var(--lime); background: rgba(230,249,82,0.05); }
+    .fork-card:hover { border-color: var(--accent); background: rgba(201,179,245,0.05); }
     .fork-emoji { font-size: 32px; flex-shrink: 0; }
     .fork-label { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
     .fork-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
@@ -313,7 +316,7 @@
     .insight-body {
       font-size: 14px; color: var(--text); line-height: 1.7;
     }
-    .insight-body strong { color: var(--lime); }
+    .insight-body strong { color: var(--accent); }
 
     /* Upcoming dates */
     .upcoming-dates {
@@ -349,7 +352,7 @@
       color: var(--muted); background: rgba(255,255,255,0.02);
     }
     .mini-cal-day.yours {
-      background: var(--yours); color: var(--lime);
+      background: var(--yours); color: var(--accent);
     }
     .mini-cal-day.theirs {
       background: var(--theirs); color: #818cf8;
@@ -416,7 +419,7 @@
       font-size: 15px; font-family: inherit; outline: none;
       transition: border-color 0.15s;
     }
-    .field-input:focus { border-color: var(--lime); }
+    .field-input:focus { border-color: var(--accent); }
     .field-input::placeholder { color: var(--muted); }
 
     /* ── Waiting screen ── */
@@ -444,8 +447,8 @@
     /* ── Toast ── */
     .toast {
       position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: var(--surface); color: var(--lime);
-      border: 1px solid var(--lime-dim);
+      background: var(--surface); color: var(--accent);
+      border: 1px solid var(--accent);
       padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
       z-index: 9999; opacity: 0; transition: opacity 0.3s;
       pointer-events: none;
@@ -472,7 +475,6 @@
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                  -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="splash-screen active" id="screen-splash">
-    <img src="/logo-wordmark.svg" alt="Spontany" style="height:48px;margin-bottom:32px;display:block;">
     <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
     <div class="splash-props">
       <div class="splash-prop">
@@ -488,20 +490,11 @@
         <div class="splash-prop-text"><strong>Plan dates in seconds</strong>, not days of back-and-forth</div>
       </div>
     </div>
-    <button class="btn-primary" onclick="go('hook')">Check your match →</button>
+    <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
     <p class="splash-fine">Free. Private. 30 seconds.</p>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- SCREEN: HOOK                                                       -->
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="hero-screen" id="screen-hook">
-    <img src="/logo.svg" alt="Spontany" style="width:64px;height:64px;margin-bottom:28px;">
-    <h1 class="hero-headline">Do your schedules actually work?</h1>
-    <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up - before the conversation gets awkward.</p>
-    <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
-    <p class="hero-fine">Free. Private. Takes 30 seconds.</p>
-  </div>
+  <!-- Hero screen removed - splash goes directly to your-schedule -->
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: YOUR SCHEDULE                                              -->
@@ -612,7 +605,7 @@
 
     <div class="share-section">
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Message preview</div>
-      <div class="share-msg-box" id="share-msg">Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">spontany.io/match/abc123</span></div>
+      <div class="share-msg-box" id="share-msg">Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--accent);">spontany.io/match/abc123</span></div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
         <button class="btn-wa" onclick="shareWhatsApp()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -671,7 +664,7 @@
     <!-- Real share link (populated after API call) -->
     <div id="waiting-share" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin:0 0 24px;text-align:center;">
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">Send this link</div>
-      <div style="background:var(--cell-bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;color:var(--lime);word-break:break-all;margin-bottom:12px;" id="waiting-share-url"></div>
+      <div style="background:var(--cell-bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;color:var(--accent);word-break:break-all;margin-bottom:12px;" id="waiting-share-url"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn-wa" style="font-size:13px;padding:10px;" onclick="shareWhatsApp()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -693,7 +686,9 @@
   <div class="screen" id="screen-result">
     <!-- Match type label -->
     <div style="text-align:center;padding-top:32px;">
-      <div id="result-match-label" style="display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--overlap);padding:6px 16px;border:1.5px solid var(--overlap-border);border-radius:20px;background:var(--overlap-bg);"></div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">Your calendar rhythm</div>
+      <div id="result-match-label" style="display:inline-block;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--overlap);padding:8px 20px;border:1.5px solid var(--overlap-border);border-radius:20px;background:var(--overlap-bg);"></div>
+      <div id="result-match-scale" style="display:flex;justify-content:center;gap:6px;margin-top:12px;font-size:10px;color:var(--muted);letter-spacing:0.02em;"></div>
     </div>
 
     <!-- Emotional headline -->
@@ -704,6 +699,17 @@
 
     <!-- Verdict - the vision -->
     <div class="result-verdict" id="result-verdict"></div>
+
+    <!-- Two-week pattern -->
+    <div class="insight-card">
+      <div class="insight-title">Your weekly rhythm</div>
+      <div id="result-pattern" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
+      <div style="display:flex;gap:12px;margin-top:12px;font-size:10px;color:var(--muted);">
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:3px;background:var(--overlap-bg);border:1px solid var(--overlap-border);"></span> Both free</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:3px;background:var(--yours);border:1px solid var(--yours-border);"></span> You</span>
+        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:3px;background:var(--theirs);border:1px solid var(--theirs-border);"></span> Them</span>
+      </div>
+    </div>
 
     <!-- Your first dates - centered -->
     <div class="insight-card" style="text-align:center;">
@@ -940,9 +946,34 @@ function showResult() {
   }
 
   document.getElementById('result-match-label').textContent = matchLabel;
+  // Show scale of all match types with current highlighted
+  const allTypes = ['Rare Spark', 'Slow Burn', 'Sweet Spot', 'All In'];
+  document.getElementById('result-match-scale').innerHTML = allTypes.map(t =>
+    `<span style="padding:4px 8px;border-radius:10px;${t === matchLabel ? 'color:var(--overlap);background:var(--overlap-bg);font-weight:700;' : ''}">${t}</span>`
+  ).join('<span style="color:var(--border);">·</span>');
   document.getElementById('result-headline').innerHTML = headline;
   document.getElementById('result-sub').textContent = sub;
   document.getElementById('result-verdict').textContent = verdict;
+
+  // Render two-week pattern visualization
+  const patternDays = days.slice(0, 14);
+  const DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let patternHtml = DOW_SHORT.map(d => `<div style="text-align:center;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:4px 0;">${d}</div>`).join('');
+  // Pad to start on correct day of week
+  if (patternDays.length > 0) {
+    const firstDow = new Date(patternDays[0].date + 'T12:00:00').getDay();
+    for (let i = 0; i < firstDow; i++) patternHtml += '<div></div>';
+  }
+  patternDays.forEach(d => {
+    let cls = '';
+    if (d.overlap) cls = 'background:var(--overlap-bg);border:1.5px solid var(--overlap-border);color:var(--overlap);';
+    else if (d.yours) cls = 'background:var(--yours);border:1.5px solid var(--yours-border);color:var(--accent);';
+    else if (d.theirs) cls = 'background:var(--theirs);border:1.5px solid var(--theirs-border);color:#818cf8;';
+    else cls = 'background:rgba(255,255,255,0.02);border:1.5px solid transparent;color:var(--muted);';
+    const dt = new Date(d.date + 'T12:00:00');
+    patternHtml += `<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;${cls}">${dt.getDate()}</div>`;
+  });
+  document.getElementById('result-pattern').innerHTML = patternHtml;
 
   // Render upcoming dates
   document.getElementById('result-upcoming').innerHTML = upcoming.map(d => {
@@ -1029,32 +1060,45 @@ function handleDateTap(e, date) {
   }
 }
 
-function saveCalendar() {
+async function saveCalendar() {
   const name = document.getElementById('save-name')?.value.trim();
   const email = document.getElementById('save-email')?.value.trim();
   if (!name || !email) { showToast('Name and email required'); return; }
+
+  const btn = document.querySelector('#result-signup .btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
 
   // Meta Pixel - track signup as Lead event
   if (typeof fbq !== 'undefined') {
     fbq('track', 'Lead', { content_name: 'match_signup', ...getUtmData() });
   }
 
-  const signupEl = document.getElementById('result-signup');
-  const redirect = signupEl?.dataset?.redirect;
+  try {
+    const res = await fetch('/api/auth/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name })
+    });
 
-  // In production: POST to /api/users/setup with schedule pre-filled
-  // Then redirect to calendar with plan crafter pre-populated
-  signupEl.innerHTML = `
-    <div style="text-align:center;padding:12px 0;">
-      <div style="margin-bottom:8px;"><img src="/logo.svg" style="width:32px;height:32px;"></div>
-      <div class="screen-title" style="font-size:18px;">Saved!</div>
-      <div class="screen-sub" style="margin-top:4px;">Your calendar is ready.${redirect ? ' Taking you there...' : ''}</div>
-    </div>
-  `;
-  showToast('Calendar saved!');
-
-  if (redirect) {
-    setTimeout(() => { window.location.href = redirect; }, 1200);
+    const signupEl = document.getElementById('result-signup');
+    if (res.ok) {
+      signupEl.innerHTML = `
+        <div style="text-align:center;padding:12px 0;">
+          <div style="margin-bottom:8px;"><img src="/logo.svg" style="width:32px;height:32px;"></div>
+          <div class="screen-title" style="font-size:18px;">Check your email.</div>
+          <div class="screen-sub" style="margin-top:4px;">We sent a setup link to <strong style="color:var(--overlap);">${email}</strong>. Tap it to build your full calendar.</div>
+        </div>
+      `;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Save my calendar →';
+      showToast('Something went wrong - please try again.');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Save my calendar →';
+    showToast('Something went wrong - please try again.');
   }
 }
 
@@ -1078,9 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (parts[0] === 'match' && parts[1]) {
     matchToken = parts[1];
     isPersonB  = true;
-    // Skip splash for Person B - they arrived via a direct match link
-    document.getElementById('screen-splash')?.classList.remove('active');
-    document.getElementById('screen-hook')?.classList.add('active');
+    // Person B - arrived via a direct match link
     initPersonB(matchToken);
   }
 });
@@ -1088,21 +1130,28 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initPersonB(token) {
   try {
     const res  = await fetch(`/api/match/${token}`);
-    if (!res.ok) return; // bad token - fall through to normal hero screen
+    if (!res.ok) return; // bad token - fall through to splash screen
     const data = await res.json();
 
+    const headline = document.querySelector('#screen-splash .splash-headline');
+    const btn = document.querySelector('#screen-splash .btn-primary');
+    const props = document.querySelector('#screen-splash .splash-props');
+    const fine = document.querySelector('#screen-splash .splash-fine');
+
     if (data.status === 'completed') {
-      document.querySelector('#screen-hook .hero-headline').textContent = 'Already matched!';
-      document.querySelector('#screen-hook .hero-sub').textContent      = 'This match has already been completed. Ask your partner to share the result with you.';
-      document.querySelector('#screen-hook .btn-primary').style.display = 'none';
+      headline.innerHTML = 'Already matched!';
+      if (props) props.style.display = 'none';
+      if (fine) fine.textContent = 'This match has already been completed. Ask your partner to share the result with you.';
+      btn.style.display = 'none';
       return;
     }
 
     const name = data.person_a_name || 'Someone';
-    document.querySelector('#screen-hook .hero-headline').textContent = `${name} wants to check your match`;
-    document.querySelector('#screen-hook .hero-sub').textContent      = `${name} is already waiting. Tap in your custody days and you'll both see if your free nights line up.`;
-    document.querySelector('#screen-hook .btn-primary').textContent   = 'Enter my schedule →';
-  } catch(e) { /* network error - show normal screen */ }
+    headline.innerHTML = `${name} wants to check<br><em>your match.</em>`;
+    if (props) props.style.display = 'none';
+    if (fine) fine.textContent = `${name} is already waiting. Tap in your custody days and you'll both see if your free nights line up.`;
+    btn.textContent = 'Enter my schedule →';
+  } catch(e) { /* network error - show normal splash screen */ }
 }
 
 // ── yourScheduleNext: skips fork for Person B ─────────────────────────────────
@@ -1149,7 +1198,7 @@ async function createMatch() {
     // Update share message text
     const msgEl = document.getElementById('share-msg');
     if (msgEl) {
-      msgEl.innerHTML = `Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--lime);">${matchShareUrl}</span>`;
+      msgEl.innerHTML = `Hey - I found this thing that checks if our custody schedules line up. Fill yours in and we'll both see the answer: <span style="color:var(--accent);">${matchShareUrl}</span>`;
     }
 
     // Reveal real URL on waiting screen
