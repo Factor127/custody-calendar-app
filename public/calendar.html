@@ -4153,12 +4153,12 @@ async function sendEventSuggestion(outingId) {
     if (!res.ok) throw new Error();
     showToast('Suggestion sent!');
     toggleEPSuggest();
-    // Save to opportunity DB if came from Places
+    // Save to opportunity DB if came from Places (private by default)
     const placeId = placeInput?.dataset?.placeId;
     if (suggestedPlace && placeId) {
       fetch(`/api/opportunities/direct?token=${MY_TOKEN}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: suggestedPlace, place_id: placeId, address: placeInput.dataset.placeAddress || '', source: 'suggestion' }),
+        body: JSON.stringify({ title: suggestedPlace, place_id: placeId, address: placeInput.dataset.placeAddress || '', source: 'suggestion', share_to_community: false }),
       }).catch(() => {});
     }
     await openEventPane(outingId);
@@ -4300,7 +4300,7 @@ async function sendSuggestion(outingId) {
     showToast('Suggestion sent!');
     toggleSuggestSection();
 
-    // Save place to opportunity DB if it came from Places autocomplete
+    // Save place to opportunity DB if it came from Places autocomplete (private by default)
     const placeId = placeInput?.dataset?.placeId;
     if (suggestedPlace && placeId) {
       fetch(`/api/opportunities/direct?token=${MY_TOKEN}`, {
@@ -4311,6 +4311,7 @@ async function sendSuggestion(outingId) {
           place_id: placeId,
           address:  placeInput.dataset.placeAddress || '',
           source:   'suggestion',
+          share_to_community: false,
         }),
       }).catch(() => {}); // fire-and-forget, non-critical
     }
@@ -5767,6 +5768,17 @@ function showToast(msg) {
       <div class="browse-loading">Finding your matches…</div>
     </div>
     <div class="browse-submit-status" id="browse-submit-status"></div>
+    <div id="browse-community-prompt" style="display:none;padding:10px 16px;background:rgba(124,92,191,0.08);border-radius:8px;margin:4px 16px 8px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+        <input type="checkbox" id="browse-share-toggle" checked style="accent-color:var(--accent,#7c5cbf);width:16px;height:16px;">
+        Share with the Spontany community
+      </label>
+      <input type="text" id="browse-contributor-note" maxlength="200"
+        placeholder="Add a tip (e.g. 'Great for rainy days with toddlers')"
+        style="width:100%;margin-top:8px;padding:8px 12px;background:var(--surface);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:13px;box-sizing:border-box;">
+      <button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%;"
+        onclick="confirmBrowseShare()">Done</button>
+    </div>
     <div class="browse-submit-bar">
       <input class="browse-url-input" id="browse-url-input" type="url" placeholder="Paste an event/venue link to add it…">
       <button class="btn btn-primary btn-sm" onclick="submitBrowseUrl()" id="browse-submit-btn">Add</button>
@@ -5856,6 +5868,15 @@ function showToast(msg) {
       <textarea id="ss-link-input" class="ss-link-textarea" placeholder="https://…"></textarea>
       <div id="ss-link-status" class="ss-link-status"></div>
       <div id="ss-link-preview" style="display:none"></div>
+      <div id="ss-community-prompt" style="display:none;padding:10px 14px;background:rgba(124,92,191,0.08);border-radius:8px;margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="ss-share-toggle" checked style="accent-color:var(--accent,#7c5cbf);width:16px;height:16px;">
+          Share with the Spontany community
+        </label>
+        <input type="text" id="ss-contributor-note" maxlength="200"
+          placeholder="Add a tip (e.g. 'Perfect for a first date')"
+          style="width:100%;margin-top:8px;padding:8px 12px;background:var(--surface);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);font-size:13px;box-sizing:border-box;">
+      </div>
       <div style="flex:1"></div>
       <div class="ss-footer">
         <button class="btn btn-primary" style="width:100%;padding:14px;" id="ss-link-btn" onclick="ssAnalyzeLink()">Analyze →</button>
@@ -6195,11 +6216,35 @@ async function ssAnalyzeLink() {
     _ssShowLinkPreview(draft);
     _ssSetLinkStatus('success', data.duplicate ? '✓ Already in your library — details loaded' : '✓ Details extracted');
 
+    // Show community prompt for new (non-duplicate) opportunities
+    const ssCommunityPrompt = document.getElementById('ss-community-prompt');
+    if (!data.duplicate && oppId) {
+      ssCommunityPrompt.style.display = 'block';
+      document.getElementById('ss-share-toggle').checked = true;
+      document.getElementById('ss-contributor-note').value = '';
+    } else {
+      ssCommunityPrompt.style.display = 'none';
+    }
+
     // Pre-populate the main form
     ssPrefillFromDraft({ id: oppId, ...draft });
 
     // Brief pause so user sees the preview, then advance
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 2500));
+
+    // Apply community sharing before moving on
+    if (!data.duplicate && oppId) {
+      const ssShare = document.getElementById('ss-share-toggle').checked;
+      const ssNote  = document.getElementById('ss-contributor-note').value.trim();
+      ssCommunityPrompt.style.display = 'none';
+      if (ssShare) {
+        fetch(`/api/opportunities/${oppId}/share?token=${MY_TOKEN}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contributor_note: ssNote || null })
+        }).catch(() => {});
+      }
+    }
+
     ssGoTo('main', '✨ Start something');
     if (_ssSelectedDate) {
       setTimeout(() => {
@@ -6635,7 +6680,8 @@ async function openSSReview() {
           title: _ssLinkedOpp.title || what, type: _ssLinkedOpp.type || 'venue',
           location_name: _ssLinkedOpp.location_name || null,
           source_url: _ssLinkedOpp.source_url || null,
-          place_id: _ssLinkedOpp._placeId || null, tags: [], confidence_score: 0.70
+          place_id: _ssLinkedOpp._placeId || null, tags: [], confidence_score: 0.70,
+          share_to_community: false
         })
       });
       if (saveRes.ok) { const s = await saveRes.json(); opportunityId = s.id; _ssLinkedOpp.id = opportunityId; }
@@ -6899,6 +6945,7 @@ function renderBrowseMatches() {
         </div>
       </div>
       ${o.relevance_reason ? `<div class="opp-reason">✦ ${o.relevance_reason}</div>` : ''}
+      ${o.contributor_note ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:4px;padding:0 2px;">"${o.contributor_note}" - a parent like you</div>` : ''}
       ${tags.length ? `<div class="opp-chips">${tags.map(t=>`<span class="opp-chip">${t}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
@@ -7118,6 +7165,8 @@ async function deleteOpportunity(e, oppId) {
   }
 }
 
+let _pendingCommunityOppId = null;
+
 async function submitBrowseUrl() {
   const input  = document.getElementById('browse-url-input');
   const status = document.getElementById('browse-submit-status');
@@ -7139,19 +7188,44 @@ async function submitBrowseUrl() {
 
     if (data.duplicate) {
       status.textContent = '✓ Already in the system — added to your list';
+      input.value = '';
+      await loadBrowseMatches();
+      setTimeout(() => { status.textContent = ''; }, 4000);
     } else {
       status.textContent = `✓ "${data.draft?.title || 'Event'}" added!`;
+      input.value = '';
+      _pendingCommunityOppId = data.opportunity_id;
+      document.getElementById('browse-community-prompt').style.display = 'block';
+      document.getElementById('browse-share-toggle').checked = true;
+      document.getElementById('browse-contributor-note').value = '';
+      await loadBrowseMatches();
     }
-
-    input.value = '';
-    await loadBrowseMatches();
   } catch(e) {
     status.textContent = `✗ ${e.message}`;
+    setTimeout(() => { status.textContent = ''; }, 4000);
   } finally {
     btn.disabled    = false;
     btn.textContent = 'Add';
-    setTimeout(() => { status.textContent = ''; }, 4000);
   }
+}
+
+async function confirmBrowseShare() {
+  const prompt = document.getElementById('browse-community-prompt');
+  const share  = document.getElementById('browse-share-toggle').checked;
+  const note   = document.getElementById('browse-contributor-note').value.trim();
+  prompt.style.display = 'none';
+
+  if (_pendingCommunityOppId && share) {
+    try {
+      await fetch(`/api/opportunities/${_pendingCommunityOppId}/share?token=${MY_TOKEN}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contributor_note: note || null })
+      });
+      showToast('Shared with the community!');
+    } catch(e) { /* non-critical */ }
+  }
+  _pendingCommunityOppId = null;
+  document.getElementById('browse-submit-status').textContent = '';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

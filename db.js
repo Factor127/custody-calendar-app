@@ -59,6 +59,9 @@ try { db.exec('ALTER TABLE opportunities ADD COLUMN view_count INTEGER DEFAULT 0
 try { db.exec('ALTER TABLE opportunities ADD COLUMN save_count INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE opportunities ADD COLUMN plan_count INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE opportunities ADD COLUMN outing_count INTEGER DEFAULT 0'); } catch(e) {}
+// ── Community contributions ─────────────────────────────────────────────────
+try { db.exec('ALTER TABLE opportunities ADD COLUMN contributor_note TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE opportunities ADD COLUMN shared_to_community INTEGER DEFAULT 0'); } catch(e) {}
 try {
   db.exec(`CREATE TABLE IF NOT EXISTS opportunity_events (
     id             TEXT PRIMARY KEY,
@@ -560,6 +563,14 @@ const q = {
       price_tier=?,confidence_score=?,visibility=?
     WHERE id=?
   `),
+  shareOpportunity: db.prepare(`
+    UPDATE opportunities SET visibility='public', shared_to_community=1, contributor_note=?
+    WHERE id=?
+  `),
+  unshareOpportunity: db.prepare(`
+    UPDATE opportunities SET visibility='private', shared_to_community=0
+    WHERE id=?
+  `),
   getOpportunityById: db.prepare('SELECT * FROM opportunities WHERE id=?'),
   searchOpportunities: db.prepare(`
     SELECT * FROM opportunities
@@ -824,6 +835,14 @@ function getOpportunityById(id) {
   return q.getOpportunityById.get(id);
 }
 
+function shareOpportunity(id, note) {
+  return q.shareOpportunity.run(note || null, id);
+}
+
+function unshareOpportunity(id) {
+  return q.unshareOpportunity.run(id);
+}
+
 function searchOpportunities({ category, type } = {}) {
   return q.searchOpportunities.all({ category: category || null, type: type || null });
 }
@@ -917,7 +936,7 @@ module.exports = {
   normalizePhone,
   generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr,
   // Opportunity helpers
-  createOpportunity, updateOpportunity, getOpportunityById,
+  createOpportunity, updateOpportunity, getOpportunityById, shareOpportunity, unshareOpportunity,
   searchOpportunities, textSearchOpportunities, getOpportunitiesForMatching,
   findDuplicateByUrl, findDuplicateByTitleDate,
   createSubmission, updateSubmission, getSubmissionsByUser,

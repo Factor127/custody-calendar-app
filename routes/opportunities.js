@@ -79,7 +79,8 @@ router.get('/opportunities', (req, res) => {
 router.post('/opportunities/direct', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { title, type, category, location_name, location_lat, location_lng,
-          price_tier, tags, start_time, end_time, source_url, place_id, confidence_score } = req.body;
+          price_tier, tags, start_time, end_time, source_url, place_id, confidence_score,
+          share_to_community, contributor_note } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
 
   // Check for duplicate by place_id (Google Place) or by title+location
@@ -105,23 +106,47 @@ router.post('/opportunities/direct', (req, res) => {
     source_domain:    null,
     source_url:       source_url || null,
     confidence_score: confidence_score ?? 0.70,
-    visibility:       'public',
+    visibility:       share_to_community ? 'public' : 'private',
   };
   const id = createOpportunity(draft, user.id);
+  // Apply community sharing
+  if (share_to_community) {
+    const note = (contributor_note || '').slice(0, 200) || null;
+    db.shareOpportunity(id, note);
+  }
   res.json({ id, ok: true });
 });
 
 // ── POST /api/opportunities/submit — submit a URL ─────────────────────────
 router.post('/opportunities/submit', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
-  const { url } = req.body;
+  const { url, share_to_community, contributor_note } = req.body;
   if (!url) return res.status(400).json({ error: 'url required' });
   try {
     const result = await submitUrl(url, user.id);
+    // Apply community sharing preference
+    if (result.opportunity_id && !result.duplicate) {
+      if (share_to_community) {
+        const note = (contributor_note || '').slice(0, 200) || null;
+        db.shareOpportunity(result.opportunity_id, note);
+      } else {
+        db.unshareOpportunity(result.opportunity_id);
+      }
+    }
     res.json(result);
   } catch(e) {
     res.status(422).json({ error: e.message });
   }
+});
+
+// ── POST /api/opportunities/:id/share — share a private opp to community ──
+router.post('/opportunities/:id/share', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const opp = db.getOpportunityById(req.params.id);
+  if (!opp || opp.created_by !== user.id) return res.status(403).json({ error: 'forbidden' });
+  const note = (req.body.contributor_note || '').slice(0, 200) || null;
+  db.shareOpportunity(req.params.id, note);
+  res.json({ ok: true });
 });
 
 // ── GET /api/opportunities/:id — fetch single opportunity ────────────────
