@@ -128,5 +128,8 @@ router.get('/match', (req, res) => {
 router.get('/match/:token', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'match.html'));
 });
+router.get('/date/:token', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'date-invite.html'));
+});
 
 module.exports = router;

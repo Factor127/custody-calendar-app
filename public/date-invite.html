@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>You've got a date idea · Spontany</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, #e6f952, #aec013); color: #e2e2e2; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 10px; }
+
+    #app-frame { background: #0e0e0e; border-radius: 24px; padding: 24px; width: 100%; max-width: 440px; }
+
+    .card { background: #131313; border: 1.5px solid rgba(226,226,226,0.08); border-radius: 20px; padding: 32px 28px; width: 100%; }
+    .logo { font-size: 13px; font-weight: 800; color: #e6f952; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 20px; }
+    .from-label { font-size: 12px; font-weight: 700; color: rgba(226,226,226,0.42); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+    .from-name { font-size: 22px; font-weight: 900; color: #e2e2e2; margin-bottom: 20px; line-height: 1.2; }
+    .from-name span { color: #e6f952; }
+
+    .opp-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(230,249,82,0.06); border: 1.5px solid rgba(230,249,82,0.2); border-radius: 12px; margin-bottom: 12px; }
+    .opp-icon { font-size: 24px; flex-shrink: 0; }
+    .opp-title { font-size: 15px; font-weight: 700; color: #e2e2e2; margin-bottom: 2px; }
+    .opp-vibe { font-size: 12px; color: rgba(226,226,226,0.5); }
+
+    .date-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #e2e2e2; margin-bottom: 16px; }
+    .date-icon { font-size: 16px; }
+
+    .message-block { font-size: 15px; color: rgba(226,226,226,0.7); font-style: italic; line-height: 1.5; margin-bottom: 20px; padding-left: 12px; border-left: 2px solid rgba(230,249,82,0.3); }
+
+    .divider { height: 1px; background: rgba(226,226,226,0.08); margin: 20px 0; }
+
+    .actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-in { padding: 16px; border-radius: 50px; border: none; background: #e6f952; color: #0e0e0e; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; transition: background .15s; }
+    .btn-in:hover { background: #aec013; }
+    .btn-pass { padding: 16px; border-radius: 50px; border: 1.5px solid rgba(230,249,82,0.35); background: transparent; color: rgba(226,226,226,0.5); font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-pass:hover { border-color: rgba(230,249,82,0.6); color: #e2e2e2; }
+
+    .note-section { margin-top: 16px; }
+    .note-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(226,226,226,0.12); background: rgba(226,226,226,0.06); color: #e2e2e2; font-size: 14px; font-family: inherit; resize: none; margin-bottom: 10px; }
+    .note-input::placeholder { color: rgba(226,226,226,0.3); }
+
+    .confirmed { text-align: center; padding: 16px 0; }
+    .confirmed-icon { font-size: 48px; margin-bottom: 12px; }
+    .confirmed-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .confirmed-sub { font-size: 14px; color: rgba(226,226,226,0.42); line-height: 1.5; }
+
+    .cta-signup { display: block; margin-top: 16px; padding: 14px; border-radius: 50px; border: 1.5px solid rgba(230,249,82,0.35); background: transparent; color: #e6f952; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; text-decoration: none; text-align: center; transition: all .15s; }
+    .cta-signup:hover { background: rgba(230,249,82,0.08); }
+
+    .loading { text-align: center; color: rgba(226,226,226,0.35); font-size: 14px; padding: 32px 0; }
+    .error-msg { text-align: center; color: #ff7351; font-size: 14px; padding: 32px 0; }
+    .already { font-size: 13px; color: rgba(226,226,226,0.42); text-align: center; margin-top: 12px; }
+  </style>
+</head>
+<body>
+<div id="app-frame">
+<div class="card">
+  <div class="logo">&#9889; Spontany</div>
+  <div id="content"><div class="loading">Loading...</div></div>
+</div>
+</div>
+
+<script>
+const token = location.pathname.split('/date/')[1];
+
+async function load() {
+  try {
+    const res = await fetch(`/api/match/invite/${token}`);
+    if (!res.ok) throw new Error('not found');
+    const d = await res.json();
+    render(d);
+  } catch(e) {
+    document.getElementById('content').innerHTML =
+      '<div class="error-msg">This invite link is invalid or has expired.</div>';
+  }
+}
+
+function render(d) {
+  // Already responded?
+  const alreadyHtml = d.response
+    ? `<div class="already">Already responded: <strong>${d.response === 'in' ? 'I\'m in!' : 'Not this time'}</strong></div>`
+    : '';
+
+  document.getElementById('content').innerHTML = `
+    <div class="from-label">A date idea from</div>
+    <div class="from-name"><span>${esc(d.sender_name)}</span></div>
+
+    ${d.message ? `<div class="message-block">"${esc(d.message)}"</div>` : ''}
+
+    ${d.date_label ? `<div class="date-label"><span class="date-icon">&#128197;</span> ${esc(d.date_label)}</div>` : ''}
+
+    ${d.opportunity_title ? `
+      <div class="opp-card">
+        <span class="opp-icon">&#10024;</span>
+        <div>
+          <div class="opp-title">${esc(d.opportunity_title)}</div>
+          ${d.opportunity_vibe ? `<div class="opp-vibe">${esc(d.opportunity_vibe)}</div>` : ''}
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="divider"></div>
+
+    <div class="actions" id="actions">
+      <button class="btn-in" onclick="respond('in')">I'm in</button>
+      <button class="btn-pass" onclick="showDecline()">Not this time</button>
+    </div>
+
+    <div id="decline-flow" style="display:none;">
+      <div class="note-section">
+        <textarea id="decline-note" class="note-input" rows="2" placeholder="Add a note (optional)..."></textarea>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-pass" style="flex:1;" onclick="cancelDecline()">Back</button>
+          <button class="btn-pass" style="flex:1;border-color:rgba(239,68,68,0.4);color:#f87171;" onclick="confirmDecline()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    ${alreadyHtml}
+  `;
+}
+
+function showDecline() {
+  document.getElementById('actions').style.display = 'none';
+  document.getElementById('decline-flow').style.display = '';
+}
+
+function cancelDecline() {
+  document.getElementById('decline-flow').style.display = 'none';
+  document.getElementById('actions').style.display = '';
+}
+
+function confirmDecline() {
+  const note = document.getElementById('decline-note')?.value?.trim() || '';
+  respond('not_this_time', note || null);
+}
+
+async function respond(response, message) {
+  try {
+    const res = await fetch(`/api/match/invite/${token}/respond`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response, message: message || null })
+    });
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+
+    const isIn = response === 'in';
+    document.getElementById('content').innerHTML = `
+      <div class="confirmed">
+        <div class="confirmed-icon">${isIn ? '&#127881;' : '&#128588;'}</div>
+        <div class="confirmed-title">${isIn ? "You're on!" : 'No worries.'}</div>
+        <div class="confirmed-sub">${isIn
+          ? `${esc(d.sender_name)} will be in touch.`
+          : `Maybe next time. ${esc(d.sender_name)} has been notified.`
+        }</div>
+        <a class="cta-signup" href="/match">Try Spontany - find your next date night</a>
+      </div>
+    `;
+  } catch(e) {
+    alert('Something went wrong - please try again.');
+  }
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+load();
+</script>
+</body>
+</html>

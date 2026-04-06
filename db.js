@@ -325,6 +325,24 @@ db.exec(`CREATE TABLE IF NOT EXISTS match_requests (
   completed_at    DATETIME
 )`);
 
+db.exec(`CREATE TABLE IF NOT EXISTS match_invites (
+  id              TEXT PRIMARY KEY,
+  token           TEXT UNIQUE NOT NULL,
+  match_token     TEXT,
+  sender_name     TEXT NOT NULL,
+  sender_email    TEXT,
+  recipient_name  TEXT,
+  opportunity_id  TEXT,
+  opportunity_title TEXT,
+  opportunity_vibe TEXT,
+  date_label      TEXT,
+  message         TEXT,
+  response        TEXT,
+  response_message TEXT,
+  responded_at    TEXT,
+  created_at      TEXT DEFAULT (datetime('now'))
+)`);
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {

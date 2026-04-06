@@ -283,6 +283,17 @@
     }
 
     /* ── Result page ── */
+    .pulse-dot {
+      position: absolute; top: 3px; right: 3px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--overlap);
+      animation: pulse-dot 2s ease infinite;
+      will-change: transform;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
     .result-hero {
       text-align: center; padding: 40px 0 20px;
     }
@@ -737,6 +748,35 @@
     </div>
   </div>
 
+<!-- Invite bottom sheet -->
+<div id="invite-sheet" style="display:none;position:fixed;inset:0;z-index:100;">
+  <div onclick="closeInviteSheet()" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);"></div>
+  <div id="invite-sheet-content" style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:24px 24px 32px;max-width:480px;margin:0 auto;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.35s ease;">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="font-size:12px;font-weight:700;color:var(--overlap);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;" id="invite-sheet-date"></div>
+    <div id="invite-sheet-opp" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(201,179,245,0.08);border:1.5px solid var(--overlap-border);border-radius:12px;margin-bottom:20px;"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Your message</div>
+    <div id="invite-chips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:4px;"></div>
+    <input type="text" id="invite-custom-msg" maxlength="120" placeholder="Write your own..." style="display:none;width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1.5px solid var(--overlap-border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;margin-bottom:12px;">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px;">Preview</div>
+    <div id="invite-preview" style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;"></div>
+    <button id="invite-send-btn" onclick="sendMatchInvite()" style="width:100%;padding:16px;border-radius:28px;border:none;background:var(--overlap);color:#0a0a0a;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform 0.12s;">Share this &#8594;</button>
+    <div id="invite-delivery" style="display:none;margin-top:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;text-align:center;">How should they get this?</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="deliverViaWhatsApp()" style="flex:1;padding:14px;border-radius:14px;border:none;background:#25d366;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">WhatsApp</button>
+        <button onclick="deliverViaCopy()" style="flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Copy link</button>
+      </div>
+    </div>
+    <div id="invite-sent" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:40px;margin-bottom:12px;">&#10003;</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px;">Shared!</div>
+      <div style="font-size:13px;color:var(--muted);">You'll know when they respond.</div>
+      <button onclick="closeInviteSheet();scrollToRhythm()" style="margin-top:16px;padding:12px 24px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Plan another evening?</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /app-frame -->
 
 <!-- Toast -->
@@ -899,7 +939,7 @@ function computeOverlap() {
 }
 
 // ── Show result ───────────────────────────────────────────────────────────────
-function showResult() {
+async function showResult() {
   const days = computeOverlap();
   const today = new Date(); today.setHours(0,0,0,0);
 
@@ -916,7 +956,7 @@ function showResult() {
 
   // Upcoming dates - just first 3 for focus
   const upcoming = allOverlap.slice(0, 3);
-  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+  partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
 
   // Determine day type: weekend-heavy, weekday-heavy, or mixed
   const weekendOverlap = allOverlap.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow === 0 || dow === 5 || dow === 6; }).length;
@@ -938,7 +978,6 @@ function showResult() {
   ];
 
   // Determine user's type
-  let matchTypeId;
   if (totalPct < 15) {
     matchTypeId = 'slow-burn';
   } else if (totalPct <= 45) {
@@ -1041,39 +1080,72 @@ function showResult() {
     const firstDow = new Date(patternDays[0].date + 'T12:00:00').getDay();
     for (let i = 0; i < firstDow; i++) patternHtml += '<div></div>';
   }
-  // Mock suggestions for hover
-  const mockSuggestions = [
-    { icon: '🎵', title: 'Live jazz at The Blue Note', sub: '8 PM · 2 miles away' },
-    { icon: '🍷', title: 'Wine tasting at Oak & Vine', sub: '7 PM · New arrivals this week' },
-    { icon: '🎬', title: 'Late night screening', sub: '9:30 PM · Indie film festival' },
-    { icon: '🍽', title: 'New Italian on 5th', sub: '7:30 PM · Just opened, great reviews' },
-    { icon: '🎤', title: 'Open mic comedy night', sub: '8:30 PM · Free entry' },
-    { icon: '🌮', title: 'Taco pop-up at the park', sub: '6 PM · Food trucks + live DJ' },
+  // Fetch real suggestions for overlap days
+  const DAY_ABBR_LC = ['sun','mon','tue','wed','thu','fri','sat'];
+  const overlapDows = [...new Set(
+    patternDays.filter(d => d.overlap).map(d => DAY_ABBR_LC[new Date(d.date + 'T12:00:00').getDay()])
+  )];
+  let realSuggestions = {};
+  try {
+    const sugRes = await fetch(`/api/match/suggestions?days=${overlapDows.join(',')}`);
+    if (sugRes.ok) realSuggestions = (await sugRes.json()).suggestions || {};
+  } catch(e) {}
+
+  // Fallback mocks
+  const FALLBACK = [
+    { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true },
+    { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true },
+    { icon: '🎬', title: 'Late night screening', vibe: 'Indie cinema · Cozy', mock: true },
+    { icon: '🍽', title: 'New Italian on 5th', vibe: 'Restaurant · Date night', mock: true },
+    { icon: '🎤', title: 'Open mic comedy night', vibe: 'Comedy · Free entry', mock: true },
+    { icon: '🌮', title: 'Taco pop-up at the park', vibe: 'Street food · Live DJ', mock: true },
   ];
-  let suggIdx = 0;
+  let fallbackIdx = 0;
+
   patternDays.forEach(d => {
     const dt = new Date(d.date + 'T12:00:00');
     const dayNum = dt.getDate();
     if (d.overlap) {
-      const si = suggIdx++ % mockSuggestions.length;
-      const si2 = (si + 3) % mockSuggestions.length;
-      patternHtml += `<div class="rhythm-day free" data-date="${DAY_ABBR[dt.getDay()]}, ${MONTH_ABBR[dt.getMonth()]} ${dayNum}" data-s1='${JSON.stringify(mockSuggestions[si])}' data-s2='${JSON.stringify(mockSuggestions[si2])}' style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);color:var(--overlap);transition:transform 0.1s,box-shadow 0.15s;">${dayNum}</div>`;
+      const dow = DAY_ABBR_LC[dt.getDay()];
+      let s1, s2;
+      if (realSuggestions[dow] && realSuggestions[dow].length >= 2) {
+        s1 = realSuggestions[dow][0];
+        s2 = realSuggestions[dow][1];
+      } else {
+        s1 = FALLBACK[fallbackIdx++ % FALLBACK.length];
+        s2 = FALLBACK[fallbackIdx++ % FALLBACK.length];
+      }
+      const hasReal = s1 && !s1.mock;
+      patternHtml += `<div class="rhythm-day free" data-date="${DAY_ABBR[dt.getDay()]}, ${MONTH_ABBR[dt.getMonth()]} ${dayNum}" data-s1='${JSON.stringify(s1)}' data-s2='${JSON.stringify(s2)}' style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);color:var(--overlap);transition:transform 0.1s,box-shadow 0.15s;">${dayNum}${hasReal ? '<span class="pulse-dot"></span>' : ''}</div>`;
     } else {
       patternHtml += `<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.02);border:1.5px solid transparent;color:rgba(255,255,255,0.15);">${dayNum}</div>`;
     }
   });
   document.getElementById('result-pattern').innerHTML = patternHtml;
 
-  // Hover/tap interactions on free days
+  // Tap interactions on free days — show actionable popup
+  let _activeRhythmDay = null;
   document.querySelectorAll('.rhythm-day.free').forEach(el => {
     const show = () => {
+      // Deactivate previous
+      if (_activeRhythmDay && _activeRhythmDay !== el) {
+        _activeRhythmDay.style.transform = '';
+        _activeRhythmDay.style.boxShadow = '';
+      }
+      _activeRhythmDay = el;
       const s1 = JSON.parse(el.dataset.s1);
       const s2 = JSON.parse(el.dataset.s2);
       document.getElementById('day-outlook-title').textContent = el.dataset.date + ' - You\'re both free';
       document.getElementById('day-outlook-items').innerHTML = [s1, s2].map(s =>
-        `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;">
+        `<div onclick="openInviteSheet(this)" data-opp='${JSON.stringify(s).replace(/'/g, '&#39;')}'
+          style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background 0.15s;">
           <span style="font-size:20px;">${s.icon}</span>
-          <div><div style="font-size:13px;font-weight:600;color:var(--text);">${s.title}</div><div style="font-size:11px;color:var(--muted);">${s.sub}</div></div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);">${s.title}</div>
+            <div style="font-size:11px;color:var(--muted);">${s.vibe || s.sub || ''}</div>
+            ${s.contributor_note ? `<div style="font-size:10px;color:var(--muted);font-style:italic;margin-top:2px;">"${s.contributor_note}"</div>` : ''}
+          </div>
+          <span style="font-size:16px;color:var(--overlap);">&#8594;</span>
         </div>`
       ).join('');
       const popup = document.getElementById('day-outlook');
@@ -1085,16 +1157,27 @@ function showResult() {
       document.getElementById('day-outlook').style.display = 'none';
       el.style.transform = '';
       el.style.boxShadow = '';
+      _activeRhythmDay = null;
     };
-    el.addEventListener('mouseenter', show);
-    el.addEventListener('mouseleave', hide);
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
       const popup = document.getElementById('day-outlook');
-      if (popup.style.display === 'block') hide(); else show();
+      if (popup.style.display === 'block' && _activeRhythmDay === el) hide(); else show();
     });
   });
 
-  // Upcoming dates removed - calendar hover serves this purpose now
+  // Dismiss popup on outside tap
+  document.addEventListener('click', (e) => {
+    const popup = document.getElementById('day-outlook');
+    if (popup.style.display === 'block' && !popup.contains(e.target) && !e.target.classList.contains('free')) {
+      popup.style.display = 'none';
+      if (_activeRhythmDay) {
+        _activeRhythmDay.style.transform = '';
+        _activeRhythmDay.style.boxShadow = '';
+        _activeRhythmDay = null;
+      }
+    }
+  });
 
   // Share button text
   const shareBtn = document.getElementById('result-share-btn');
@@ -1213,6 +1296,201 @@ async function saveCalendar() {
   }
 }
 
+// ── Invite sheet ──────────────────────────────────────────────────────────────
+let _inviteOpp = null;
+let _inviteDate = '';
+let _inviteMsg = '';
+let _inviteToken = null;
+let _inviteUrl = null;
+
+const INVITE_MESSAGES = [
+  "Saw this and thought of you",
+  "This looks like a good time - you in?",
+  "I've been wanting to try this"
+];
+
+function openInviteSheet(el) {
+  const opp = JSON.parse(el.dataset.opp);
+  const dateLabel = document.getElementById('day-outlook-title').textContent.replace(" - You're both free", '');
+  _inviteOpp = opp;
+  _inviteDate = dateLabel + ' evening';
+  _inviteMsg = INVITE_MESSAGES[0];
+  _inviteToken = null;
+  _inviteUrl = null;
+
+  document.getElementById('invite-sheet-date').textContent = _inviteDate;
+  document.getElementById('invite-sheet-opp').innerHTML = `
+    <span style="font-size:24px;">${opp.icon || '✨'}</span>
+    <div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);">${opp.title}</div>
+      <div style="font-size:12px;color:var(--muted);">${opp.vibe || opp.sub || ''}</div>
+      ${opp.contributor_note ? `<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:3px;">"${opp.contributor_note}"</div>` : ''}
+    </div>`;
+
+  document.getElementById('invite-chips').innerHTML = INVITE_MESSAGES.map((m, i) =>
+    `<button onclick="selectInviteMsg(${i}, this)"
+      style="flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;
+      cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;
+      ${i === 0
+        ? 'background:var(--overlap);color:#0a0a0a;border:1.5px solid var(--overlap);'
+        : 'background:transparent;color:var(--text);border:1.5px solid var(--border);'
+      }">${m}</button>`
+  ).join('');
+
+  document.getElementById('invite-custom-msg').style.display = 'none';
+  document.getElementById('invite-custom-msg').value = '';
+  updateInvitePreview();
+
+  document.getElementById('invite-send-btn').style.display = '';
+  document.getElementById('invite-delivery').style.display = 'none';
+  document.getElementById('invite-sent').style.display = 'none';
+
+  const sheet = document.getElementById('invite-sheet');
+  sheet.style.display = '';
+  requestAnimationFrame(() => {
+    document.getElementById('invite-sheet-content').style.transform = 'translateY(0)';
+  });
+
+  document.getElementById('day-outlook').style.display = 'none';
+}
+
+function closeInviteSheet() {
+  document.getElementById('invite-sheet-content').style.transform = 'translateY(100%)';
+  setTimeout(() => { document.getElementById('invite-sheet').style.display = 'none'; }, 350);
+}
+
+function scrollToRhythm() {
+  document.querySelector('.insight-card')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+let _lastChipIdx = -1;
+function selectInviteMsg(idx, el) {
+  if (idx === _lastChipIdx) {
+    document.getElementById('invite-custom-msg').style.display = '';
+    document.getElementById('invite-custom-msg').value = INVITE_MESSAGES[idx];
+    document.getElementById('invite-custom-msg').focus();
+    document.getElementById('invite-custom-msg').oninput = () => {
+      _inviteMsg = document.getElementById('invite-custom-msg').value;
+      updateInvitePreview();
+    };
+    return;
+  }
+  _lastChipIdx = idx;
+  _inviteMsg = INVITE_MESSAGES[idx];
+  document.getElementById('invite-custom-msg').style.display = 'none';
+
+  document.querySelectorAll('#invite-chips button').forEach((btn, i) => {
+    if (i === idx) {
+      btn.style.background = 'var(--overlap)';
+      btn.style.color = '#0a0a0a';
+      btn.style.borderColor = 'var(--overlap)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text)';
+      btn.style.borderColor = 'var(--border)';
+    }
+  });
+  updateInvitePreview();
+}
+
+function updateInvitePreview() {
+  const recipientName = partnerName || 'them';
+  document.getElementById('invite-preview').innerHTML = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">To ${recipientName}</div>
+    <div style="font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.5;">${_inviteMsg || '...'}</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(201,179,245,0.06);
+      border:1px solid rgba(201,179,245,0.2);border-radius:8px;">
+      <span style="font-size:18px;">${_inviteOpp?.icon || '✨'}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${_inviteOpp?.title || ''}</div>
+        <div style="font-size:11px;color:var(--muted);">${_inviteDate}</div>
+      </div>
+    </div>`;
+}
+
+async function sendMatchInvite() {
+  const btn = document.getElementById('invite-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
+  const senderName = document.getElementById('save-name')?.value.trim()
+    || document.getElementById('wait-name')?.value.trim()
+    || 'Someone';
+
+  try {
+    const res = await fetch('/api/match/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender_name: senderName,
+        recipient_name: partnerName || null,
+        opportunity_id: _inviteOpp?.mock ? null : (_inviteOpp?.id || null),
+        opportunity_title: _inviteOpp?.title,
+        opportunity_vibe: _inviteOpp?.vibe || _inviteOpp?.sub || '',
+        date_label: _inviteDate,
+        message: _inviteMsg,
+        match_token: matchToken || null
+      })
+    });
+
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    _inviteToken = data.invite_token;
+    _inviteUrl = window.location.origin + data.invite_url;
+
+    btn.style.display = 'none';
+    document.getElementById('invite-delivery').style.display = '';
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Share this →';
+    showToast('Something went wrong - try again');
+  }
+}
+
+function deliverViaWhatsApp() {
+  const msg = `${_inviteMsg}\n\n${_inviteOpp?.title} · ${_inviteDate}\n\n${_inviteUrl}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  showSentConfirmation();
+}
+
+function deliverViaCopy() {
+  navigator.clipboard.writeText(_inviteUrl).then(() => {
+    showToast('Link copied!');
+    showSentConfirmation();
+  });
+}
+
+function showSentConfirmation() {
+  document.getElementById('invite-delivery').style.display = 'none';
+  document.getElementById('invite-sent').style.display = '';
+
+  const signupEl = document.getElementById('result-signup');
+  if (signupEl && partnerName) {
+    const title = signupEl.querySelector('.screen-title');
+    const sub = signupEl.querySelector('.screen-sub');
+    if (title) title.textContent = `See when ${partnerName} responds.`;
+    if (sub) sub.textContent = `Save your calendar and we'll notify you the moment they reply.`;
+  }
+
+  if (typeof fbq !== 'undefined') {
+    fbq('trackCustom', 'MatchInviteSent', { match_type: matchTypeId, ...getUtmData() });
+  }
+}
+
+// Swipe-down to dismiss invite sheet
+(function() {
+  let _sheetTouchY = 0;
+  const sc = document.getElementById('invite-sheet-content');
+  if (sc) {
+    sc.addEventListener('touchstart', e => { _sheetTouchY = e.touches[0].clientY; }, { passive: true });
+    sc.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].clientY - _sheetTouchY;
+      if (diff > 80) closeInviteSheet();
+    }, { passive: true });
+  }
+})();
+
 // ── Toast ──────────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1223,6 +1501,8 @@ function showToast(msg) {
 
 // ── API integration ───────────────────────────────────────────────────────────
 let matchToken   = null;
+let matchTypeId  = null;
+let partnerName  = '';
 let matchShareUrl = null;
 let isPersonB    = false;
 
