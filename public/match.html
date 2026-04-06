@@ -684,11 +684,18 @@
   <!-- RESULT PAGE                                                        -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-result">
-    <!-- Match type label -->
+    <!-- Match type carousel -->
     <div style="text-align:center;padding-top:32px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;">Your calendar overlap</div>
-      <div id="result-match-label" style="display:inline-block;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:var(--overlap);padding:8px 20px;border:1.5px solid var(--overlap-border);border-radius:20px;background:var(--overlap-bg);"></div>
-      <div id="result-match-scale" style="display:flex;justify-content:center;gap:6px;margin-top:12px;font-size:10px;color:var(--muted);letter-spacing:0.02em;"></div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;">Your calendar overlap</div>
+
+      <!-- Swipeable type cards -->
+      <div id="match-carousel" style="position:relative;overflow:hidden;margin:0 -28px;">
+        <div id="match-carousel-track" style="display:flex;transition:transform 0.35s ease;"></div>
+      </div>
+
+      <!-- Dots -->
+      <div id="match-carousel-dots" style="display:flex;justify-content:center;gap:6px;margin-top:14px;"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Swipe to explore other overlap types</div>
     </div>
 
     <!-- Emotional headline -->
@@ -696,9 +703,6 @@
       <div class="result-headline" id="result-headline">You've got <em>Thursday nights.</em></div>
       <div class="result-sub" id="result-sub"></div>
     </div>
-
-    <!-- Verdict - the vision -->
-    <div class="result-verdict" id="result-verdict"></div>
 
     <!-- Two-week pattern -->
     <div class="insight-card" style="position:relative;">
@@ -914,40 +918,120 @@ function showResult() {
   const upcoming = allOverlap.slice(0, 3);
   const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
 
-  // Match type naming + rhythm-based framing
-  let headline, sub, verdict, matchLabel;
+  // Determine day type: weekend-heavy, weekday-heavy, or mixed
+  const weekendOverlap = allOverlap.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow === 0 || dow === 5 || dow === 6; }).length;
+  const weekdayOverlap = allOverlap.length - weekendOverlap;
+  const weekendRatio = allOverlap.length > 0 ? weekendOverlap / allOverlap.length : 0;
+  let dayType; // 'weekend', 'weekday', 'mixed'
+  if (weekendRatio > 0.65) dayType = 'weekend';
+  else if (weekendRatio < 0.25) dayType = 'weekday';
+  else dayType = 'mixed';
 
-  if (totalPct >= 60) {
-    matchLabel = "All In";
-    headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
-    sub = `Your weeks overlap often - there's real room here for something easy and natural.`;
-    verdict = "There's room here for weeknight dinners, lazy mornings, the kind of rhythm where things just happen. A chance to keep some nights for yourself too - the best relationships leave room to breathe.";
-  } else if (totalPct >= 35) {
-    matchLabel = "Sweet Spot";
-    headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `A well-balanced rhythm - enough overlap to connect, enough space to live your own lives.`;
-    verdict = "This is where a lot of good things start. Enough time to build something real, without losing yourselves in the process.";
-  } else if (totalPct >= 15) {
-    matchLabel = "Slow Burn";
-    headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `Your schedules don't cross often - but when they do, it counts.`;
-    verdict = "An opportunity for every date to feel intentional. No autopilot, no taking it for granted - a chance to build anticipation and really look forward to the time together.";
+  // 6-type system
+  const ALL_TYPES = [
+    { id: 'slow-burn', name: 'Slow Burn', desc: "Rare but potentially intentional. Every meet-up could become an event - a rhythm that makes it hard to take each other for granted." },
+    { id: 'weekend-escape', name: 'Weekend Escape', desc: "Your time together could be about adventures - weekends open up space for trips, markets, brunches." },
+    { id: 'weeknight-regulars', name: 'Weeknight Regulars', desc: "A chance for connection in the everyday - dinners, walks, couch nights. The kind of intimacy that can build quietly." },
+    { id: 'best-of-both', name: 'Best of Both', desc: "Some weeknights for the easy stuff, some weekends for bigger plans. An opportunity for something well-rounded." },
+    { id: 'easy-rhythm', name: 'Easy Rhythm', desc: "Plenty of overlap to play with. Room for spontaneity - not every night needs a plan, and that's where the good stuff can happen." },
+    { id: 'all-in', name: 'All In', desc: "Wide open. Weeknights and weekends. The kind of schedule that could let things flow naturally." },
+  ];
+
+  // Determine user's type
+  let matchTypeId;
+  if (totalPct < 15) {
+    matchTypeId = 'slow-burn';
+  } else if (totalPct <= 45) {
+    if (dayType === 'weekend') matchTypeId = 'weekend-escape';
+    else if (dayType === 'weekday') matchTypeId = 'weeknight-regulars';
+    else matchTypeId = 'best-of-both';
   } else {
-    matchLabel = "Rare Spark";
-    headline = `It's a <em>tight window.</em>`;
-    sub = `Your schedules rarely overlap - but now you know exactly when they do.`;
-    verdict = "Rare nights can become the most memorable ones. An opportunity to build up to each moment together - and really make it count when it lands.";
+    if (weekendRatio > 0.55) matchTypeId = 'all-in';
+    else matchTypeId = 'easy-rhythm';
   }
 
-  document.getElementById('result-match-label').textContent = matchLabel;
-  // Show scale of all match types with current highlighted
-  const allTypes = ['Rare Spark', 'Slow Burn', 'Sweet Spot', 'All In'];
-  document.getElementById('result-match-scale').innerHTML = allTypes.map(t =>
-    `<span style="padding:4px 8px;border-radius:10px;${t === matchLabel ? 'color:var(--overlap);background:var(--overlap-bg);font-weight:700;' : ''}">${t}</span>`
-  ).join('<span style="color:var(--border);">·</span>');
+  const userType = ALL_TYPES.find(t => t.id === matchTypeId);
+  const userTypeIdx = ALL_TYPES.indexOf(userType);
+
+  // Build carousel
+  const track = document.getElementById('match-carousel-track');
+  track.innerHTML = ALL_TYPES.map((t, i) => {
+    const isUser = t.id === matchTypeId;
+    return `<div class="match-type-card" style="min-width:100%;padding:0 36px;box-sizing:border-box;text-align:center;flex-shrink:0;">
+      <div style="display:inline-block;font-size:${isUser ? '15' : '13'}px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:8px 20px;border-radius:20px;margin-bottom:12px;
+        ${isUser
+          ? 'color:var(--overlap);border:1.5px solid var(--overlap-border);background:var(--overlap-bg);'
+          : 'color:var(--muted);border:1.5px solid var(--border);background:transparent;'
+        }">${t.name}</div>
+      ${isUser ? '<div style="font-size:10px;font-weight:700;color:var(--overlap);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">← Your result</div>' : '<div style="height:22px;"></div>'}
+      <div style="font-size:13px;color:${isUser ? 'var(--text)' : 'var(--muted)'};line-height:1.6;max-width:280px;margin:0 auto;">${t.desc}</div>
+    </div>`;
+  }).join('');
+
+  // Dots
+  const dotsEl = document.getElementById('match-carousel-dots');
+  dotsEl.innerHTML = ALL_TYPES.map((t, i) => {
+    const isUser = t.id === matchTypeId;
+    return `<div class="carousel-dot${i === userTypeIdx ? ' active' : ''}" data-idx="${i}" style="width:${isUser ? '20px' : '8px'};height:8px;border-radius:4px;cursor:pointer;transition:all 0.2s;
+      ${i === userTypeIdx
+        ? 'background:var(--overlap);'
+        : (isUser ? 'background:var(--overlap-border);' : 'background:var(--border);')
+      }"></div>`;
+  }).join('');
+
+  // Carousel state
+  let currentSlide = userTypeIdx;
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+  function goToSlide(idx) {
+    currentSlide = Math.max(0, Math.min(ALL_TYPES.length - 1, idx));
+    track.style.transform = `translateX(-${currentSlide * 100}%)`;
+    dotsEl.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+      const isUserDot = i === userTypeIdx;
+      dot.style.background = i === currentSlide
+        ? 'var(--overlap)'
+        : (isUserDot ? 'var(--overlap-border)' : 'var(--border)');
+    });
+  }
+
+  // Dot clicks
+  dotsEl.querySelectorAll('.carousel-dot').forEach(dot => {
+    dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.idx)));
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  const carousel = document.getElementById('match-carousel');
+  carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  carousel.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) goToSlide(currentSlide + (diff > 0 ? 1 : -1));
+  });
+
+  // Headline + sub based on user's type
+  let headline, sub;
+  if (matchTypeId === 'all-in') {
+    headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
+    sub = `Your weeks overlap often - there's real room here for something easy and natural.`;
+  } else if (matchTypeId === 'easy-rhythm') {
+    headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
+    sub = `Plenty of shared time - enough to be spontaneous, enough to keep it interesting.`;
+  } else if (matchTypeId === 'best-of-both') {
+    headline = `You've got <em>${bestDayName}.</em>`;
+    sub = `A mix of weeknights and weekends - room for both the everyday and the adventures.`;
+  } else if (matchTypeId === 'weeknight-regulars') {
+    headline = `You've got <em>${bestDayName}.</em>`;
+    sub = `Your overlap lives in the week - a chance for something grounded and real.`;
+  } else if (matchTypeId === 'weekend-escape') {
+    headline = `You've got <em>${bestDayName}.</em>`;
+    sub = `Your time together lands on weekends - room for adventures and unhurried plans.`;
+  } else {
+    headline = `It's a <em>tight window.</em>`;
+    sub = `Your schedules rarely overlap - but now you know exactly when they do.`;
+  }
+
   document.getElementById('result-headline').innerHTML = headline;
   document.getElementById('result-sub').textContent = sub;
-  document.getElementById('result-verdict').textContent = verdict;
 
   // Render two-week pattern - only highlight "both free" days
   const patternDays = days.slice(0, 14);
