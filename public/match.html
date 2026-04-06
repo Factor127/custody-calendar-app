@@ -757,7 +757,7 @@
     <div id="invite-sheet-opp" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(201,179,245,0.08);border:1.5px solid var(--overlap-border);border-radius:12px;margin-bottom:20px;"></div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Your message</div>
     <div id="invite-chips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:4px;"></div>
-    <input type="text" id="invite-custom-msg" maxlength="120" placeholder="Write your own..." style="display:none;width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1.5px solid var(--overlap-border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;margin-bottom:12px;">
+    <input type="text" id="invite-custom-msg" maxlength="120" placeholder="Or write your own..." style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1.5px solid var(--overlap-border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;margin-bottom:12px;">
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px;">Preview</div>
     <div id="invite-preview" style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;"></div>
     <button id="invite-send-btn" onclick="sendMatchInvite()" style="width:100%;padding:16px;border-radius:28px;border:none;background:var(--overlap);color:#0a0a0a;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform 0.12s;">Share this &#8594;</button>
@@ -1115,8 +1115,7 @@ async function showResult() {
         s1 = FALLBACK[fallbackIdx++ % FALLBACK.length];
         s2 = FALLBACK[fallbackIdx++ % FALLBACK.length];
       }
-      const hasReal = s1 && !s1.mock;
-      patternHtml += `<div class="rhythm-day free" data-date="${DAY_ABBR[dt.getDay()]}, ${MONTH_ABBR[dt.getMonth()]} ${dayNum}" data-s1='${JSON.stringify(s1)}' data-s2='${JSON.stringify(s2)}' style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);color:var(--overlap);transition:transform 0.1s,box-shadow 0.15s;">${dayNum}${hasReal ? '<span class="pulse-dot"></span>' : ''}</div>`;
+      patternHtml += `<div class="rhythm-day free" data-date="${DAY_ABBR[dt.getDay()]}, ${MONTH_ABBR[dt.getMonth()]} ${dayNum}" data-s1='${JSON.stringify(s1)}' data-s2='${JSON.stringify(s2)}' style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);color:var(--overlap);transition:transform 0.1s,box-shadow 0.15s;">${dayNum}<span class="pulse-dot"></span></div>`;
     } else {
       patternHtml += `<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.02);border:1.5px solid transparent;color:rgba(255,255,255,0.15);">${dayNum}</div>`;
     }
@@ -1304,9 +1303,9 @@ let _inviteToken = null;
 let _inviteUrl = null;
 
 const INVITE_MESSAGES = [
-  "Saw this and thought of you",
-  "This looks like a good time - you in?",
-  "I've been wanting to try this"
+  "Saw this and thought of you - what do you think?",
+  "This looks like a good time - what do you think?",
+  "I've been wanting to try this - what do you think?"
 ];
 
 function openInviteSheet(el) {
@@ -1337,11 +1336,27 @@ function openInviteSheet(el) {
       }">${m}</button>`
   ).join('');
 
-  document.getElementById('invite-custom-msg').style.display = 'none';
-  document.getElementById('invite-custom-msg').value = '';
+  const customInput = document.getElementById('invite-custom-msg');
+  customInput.value = '';
+  customInput.oninput = () => {
+    if (customInput.value.trim()) {
+      _inviteMsg = customInput.value;
+      // Deselect all chips
+      document.querySelectorAll('#invite-chips button').forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--text)';
+        btn.style.borderColor = 'var(--border)';
+      });
+      _lastChipIdx = -1;
+    }
+    updateInvitePreview();
+  };
   updateInvitePreview();
 
-  document.getElementById('invite-send-btn').style.display = '';
+  const sendBtn = document.getElementById('invite-send-btn');
+  sendBtn.style.display = '';
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Share this \u2192';
   document.getElementById('invite-delivery').style.display = 'none';
   document.getElementById('invite-sent').style.display = 'none';
 
@@ -1365,19 +1380,9 @@ function scrollToRhythm() {
 
 let _lastChipIdx = -1;
 function selectInviteMsg(idx, el) {
-  if (idx === _lastChipIdx) {
-    document.getElementById('invite-custom-msg').style.display = '';
-    document.getElementById('invite-custom-msg').value = INVITE_MESSAGES[idx];
-    document.getElementById('invite-custom-msg').focus();
-    document.getElementById('invite-custom-msg').oninput = () => {
-      _inviteMsg = document.getElementById('invite-custom-msg').value;
-      updateInvitePreview();
-    };
-    return;
-  }
   _lastChipIdx = idx;
   _inviteMsg = INVITE_MESSAGES[idx];
-  document.getElementById('invite-custom-msg').style.display = 'none';
+  document.getElementById('invite-custom-msg').value = '';
 
   document.querySelectorAll('#invite-chips button').forEach((btn, i) => {
     if (i === idx) {
