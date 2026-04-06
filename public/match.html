@@ -38,9 +38,9 @@
       --border: rgba(226,226,226,0.08);
       --text: #e2e2e2;
       --muted: rgba(226,226,226,0.42);
-      --overlap: #34d399;
-      --overlap-bg: rgba(52,211,153,0.15);
-      --overlap-border: rgba(52,211,153,0.55);
+      --overlap: #f5c563;
+      --overlap-bg: rgba(245,197,99,0.12);
+      --overlap-border: rgba(245,197,99,0.45);
       --yours: rgba(230,249,82,0.12);
       --yours-border: rgba(230,249,82,0.35);
       --theirs: rgba(129,140,248,0.15);
@@ -281,26 +281,24 @@
 
     /* ── Result page ── */
     .result-hero {
-      text-align: center; padding: 32px 0 24px;
+      text-align: center; padding: 40px 0 20px;
     }
-    .result-big-num {
-      font-size: clamp(56px, 14vw, 80px);
-      font-weight: 900; color: var(--overlap);
-      line-height: 1; letter-spacing: -3px;
+    .result-headline {
+      font-size: clamp(26px, 7vw, 34px);
+      font-weight: 900; color: white; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 12px;
     }
-    .result-big-label {
-      font-size: 16px; font-weight: 600; color: var(--text);
-      margin-top: 4px;
+    .result-headline em {
+      font-style: normal; color: var(--overlap);
     }
-    .result-pct {
-      font-size: 14px; color: var(--muted); margin-top: 8px;
+    .result-sub {
+      font-size: 15px; color: var(--muted); line-height: 1.6;
+      max-width: 300px; margin: 0 auto;
     }
     .result-verdict {
-      font-size: 15px; color: var(--text); line-height: 1.6;
-      text-align: center; padding: 20px 0; margin: 0 0 20px;
+      font-size: 16px; color: var(--text); line-height: 1.7;
+      text-align: center; padding: 24px 0; margin: 0 0 20px;
       border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      font-style: italic;
     }
 
     /* Rhythm insight */
@@ -471,32 +469,10 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="splash-screen active" id="screen-splash">
-    <img src="/logo-wordmark.svg" alt="Spontany" style="height:48px;margin-bottom:32px;display:block;">
-    <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
-    <div class="splash-props">
-      <div class="splash-prop">
-        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
-        <div class="splash-prop-text"><strong>See when you're both free</strong> - no awkward "do you have the kids?" texts</div>
-      </div>
-      <div class="splash-prop">
-        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
-        <div class="splash-prop-text"><strong>Know before you ask</strong> - custody schedules overlaid in one view</div>
-      </div>
-      <div class="splash-prop">
-        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
-        <div class="splash-prop-text"><strong>Plan dates in seconds</strong>, not days of back-and-forth</div>
-      </div>
-    </div>
-    <button class="btn-primary" onclick="go('hook')">Check your match →</button>
-    <p class="splash-fine">Free. Private. 30 seconds.</p>
-  </div>
-
+  <!-- SCREEN: HOOK (first and only landing screen)                      -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- SCREEN: HOOK                                                       -->
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <div class="hero-screen" id="screen-hook">
-    <img src="/logo.svg" alt="Spontany" style="width:64px;height:64px;margin-bottom:28px;">
+  <div class="hero-screen active" id="screen-hook">
+    <img src="/logo-wordmark.svg" alt="Spontany" style="height:40px;margin-bottom:32px;display:block;">
     <h1 class="hero-headline">Do your schedules actually work?</h1>
     <p class="hero-sub">Two custody schedules. One answer. Find out if your free nights line up - before the conversation gets awkward.</p>
     <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
@@ -691,85 +667,39 @@
   <!-- RESULT PAGE                                                        -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-result">
-    <!-- Big number -->
+    <!-- Emotional headline -->
     <div class="result-hero">
-      <div class="result-big-num" id="result-num">11</div>
-      <div class="result-big-label">free nights this month</div>
-      <div class="result-pct" id="result-pct">That's 37% overlap</div>
+      <div class="result-headline" id="result-headline">You've got <em>Thursday nights.</em></div>
+      <div class="result-sub" id="result-sub"></div>
     </div>
 
-    <!-- Verdict -->
-    <div class="result-verdict" id="result-verdict">
-      Your schedules line up more often than not. When you're both free, you'll know.
-    </div>
+    <!-- Verdict - the vision -->
+    <div class="result-verdict" id="result-verdict"></div>
 
-    <!-- Next shared dates - tappable, links to app -->
+    <!-- Your first dates -->
     <div class="insight-card">
-      <div class="insight-title">Your next shared free nights</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Tap a date to plan something.</p>
+      <div class="insight-title">Your first dates</div>
       <div class="upcoming-dates" id="result-upcoming"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:14px;">Tap one to start planning.</p>
     </div>
 
-    <!-- 3-month calendar - overlap only -->
-    <div class="insight-card">
-      <div class="insight-title">3-month view</div>
-      <div class="cal-legend">
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--overlap-bg);border:1px solid var(--overlap-border);"></div> Both free</div>
-      </div>
-      <div id="result-calendars"></div>
-    </div>
-
-    <!-- Pitch + Signup CTA -->
-    <div class="pitch-divider">This was just the match</div>
-
+    <!-- Signup CTA - tight, warm -->
     <div class="signup-section" id="result-signup">
-      <div class="screen-title">Here's what Spontany does.</div>
-      <div class="screen-sub" style="margin-bottom:20px;">The match check is just the start. Spontany handles the rest.</div>
-
-      <div class="pitch-cards">
-        <div class="pitch-card">
-          <img src="/logo.svg" alt="" class="pitch-card-icon" style="width:24px;height:24px;">
-          <div>
-            <div class="pitch-card-title">See months ahead</div>
-            <div class="pitch-card-sub">Your custody calendar + theirs, overlaid in one view</div>
-          </div>
-        </div>
-        <div class="pitch-card">
-          <img src="/logo.svg" alt="" class="pitch-card-icon" style="width:24px;height:24px;">
-          <div>
-            <div class="pitch-card-title">One tap invites</div>
-            <div class="pitch-card-sub">Drop a link, see who's free, plan instantly</div>
-          </div>
-        </div>
-        <div class="pitch-card">
-          <img src="/logo.svg" alt="" class="pitch-card-icon" style="width:24px;height:24px;">
-          <div>
-            <div class="pitch-card-title">Group plans</div>
-            <div class="pitch-card-sub">6 friends, 6 custody schedules, 1 answer</div>
-          </div>
-        </div>
-        <div class="pitch-card">
-          <img src="/logo.svg" class="pitch-card-icon" style="width:28px;height:28px;">
-          <div>
-            <div class="pitch-card-title">Private by default</div>
-            <div class="pitch-card-sub">You control who sees what, and for how long</div>
-          </div>
-        </div>
-      </div>
-
+      <div class="screen-title" style="font-size:18px;">Don't lose this.</div>
+      <div class="screen-sub" style="margin-bottom:20px;font-size:13px;">Spontany keeps your calendars in sync - so you never miss a window.</div>
       <div class="field-group">
         <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
       </div>
       <div class="field-group">
         <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
       </div>
-      <button class="btn-primary" onclick="saveCalendar()">Get early access →</button>
-      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free forever. No app store. Works on any device.</p>
+      <button class="btn-primary" onclick="saveCalendar()">Save my calendar →</button>
+      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free. Private. No app store needed.</p>
     </div>
 
-    <!-- Share result -->
-    <div style="text-align:center;margin:24px 0 16px;">
-      <button class="btn-outline" onclick="shareResult()">Share this result →</button>
+    <!-- Share -->
+    <div style="text-align:center;margin:20px 0 16px;">
+      <button class="btn-outline" onclick="shareResult()" id="result-share-btn">Tell them about it →</button>
     </div>
   </div>
 
@@ -793,8 +723,7 @@ let weekStartDate = null;
 
 // ── Progress map ──────────────────────────────────────────────────────────────
 const PROGRESS = {
-  'splash': 0,
-  'hook': 5,
+  'hook': 0,
   'your-schedule': 15,
   'fork': 35,
   'their-schedule': 55,
@@ -806,7 +735,7 @@ const PROGRESS = {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function go(screen) {
-  document.querySelectorAll('.screen, .hero-screen, .splash-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen, .hero-screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
   if (el) el.classList.add('active');
   document.getElementById('progress').style.width = (PROGRESS[screen] ?? 50) + '%';
@@ -938,42 +867,57 @@ function computeOverlap() {
 function showResult() {
   const days = computeOverlap();
   const today = new Date(); today.setHours(0,0,0,0);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const monthStr = toDateStr(monthEnd).slice(0, 7);
 
-  // This month stats
-  const thisMonth = days.filter(d => d.date.slice(0, 7) === toDateStr(today).slice(0, 7));
-  const overlapNights = thisMonth.filter(d => d.overlap).length;
-  const totalDays = thisMonth.length;
-  const pct = totalDays > 0 ? Math.round(overlapNights / totalDays * 100) : 0;
-
-  // Overall stats
+  // Stats
   const allOverlap = days.filter(d => d.overlap);
   const totalPct = days.length > 0 ? Math.round(allOverlap.length / days.length * 100) : 0;
 
-  // Set big number
-  document.getElementById('result-num').textContent = overlapNights;
-  document.getElementById('result-pct').textContent = `That's ${pct}% overlap this month · ${totalPct}% over 3 months`;
+  // Find the most common overlapping day-of-week for the headline
+  const dowCounts = [0,0,0,0,0,0,0];
+  allOverlap.forEach(d => { const dt = new Date(d.date + 'T12:00:00'); dowCounts[dt.getDay()]++; });
+  const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
+  const DOW_NAMES = ['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
+  const bestDayName = DOW_NAMES[bestDow];
 
-  // Verdict
-  let verdict;
-  if (totalPct >= 60) verdict = "Your schedules line up more often than not. When you're both free, you'll know.";
-  else if (totalPct >= 30) verdict = "Enough overlap to make it work - if you want to.";
-  else if (totalPct >= 10) verdict = "It's tight. But the right nights matter more than the number.";
-  else verdict = "The schedules don't make it easy. But now you know - and that's worth something.";
+  // Upcoming dates - just first 3 for focus
+  const upcoming = allOverlap.slice(0, 3);
+  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+
+  // Emotional headline + sub based on overlap quality
+  let headline, sub, verdict;
+
+  if (totalPct >= 60) {
+    headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
+    sub = `${allOverlap.length} nights over the next 3 months where you're both free.`;
+    verdict = "Weeknight dinners. Lazy mornings. Room to just be together. Your schedules leave space for something real.";
+  } else if (totalPct >= 35) {
+    headline = `You've got <em>${bestDayName}.</em>`;
+    sub = `${allOverlap.length} shared free nights over the next 3 months.`;
+    verdict = "Enough overlap to build something meaningful. The best relationships don't need every night - they need the right ones.";
+  } else if (totalPct >= 15) {
+    headline = `You've got <em>${bestDayName}.</em>`;
+    sub = `${allOverlap.length} nights where you're both free.`;
+    verdict = "Every date will feel intentional. No autopilot, no taking it for granted. Some people wait years for that kind of presence.";
+  } else {
+    headline = `It's a tight window.`;
+    sub = `${allOverlap.length} shared free nights over 3 months.`;
+    verdict = "Rare nights make for memorable ones. And now you know exactly when they are - no more guessing, no more awkward asks.";
+  }
+
+  document.getElementById('result-headline').innerHTML = headline;
+  document.getElementById('result-sub').textContent = sub;
   document.getElementById('result-verdict').textContent = verdict;
 
-  // Upcoming dates - tappable, deep-link to app with date + person pre-populated
-  const upcoming = allOverlap.slice(0, 8);
-  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+  // Render upcoming dates
   document.getElementById('result-upcoming').innerHTML = upcoming.map(d => {
     const dt = new Date(d.date + 'T12:00:00');
     const deepLink = `/calendar?action=plan&date=${d.date}` + (partnerName ? `&with=${encodeURIComponent(partnerName)}` : '');
     return `<a href="${deepLink}" class="upcoming-chip" onclick="handleDateTap(event, '${d.date}')">${DAY_ABBR[dt.getDay()]} ${MONTH_ABBR[dt.getMonth()]} ${dt.getDate()}</a>`;
   }).join('');
 
-  // 3-month calendars
-  renderResultCalendars(days);
+  // Share button text
+  const shareBtn = document.getElementById('result-share-btn');
+  if (shareBtn && partnerName) shareBtn.textContent = `Tell ${partnerName} about it →`;
 
   go('result');
 }
@@ -1016,11 +960,12 @@ function copyLink() {
 }
 
 function shareResult() {
-  const text = "We checked our custody compatibility on Spontany - " + document.getElementById('result-pct').textContent;
+  const headline = document.getElementById('result-headline').textContent;
+  const text = "Turns out " + headline.toLowerCase().replace(/\.$/, '') + ". Just checked on Spontany.";
   if (navigator.share) {
-    navigator.share({ title: 'Spontany Match', text, url: window.location.origin + '/match' });
+    navigator.share({ title: 'Spontany', text, url: window.location.origin + '/match' });
   } else {
-    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+    navigator.clipboard.writeText(text + ' ' + window.location.origin + '/match').then(() => showToast('Copied to clipboard!'));
   }
 }
 
@@ -1097,8 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (parts[0] === 'match' && parts[1]) {
     matchToken = parts[1];
     isPersonB  = true;
-    // Skip splash for Person B - they arrived via a direct match link
-    document.getElementById('screen-splash')?.classList.remove('active');
+    // Person B - arrived via a direct match link
     document.getElementById('screen-hook')?.classList.add('active');
     initPersonB(matchToken);
   }
