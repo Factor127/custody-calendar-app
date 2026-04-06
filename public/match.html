@@ -486,6 +486,8 @@
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                  -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="splash-screen active" id="screen-splash">
+    <img src="/logo.svg" class="splash-logo" alt="Spontany" style="width:56px;height:56px;margin-bottom:12px;">
+    <div class="splash-brand">Spontany</div>
     <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
     <div class="splash-props">
       <div class="splash-prop">
@@ -709,12 +711,6 @@
       <div style="font-size:11px;color:var(--muted);margin-top:8px;">Swipe to explore other overlap types</div>
     </div>
 
-    <!-- Emotional headline -->
-    <div class="result-hero">
-      <div class="result-headline" id="result-headline">You've got <em>Thursday nights.</em></div>
-      <div class="result-sub" id="result-sub"></div>
-    </div>
-
     <!-- Two-week pattern -->
     <div class="insight-card" style="position:relative;">
       <div class="insight-title">Your weekly rhythm</div>
@@ -741,10 +737,10 @@
       <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free. Private. 2 minutes to set up.</p>
     </div>
 
-    <!-- Share -->
-    <div style="text-align:center;margin:20px 0 16px;">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Want to share this result?</p>
-      <button class="btn-outline" onclick="shareResult()" id="result-share-btn">Share →</button>
+    <!-- Actions -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin:20px 0 16px;padding:0 4px;">
+      <button class="btn-primary" onclick="shareResult()" id="result-share-btn" style="width:100%;">Share this report →</button>
+      <button class="btn-outline" onclick="inviteToMatch()" style="width:100%;">Invite someone to try Spontany Match →</button>
     </div>
   </div>
 
@@ -1047,31 +1043,6 @@ async function showResult() {
     if (Math.abs(diff) > 40) goToSlide(currentSlide + (diff > 0 ? 1 : -1));
   });
 
-  // Headline + sub based on user's type
-  let headline, sub;
-  if (matchTypeId === 'all-in') {
-    headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
-    sub = `Your weeks overlap often - there's real room here for something easy and natural.`;
-  } else if (matchTypeId === 'easy-rhythm') {
-    headline = `You've got <em>${bestDayName}.</em> And a lot more.`;
-    sub = `Plenty of shared time - enough to be spontaneous, enough to keep it interesting.`;
-  } else if (matchTypeId === 'best-of-both') {
-    headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `A mix of weeknights and weekends - room for both the everyday and the adventures.`;
-  } else if (matchTypeId === 'weeknight-regulars') {
-    headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `Your overlap lives in the week - a chance for something grounded and real.`;
-  } else if (matchTypeId === 'weekend-escape') {
-    headline = `You've got <em>${bestDayName}.</em>`;
-    sub = `Your time together lands on weekends - room for adventures and unhurried plans.`;
-  } else {
-    headline = `It's a <em>tight window.</em>`;
-    sub = `Your schedules rarely overlap - but now you know exactly when they do.`;
-  }
-
-  document.getElementById('result-headline').innerHTML = headline;
-  document.getElementById('result-sub').textContent = sub;
-
   // Render two-week pattern - only highlight "both free" days
   const patternDays = days.slice(0, 14);
   const DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1122,8 +1093,9 @@ async function showResult() {
   });
   document.getElementById('result-pattern').innerHTML = patternHtml;
 
-  // Tap interactions on free days — show actionable popup
+  // Tap/hover interactions on free days — show actionable popup
   let _activeRhythmDay = null;
+  const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   document.querySelectorAll('.rhythm-day.free').forEach(el => {
     const show = () => {
       // Deactivate previous
@@ -1158,6 +1130,12 @@ async function showResult() {
       el.style.boxShadow = '';
       _activeRhythmDay = null;
     };
+    // Desktop: hover to show, leave to hide
+    if (isDesktop) {
+      el.addEventListener('mouseenter', show);
+      el.addEventListener('mouseleave', hide);
+    }
+    // Both: click/tap to toggle
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       const popup = document.getElementById('day-outlook');
@@ -1223,12 +1201,22 @@ function copyLink() {
 }
 
 function shareResult() {
-  const headline = document.getElementById('result-headline').textContent;
-  const text = "Turns out " + headline.toLowerCase().replace(/\.$/, '') + ". Just checked on Spontany.";
+  const text = "Just checked our schedule overlap on Spontany. See how yours lines up:";
+  const url = matchShareUrl || (window.location.origin + '/match');
   if (navigator.share) {
-    navigator.share({ title: 'Spontany', text, url: window.location.origin + '/match' });
+    navigator.share({ title: 'Spontany', text, url });
   } else {
-    navigator.clipboard.writeText(text + ' ' + window.location.origin + '/match').then(() => showToast('Copied to clipboard!'));
+    navigator.clipboard.writeText(text + ' ' + url).then(() => showToast('Copied to clipboard!'));
+  }
+}
+
+function inviteToMatch() {
+  const url = window.location.origin + '/match';
+  const text = "I just tried this - it checks if your custody schedules actually line up for date nights. Give it a go:";
+  if (navigator.share) {
+    navigator.share({ title: 'Spontany Match', text, url });
+  } else {
+    navigator.clipboard.writeText(text + ' ' + url).then(() => showToast('Link copied!'));
   }
 }
 
