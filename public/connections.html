@@ -12,7 +12,7 @@
 :root {
   --lime:      #e6f952;
   --lime-dim:  #aec013;
-  --bg:        #0e0e0e;
+  --bg:        #0a0a0a;
   --surface:   #131313;
   --card:      #1a1a1a;
   --cell-bg:   #1a1a1a;
@@ -20,13 +20,13 @@
   --text:      #e2e2e2;
   --muted:     rgba(226,226,226,0.42);
   --blue:      #e6f952;
-  --btn-primary-text: #0e0e0e;
+  --btn-primary-text: #0a0a0a;
   --accent:    #e6f952;
   --orange:    #ff7351;
 }
 * { box-sizing:border-box; }
 body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text); margin:0; padding: 0 10px 24px; font-family:'Inter',system-ui,sans-serif; min-height:100vh; }
-#app-frame { background: #0e0e0e; border-radius: 0 0 24px 24px; min-height: calc(100vh - 24px); overflow: clip; }
+#app-frame { background: #0a0a0a; border-radius: 0 0 24px 24px; min-height: calc(100vh - 24px); overflow: clip; }
 @media (min-width: 860px) {
   body { padding: 0 60px 60px; }
   #app-frame { border-radius: 0 0 28px 28px; min-height: calc(100vh - 60px); }
@@ -43,7 +43,7 @@ body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text);
 }
 .page-title { font-size:30px; font-weight:900; color:var(--text); letter-spacing:-0.02em; margin:0; font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
 .invite-btn {
-  background:var(--lime); color:#0e0e0e; border:none; border-radius:50px;
+  background:var(--lime); color:#0a0a0a; border:none; border-radius:50px;
   padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer;
   display:flex; align-items:center; gap:6px; transition:opacity .15s;
 }
@@ -92,7 +92,7 @@ body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text);
 .conn-avatar {
   width:64px; height:64px; border-radius:50%;
   background:var(--lime); display:flex; align-items:center; justify-content:center;
-  font-size:24px; font-weight:900; color:#0e0e0e; overflow:hidden; flex-shrink:0;
+  font-size:24px; font-weight:900; color:#0a0a0a; overflow:hidden; flex-shrink:0;
 }
 .conn-avatar img { width:100%; height:100%; object-fit:cover; }
 .conn-status-dot {
@@ -150,7 +150,7 @@ body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text);
 /* Pending review card */
 .conn-card.pending-card { border-color:rgba(245,158,11,0.3); }
 .conn-review-btn {
-  width:100%; background:var(--lime); color:#0e0e0e; border:none;
+  width:100%; background:var(--lime); color:#0a0a0a; border:none;
   border-radius:8px; padding:9px; font-size:13px; font-weight:700;
   cursor:pointer; transition:opacity .15s; margin-top:4px;
 }
@@ -198,7 +198,7 @@ body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text);
   width:30px; height:30px; border-radius:50%;
   background:var(--lime); border:2px solid var(--card);
   margin-right:-8px; overflow:hidden; display:flex; align-items:center;
-  justify-content:center; font-size:12px; font-weight:800; color:#0e0e0e;
+  justify-content:center; font-size:12px; font-weight:800; color:#0a0a0a;
 }
 .group-member-count {
   font-size:12px; font-weight:700; color:var(--muted); margin-left:18px;
@@ -287,7 +287,7 @@ input::placeholder { color:var(--muted); }
 .srch-avatar {
   width:42px; height:42px; border-radius:50%;
   background:var(--lime); display:flex; align-items:center; justify-content:center;
-  font-size:17px; font-weight:800; color:#0e0e0e; flex-shrink:0; overflow:hidden;
+  font-size:17px; font-weight:800; color:#0a0a0a; flex-shrink:0; overflow:hidden;
 }
 .srch-avatar img { width:100%; height:100%; object-fit:cover; }
 
@@ -314,7 +314,7 @@ input::placeholder { color:var(--muted); }
 .profile-pane-avatar {
   width:80px; height:80px; border-radius:50%;
   background:var(--lime); display:flex; align-items:center; justify-content:center;
-  font-size:32px; font-weight:900; color:#0e0e0e; overflow:hidden;
+  font-size:32px; font-weight:900; color:#0a0a0a; overflow:hidden;
   margin:0 auto 14px;
 }
 .profile-pane-avatar img { width:100%; height:100%; object-fit:cover; }
@@ -403,7 +403,7 @@ input::placeholder { color:var(--muted); }
           style="flex:1;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;"
           oninput="clearFindResult()" onkeydown="if(event.key==='Enter')findByPhone()">
         <button onclick="findByPhone()"
-          style="padding:11px 18px;background:var(--lime);border:none;border-radius:10px;color:#0e0e0e;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          style="padding:11px 18px;background:var(--lime);border:none;border-radius:10px;color:#0a0a0a;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;">
           Search
         </button>
       </div>

@@ -1,6 +1,6 @@
 <svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <!-- Dark background with rounded corners -->
-  <rect width="1080" height="1080" rx="216" fill="#131321"/>
+  <rect width="1080" height="1080" rx="216" fill="#131313"/>
   <!-- Logo mark in white -->
   <g fill="white" fill-rule="evenodd" clip-rule="evenodd">
     <g transform="matrix(1.15018,0,0,1.15018,-3806.1,-2447.29)">

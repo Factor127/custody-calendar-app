@@ -5,8 +5,8 @@
   "start_url": "/calendar.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0c0c15",
-  "theme_color": "#7c5cbf",
+  "background_color": "#0a0a0a",
+  "theme_color": "#e6f952",
   "orientation": "portrait-primary",
   "categories": ["lifestyle", "social"],
   "icons": [

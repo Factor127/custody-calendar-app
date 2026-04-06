@@ -68,12 +68,12 @@ router.get('/invite/:token', (req, res) => {
       <meta name="viewport" content="width=device-width,initial-scale=1">
       <title>Invite already used — Spontany</title>
       <style>
-        body{margin:0;background:#0c0c15;color:#eeeef8;font-family:-apple-system,sans-serif;
+        body{margin:0;background:#0a0a0a;color:#eeeef8;font-family:-apple-system,sans-serif;
              display:flex;align-items:center;justify-content:center;min-height:100vh;}
         .box{text-align:center;max-width:400px;padding:40px 24px;}
         h1{font-size:22px;font-weight:800;margin:0 0 12px;}
         p{color:rgba(238,238,248,0.55);font-size:14px;line-height:1.6;margin:0 0 24px;}
-        a{display:inline-block;padding:12px 28px;background:#7c5cbf;color:white;
+        a{display:inline-block;padding:12px 28px;background:#e6f952;color:white;
           border-radius:50px;text-decoration:none;font-size:14px;font-weight:700;}
       </style></head>
       <body><div class="box">

@@ -109,7 +109,7 @@ router.post('/match/:token/complete', async (req, res) => {
           html: `
             <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#202124;">
               <img src="${BASE_URL}/logo.svg" width="48" height="48" alt="Spontany" style="border-radius:12px;display:block;margin:0 0 10px;">
-              <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0c0c15;">Spontany</h1>
+              <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0a0a0a;">Spontany</h1>
               <p style="margin:0 0 24px;font-size:18px;font-weight:700;">${bName} just completed the match!</p>
               <p style="margin:0 0 20px;">Their schedule is in. Tap below to see your overlap and find out when you're both free.</p>
               <a href="${matchUrl}" style="display:inline-block;background:#1a73e8;color:white;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">See your result →</a>
@@ -243,7 +243,7 @@ router.post('/match/invite/:token/respond', async (req, res) => {
           html: `
             <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#202124;">
               <img src="${BASE_URL}/logo.svg" width="48" height="48" alt="Spontany" style="border-radius:12px;display:block;margin:0 0 10px;">
-              <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0c0c15;">Spontany</h1>
+              <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0a0a0a;">Spontany</h1>
               <p style="margin:0 0 24px;font-size:18px;font-weight:700;">
                 ${isIn ? `${recipientLabel} is in! 🎉` : `${recipientLabel} can't make this one.`}
               </p>

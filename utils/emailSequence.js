@@ -88,7 +88,7 @@ function layout({ title, preheader, body, ctaText, ctaUrl, userId, step, token }
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;">
         <tr><td>
           <a href="${ctaUrl}"
-             style="display:inline-block;background:#7c5cbf;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+             style="display:inline-block;background:#e6f952;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
                     font-size:15px;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:8px;letter-spacing:0.01em;">
             ${ctaText} →
           </a>
@@ -113,7 +113,7 @@ function layout({ title, preheader, body, ctaText, ctaUrl, userId, step, token }
         <!-- Header -->
         <tr><td style="padding-bottom:20px;">
           <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-                       font-size:22px;font-weight:900;letter-spacing:0.04em;color:#0c0c15;">
+                       font-size:22px;font-weight:900;letter-spacing:0.04em;color:#0a0a0a;">
             SPONTANY
           </span>
         </td></tr>

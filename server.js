@@ -77,9 +77,9 @@ app.get('/api/email/unsubscribe', (req, res) => {
       if (user) {
         db.prepare('UPDATE users SET unsubscribed = 1 WHERE id = ?').run(user.id);
         return res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
-          <style>body{font-family:-apple-system,sans-serif;background:#0c0c15;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+          <style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
           .box{text-align:center;max-width:400px;padding:40px;} h1{font-size:24px;margin-bottom:12px;} p{color:rgba(238,238,248,0.6);font-size:14px;line-height:1.6;}
-          a{color:#a78bfa;text-decoration:none;}</style></head>
+          a{color:#e6f952;text-decoration:none;}</style></head>
           <body><div class="box">
             <h1>You're unsubscribed.</h1>
             <p>We'll stop sending you email updates, ${user.name.split(' ')[0]}.</p>
@@ -89,7 +89,7 @@ app.get('/api/email/unsubscribe', (req, res) => {
     } catch(e) { /* non-critical */ }
   }
   res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
-    <style>body{font-family:-apple-system,sans-serif;background:#0c0c15;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+    <style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
     .box{text-align:center;max-width:400px;padding:40px;} h1{font-size:24px;margin-bottom:12px;} p{color:rgba(238,238,248,0.6);font-size:14px;}</style></head>
     <body><div class="box"><h1>Unsubscribed.</h1><p>You won't receive further emails from us.</p></div></body></html>`);
 });
