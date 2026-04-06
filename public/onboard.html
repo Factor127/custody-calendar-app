@@ -244,7 +244,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
       font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface);
       color: var(--muted); user-select: none; transition: all .13s;
     }
-    .rel-chip.on { background: rgba(230,249,82,0.12); border-color: var(--lime); color: var(--lime); }
+    .rel-chip.on { background: var(--lime); border-color: var(--lime); color: #0e0e0e; }
 
     /* ── Parent question ── */
     .parent-opts-row { display: flex; gap: 14px; margin: 20px 0 28px; }
@@ -339,7 +339,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
 <!-- ── WIZARD (revealed after intro) ── -->
 <div class="wizard" id="wizard-main" style="opacity:0;pointer-events:none;">
 
-  <div class="progress-bar" style="margin-bottom:20px;">
+  <div class="progress-bar" style="margin:0 24px 20px;">
     <div class="progress-fill" id="progress" style="width:0%"></div>
   </div>
 
