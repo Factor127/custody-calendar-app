@@ -62,6 +62,7 @@ try { db.exec('ALTER TABLE opportunities ADD COLUMN outing_count INTEGER DEFAULT
 // ── Community contributions ─────────────────────────────────────────────────
 try { db.exec('ALTER TABLE opportunities ADD COLUMN contributor_note TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE opportunities ADD COLUMN shared_to_community INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE opportunities ADD COLUMN image_url TEXT'); } catch(e) {}
 try {
   db.exec(`CREATE TABLE IF NOT EXISTS opportunity_events (
     id             TEXT PRIMARY KEY,

@@ -81,8 +81,16 @@ function extractMetadata(html, url) {
                   || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
   const ogDesc     = get(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/i)
                   || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:description"/i);
+  const ogImage    = get(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)
+                  || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i);
   const metaTitle  = get(/<title[^>]*>([^<]+)<\/title>/i);
   const metaDesc   = get(/<meta[^>]+name="description"[^>]+content="([^"]+)"/i);
+
+  // Resolve relative image URL to absolute
+  let imageUrl = ogImage || null;
+  if (imageUrl && !imageUrl.startsWith('http')) {
+    try { imageUrl = new URL(imageUrl, url).href; } catch(e) { imageUrl = null; }
+  }
 
   const title      = jsonLd?.title || ogTitle || metaTitle || 'Untitled';
   const domain     = (() => { try { return new URL(url).hostname.replace(/^www\./,''); } catch(e) { return ''; } })();
@@ -94,6 +102,7 @@ function extractMetadata(html, url) {
     end_time:     jsonLd?.end_time    || null,
     location_name:jsonLd?.location_name || null,
     price_raw:    jsonLd?.price || null,
+    image_url:    imageUrl,
     source_url:   url,
     source_domain:domain,
     jsonLdType,
@@ -209,6 +218,7 @@ async function fetchAndParse(url) {
     location_lat:   null,
     location_lng:   null,
     price_tier:     enriched?.price_tier || priceTier(raw.price_raw),
+    image_url:      raw.image_url || null,
     source_type:    'user_submitted',
     source_domain:  raw.source_domain,
     source_url:     url,
@@ -260,6 +270,10 @@ function createOpportunity(draft, createdBy = null) {
     draft.visibility || 'public',
     createdBy
   );
+  // Save image_url if extracted
+  if (draft.image_url) {
+    try { db.db.prepare('UPDATE opportunities SET image_url = ? WHERE id = ?').run(draft.image_url, id); } catch(e) {}
+  }
   return id;
 }
 
