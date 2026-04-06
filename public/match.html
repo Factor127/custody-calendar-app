@@ -693,8 +693,8 @@
     </div>
 
     <div style="text-align:center;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">While you wait - want to see your own free days?</p>
-      <button class="btn-outline" onclick="go('result')" style="max-width:260px;margin:0 auto;">Preview my calendar →</button>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Know someone else with a custody schedule?</p>
+      <button class="btn-outline" onclick="inviteToMatch()" style="max-width:280px;margin:0 auto;">Invite them to try Spontany Match →</button>
     </div>
   </div>
 
@@ -728,24 +728,44 @@
       </div>
     </div>
 
-    <!-- Signup CTA -->
-    <div class="signup-section" id="result-signup">
-      <div class="screen-title" style="font-size:18px;">This is just the beginning.</div>
-      <div class="screen-sub" style="margin-bottom:20px;font-size:13px;">Spontany gives you a clear view of your social calendar - who's free when, plans that fit, and zero back-and-forth.</div>
-      <div class="field-group">
-        <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
-      </div>
-      <div class="field-group">
-        <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
-      </div>
-      <button class="btn-primary" onclick="saveCalendar()">Save my calendar →</button>
-      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free. Private. 2 minutes to set up.</p>
-    </div>
-
-    <!-- Actions -->
+    <!-- Share actions (above signup) -->
     <div style="display:flex;flex-direction:column;gap:10px;margin:20px 0 16px;padding:0 4px;">
       <button class="btn-primary" onclick="shareResult()" id="result-share-btn" style="width:100%;">Share this report →</button>
       <button class="btn-outline" onclick="inviteToMatch()" style="width:100%;">Invite someone to try Spontany Match →</button>
+    </div>
+
+    <!-- Signup CTA -->
+    <div class="signup-section" id="result-signup">
+      <div class="screen-title" style="font-size:18px;">This was just the match.</div>
+      <div class="screen-sub" style="margin-bottom:16px;font-size:13px;">Here's what Spontany does for you.</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">📅</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">See months ahead</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">Your custody calendar + theirs, overlaid</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">💌</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">One-tap invites</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">Drop a link, see who's free, plan instantly</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">👥</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">Group plans</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">6 friends, 6 schedules, 1 answer</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:12px;">
+          <span style="font-size:20px;flex-shrink:0;">🔒</span>
+          <div><div style="font-size:13px;font-weight:700;color:var(--text);">Private by default</div><div style="font-size:12px;color:var(--muted);line-height:1.4;">You control who sees what, and for how long</div></div>
+        </div>
+      </div>
+
+      <div class="field-group" id="save-name-group">
+        <input id="save-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
+      </div>
+      <div class="field-group" id="save-email-group">
+        <input id="save-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <button class="btn-primary" id="save-calendar-btn" onclick="saveCalendar()">Get early access →</button>
+      <p style="font-size:12px;color:rgba(226,226,226,0.25);margin-top:12px;">Free forever. No app store. Works on any device.</p>
     </div>
   </div>
 
@@ -1199,6 +1219,14 @@ async function showResult() {
   if (waitName && saveName && !saveName.value) saveName.value = waitName;
   if (waitEmail && saveEmail && !saveEmail.value) saveEmail.value = waitEmail;
 
+  // If both fields are pre-filled (Person B or returning Person A), collapse to one-tap CTA
+  if (saveName?.value && saveEmail?.value) {
+    document.getElementById('save-name-group').style.display = 'none';
+    document.getElementById('save-email-group').style.display = 'none';
+    const btn = document.getElementById('save-calendar-btn');
+    btn.textContent = `Continue as ${saveName.value} →`;
+  }
+
   go('result');
 }
 
@@ -1289,9 +1317,9 @@ async function saveCalendar() {
   const email = document.getElementById('save-email')?.value.trim();
   if (!name || !email) { showToast('Name and email required'); return; }
 
-  const btn = document.querySelector('#result-signup .btn-primary');
+  const btn = document.getElementById('save-calendar-btn');
   btn.disabled = true;
-  btn.textContent = 'Sending...';
+  btn.textContent = 'Setting up...';
 
   // Meta Pixel - track signup as Lead event
   if (typeof fbq !== 'undefined') {
@@ -1313,12 +1341,12 @@ async function saveCalendar() {
       }
     } else {
       btn.disabled = false;
-      btn.textContent = 'Save my calendar →';
+      btn.textContent = 'Get early access →';
       showToast('Something went wrong - please try again.');
     }
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = 'Save my calendar →';
+    btn.textContent = 'Get early access →';
     showToast('Something went wrong - please try again.');
   }
 }
@@ -1563,10 +1591,14 @@ async function initPersonB(token) {
     const fine = document.querySelector('#screen-splash .splash-fine');
 
     if (data.status === 'completed') {
-      headline.innerHTML = 'Already matched!';
-      if (props) props.style.display = 'none';
-      if (fine) fine.textContent = 'This match has already been completed. Ask your partner to share the result with you.';
-      btn.style.display = 'none';
+      headline.innerHTML = 'This match is<br><em>already done.</em>';
+      if (props) props.innerHTML = `
+        <div class="splash-prop"><span class="splash-prop-icon">✅</span><div class="splash-prop-text">Ask ${data.person_a_name || 'them'} to share the result with you</div></div>
+        <div class="splash-prop"><span class="splash-prop-icon">🔄</span><div class="splash-prop-text">Or start your own match with someone new</div></div>
+      `;
+      if (fine) fine.textContent = '';
+      btn.textContent = 'Start my own match →';
+      btn.onclick = () => { isPersonB = false; matchToken = null; go('hook'); };
       return;
     }
 
