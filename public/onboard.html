@@ -296,7 +296,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <!-- Slide 0: Loading / personalised (invite mode) -->
   <div class="intro-slide active" id="isl-0">
     <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
-      <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
+      <img src="/logo.svg" alt="" width="32" height="32">
       SPONTANY
     </div>
     <div class="intro-loading">Loading…</div>
@@ -1405,7 +1405,7 @@ async function validateInvite() {
     inviteRelType = data.relationship_type || 'friend';
     document.getElementById('isl-0').innerHTML = `
       <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
-      <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
+      <img src="/logo.svg" alt="" width="32" height="32">
       SPONTANY
     </div>
       <div class="intro-big">${ownerName}<br>invited you 👋</div>
@@ -1430,7 +1430,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Generic welcome intro
     document.getElementById('isl-0').innerHTML = `
       <div class="intro-logo" style="display:flex;align-items:center;gap:10px;justify-content:center;">
-      <img src="/icon-192.png" alt="" width="32" height="32" style="border-radius:8px;">
+      <img src="/logo.svg" alt="" width="32" height="32">
       SPONTANY
     </div>
       <div class="intro-big">Welcome to<br>Spontany</div>
