@@ -150,18 +150,72 @@ async function respond(response, message) {
     const d = await res.json();
 
     const isIn = response === 'in';
-    document.getElementById('content').innerHTML = `
-      <div class="confirmed">
-        <div class="confirmed-icon">${isIn ? '&#127881;' : '&#128588;'}</div>
-        <div class="confirmed-title">${isIn ? "You're on!" : 'No worries.'}</div>
-        <div class="confirmed-sub">${isIn
-          ? `${esc(d.sender_name)} will be in touch.`
-          : `Maybe next time. ${esc(d.sender_name)} has been notified.`
-        }</div>
-        <a class="cta-signup" href="/">Try Spontany - find your next date night</a>
-      </div>
-    `;
+    if (isIn) {
+      document.getElementById('content').innerHTML = `
+        <div class="confirmed">
+          <div class="confirmed-icon">&#127881;</div>
+          <div class="confirmed-title">You're on!</div>
+          <div class="confirmed-sub">${esc(d.sender_name)} has been notified.</div>
+        </div>
+        <div class="divider"></div>
+        <div style="text-align:center;">
+          <div style="font-size:15px;font-weight:700;color:#e2e2e2;margin-bottom:6px;">Want to make it happen?</div>
+          <div style="font-size:13px;color:rgba(226,226,226,0.5);margin-bottom:16px;line-height:1.5;">Check if your custody schedules actually line up - so you can plan the details.</div>
+          <div style="margin-bottom:10px;">
+            <input id="date-signup-name" type="text" placeholder="Your first name" class="note-input" style="margin-bottom:6px;">
+            <input id="date-signup-email" type="email" placeholder="you@example.com" class="note-input" style="margin-bottom:0;">
+          </div>
+          <button class="btn-in" onclick="dateSignup('${esc(d.sender_name)}')" id="date-signup-btn">Check our schedule match →</button>
+          <div style="font-size:11px;color:rgba(226,226,226,0.3);margin-top:8px;">Free. Private. 30 seconds.</div>
+        </div>
+        <div style="text-align:center;margin-top:16px;">
+          <a href="/match" style="font-size:13px;color:rgba(226,226,226,0.35);text-decoration:none;">Skip for now →</a>
+        </div>
+      `;
+    } else {
+      document.getElementById('content').innerHTML = `
+        <div class="confirmed">
+          <div class="confirmed-icon">&#128588;</div>
+          <div class="confirmed-title">No worries.</div>
+          <div class="confirmed-sub">Maybe next time. ${esc(d.sender_name)} has been notified.</div>
+        </div>
+        <div class="divider"></div>
+        <div style="text-align:center;">
+          <div style="font-size:13px;color:rgba(226,226,226,0.5);margin-bottom:12px;">Curious when you're both actually free?</div>
+          <a class="cta-signup" href="/match">Try Spontany Match - it takes 30 seconds</a>
+        </div>
+      `;
+    }
   } catch(e) {
+    alert('Something went wrong - please try again.');
+  }
+}
+
+async function dateSignup(senderName) {
+  const name = document.getElementById('date-signup-name')?.value?.trim();
+  const email = document.getElementById('date-signup-email')?.value?.trim();
+  if (!name || !email) { alert('Name and email required'); return; }
+  const btn = document.getElementById('date-signup-btn');
+  btn.disabled = true;
+  btn.textContent = 'Setting up...';
+  try {
+    const res = await fetch('/api/auth/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.magic) {
+        window.location.href = `/setup?magic=${data.magic}&email=${encodeURIComponent(email)}`;
+        return;
+      }
+    }
+    // Fallback: send to match page
+    window.location.href = '/match';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Check our schedule match →';
     alert('Something went wrong - please try again.');
   }
 }

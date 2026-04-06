@@ -941,6 +941,27 @@ function computeOverlap() {
 
 // ── Show result ───────────────────────────────────────────────────────────────
 async function showResult() {
+  // Save match to backend if not already saved (manual entry path)
+  if (!matchToken && !isPersonB) {
+    try {
+      const name = document.getElementById('wait-name')?.value?.trim()
+        || document.getElementById('save-name')?.value?.trim() || '';
+      const email = document.getElementById('wait-email')?.value?.trim()
+        || document.getElementById('save-email')?.value?.trim() || '';
+      const mySchedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
+      const theirSchedule = { week1: state.their.week1, week2: state.their.week2, twoWeek: state.their.twoWeek };
+      const res = await fetch('/api/match/create', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name || null, email: email || null, schedule: JSON.stringify(mySchedule), partner_schedule: JSON.stringify(theirSchedule) })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        matchToken = data.token;
+        matchShareUrl = window.location.origin + data.match_url;
+      }
+    } catch(e) { /* non-critical — result still shows */ }
+  }
+
   const days = computeOverlap();
   const today = new Date(); today.setHours(0,0,0,0);
 
@@ -1169,6 +1190,14 @@ async function showResult() {
   // Share button text
   const shareBtn = document.getElementById('result-share-btn');
   if (shareBtn && partnerName) shareBtn.textContent = `Tell ${partnerName} about it →`;
+
+  // Pre-fill signup fields from waiting screen if already collected
+  const waitName = document.getElementById('wait-name')?.value?.trim();
+  const waitEmail = document.getElementById('wait-email')?.value?.trim();
+  const saveName = document.getElementById('save-name');
+  const saveEmail = document.getElementById('save-email');
+  if (waitName && saveName && !saveName.value) saveName.value = waitName;
+  if (waitEmail && saveEmail && !saveEmail.value) saveEmail.value = waitEmail;
 
   go('result');
 }
@@ -1601,11 +1630,42 @@ async function createMatch() {
     document.getElementById('waiting-share-url').textContent = matchShareUrl;
 
     go('waiting');
+    startWaitingPoll();
   } catch(e) {
     btn.disabled    = false;
     btn.textContent = 'Notify me →';
     showToast('Something went wrong - please try again.');
   }
+}
+
+// ── Poll for Person B completion ────────────────────────────────────────────
+let _pollInterval = null;
+function startWaitingPoll() {
+  if (_pollInterval) clearInterval(_pollInterval);
+  _pollInterval = setInterval(async () => {
+    if (!matchToken) return;
+    try {
+      const res = await fetch(`/api/match/${matchToken}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'completed') {
+        clearInterval(_pollInterval);
+        _pollInterval = null;
+        // Load Person B's schedule and show result
+        if (data.person_a_schedule) {
+          const bSchedule = JSON.parse(data.person_b_schedule || '{}');
+          if (bSchedule.week1) {
+            state.their.week1 = bSchedule.week1;
+            state.their.week2 = bSchedule.week2 || state.their.week1;
+            state.their.twoWeek = bSchedule.twoWeek || false;
+          }
+        }
+        weekStartDate = weekStartDate || getNextFullWeekStart();
+        showToast(`${data.person_b_name || 'They'} filled in their schedule!`);
+        showResult();
+      }
+    } catch(e) {}
+  }, 10000);
 }
 
 // ── Person B: complete match + show result ────────────────────────────────────

@@ -25,17 +25,28 @@ const MOCK_SUGGESTIONS = [
 ];
 
 // POST /api/match/create  — Person A submits their schedule
+// If partner_schedule is also provided (manual entry path), auto-complete the match
 router.post('/match/create', (req, res) => {
-  const { name, email, schedule } = req.body;
+  const { name, email, schedule, partner_schedule } = req.body;
   if (!schedule) return res.status(400).json({ error: 'Schedule is required' });
 
   const token = crypto.randomUUID();
   const scheduleStr = typeof schedule === 'string' ? schedule : JSON.stringify(schedule);
 
-  db.prepare(`
-    INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule)
-    VALUES (?, ?, ?, ?)
-  `).run(token, name || null, email || null, scheduleStr);
+  if (partner_schedule) {
+    // Manual entry path — both schedules provided, mark as completed immediately
+    const partnerStr = typeof partner_schedule === 'string' ? partner_schedule : JSON.stringify(partner_schedule);
+    db.prepare(`
+      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule,
+        person_b_schedule, status, completed_at)
+      VALUES (?, ?, ?, ?, ?, 'completed', datetime('now'))
+    `).run(token, name || null, email || null, scheduleStr, partnerStr);
+  } else {
+    db.prepare(`
+      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule)
+      VALUES (?, ?, ?, ?)
+    `).run(token, name || null, email || null, scheduleStr);
+  }
 
   res.json({ token, match_url: `/match/${token}` });
 });
@@ -53,6 +64,7 @@ router.get('/match/:token', (req, res) => {
   // Only expose schedules once both parties have submitted
   if (row.status === 'completed') {
     resp.person_a_schedule = row.person_a_schedule;
+    resp.person_b_schedule = row.person_b_schedule;
     resp.person_b_name     = row.person_b_name;
     // don't expose emails ever
   }
@@ -230,7 +242,7 @@ router.post('/match/invite/:token/respond', async (req, res) => {
           subject: isIn ? `${recipientLabel} is in! 🎉` : `${recipientLabel} responded to your invite`,
           html: `
             <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#202124;">
-              <img src="${BASE_URL}/icon-192.png" width="48" height="48" alt="Spontany" style="border-radius:12px;display:block;margin:0 0 10px;">
+              <img src="${BASE_URL}/logo.svg" width="48" height="48" alt="Spontany" style="border-radius:12px;display:block;margin:0 0 10px;">
               <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0c0c15;">Spontany</h1>
               <p style="margin:0 0 24px;font-size:18px;font-weight:700;">
                 ${isIn ? `${recipientLabel} is in! 🎉` : `${recipientLabel} can't make this one.`}
