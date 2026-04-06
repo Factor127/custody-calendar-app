@@ -487,23 +487,21 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                  -->
-  <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="splash-screen active" id="screen-splash">
     <img src="/logo.svg" class="splash-logo" alt="Spontany" style="width:56px;height:56px;margin-bottom:12px;">
     <div class="splash-brand">Spontany</div>
     <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
     <div class="splash-props">
       <div class="splash-prop">
-        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <span class="splash-prop-icon">👀</span>
         <div class="splash-prop-text"><strong>See when you're both free</strong> - no awkward "do you have the kids?" texts</div>
       </div>
       <div class="splash-prop">
-        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <span class="splash-prop-icon">📅</span>
         <div class="splash-prop-text"><strong>Know before you ask</strong> - custody schedules overlaid in one view</div>
       </div>
       <div class="splash-prop">
-        <img src="/logo.svg" class="splash-prop-icon" style="width:22px;height:22px;">
+        <span class="splash-prop-icon">⚡</span>
         <div class="splash-prop-text"><strong>Plan dates in seconds</strong>, not days of back-and-forth</div>
       </div>
     </div>
@@ -541,7 +539,7 @@
     </button>
 
     <div class="nav-row">
-      <button class="btn-outline btn-sm" onclick="go('hook')">← Back</button>
+      <button class="btn-outline btn-sm" onclick="go('splash')">← Back</button>
       <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="yourScheduleNext()">Next →</button>
     </div>
   </div>
@@ -557,14 +555,14 @@
 
     <div class="fork-cards">
       <div class="fork-card" onclick="go('their-schedule')">
-        <img src="/logo.svg" alt="" class="fork-emoji" style="width:32px;height:32px;">
+        <span class="fork-emoji">✏️</span>
         <div>
           <div class="fork-label">I know their days</div>
           <div class="fork-sub">I'll enter their schedule myself.</div>
         </div>
       </div>
       <div class="fork-card" onclick="go('send-link')">
-        <img src="/logo.svg" alt="" class="fork-emoji" style="width:32px;height:32px;">
+        <span class="fork-emoji">🔗</span>
         <div>
           <div class="fork-label">Let them fill it in</div>
           <div class="fork-sub">I'll send them a link - more private.</div>
@@ -644,8 +642,8 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-signup-wait">
     <div class="screen-header">
-      <div class="screen-title">One last thing</div>
-      <div class="screen-sub">Drop your name and email so we can let you know when they fill theirs in.</div>
+      <div class="screen-title" id="signup-wait-title">One last thing</div>
+      <div class="screen-sub" id="signup-wait-sub">Drop your name and email so we can let you know when they fill theirs in.</div>
     </div>
 
     <div class="field-group">
@@ -660,7 +658,7 @@
     <button class="btn-primary" id="signup-submit-btn" onclick="submitSignup()">Notify me →</button>
 
     <div class="nav-row">
-      <button class="btn-outline btn-sm" onclick="go('send-link')">← Back</button>
+      <button class="btn-outline btn-sm" id="signup-wait-back" onclick="go('send-link')">← Back</button>
       <span></span>
     </div>
   </div>
@@ -1526,12 +1524,15 @@ function showSentConfirmation() {
   document.getElementById('invite-delivery').style.display = 'none';
   document.getElementById('invite-sent').style.display = '';
 
+  // Nudge signup if they haven't registered yet
   const signupEl = document.getElementById('result-signup');
-  if (signupEl && partnerName) {
+  const saveName = document.getElementById('save-name');
+  if (signupEl && !saveName?.value) {
     const title = signupEl.querySelector('.screen-title');
     const sub = signupEl.querySelector('.screen-sub');
-    if (title) title.textContent = `See when ${partnerName} responds.`;
-    if (sub) sub.textContent = `Save your calendar and we'll notify you the moment they reply.`;
+    if (title) title.textContent = partnerName ? `Get notified when ${partnerName} responds.` : 'Get notified when they respond.';
+    if (sub) sub.textContent = 'Sign up and we\'ll let you know the moment they reply.';
+    signupEl.scrollIntoView({ behavior: 'smooth' });
   }
 
   if (typeof fbq !== 'undefined') {
@@ -1613,6 +1614,11 @@ async function initPersonB(token) {
 // ── yourScheduleNext: skips fork for Person B ─────────────────────────────────
 function yourScheduleNext() {
   if (isPersonB) {
+    // Customize signup-wait screen for Person B
+    document.getElementById('signup-wait-title').textContent = 'Almost there';
+    document.getElementById('signup-wait-sub').textContent = "Add your name and email so we can show you both the result.";
+    document.getElementById('signup-submit-btn').textContent = 'See the match →';
+    document.getElementById('signup-wait-back').onclick = () => go('your-schedule');
     go('signup-wait');
   } else {
     go('fork');
@@ -1710,6 +1716,11 @@ async function completeMatch() {
   const btn = document.getElementById('signup-submit-btn');
   btn.disabled    = true;
   btn.textContent = 'Computing match…';
+
+  // Meta Pixel - track Person B completion as Lead
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'Lead', { content_name: 'match_person_b', ...getUtmData() });
+  }
 
   try {
     // Submit Person B's schedule
