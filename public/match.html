@@ -686,7 +686,7 @@
   <div class="screen" id="screen-result">
     <!-- Match type carousel -->
     <div style="text-align:center;padding-top:32px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;">Your calendar overlap</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;">You two are set up to be...</div>
 
       <!-- Swipeable type cards -->
       <div id="match-carousel" style="position:relative;overflow:hidden;margin:0 -28px;">
@@ -1195,15 +1195,12 @@ async function saveCalendar() {
       body: JSON.stringify({ email, name })
     });
 
-    const signupEl = document.getElementById('result-signup');
     if (res.ok) {
-      signupEl.innerHTML = `
-        <div style="text-align:center;padding:12px 0;">
-          <div style="margin-bottom:8px;"><img src="/logo.svg" style="width:32px;height:32px;"></div>
-          <div class="screen-title" style="font-size:18px;">Check your email.</div>
-          <div class="screen-sub" style="margin-top:4px;">We sent a setup link to <strong style="color:var(--overlap);">${email}</strong>. Tap it to build your full calendar.</div>
-        </div>
-      `;
+      const data = await res.json();
+      if (data.magic) {
+        window.location.href = `/setup?magic=${data.magic}&email=${encodeURIComponent(email)}`;
+        return;
+      }
     } else {
       btn.disabled = false;
       btn.textContent = 'Save my calendar →';
