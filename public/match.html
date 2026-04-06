@@ -1135,17 +1135,25 @@ async function showResult() {
       el.style.boxShadow = '';
       _activeRhythmDay = null;
     };
-    // Desktop: hover to show, leave to hide
+    // Desktop: hover to preview, click to lock open
+    let _lockedOpen = false;
     if (isDesktop) {
-      el.addEventListener('mouseenter', show);
-      el.addEventListener('mouseleave', hide);
+      el.addEventListener('mouseenter', () => { if (!_lockedOpen) show(); });
+      el.addEventListener('mouseleave', () => { if (!_lockedOpen) hide(); });
     }
-    // Both: click/tap to toggle
     el.addEventListener('click', (e) => {
       e.stopPropagation();
-      const popup = document.getElementById('day-outlook');
-      if (popup.style.display === 'block' && _activeRhythmDay === el) hide(); else show();
+      if (_lockedOpen && _activeRhythmDay === el) {
+        _lockedOpen = false;
+        hide();
+      } else {
+        // Unlock any other day
+        document.querySelectorAll('.rhythm-day.free').forEach(d => d._unlock?.());
+        _lockedOpen = true;
+        show();
+      }
     });
+    el._unlock = () => { _lockedOpen = false; };
   });
 
   // Dismiss popup on outside tap
