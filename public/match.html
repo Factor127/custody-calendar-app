@@ -1100,72 +1100,69 @@ async function showResult() {
 
   // Tap/hover interactions on free days — show actionable popup
   let _activeRhythmDay = null;
+  let _lockedDay = null;
   const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  function deselectAll() {
+    document.querySelectorAll('.rhythm-day.free').forEach(d => {
+      d.style.transform = '';
+      d.style.boxShadow = '';
+      d.style.background = 'var(--overlap-bg)';
+      d.style.borderColor = '';
+    });
+    document.getElementById('day-outlook').style.display = 'none';
+    _activeRhythmDay = null;
+    _lockedDay = null;
+  }
+
+  function selectDay(el) {
+    const s1 = JSON.parse(el.dataset.s1);
+    const s2 = JSON.parse(el.dataset.s2);
+    document.getElementById('day-outlook-title').textContent = el.dataset.date + ' - You\'re both free';
+    document.getElementById('day-outlook-items').innerHTML = [s1, s2].map(s =>
+      `<div onclick="openInviteSheet(this)" data-opp='${JSON.stringify(s).replace(/'/g, '&#39;')}'
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background 0.15s;">
+        <span style="font-size:20px;">${s.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${s.title}</div>
+          <div style="font-size:11px;color:var(--muted);">${s.vibe || s.sub || ''}</div>
+          ${s.contributor_note ? `<div style="font-size:10px;color:var(--muted);font-style:italic;margin-top:2px;">"${s.contributor_note}"</div>` : ''}
+        </div>
+        <span style="font-size:16px;color:var(--overlap);">&#8594;</span>
+      </div>`
+    ).join('');
+    document.getElementById('day-outlook').style.display = 'block';
+    el.style.transform = 'scale(1.15)';
+    el.style.boxShadow = '0 0 16px rgba(201,179,245,0.3)';
+    el.style.background = 'rgba(201,179,245,0.25)';
+    el.style.borderColor = 'var(--overlap)';
+    _activeRhythmDay = el;
+  }
+
   document.querySelectorAll('.rhythm-day.free').forEach(el => {
-    const show = () => {
-      // Deactivate previous
-      if (_activeRhythmDay && _activeRhythmDay !== el) {
-        _activeRhythmDay.style.transform = '';
-        _activeRhythmDay.style.boxShadow = '';
-      }
-      _activeRhythmDay = el;
-      const s1 = JSON.parse(el.dataset.s1);
-      const s2 = JSON.parse(el.dataset.s2);
-      document.getElementById('day-outlook-title').textContent = el.dataset.date + ' - You\'re both free';
-      document.getElementById('day-outlook-items').innerHTML = [s1, s2].map(s =>
-        `<div onclick="openInviteSheet(this)" data-opp='${JSON.stringify(s).replace(/'/g, '&#39;')}'
-          style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background 0.15s;">
-          <span style="font-size:20px;">${s.icon}</span>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:600;color:var(--text);">${s.title}</div>
-            <div style="font-size:11px;color:var(--muted);">${s.vibe || s.sub || ''}</div>
-            ${s.contributor_note ? `<div style="font-size:10px;color:var(--muted);font-style:italic;margin-top:2px;">"${s.contributor_note}"</div>` : ''}
-          </div>
-          <span style="font-size:16px;color:var(--overlap);">&#8594;</span>
-        </div>`
-      ).join('');
-      const popup = document.getElementById('day-outlook');
-      popup.style.display = 'block';
-      el.style.transform = 'scale(1.15)';
-      el.style.boxShadow = '0 0 16px rgba(201,179,245,0.3)';
-    };
-    const hide = () => {
-      document.getElementById('day-outlook').style.display = 'none';
-      el.style.transform = '';
-      el.style.boxShadow = '';
-      _activeRhythmDay = null;
-    };
-    // Desktop: hover to preview, click to lock open
-    let _lockedOpen = false;
     if (isDesktop) {
-      el.addEventListener('mouseenter', () => { if (!_lockedOpen) show(); });
-      el.addEventListener('mouseleave', () => { if (!_lockedOpen) hide(); });
+      el.addEventListener('mouseenter', () => { if (!_lockedDay) { deselectAll(); selectDay(el); } });
+      el.addEventListener('mouseleave', () => { if (!_lockedDay) deselectAll(); });
     }
     el.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (_lockedOpen && _activeRhythmDay === el) {
-        _lockedOpen = false;
-        hide();
+      if (_lockedDay === el) {
+        // Second click on same day — deselect
+        deselectAll();
       } else {
-        // Unlock any other day
-        document.querySelectorAll('.rhythm-day.free').forEach(d => d._unlock?.());
-        _lockedOpen = true;
-        show();
+        // Click to lock this day
+        deselectAll();
+        _lockedDay = el;
+        selectDay(el);
       }
     });
-    el._unlock = () => { _lockedOpen = false; };
   });
 
-  // Dismiss popup on outside tap
+  // Dismiss popup on outside click (not on popup itself)
   document.addEventListener('click', (e) => {
     const popup = document.getElementById('day-outlook');
-    if (popup.style.display === 'block' && !popup.contains(e.target) && !e.target.classList.contains('free')) {
-      popup.style.display = 'none';
-      if (_activeRhythmDay) {
-        _activeRhythmDay.style.transform = '';
-        _activeRhythmDay.style.boxShadow = '';
-        _activeRhythmDay = null;
-      }
+    if (popup.style.display === 'block' && !popup.contains(e.target) && !e.target.closest('.rhythm-day')) {
+      deselectAll();
     }
   });
 
