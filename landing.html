@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spontany — Know before you ask.</title>
+<meta name="description" content="Spontany maps custody schedules so plans happen in seconds, not days. See who's free. Skip the awkward texts. Make the plan.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --lime: #c4d630;
+    --lime-dark: #a3b325;
+    --white: #ffffff;
+    --dark-text: #1a1a1a;
+    --muted: #888888;
+    --border: rgba(255,255,255,0.06);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- NAV ---- */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 20px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+    color: var(--white);
+  }
+  .nav-logo span { color: var(--lime); }
+  .nav-cta {
+    display: inline-block; padding: 10px 24px;
+    background: var(--lime); color: var(--dark-text);
+    font-size: 14px; font-weight: 700; text-decoration: none;
+    border-radius: 100px; transition: background 0.2s;
+  }
+  .nav-cta:hover { background: var(--lime-dark); }
+
+  /* ---- HERO ---- */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 140px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Background scenario images — sit behind the headline */
+  .hero-bg-carousel {
+    position: absolute; inset: 0; z-index: 0;
+  }
+  .hero-bg-slide {
+    position: absolute; inset: 0;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  .hero-bg-slide.active { opacity: 1; }
+  .hero-bg-slide img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .hero-bg-slide .placeholder-bg {
+    width: 100%; height: 100%;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--muted); font-family: 'Inter', sans-serif;
+    letter-spacing: 1px;
+  }
+  /* Heavy overlay so text stays readable */
+  .hero-bg-carousel::after {
+    content: '';
+    position: absolute; inset: 0; z-index: 1;
+    background:
+      radial-gradient(ellipse at center, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.85) 70%),
+      linear-gradient(to bottom, rgba(10,10,10,0.7) 0%, rgba(10,10,10,0.4) 40%, rgba(10,10,10,0.9) 100%);
+  }
+
+  /* All hero content sits above the bg images */
+  .hero-content {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-rotating {
+    height: 32px; margin-bottom: 40px; position: relative;
+    overflow: hidden; width: 100%; max-width: 600px;
+  }
+  .hero-rotating span {
+    position: absolute; left: 0; right: 0;
+    font-size: 18px; font-weight: 500; color: var(--lime);
+    letter-spacing: 0.3px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .hero-rotating span.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .hero h1 {
+    font-size: clamp(56px, 10vw, 120px);
+    font-weight: 900; line-height: 0.95;
+    letter-spacing: -3px;
+    margin-bottom: 32px;
+  }
+  .hero h1 .line-know { display: block; }
+  .hero h1 .line-before { display: block; color: var(--muted); }
+  .hero h1 .line-ask { display: block; }
+  .hero h1 .dot { color: var(--lime); }
+
+  .hero-sub {
+    font-size: 18px; color: var(--muted); max-width: 480px;
+    margin-bottom: 40px; line-height: 1.7;
+  }
+  .cta-pill {
+    display: inline-block; padding: 16px 40px;
+    background: var(--lime); color: var(--dark-text);
+    font-size: 16px; font-weight: 700; text-decoration: none;
+    border-radius: 100px; transition: all 0.2s;
+    border: none; cursor: pointer;
+  }
+  .cta-pill:hover { background: var(--lime-dark); transform: translateY(-1px); }
+
+  /* Carousel dots in hero */
+  .hero-dots {
+    display: flex; justify-content: center; gap: 8px;
+    margin-top: 32px;
+  }
+  .hero-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: none; cursor: pointer;
+    transition: all 0.3s;
+    padding: 0;
+  }
+  .hero-dot.active {
+    background: var(--lime);
+    width: 24px; border-radius: 4px;
+  }
+
+  /* Phone mockup — below hero content */
+  .phone-mockup {
+    position: relative; z-index: 2;
+    margin-top: 60px;
+    width: 280px; height: 560px;
+    background: var(--surface);
+    border-radius: 36px;
+    border: 2px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 120px rgba(196,214,48,0.06);
+  }
+  .phone-notch {
+    width: 120px; height: 28px;
+    background: var(--bg); border-radius: 0 0 16px 16px;
+    margin: 0 auto;
+  }
+  .phone-screen { padding: 16px; }
+  .phone-header { text-align: center; margin-bottom: 16px; }
+  .phone-header h3 { font-size: 14px; font-weight: 700; color: var(--white); }
+  .phone-header p { font-size: 11px; color: var(--muted); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  }
+  .cal-day-label {
+    font-size: 9px; color: var(--muted); text-align: center;
+    padding: 4px 0; font-weight: 600;
+  }
+  .cal-day {
+    aspect-ratio: 1; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    background: rgba(255,255,255,0.03);
+    color: var(--muted);
+  }
+  .cal-day.custody { background: rgba(124,92,191,0.2); color: #a78bfa; }
+  .cal-day.free { background: rgba(196,214,48,0.15); color: var(--lime); }
+  .cal-day.overlap {
+    background: rgba(196,214,48,0.3); color: var(--lime);
+    box-shadow: 0 0 12px rgba(196,214,48,0.2);
+  }
+  .cal-day.today { border: 1px solid var(--lime); }
+
+  /* ---- FEATURES ---- */
+  .features {
+    padding: 120px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .features-label {
+    text-align: center;
+    font-size: 14px; font-weight: 600; color: var(--lime);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .features-title {
+    text-align: center;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800; letter-spacing: -1px;
+    margin-bottom: 64px;
+  }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .feature-card:hover {
+    border-color: rgba(196,214,48,0.2);
+    transform: translateY(-4px);
+  }
+  .feature-icon {
+    width: 44px; height: 44px;
+    background: rgba(196,214,48,0.1);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+  .feature-card h3 {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 12px; line-height: 1.3;
+    letter-spacing: -0.3px;
+  }
+  .feature-card p {
+    font-size: 14px; color: var(--muted); line-height: 1.7;
+  }
+
+  /* ---- STATS ---- */
+  .stats {
+    padding: 100px 24px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-grid {
+    max-width: 900px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px; text-align: center;
+  }
+  .stat-item .stat-num {
+    font-size: clamp(48px, 6vw, 72px);
+    font-weight: 900; color: var(--lime);
+    letter-spacing: -2px; line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-item .stat-label {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ---- TESTIMONIAL ---- */
+  .testimonial {
+    padding: 140px 24px;
+    text-align: center;
+    max-width: 720px; margin: 0 auto;
+  }
+  .testimonial blockquote {
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 500; font-style: italic;
+    line-height: 1.5; letter-spacing: -0.5px;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 32px;
+  }
+  .testimonial-attr {
+    font-size: 14px; color: var(--muted);
+  }
+  .testimonial-avatar {
+    width: 48px; height: 48px;
+    background: rgba(196,214,48,0.15);
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: var(--lime);
+  }
+
+  /* ---- FAQ ---- */
+  .faq {
+    padding: 100px 24px;
+    max-width: 700px; margin: 0 auto;
+  }
+  .faq-title {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800; letter-spacing: -1px;
+    text-align: center; margin-bottom: 48px;
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+  }
+  .faq-question {
+    width: 100%; background: none; border: none; color: var(--white);
+    font-size: 16px; font-weight: 600; text-align: left;
+    padding: 24px 0; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: inherit;
+  }
+  .faq-question:hover { color: var(--lime); }
+  .faq-arrow {
+    font-size: 20px; transition: transform 0.3s;
+    color: var(--muted); flex-shrink: 0; margin-left: 16px;
+  }
+  .faq-item.open .faq-arrow { transform: rotate(45deg); }
+  .faq-answer {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+  }
+  .faq-item.open .faq-answer {
+    max-height: 300px;
+  }
+  .faq-answer p {
+    font-size: 14px; color: var(--muted); line-height: 1.8;
+    padding-bottom: 24px;
+  }
+
+  /* ---- BOTTOM CTA ---- */
+  .bottom-cta {
+    padding: 140px 24px;
+    text-align: center;
+  }
+  .bottom-cta h2 {
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 900; line-height: 0.95;
+    letter-spacing: -2px; margin-bottom: 24px;
+  }
+  .bottom-cta .sub {
+    font-size: 16px; color: var(--muted);
+    margin-bottom: 40px; max-width: 440px;
+    margin-left: auto; margin-right: auto;
+    line-height: 1.7;
+  }
+  .signup-form {
+    display: flex; gap: 8px;
+    max-width: 440px; margin: 0 auto 16px;
+  }
+  .signup-form input {
+    flex: 1; padding: 16px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 100px; color: var(--white);
+    font-size: 15px; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+  }
+  .signup-form input::placeholder { color: #555; }
+  .signup-form input:focus { border-color: var(--lime); }
+  .signup-form button {
+    padding: 16px 32px;
+    background: var(--lime); color: var(--dark-text);
+    font-size: 15px; font-weight: 700;
+    border: none; border-radius: 100px;
+    cursor: pointer; transition: background 0.2s;
+    font-family: inherit; white-space: nowrap;
+  }
+  .signup-form button:hover { background: var(--lime-dark); }
+  .signup-note {
+    font-size: 12px; color: #555;
+  }
+
+  /* ---- FOOTER ---- */
+  footer {
+    padding: 60px 24px 40px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  .footer-logo {
+    font-size: 18px; font-weight: 800; margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .footer-logo span { color: var(--lime); }
+  .footer-links {
+    margin-bottom: 16px;
+  }
+  .footer-links a {
+    color: var(--muted); font-size: 13px; text-decoration: none;
+    margin: 0 12px; transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--lime); }
+  .footer-tagline {
+    font-size: 13px; color: #444; font-style: italic;
+  }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .hero { padding: 120px 20px 60px; }
+    .hero h1 { letter-spacing: -2px; }
+    .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+    .signup-form { flex-direction: column; }
+    .signup-form button { width: 100%; }
+  }
+
+  /* ---- GLOW ACCENT ---- */
+  .hero::before {
+    content: '';
+    position: absolute; z-index: 1;
+    top: 30%; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(196,214,48,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Spontan<span>y</span></div>
+  <a href="#signup" class="nav-cta">Get early access</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <!-- Background scenario images — crossfade behind everything -->
+  <div class="hero-bg-carousel" id="heroBgCarousel">
+    <div class="hero-bg-slide active">
+      <img src="carousel-1.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="placeholder-bg" style="display:none;">carousel-1.png — WhatsApp hesitation</div>
+    </div>
+    <div class="hero-bg-slide">
+      <img src="carousel-2.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="placeholder-bg" style="display:none;">carousel-2.png — Group chat chaos</div>
+    </div>
+    <div class="hero-bg-slide">
+      <img src="carousel-3.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="placeholder-bg" style="display:none;">carousel-3.png — Wine glasses, empty chair</div>
+    </div>
+    <div class="hero-bg-slide">
+      <img src="carousel-4.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="placeholder-bg" style="display:none;">carousel-4.png — Concert on phone</div>
+    </div>
+    <div class="hero-bg-slide">
+      <img src="carousel-5.png" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="placeholder-bg" style="display:none;">carousel-5.png — Fridge schedule chaos</div>
+    </div>
+  </div>
+
+  <!-- Hero content — sits above the background -->
+  <div class="hero-content">
+    <div class="hero-rotating" id="heroRotating">
+      <span class="active">Not sure when she's got the kids?</span>
+      <span>6 friends. 6 custody schedules. 0 plans.</span>
+      <span>Will you be with your kids or can we do this?</span>
+      <span>Who's free for this gig on Saturday night...?</span>
+      <span>2 people planning. 4 homes aligning.</span>
+    </div>
+
+    <h1>
+      <span class="line-know">Know</span>
+      <span class="line-before">before you</span>
+      <span class="line-ask">ask<span class="dot">.</span></span>
+    </h1>
+
+    <p class="hero-sub">Spontany maps custody schedules so plans happen in seconds, not days.</p>
+
+    <a href="#signup" class="cta-pill">Get early access &rarr;</a>
+
+    <!-- Carousel indicator dots -->
+    <div class="hero-dots" id="heroDots">
+      <button class="hero-dot active" data-index="0"></button>
+      <button class="hero-dot" data-index="1"></button>
+      <button class="hero-dot" data-index="2"></button>
+      <button class="hero-dot" data-index="3"></button>
+      <button class="hero-dot" data-index="4"></button>
+    </div>
+  </div>
+
+  <!-- Phone mockup — the app calendar UI -->
+  <div class="phone-mockup">
+    <div class="phone-notch"></div>
+    <div class="phone-screen">
+      <div class="phone-header">
+        <h3>April 2026</h3>
+        <p>You &amp; Sarah</p>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day-label">M</div>
+        <div class="cal-day-label">T</div>
+        <div class="cal-day-label">W</div>
+        <div class="cal-day-label">T</div>
+        <div class="cal-day-label">F</div>
+        <div class="cal-day-label">S</div>
+        <div class="cal-day-label">S</div>
+        <!-- Week 1 -->
+        <div class="cal-day"></div>
+        <div class="cal-day"></div>
+        <div class="cal-day today free">1</div>
+        <div class="cal-day free">2</div>
+        <div class="cal-day custody">3</div>
+        <div class="cal-day custody">4</div>
+        <div class="cal-day custody">5</div>
+        <!-- Week 2 -->
+        <div class="cal-day custody">6</div>
+        <div class="cal-day custody">7</div>
+        <div class="cal-day free">8</div>
+        <div class="cal-day overlap">9</div>
+        <div class="cal-day overlap">10</div>
+        <div class="cal-day free">11</div>
+        <div class="cal-day free">12</div>
+        <!-- Week 3 -->
+        <div class="cal-day custody">13</div>
+        <div class="cal-day custody">14</div>
+        <div class="cal-day custody">15</div>
+        <div class="cal-day custody">16</div>
+        <div class="cal-day free">17</div>
+        <div class="cal-day overlap">18</div>
+        <div class="cal-day overlap">19</div>
+        <!-- Week 4 -->
+        <div class="cal-day free">20</div>
+        <div class="cal-day free">21</div>
+        <div class="cal-day custody">22</div>
+        <div class="cal-day custody">23</div>
+        <div class="cal-day custody">24</div>
+        <div class="cal-day overlap">25</div>
+        <div class="cal-day overlap">26</div>
+        <!-- Week 5 -->
+        <div class="cal-day free">27</div>
+        <div class="cal-day free">28</div>
+        <div class="cal-day free">29</div>
+        <div class="cal-day custody">30</div>
+        <div class="cal-day"></div>
+        <div class="cal-day"></div>
+        <div class="cal-day"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <p class="features-label">What Spontany does</p>
+  <h2 class="features-title">Built for the way you actually plan.</h2>
+
+  <div class="feature-grid">
+    <!-- Row 1 -->
+    <div class="feature-card">
+      <div class="feature-icon">👀</div>
+      <h3>See months ahead.<br>Plan without asking.</h3>
+      <p>Your custody schedule and theirs — overlaid in one view. See when you're both free tonight, next week, or in July. No awkward questions. Just open the app and plan.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <h3>One screen.<br>Everyone's free days.</h3>
+      <p>6 friends. 6 custody schedules. Finding one night used to be impossible. Spontany shows the group overlap instantly — so you stop polling and start planning.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <h3>Drop a link.<br>See who's free. Invite.</h3>
+      <p>Paste an event URL — Spontany pulls the date, time, and location automatically. It shows which friends are available. One tap to invite. Seconds, not a 12-message thread.</p>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>Coordinate without<br>the conversation.</h3>
+      <p>Pickup changes. Schedule swaps. Weekend updates. All the logistics that currently live in a text thread you'd rather not open. It's all in the app now.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📤</div>
+      <h3>They know<br>the plan too.</h3>
+      <p>Share the schedule with your kids so everyone knows who's where and when. Less confusion, fewer "wait, am I at mum's or dad's?" moments.</p>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Who sees what.<br>And for how long.</h3>
+      <p>Grant access to your calendar on your terms. Friends see availability. Partners see the full picture. Set time-limited access that expires when you want it to. Invite-only.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Awkward "do you have<br>the kids?" texts</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">2m</div>
+      <div class="stat-label">To set up<br>your calendar</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">1 tap</div>
+      <div class="stat-label">From event link<br>to invite</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">4→1</div>
+      <div class="stat-label">Homes aligned<br>one screen</div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial">
+  <div class="testimonial-avatar">S</div>
+  <blockquote>"He just opened the app, saw I was free Thursday, and texted 'Italian?' One message. Done."</blockquote>
+  <p class="testimonial-attr">— Early beta user</p>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <h2 class="faq-title">Questions.</h2>
+
+  <div class="faq-item">
+    <button class="faq-question">
+      Who can see my custody schedule?
+      <span class="faq-arrow">+</span>
+    </button>
+    <div class="faq-answer">
+      <p>You control everything. Friends see when you're free — not your custody details. Partners see the shared calendar. Co-parents see what they need for coordination. No one sees more than they should. Every connection is invite-only, and you can set access to expire whenever you want.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question">
+      Is this a co-parenting app?
+      <span class="faq-arrow">+</span>
+    </button>
+    <div class="faq-answer">
+      <p>No. Spontany is a scheduling and lifestyle app. It's built for people whose lives involve custody schedules — but the point is making plans, not managing co-parenting.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question">
+      Do I need to download anything?
+      <span class="faq-arrow">+</span>
+    </button>
+    <div class="faq-answer">
+      <p>Nope. Spontany is a Progressive Web App — it runs in your browser and you can add it to your home screen like a native app. Works on any device.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question">
+      Is it free?
+      <span class="faq-arrow">+</span>
+    </button>
+    <div class="faq-answer">
+      <p>Yes. Spontany is free to use.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <button class="faq-question">
+      What if my ex doesn't want to use it?
+      <span class="faq-arrow">+</span>
+    </button>
+    <div class="faq-answer">
+      <p>No problem. You don't need your ex on Spontany. Add your custody schedule yourself, invite the people you actually want to plan with — partner, friends — and go.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BOTTOM CTA -->
+<section class="bottom-cta" id="signup">
+  <h2>Join our<br>early access.</h2>
+  <p class="sub">Spontany is free, works on any device, and takes 2 minutes to set up. No app store needed.</p>
+  <form class="signup-form" onsubmit="event.preventDefault(); this.querySelector('button').textContent='You\'re in! ✓'; this.querySelector('input').disabled=true;">
+    <input type="email" placeholder="your@email.com" required>
+    <button type="submit">Get early access &rarr;</button>
+  </form>
+  <p class="signup-note">We'll let you know when it's your turn.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Spontan<span>y</span></div>
+  <div class="footer-links">
+    <a href="/privacy-policy.html">Privacy Policy</a>
+    <a href="/terms-of-service.html">Terms of Service</a>
+  </div>
+  <p class="footer-tagline">Made for the moments that matter.</p>
+</footer>
+
+<script>
+  // ---- HERO: SYNCED ROTATING TEXT + BACKGROUND IMAGES + DOTS ----
+  const rotatingEl = document.getElementById('heroRotating');
+  const textSpans = rotatingEl.querySelectorAll('span');
+  const bgSlides = document.querySelectorAll('.hero-bg-slide');
+  const dots = document.querySelectorAll('.hero-dot');
+  let currentIndex = 0;
+  let autoplayTimer;
+
+  function goToSlide(index) {
+    textSpans[currentIndex].classList.remove('active');
+    bgSlides[currentIndex].classList.remove('active');
+    dots[currentIndex].classList.remove('active');
+
+    currentIndex = index;
+
+    textSpans[currentIndex].classList.add('active');
+    bgSlides[currentIndex].classList.add('active');
+    dots[currentIndex].classList.add('active');
+
+    resetAutoplay();
+  }
+
+  function nextSlide() {
+    goToSlide((currentIndex + 1) % textSpans.length);
+  }
+
+  function resetAutoplay() {
+    clearInterval(autoplayTimer);
+    autoplayTimer = setInterval(nextSlide, 4000);
+  }
+
+  // Dots
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      goToSlide(parseInt(dot.dataset.index));
+    });
+  });
+
+  // Start autoplay
+  autoplayTimer = setInterval(nextSlide, 4000);
+
+  // ---- FAQ ACCORDION ----
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.parentElement;
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+</script>
+
+</body>
+</html>
