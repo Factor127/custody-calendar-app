@@ -5793,6 +5793,7 @@ function showToast(msg) {
       <div class="browse-title" id="opp-action-title">Choose an action</div>
       <button class="plan-sheet-close" onclick="closeOppAction()">✕</button>
     </div>
+    <img id="opp-action-img" src="" alt="" style="display:none;width:100%;max-height:140px;object-fit:cover;border-radius:0;" onerror="this.style.display='none'" loading="lazy">
     <div style="padding:12px 16px 20px; display:flex; flex-direction:column; gap:10px;">
       <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="oppPlanThis()">📅 Plan this on a date</button>
       <button class="btn btn-secondary" style="width:100%;padding:14px;" id="opp-open-link-btn" onclick="oppOpenLink()">🔗 Open link</button>
@@ -6932,9 +6933,14 @@ function renderBrowseMatches() {
     const where  = o.location_name ? o.location_name.split(',')[0] : '';
     const price  = PRICE_LABEL[o.price_tier] || '';
     const tags   = (Array.isArray(o.tags) ? o.tags : []).slice(0,4);
+    const imgUrl = o.image_url || null;
+    const imgHtml = imgUrl
+      ? `<div style="width:56px;height:56px;border-radius:10px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,0.04);"><img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+      : '';
 
     return `<div class="opp-card" onclick="oppCardClick('${o.id}','${(o.source_url||'').replace(/'/g,'%27')}','${o.title.replace(/'/g,'')}')">
       <div class="opp-card-top">
+        ${imgHtml}
         <div style="flex:1;min-width:0;">
           <div class="opp-card-title">${icon} ${o.title}</div>
           <div class="opp-card-meta">${[when, where, price].filter(Boolean).join(' · ')}</div>
@@ -7079,6 +7085,17 @@ function oppCardClick(oppId, sourceUrl, title) {
     _browseCalledFromSS = false;
     const opp = _browseMatches.find(o => o.id === oppId);
     if (opp) { linkSSOpportunity(opp); return; }
+  }
+  // Show image in action sheet if available
+  const opp = _browseMatches.find(o => o.id === oppId);
+  const imgEl = document.getElementById('opp-action-img');
+  if (imgEl) {
+    if (opp?.image_url) {
+      imgEl.src = opp.image_url;
+      imgEl.style.display = '';
+    } else {
+      imgEl.style.display = 'none';
+    }
   }
   _oppActionId    = oppId;
   _oppActionUrl   = (sourceUrl && sourceUrl !== 'undefined') ? decodeURIComponent(sourceUrl) : null;
