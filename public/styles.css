@@ -257,7 +257,7 @@ input:checked + .slider:before { transform: translateX(18px); }
 .btn-green    { background: #34a853; color: white; }
 .btn-purple   { background: #9c27b0; color: white; }
 .btn-gray     { background: #5f6368; color: white; }
-.btn-outline  { background: white; color: var(--blue); border: 1.5px solid var(--blue); }
+.btn-outline  { background: transparent; color: var(--text, #e2e2e2); border: 1.5px solid var(--border, rgba(226,226,226,0.08)); }
 .btn-danger   { background: #d93025; color: white; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 
