@@ -43,6 +43,103 @@ router.post('/match/create', (req, res) => {
   res.json({ token, match_url: `/match/${token}` });
 });
 
+// ── GET /api/match/suggestions — context-aware opportunities per day ─────────
+// Weekend days get events, walks, sports, restaurants; weekday evenings get
+// coffee, drinks, restaurants — with a shuffle so each day feels different.
+const WEEKEND_DAYS = new Set(['fri','sat','sun']);
+const WEEKEND_CATS = new Set(['events','restaurants','walks','sports','entertainment','music','arts','outdoors']);
+const WEEKDAY_CATS = new Set(['coffee','drinks','restaurants','nightlife','food','entertainment']);
+
+router.get('/match/suggestions', (req, res) => {
+  const daysParam = (req.query.days || '').toLowerCase();
+  const days = daysParam.split(',').filter(Boolean);
+  if (!days.length) return res.json({ suggestions: {} });
+
+  const suggestions = {};
+
+  try {
+    const rows = db.prepare(`
+      SELECT id, title, category, location_name, price_tier, contributor_note, confidence_score, outing_count, image_url
+      FROM opportunities
+      WHERE visibility = 'public'
+        AND tags NOT LIKE '%kid%' AND tags NOT LIKE '%family%'
+      ORDER BY confidence_score DESC, outing_count DESC
+      LIMIT 50
+    `).all();
+
+    const weekendPool = rows.filter(r => WEEKEND_CATS.has(r.category) || !r.category);
+    const weekdayPool = rows.filter(r => WEEKDAY_CATS.has(r.category) || !r.category);
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    const usedIds = new Set();
+
+    days.forEach(day => {
+      const isWeekend = WEEKEND_DAYS.has(day);
+      const primary = shuffle(isWeekend ? weekendPool : weekdayPool);
+      const secondary = shuffle(isWeekend ? weekdayPool : weekendPool);
+      const combined = [...primary, ...secondary];
+
+      const picked = [];
+      for (const r of combined) {
+        if (usedIds.has(r.id)) continue;
+        picked.push({
+          id: r.id,
+          title: r.title,
+          category: r.category,
+          vibe: [r.category, r.location_name?.split(',')[0]].filter(Boolean).join(' · ') || 'Evening out',
+          contributor_note: r.contributor_note || null,
+          icon: CATEGORY_ICON[r.category] || '✨',
+          image_url: r.image_url || null,
+        });
+        usedIds.add(r.id);
+        if (picked.length >= 1) break;
+      }
+
+      if (picked.length) suggestions[day] = picked;
+    });
+  } catch(e) {
+    console.error('[match/suggestions]', e.message);
+  }
+
+  res.json({ suggestions });
+});
+
+// GET /api/match/suggestions/search?q= — public text search for match invite sheet
+router.get('/match/suggestions/search', (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.json({ results: [] });
+  const like = `%${q}%`;
+  try {
+    const rows = db.prepare(`
+      SELECT id, title, category, location_name, image_url
+      FROM opportunities
+      WHERE visibility = 'public'
+        AND (title LIKE ? OR category LIKE ? OR location_name LIKE ?)
+      ORDER BY confidence_score DESC
+      LIMIT 6
+    `).all(like, like, like);
+    const results = rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      category: r.category,
+      vibe: [r.category, r.location_name?.split(',')[0]].filter(Boolean).join(' · ') || '',
+      icon: CATEGORY_ICON[r.category] || '✨',
+      image_url: r.image_url || null,
+    }));
+    res.json({ results });
+  } catch(e) {
+    res.json({ results: [] });
+  }
+});
+
 // GET /api/match/:token  — status + person A name (safe to expose)
 router.get('/match/:token', (req, res) => {
   const row = db.prepare('SELECT * FROM match_requests WHERE token = ?').get(req.params.token);
@@ -113,78 +210,6 @@ router.post('/match/:token/complete', async (req, res) => {
   }
 
   res.json({ status: 'completed' });
-});
-
-// ── GET /api/match/suggestions — context-aware opportunities per day ─────────
-// Weekend days get events, walks, sports, restaurants; weekday evenings get
-// coffee, drinks, restaurants — with a shuffle so each day feels different.
-const WEEKEND_DAYS = new Set(['fri','sat','sun']);
-const WEEKEND_CATS = new Set(['events','restaurants','walks','sports','entertainment','music','arts','outdoors']);
-const WEEKDAY_CATS = new Set(['coffee','drinks','restaurants','nightlife','food','entertainment']);
-
-router.get('/match/suggestions', (req, res) => {
-  const daysParam = (req.query.days || '').toLowerCase();
-  const days = daysParam.split(',').filter(Boolean);
-  if (!days.length) return res.json({ suggestions: {} });
-
-  const suggestions = {};
-
-  try {
-    const rows = db.prepare(`
-      SELECT id, title, category, location_name, price_tier, contributor_note, confidence_score, outing_count, image_url
-      FROM opportunities
-      WHERE visibility = 'public'
-        AND tags NOT LIKE '%kid%' AND tags NOT LIKE '%family%'
-      ORDER BY confidence_score DESC, outing_count DESC
-      LIMIT 50
-    `).all();
-
-    // Separate into weekend-friendly and weekday-friendly pools
-    // An opportunity can appear in both pools
-    const weekendPool = rows.filter(r => WEEKEND_CATS.has(r.category) || !r.category);
-    const weekdayPool = rows.filter(r => WEEKDAY_CATS.has(r.category) || !r.category);
-
-    // Shuffle helper — Fisher-Yates
-    function shuffle(arr) {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
-    const usedIds = new Set();
-
-    days.forEach(day => {
-      const isWeekend = WEEKEND_DAYS.has(day);
-      const primary = shuffle(isWeekend ? weekendPool : weekdayPool);
-      const secondary = shuffle(isWeekend ? weekdayPool : weekendPool);
-      const combined = [...primary, ...secondary];
-
-      const picked = [];
-      for (const r of combined) {
-        if (usedIds.has(r.id)) continue;
-        picked.push({
-          id: r.id,
-          title: r.title,
-          category: r.category,
-          vibe: [r.category, r.location_name?.split(',')[0]].filter(Boolean).join(' · ') || 'Evening out',
-          contributor_note: r.contributor_note || null,
-          icon: CATEGORY_ICON[r.category] || '✨',
-          image_url: r.image_url || null,
-        });
-        usedIds.add(r.id);
-        if (picked.length >= 1) break;
-      }
-
-      if (picked.length) suggestions[day] = picked;
-    });
-  } catch(e) {
-    // No fallback — empty suggestions is fine
-  }
-
-  res.json({ suggestions });
 });
 
 // ── POST /api/match/invite — create a date invite (no auth required) ────────
