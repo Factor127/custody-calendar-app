@@ -15,14 +15,6 @@ function getResend() {
 }
 
 const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭', entertainment:'🎬', coffee:'☕', drinks:'🍷', restaurants:'🍽', walks:'🌳', events:'🎫', sports:'⚽', outdoors:'🌳', wellness:'🧘', education:'📚', community:'👥' };
-const MOCK_SUGGESTIONS = [
-  { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true, image_url: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=120&h=120&fit=crop' },
-  { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true, image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=120&h=120&fit=crop' },
-  { icon: '🎬', title: 'Late night screening', vibe: 'Indie cinema · Cozy', mock: true, image_url: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=120&h=120&fit=crop' },
-  { icon: '🍽', title: 'New Italian on 5th', vibe: 'Restaurant · Date night', mock: true, image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&h=120&fit=crop' },
-  { icon: '🎤', title: 'Open mic comedy night', vibe: 'Comedy · Free entry', mock: true, image_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=120&h=120&fit=crop' },
-  { icon: '🌮', title: 'Taco pop-up at the park', vibe: 'Street food · Live DJ', mock: true, image_url: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=120&h=120&fit=crop' },
-];
 
 // POST /api/match/create  — Person A submits their schedule
 // If partner_schedule is also provided (manual entry path), auto-complete the match
@@ -163,16 +155,13 @@ router.get('/match/suggestions', (req, res) => {
     }
 
     const usedIds = new Set();
-    let mockIdx = 0;
 
     days.forEach(day => {
       const isWeekend = WEEKEND_DAYS.has(day);
-      // Primary pool first, then fall back to the other pool
       const primary = shuffle(isWeekend ? weekendPool : weekdayPool);
       const secondary = shuffle(isWeekend ? weekdayPool : weekendPool);
       const combined = [...primary, ...secondary];
 
-      // Pick up to 2 unique opportunities for this day
       const picked = [];
       for (const r of combined) {
         if (usedIds.has(r.id)) continue;
@@ -184,26 +173,15 @@ router.get('/match/suggestions', (req, res) => {
           contributor_note: r.contributor_note || null,
           icon: CATEGORY_ICON[r.category] || '✨',
           image_url: r.image_url || null,
-          mock: false,
         });
         usedIds.add(r.id);
-        if (picked.length >= 1) break;  // 1 per day card
+        if (picked.length >= 1) break;
       }
 
-      // Pad with mock if nothing real found
-      while (picked.length < 1) {
-        picked.push(MOCK_SUGGESTIONS[mockIdx++ % MOCK_SUGGESTIONS.length]);
-      }
-      suggestions[day] = picked;
+      if (picked.length) suggestions[day] = picked;
     });
   } catch(e) {
-    // Fallback: all mocks
-    let mockIdx = 0;
-    days.forEach(day => {
-      suggestions[day] = [
-        MOCK_SUGGESTIONS[mockIdx++ % MOCK_SUGGESTIONS.length],
-      ];
-    });
+    // No fallback — empty suggestions is fine
   }
 
   res.json({ suggestions });

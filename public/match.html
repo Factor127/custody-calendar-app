@@ -1126,16 +1126,6 @@ async function showResult() {
     if (sugRes.ok) realSuggestions = (await sugRes.json()).suggestions || {};
   } catch(e) {}
 
-  const FALLBACK = [
-    { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true, image_url: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=120&h=120&fit=crop' },
-    { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true, image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=120&h=120&fit=crop' },
-    { icon: '🎬', title: 'Late night screening', vibe: 'Indie cinema · Cozy', mock: true, image_url: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=120&h=120&fit=crop' },
-    { icon: '🍽', title: 'New Italian on 5th', vibe: 'Restaurant · Date night', mock: true, image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&h=120&fit=crop' },
-    { icon: '🎤', title: 'Open mic comedy night', vibe: 'Comedy · Free entry', mock: true, image_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=120&h=120&fit=crop' },
-    { icon: '🌮', title: 'Taco pop-up at the park', vibe: 'Street food · Live DJ', mock: true, image_url: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=120&h=120&fit=crop' },
-  ];
-  let fallbackIdx = 0;
-
   const dateCardsEl = document.getElementById('result-date-cards');
   const top3 = upcoming.slice(0, 3);
 
@@ -1146,12 +1136,25 @@ async function showResult() {
       const dt = new Date(d.date + 'T12:00:00');
       const dow = DAY_ABBR_LC[dt.getDay()];
       const dateLabel = `${DAY_ABBR[dt.getDay()]}, ${MONTH_ABBR[dt.getMonth()]} ${dt.getDate()}`;
-      let s1;
-      if (realSuggestions[dow] && realSuggestions[dow].length > 0) {
-        s1 = realSuggestions[dow][0];
-      } else {
-        s1 = FALLBACK[fallbackIdx++ % FALLBACK.length];
+      const s1 = realSuggestions[dow]?.[0] || null;
+
+      if (!s1) {
+        // No opportunity — show date-only card
+        return `<div onclick="openInviteFromCard(this)" data-date-label="${dateLabel} evening" data-opp='${JSON.stringify({icon:"✨",title:"Plan something",vibe:"You\\'re both free"}).replace(/'/g, '&#39;')}'
+          style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);border-radius:14px;cursor:pointer;transition:transform 0.1s,box-shadow 0.15s;">
+          <div style="text-align:center;min-width:48px;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">${DAY_ABBR[dt.getDay()]}</div>
+            <div style="font-size:22px;font-weight:800;color:var(--overlap);line-height:1.2;">${dt.getDate()}</div>
+            <div style="font-size:9px;font-weight:600;color:var(--muted);">${MONTH_ABBR[dt.getMonth()]}</div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">You're both free</div>
+            <div style="font-size:12px;color:var(--muted);">Tap to plan something</div>
+          </div>
+          <span style="font-size:18px;color:var(--overlap);flex-shrink:0;">→</span>
+        </div>`;
       }
+
       return `<div onclick="openInviteFromCard(this)" data-date-label="${dateLabel} evening" data-opp='${JSON.stringify(s1).replace(/'/g, '&#39;')}'
         style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);border-radius:14px;cursor:pointer;transition:transform 0.1s,box-shadow 0.15s;">
         <div style="text-align:center;min-width:48px;">
