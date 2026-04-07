@@ -708,25 +708,19 @@
   <!-- RESULT PAGE                                                        -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-result">
-    <!-- Match type hero -->
+    <!-- Match type carousel (starts on user's result) -->
     <div style="text-align:center;padding-top:32px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;">You two are set up to be...</div>
-      <div id="result-type-badge" style="display:inline-block;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:10px 24px;border-radius:24px;color:var(--overlap);border:1.5px solid var(--overlap-border);background:var(--overlap-bg);margin-bottom:12px;"></div>
-      <div id="result-type-desc" style="font-size:14px;color:var(--text);line-height:1.6;max-width:300px;margin:0 auto 8px;"></div>
+      <div id="match-carousel" style="position:relative;overflow:hidden;margin:0 -28px;">
+        <div id="match-carousel-track" style="display:flex;transition:transform 0.35s ease;"></div>
+      </div>
+      <div id="match-carousel-dots" style="display:flex;justify-content:center;gap:6px;margin-top:14px;"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">Swipe to explore other rhythm types</div>
     </div>
 
     <!-- Overlap summary in human terms -->
     <div id="result-overlap-summary" style="text-align:center;padding:16px 20px;margin:16px 0;background:rgba(201,179,245,0.06);border:1px solid rgba(201,179,245,0.15);border-radius:14px;">
       <div style="font-size:13px;color:var(--text);line-height:1.6;" id="result-overlap-text"></div>
-    </div>
-
-    <!-- Swipeable type cards (explore others) -->
-    <div style="margin-top:20px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:10px;text-align:center;">Explore all rhythm types</div>
-      <div id="match-carousel" style="position:relative;overflow:hidden;margin:0 -28px;">
-        <div id="match-carousel-track" style="display:flex;transition:transform 0.35s ease;"></div>
-      </div>
-      <div id="match-carousel-dots" style="display:flex;justify-content:center;gap:6px;margin-top:10px;"></div>
     </div>
 
     <!-- Privacy note -->
@@ -1053,10 +1047,6 @@ async function showResult() {
   const userType = ALL_TYPES.find(t => t.id === matchTypeId);
   const userTypeIdx = ALL_TYPES.indexOf(userType);
 
-  // Populate hero badge + description
-  document.getElementById('result-type-badge').textContent = userType.name;
-  document.getElementById('result-type-desc').textContent = userType.desc;
-
   // Overlap summary in human terms
   const weekdaysPerMonth = Math.round(weekdayOverlap / days.length * 30);
   const weekendsPerMonth = Math.round(weekendOverlap / days.length * 30);
@@ -1072,18 +1062,18 @@ async function showResult() {
   }
   document.getElementById('result-overlap-text').innerHTML = overlapText;
 
-  // Build carousel (explore other types)
+  // Build carousel — user's card is prominent
   const track = document.getElementById('match-carousel-track');
   track.innerHTML = ALL_TYPES.map((t, i) => {
     const isUser = t.id === matchTypeId;
     return `<div class="match-type-card" style="min-width:100%;padding:0 36px;box-sizing:border-box;text-align:center;flex-shrink:0;">
-      <div style="display:inline-block;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:8px 20px;border-radius:20px;margin-bottom:12px;
+      <div style="display:inline-block;font-size:${isUser ? '18' : '13'}px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;padding:${isUser ? '10px 24px' : '8px 20px'};border-radius:${isUser ? '24' : '20'}px;margin-bottom:12px;
         ${isUser
           ? 'color:var(--overlap);border:1.5px solid var(--overlap-border);background:var(--overlap-bg);'
           : 'color:var(--muted);border:1.5px solid var(--border);background:transparent;'
         }">${t.name}</div>
-      ${isUser ? '<div style="font-size:10px;font-weight:700;color:var(--overlap);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">← Your result</div>' : '<div style="height:22px;"></div>'}
-      <div style="font-size:13px;color:${isUser ? 'var(--text)' : 'var(--muted)'};line-height:1.6;max-width:280px;margin:0 auto;">${t.desc}</div>
+      ${isUser ? '<div style="font-size:10px;font-weight:700;color:var(--overlap);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Your result</div>' : '<div style="height:22px;"></div>'}
+      <div style="font-size:${isUser ? '14' : '13'}px;color:${isUser ? 'var(--text)' : 'var(--muted)'};line-height:1.6;max-width:300px;margin:0 auto;">${t.desc}</div>
     </div>`;
   }).join('');
 
