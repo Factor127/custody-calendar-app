@@ -5,6 +5,32 @@ const db       = require('../db');
 const { submitUrl, ingestTicketmaster, ingestGooglePlaces, createOpportunity } = require('../services/opportunityIngestion');
 const { matchForUser } = require('../services/opportunityMatcher');
 
+// ── Background image fetch for opportunities without images ──────────────
+async function _fetchImageForOpportunity(oppId, url) {
+  try {
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' },
+      signal: AbortSignal.timeout(8000),
+      redirect: 'follow'
+    });
+    if (!resp.ok) return;
+    const html = await resp.text();
+    const get = (pattern) => { const m = html.match(pattern); return m ? m[1] : null; };
+    let img = get(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)
+           || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i)
+           || get(/<meta[^>]+name="twitter:image"[^>]+content="([^"]+)"/i)
+           || get(/<meta[^>]+content="([^"]+)"[^>]+name="twitter:image"/i)
+           || get(/<img[^>]+src="(https?:\/\/[^"]+(?:\.jpg|\.jpeg|\.png|\.webp)[^"]*)"/i)
+           || get(/<link[^>]+rel="apple-touch-icon"[^>]+href="([^"]+)"/i);
+    if (img && !img.startsWith('http')) {
+      try { img = new URL(img, url).href; } catch(e) { img = null; }
+    }
+    if (img) {
+      db.db.prepare('UPDATE opportunities SET image_url = ? WHERE id = ? AND image_url IS NULL').run(img, oppId);
+    }
+  } catch(e) { /* ignore — best-effort */ }
+}
+
 // ── Auth helper (local copy — requireToken not exported from api.js) ──────
 function requireToken(req, res) {
   const token = req.query.token || req.body?.token;
@@ -80,7 +106,7 @@ router.post('/opportunities/direct', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { title, type, category, location_name, location_lat, location_lng,
           price_tier, tags, start_time, end_time, source_url, place_id, confidence_score,
-          share_to_community, contributor_note } = req.body;
+          share_to_community, contributor_note, image_url } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
 
   // Check for duplicate by place_id (Google Place) or by title+location
@@ -105,6 +131,7 @@ router.post('/opportunities/direct', (req, res) => {
     source_type:      'manual',
     source_domain:    null,
     source_url:       source_url || null,
+    image_url:        image_url || null,
     confidence_score: confidence_score ?? 0.70,
     visibility:       share_to_community ? 'public' : 'private',
   };
@@ -115,6 +142,11 @@ router.post('/opportunities/direct', (req, res) => {
     db.shareOpportunity(id, note);
   }
   res.json({ id, ok: true });
+
+  // Background: if no image provided but source_url exists, try to fetch og:image
+  if (!image_url && source_url) {
+    _fetchImageForOpportunity(id, source_url).catch(() => {});
+  }
 });
 
 // ── POST /api/opportunities/submit — submit a URL ─────────────────────────

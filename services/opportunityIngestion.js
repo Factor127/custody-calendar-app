@@ -86,8 +86,26 @@ function extractMetadata(html, url) {
   const metaTitle  = get(/<title[^>]*>([^<]+)<\/title>/i);
   const metaDesc   = get(/<meta[^>]+name="description"[^>]+content="([^"]+)"/i);
 
-  // Resolve relative image URL to absolute
-  let imageUrl = ogImage || null;
+  // Fallback image sources: twitter:image, JSON-LD image, first large <img>, apple-touch-icon
+  const twitterImage = get(/<meta[^>]+name="twitter:image"[^>]+content="([^"]+)"/i)
+                    || get(/<meta[^>]+content="([^"]+)"[^>]+name="twitter:image"/i);
+  const jsonLdImage  = (() => {
+    if (!ldMatch) return null;
+    try {
+      const parsed = JSON.parse(ldMatch[1]);
+      const ev = Array.isArray(parsed) ? parsed[0] : parsed;
+      const img = ev.image;
+      if (typeof img === 'string') return img;
+      if (Array.isArray(img)) return img[0]?.url || img[0] || null;
+      if (img?.url) return img.url;
+    } catch(e) {}
+    return null;
+  })();
+  const appleTouchIcon = get(/<link[^>]+rel="apple-touch-icon"[^>]+href="([^"]+)"/i);
+  const largeImg = get(/<img[^>]+src="(https?:\/\/[^"]+(?:\.jpg|\.jpeg|\.png|\.webp)[^"]*)"/i);
+
+  // Resolve relative image URL to absolute — try multiple sources
+  let imageUrl = ogImage || twitterImage || jsonLdImage || largeImg || appleTouchIcon || null;
   if (imageUrl && !imageUrl.startsWith('http')) {
     try { imageUrl = new URL(imageUrl, url).href; } catch(e) { imageUrl = null; }
   }

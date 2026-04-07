@@ -7906,6 +7906,8 @@ function scWhatPickOpp(idx) {
   _sc.whatInputVal = o.title;
   _sc.selWhat = { custom: o.title, oppId: o.id, source_url: o.source_url };
   if (o.source_url) _sc.selWhat.url = o.source_url;
+  if (o.image_url) _sc.selWhat.unfurled = { title: o.title, image: o.image_url };
+  _sc.opportunityId = o.id;
   scWhatCloseDrop();
   renderSCSummary();
 }
