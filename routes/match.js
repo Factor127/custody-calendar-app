@@ -123,16 +123,20 @@ router.post('/match/:token/complete', async (req, res) => {
   res.json({ status: 'completed' });
 });
 
-// ── GET /api/match/suggestions — curated date-night opportunities per day ────
+// ── GET /api/match/suggestions — context-aware opportunities per day ─────────
+// Weekend days get events, walks, sports, restaurants; weekday evenings get
+// coffee, drinks, restaurants — with a shuffle so each day feels different.
+const WEEKEND_DAYS = new Set(['fri','sat','sun']);
+const WEEKEND_CATS = new Set(['events','restaurants','walks','sports','entertainment','music','arts','outdoors']);
+const WEEKDAY_CATS = new Set(['coffee','drinks','restaurants','nightlife','food','entertainment']);
+
 router.get('/match/suggestions', (req, res) => {
   const daysParam = (req.query.days || '').toLowerCase();
   const days = daysParam.split(',').filter(Boolean);
   if (!days.length) return res.json({ suggestions: {} });
 
-  const DOW_MAP = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
   const suggestions = {};
 
-  // Try to find real opportunities from the DB
   try {
     const rows = db.prepare(`
       SELECT id, title, category, location_name, price_tier, contributor_note, confidence_score, outing_count, image_url
@@ -140,33 +144,63 @@ router.get('/match/suggestions', (req, res) => {
       WHERE visibility = 'public'
         AND tags NOT LIKE '%kid%' AND tags NOT LIKE '%family%'
       ORDER BY confidence_score DESC, outing_count DESC
-      LIMIT 20
+      LIMIT 50
     `).all();
 
-    let mockIdx = 0;
-    days.forEach(day => {
-      const realForDay = rows.splice(0, 2).map(r => ({
-        id: r.id,
-        title: r.title,
-        category: r.category,
-        vibe: [r.category, r.location_name?.split(',')[0]].filter(Boolean).join(' · ') || 'Evening out',
-        contributor_note: r.contributor_note || null,
-        icon: CATEGORY_ICON[r.category] || '✨',
-        image_url: r.image_url || null,
-        mock: false,
-      }));
-      // Pad with mocks if fewer than 2
-      while (realForDay.length < 2) {
-        realForDay.push(MOCK_SUGGESTIONS[mockIdx++ % MOCK_SUGGESTIONS.length]);
+    // Separate into weekend-friendly and weekday-friendly pools
+    // An opportunity can appear in both pools
+    const weekendPool = rows.filter(r => WEEKEND_CATS.has(r.category) || !r.category);
+    const weekdayPool = rows.filter(r => WEEKDAY_CATS.has(r.category) || !r.category);
+
+    // Shuffle helper — Fisher-Yates
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
-      suggestions[day] = realForDay;
+      return a;
+    }
+
+    const usedIds = new Set();
+    let mockIdx = 0;
+
+    days.forEach(day => {
+      const isWeekend = WEEKEND_DAYS.has(day);
+      // Primary pool first, then fall back to the other pool
+      const primary = shuffle(isWeekend ? weekendPool : weekdayPool);
+      const secondary = shuffle(isWeekend ? weekdayPool : weekendPool);
+      const combined = [...primary, ...secondary];
+
+      // Pick up to 2 unique opportunities for this day
+      const picked = [];
+      for (const r of combined) {
+        if (usedIds.has(r.id)) continue;
+        picked.push({
+          id: r.id,
+          title: r.title,
+          category: r.category,
+          vibe: [r.category, r.location_name?.split(',')[0]].filter(Boolean).join(' · ') || 'Evening out',
+          contributor_note: r.contributor_note || null,
+          icon: CATEGORY_ICON[r.category] || '✨',
+          image_url: r.image_url || null,
+          mock: false,
+        });
+        usedIds.add(r.id);
+        if (picked.length >= 1) break;  // 1 per day card
+      }
+
+      // Pad with mock if nothing real found
+      while (picked.length < 1) {
+        picked.push(MOCK_SUGGESTIONS[mockIdx++ % MOCK_SUGGESTIONS.length]);
+      }
+      suggestions[day] = picked;
     });
   } catch(e) {
     // Fallback: all mocks
     let mockIdx = 0;
     days.forEach(day => {
       suggestions[day] = [
-        MOCK_SUGGESTIONS[mockIdx++ % MOCK_SUGGESTIONS.length],
         MOCK_SUGGESTIONS[mockIdx++ % MOCK_SUGGESTIONS.length],
       ];
     });
