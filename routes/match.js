@@ -16,12 +16,12 @@ function getResend() {
 
 const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭', entertainment:'🎬' };
 const MOCK_SUGGESTIONS = [
-  { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true },
-  { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true },
-  { icon: '🎬', title: 'Late night screening', vibe: 'Indie cinema · Cozy', mock: true },
-  { icon: '🍽', title: 'New Italian on 5th', vibe: 'Restaurant · Date night', mock: true },
-  { icon: '🎤', title: 'Open mic comedy night', vibe: 'Comedy · Free entry', mock: true },
-  { icon: '🌮', title: 'Taco pop-up at the park', vibe: 'Street food · Live DJ', mock: true },
+  { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true, image_url: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=120&h=120&fit=crop' },
+  { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true, image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=120&h=120&fit=crop' },
+  { icon: '🎬', title: 'Late night screening', vibe: 'Indie cinema · Cozy', mock: true, image_url: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=120&h=120&fit=crop' },
+  { icon: '🍽', title: 'New Italian on 5th', vibe: 'Restaurant · Date night', mock: true, image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&h=120&fit=crop' },
+  { icon: '🎤', title: 'Open mic comedy night', vibe: 'Comedy · Free entry', mock: true, image_url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=120&h=120&fit=crop' },
+  { icon: '🌮', title: 'Taco pop-up at the park', vibe: 'Street food · Live DJ', mock: true, image_url: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=120&h=120&fit=crop' },
 ];
 
 // POST /api/match/create  — Person A submits their schedule
