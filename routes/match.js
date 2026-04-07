@@ -14,7 +14,7 @@ function getResend() {
   return _resend;
 }
 
-const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭', entertainment:'🎬' };
+const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭', entertainment:'🎬', coffee:'☕', drinks:'🍷', restaurants:'🍽', walks:'🌳', events:'🎫', sports:'⚽', outdoors:'🌳', wellness:'🧘', education:'📚', community:'👥' };
 const MOCK_SUGGESTIONS = [
   { icon: '🎵', title: 'Live jazz at The Blue Note', vibe: 'Live music · Relaxed', mock: true, image_url: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=120&h=120&fit=crop' },
   { icon: '🍷', title: 'Wine tasting at Oak & Vine', vibe: 'Intimate · Wine bar', mock: true, image_url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=120&h=120&fit=crop' },
@@ -138,7 +138,6 @@ router.get('/match/suggestions', (req, res) => {
       SELECT id, title, category, location_name, price_tier, contributor_note, confidence_score, outing_count, image_url
       FROM opportunities
       WHERE visibility = 'public'
-        AND category IN ('nightlife','food','music','arts','entertainment')
         AND tags NOT LIKE '%kid%' AND tags NOT LIKE '%family%'
       ORDER BY confidence_score DESC, outing_count DESC
       LIMIT 20
