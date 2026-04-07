@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "node scripts/seed-opportunities.js; node --experimental-sqlite server.js",
+    "startCommand": "node --experimental-sqlite scripts/seed-opportunities.js; node --experimental-sqlite server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
