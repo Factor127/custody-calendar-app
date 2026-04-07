@@ -1159,10 +1159,11 @@ async function showResult() {
           <div style="font-size:22px;font-weight:800;color:var(--overlap);line-height:1.2;">${dt.getDate()}</div>
           <div style="font-size:9px;font-weight:600;color:var(--muted);">${MONTH_ABBR[dt.getMonth()]}</div>
         </div>
+        ${s1.image_url ? `<div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,0.04);"><img src="${s1.image_url}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">You're both free</div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:16px;">${s1.icon}</span>
+            ${!s1.image_url ? `<span style="font-size:16px;">${s1.icon}</span>` : ''}
             <span style="font-size:12px;color:var(--muted);">${s1.title}</span>
           </div>
         </div>
@@ -1353,7 +1354,9 @@ function _openInviteSheetUI() {
   const opp = _inviteOpp;
   document.getElementById('invite-sheet-date').textContent = _inviteDate;
   document.getElementById('invite-sheet-opp').innerHTML = `
-    <span style="font-size:24px;">${opp.icon || '✨'}</span>
+    ${opp.image_url
+      ? `<div style="width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;"><img src="${opp.image_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<span style=font-size:24px>${opp.icon || '✨'}</span>'"></div>`
+      : `<span style="font-size:24px;">${opp.icon || '✨'}</span>`}
     <div>
       <div style="font-size:15px;font-weight:700;color:var(--text);">${opp.title}</div>
       <div style="font-size:12px;color:var(--muted);">${opp.vibe || opp.sub || ''}</div>
@@ -1436,7 +1439,9 @@ function updateInvitePreview() {
     <div style="font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.5;">${_inviteMsg || '...'}</div>
     <div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(201,179,245,0.06);
       border:1px solid rgba(201,179,245,0.2);border-radius:8px;">
-      <span style="font-size:18px;">${_inviteOpp?.icon || '✨'}</span>
+      ${_inviteOpp?.image_url
+        ? `<div style="width:36px;height:36px;border-radius:6px;overflow:hidden;flex-shrink:0;"><img src="${_inviteOpp.image_url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<span style=font-size:18px>${_inviteOpp?.icon || '✨'}</span>'"></div>`
+        : `<span style="font-size:18px;">${_inviteOpp?.icon || '✨'}</span>`}
       <div>
         <div style="font-size:13px;font-weight:600;color:var(--text);">${_inviteOpp?.title || ''}</div>
         <div style="font-size:11px;color:var(--muted);">${_inviteDate}</div>

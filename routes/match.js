@@ -135,7 +135,7 @@ router.get('/match/suggestions', (req, res) => {
   // Try to find real opportunities from the DB
   try {
     const rows = db.prepare(`
-      SELECT id, title, category, location_name, price_tier, contributor_note, confidence_score, outing_count
+      SELECT id, title, category, location_name, price_tier, contributor_note, confidence_score, outing_count, image_url
       FROM opportunities
       WHERE visibility = 'public'
         AND category IN ('nightlife','food','music','arts','entertainment')
@@ -153,6 +153,7 @@ router.get('/match/suggestions', (req, res) => {
         vibe: [r.category, r.location_name?.split(',')[0]].filter(Boolean).join(' · ') || 'Evening out',
         contributor_note: r.contributor_note || null,
         icon: CATEGORY_ICON[r.category] || '✨',
+        image_url: r.image_url || null,
         mock: false,
       }));
       // Pad with mocks if fewer than 2
