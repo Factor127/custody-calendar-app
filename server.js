@@ -88,7 +88,9 @@ app.put('/api/admin/waitlist/:id/approve', async (req, res) => {
 
   // Send approval email
   const accessLink = `${BASE_URL}/?access=${accessToken}`;
+  const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
   await sendEmail({
+    from: FROM_EMAIL,
     to: row.email,
     subject: "You're in! Welcome to Spontany",
     html: `<div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;background:#0a0a0a;color:#ffffff;padding:40px;border-radius:12px;">
