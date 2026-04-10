@@ -108,6 +108,7 @@
   <button class="tab" onclick="switchTab('submissions')">Submissions</button>
   <button class="tab" onclick="switchTab('users')">Users</button>
   <button class="tab" onclick="switchTab('analytics')">Analytics</button>
+  <button class="tab" onclick="switchTab('waitlist')">Waitlist</button>
 </div>
 
 <!-- ── Opportunities panel ── -->
@@ -269,22 +270,52 @@
   </div>
 </div>
 
+<!-- ── Waitlist panel ── -->
+<div class="panel" id="panel-waitlist">
+  <div class="stats" id="waitlist-stats"></div>
+
+  <div class="toolbar">
+    <select id="filter-wl-status" onchange="renderWaitlist()">
+      <option value="">All</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+    </select>
+    <button class="btn" onclick="loadWaitlist()">↺ Refresh</button>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Requested</th>
+          <th>Approved</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="wl-rows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
-let _opps = [], _subs = [], _users = [], _analyticsLoaded = false;
+let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wlLoaded = false;
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const idx = { opportunities: 0, submissions: 1, users: 2, analytics: 3 }[name];
+  const idx = { opportunities: 0, submissions: 1, users: 2, analytics: 3, waitlist: 4 }[name];
   document.querySelectorAll('.tab')[idx].classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'opportunities' && _opps.length === 0) loadOpps();
   if (name === 'submissions'   && _subs.length === 0) loadSubs();
   if (name === 'users'         && _users.length === 0) loadUsers();
   if (name === 'analytics'     && !_analyticsLoaded)   loadAnalytics();
+  if (name === 'waitlist'      && !_wlLoaded)          loadWaitlist();
 }
 
 function showError(msg) {
@@ -699,6 +730,54 @@ async function loadAnalytics() {
 
   } catch(e) {
     showError('Failed to load analytics');
+  }
+}
+
+// ── Waitlist ─────────────────────────────────────────────────────────────
+async function loadWaitlist() {
+  document.getElementById('wl-rows').innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
+  const res = await fetch(`/api/admin/waitlist?token=${ADMIN_TOKEN}`);
+  if (!res.ok) { showError('Failed to load waitlist'); return; }
+  const { waitlist } = await res.json();
+  _wl = waitlist;
+  _wlLoaded = true;
+
+  const pending  = waitlist.filter(w => w.status === 'pending').length;
+  const approved = waitlist.filter(w => w.status === 'approved').length;
+  document.getElementById('waitlist-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${waitlist.length}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-num">${pending}</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card"><div class="stat-num">${approved}</div><div class="stat-label">Approved</div></div>
+  `;
+  renderWaitlist();
+}
+
+function renderWaitlist() {
+  const statusF = document.getElementById('filter-wl-status').value;
+  let filtered = _wl.filter(w => !statusF || w.status === statusF);
+
+  if (filtered.length === 0) {
+    document.getElementById('wl-rows').innerHTML = '<tr><td colspan="5" class="empty">No waitlist entries.</td></tr>';
+    return;
+  }
+
+  document.getElementById('wl-rows').innerHTML = filtered.map(w => `<tr>
+    <td><strong>${esc(w.email)}</strong></td>
+    <td><span class="badge ${w.status === 'approved' ? 'b-approved' : 'b-pending'}">${esc(w.status)}</span></td>
+    <td class="muted" style="white-space:nowrap;">${fmtDate(w.created_at)}</td>
+    <td class="muted" style="white-space:nowrap;">${w.approved_at ? fmtDate(w.approved_at) : '—'}</td>
+    <td>${w.status === 'pending' ? `<button class="btn btn-primary" onclick="approveWaitlist(${w.id},'${esc(w.email)}')">Approve</button>` : ''}</td>
+  </tr>`).join('');
+}
+
+async function approveWaitlist(id, email) {
+  if (!confirm(`Approve ${email}? They'll receive an access email.`)) return;
+  const res = await fetch(`/api/admin/waitlist/${id}/approve?token=${ADMIN_TOKEN}`, { method: 'PUT' });
+  if (res.ok) {
+    loadWaitlist();
+  } else {
+    const err = await res.json().catch(() => ({}));
+    showError(err.error || 'Approve failed');
   }
 }
 

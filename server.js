@@ -53,8 +53,94 @@ app.use('/api', matchRouter);
 app.use('/api', analyticsRouter);
 app.use('/', pagesRouter);
 
-// ── Root: landing page ────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'landing.html')));
+// ── Waitlist API (public + admin) ─────────────────────────────────────────────
+const { db: _db } = require('./db');
+const { sendEmail } = require('./utils/email');
+
+app.post('/api/waitlist', (req, res) => {
+  const email = (req.body.email || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required' });
+  try {
+    _db.prepare('INSERT OR IGNORE INTO waitlist (email) VALUES (?)').run(email);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to save' });
+  }
+});
+
+app.get('/api/admin/waitlist', (req, res) => {
+  const token = req.query.token || req.headers['x-admin-token'];
+  if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(403).json({ error: 'Forbidden' });
+  const rows = _db.prepare('SELECT * FROM waitlist ORDER BY created_at DESC').all();
+  res.json({ waitlist: rows });
+});
+
+app.put('/api/admin/waitlist/:id/approve', async (req, res) => {
+  const token = req.query.token || req.headers['x-admin-token'];
+  if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(403).json({ error: 'Forbidden' });
+  const row = _db.prepare('SELECT * FROM waitlist WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  if (row.status === 'approved') return res.json({ ok: true, already: true });
+
+  const accessToken = require('crypto').randomUUID();
+  _db.prepare('UPDATE waitlist SET status = ?, access_token = ?, approved_at = datetime(\'now\') WHERE id = ?')
+    .run('approved', accessToken, req.params.id);
+
+  // Send approval email
+  const accessLink = `${BASE_URL}/?access=${accessToken}`;
+  await sendEmail({
+    to: row.email,
+    subject: "You're in! Welcome to Spontany",
+    html: `<div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;background:#0a0a0a;color:#ffffff;padding:40px;border-radius:12px;">
+      <h1 style="font-size:24px;margin:0 0 16px;">You're off the waitlist!</h1>
+      <p style="color:rgba(255,255,255,0.7);line-height:1.6;margin:0 0 24px;">Great news — your early access to Spontany is ready. Click below to get started.</p>
+      <a href="${accessLink}" style="display:inline-block;background:#c4d630;color:#1a1a1a;padding:14px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;">Get early access &rarr;</a>
+      <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:32px;">Spontany — finds your moments before they slip away.</p>
+    </div>`,
+    bodyText: `You're off the waitlist! Visit ${accessLink} to get started.`
+  });
+
+  res.json({ ok: true });
+});
+
+// ── Root: landing page (gated by campaign access) ─────────────────────────────
+function parseCookies(req) {
+  const raw = req.headers.cookie || '';
+  const out = {};
+  raw.split(';').forEach(c => {
+    const [k, ...v] = c.split('=');
+    if (k) out[k.trim()] = decodeURIComponent(v.join('=').trim());
+  });
+  return out;
+}
+
+app.get('/', (req, res) => {
+  const cookies = parseCookies(req);
+
+  // 1. Already has access cookie → serve landing
+  if (cookies.sa_access === '1') {
+    return res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  }
+
+  // 2. Came from waitlist approval email → validate token, set cookie, serve landing
+  if (req.query.access) {
+    const row = _db.prepare("SELECT id FROM waitlist WHERE access_token = ? AND status = 'approved'").get(req.query.access);
+    if (row) {
+      res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+      return res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+    }
+  }
+
+  // 3. Has UTM params (came from ad campaign) → set cookie, serve landing
+  if (req.query.utm_source || req.query.utm_campaign) {
+    res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+    return res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+  }
+
+  // 4. No access → serve waitlist page
+  res.sendFile(path.join(__dirname, 'public', 'waitlist.html'));
+});
+
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 
 // ── Email sequence: open tracking pixel ──────────────────────────────────────

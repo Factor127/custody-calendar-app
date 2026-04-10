@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spontany — Early Access</title>
+<meta name="description" content="Spontany maps custody schedules so plans happen in seconds, not days. Join the waitlist for early access.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2161239351358950');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --lime: #c4d630;
+    --lime-dark: #a3b325;
+    --white: #ffffff;
+    --dark-text: #1a1a1a;
+    --muted: #888888;
+    --border: rgba(255,255,255,0.06);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .container {
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .logo {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 48px;
+  }
+  .logo span { color: var(--lime); }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 40px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .form-wrap {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .form-wrap input {
+    flex: 1;
+    padding: 14px 18px;
+    border-radius: 50px;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    background: var(--surface);
+    color: var(--white);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+  .form-wrap input:focus { border-color: var(--lime); }
+
+  .form-wrap button {
+    padding: 14px 24px;
+    background: var(--lime);
+    color: var(--dark-text);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .form-wrap button:hover { background: var(--lime-dark); }
+  .form-wrap button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .note {
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .success {
+    background: rgba(196,214,48,0.1);
+    border: 1px solid rgba(196,214,48,0.25);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .success h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--lime);
+    margin-bottom: 6px;
+  }
+  .success p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .error-msg {
+    color: #f87171;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .features {
+    margin-top: 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: left;
+  }
+
+  .feature {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .feature-text h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .feature-text p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .footer {
+    margin-top: 56px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+  }
+  .footer a { color: rgba(255,255,255,0.35); text-decoration: none; }
+  .footer a:hover { color: var(--white); }
+
+  @media (max-width: 500px) {
+    .form-wrap { flex-direction: column; }
+    .form-wrap button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">Spontan<span>y</span></div>
+
+  <h1>We're in early access.</h1>
+  <p class="subtitle">Spontany maps custody schedules so plans happen in seconds, not days. Leave your email and we'll let you in.</p>
+
+  <div id="formSection">
+    <div id="errorMsg" class="error-msg" style="display:none;"></div>
+    <form class="form-wrap" id="waitlistForm" onsubmit="submitWaitlist(event)">
+      <input type="email" id="waitlistEmail" placeholder="your@email.com" required autocomplete="email">
+      <button type="submit" id="waitlistBtn">Join waitlist</button>
+    </form>
+    <p class="note">No spam. We'll email you when it's your turn.</p>
+  </div>
+
+  <div id="successSection" class="success" style="display:none;">
+    <h3>You're on the list!</h3>
+    <p>We'll send you an email at <strong id="confirmedEmail"></strong> when your access is ready.</p>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">📅</div>
+      <div class="feature-text">
+        <h4>See who's free, instantly</h4>
+        <p>Custody schedules mapped so you know when you and your friends are available.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">💬</div>
+      <div class="feature-text">
+        <h4>Skip the awkward texts</h4>
+        <p>No more "are you free?" back-and-forth. Plans happen in seconds.</p>
+      </div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-text">
+        <h4>Plans that actually happen</h4>
+        <p>Matched schedules + local events = plans that stick.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Spontany &mdash; finds your moments before they slip away.</p>
+    <p style="margin-top:8px;"><a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></p>
+  </div>
+</div>
+
+<script>
+async function submitWaitlist(e) {
+  e.preventDefault();
+  const email = document.getElementById('waitlistEmail').value.trim();
+  const btn = document.getElementById('waitlistBtn');
+  const errEl = document.getElementById('errorMsg');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Joining…';
+
+  try {
+    const res = await fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Something went wrong');
+    }
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('confirmedEmail').textContent = email;
+    document.getElementById('successSection').style.display = 'block';
+
+    // Track
+    if (typeof fbq === 'function') fbq('track', 'Lead', { content_name: 'waitlist' });
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Join waitlist';
+  }
+}
+</script>
+</body>
+</html>

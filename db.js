@@ -378,6 +378,16 @@ db.exec(`CREATE TABLE IF NOT EXISTS match_invites (
   created_at      TEXT DEFAULT (datetime('now'))
 )`);
 
+// ── Waitlist (access gate for pre-launch) ────────────────────────────────────
+db.exec(`CREATE TABLE IF NOT EXISTS waitlist (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  email        TEXT UNIQUE NOT NULL,
+  status       TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved')),
+  access_token TEXT,
+  created_at   TEXT DEFAULT (datetime('now')),
+  approved_at  TEXT
+)`);
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
