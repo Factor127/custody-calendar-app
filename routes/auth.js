@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const { q } = require('../db');
+const { db, q } = require('../db');
 
 // ── Google OAuth helpers ──────────────────────────────────────────────────────
 const GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -31,13 +31,21 @@ function getResend() {
 // If email is already registered → login link (existing user).
 // If email is new → setup link (will create account on first use).
 router.post('/auth/request', async (req, res) => {
-  const { email } = req.body;
+  const { email, utm_source, utm_medium, utm_campaign, utm_content, referrer } = req.body;
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
 
   const normalEmail = email.trim().toLowerCase();
   const user = q.getUserByEmail.get(normalEmail);
+
+  // Save UTM attribution on user record (first touch wins — don't overwrite)
+  if (user && utm_source && !user.utm_source) {
+    try {
+      db.prepare('UPDATE users SET utm_source=?, utm_medium=?, utm_campaign=?, utm_content=?, referrer=? WHERE id=?')
+        .run(utm_source||null, utm_medium||null, utm_campaign||null, utm_content||null, referrer||null, user.id);
+    } catch(e) {}
+  }
 
   // Create a magic link valid for 24 hours (gives enough time to complete setup wizard)
   const linkToken = uuidv4();

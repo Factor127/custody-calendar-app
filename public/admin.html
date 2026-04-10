@@ -107,6 +107,7 @@
   <button class="tab active" onclick="switchTab('opportunities')">Opportunities</button>
   <button class="tab" onclick="switchTab('submissions')">Submissions</button>
   <button class="tab" onclick="switchTab('users')">Users</button>
+  <button class="tab" onclick="switchTab('analytics')">Analytics</button>
 </div>
 
 <!-- ── Opportunities panel ── -->
@@ -214,21 +215,76 @@
   </div>
 </div>
 
+<!-- ── Analytics panel ── -->
+<div class="panel" id="panel-analytics">
+  <div class="stats" id="analytics-stats"></div>
+
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Match Funnel by Ad Hook</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Hook (utm_content)</th>
+          <th>Sessions</th>
+          <th>Started</th>
+          <th>Fork</th>
+          <th>Result</th>
+          <th>Signup</th>
+          <th>Invite</th>
+          <th>Conv %</th>
+        </tr>
+      </thead>
+      <tbody id="funnel-rows"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Person B Viral Loop</h3>
+  <div class="stats" id="person-b-stats"></div>
+
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Device Breakdown</h3>
+  <div class="stats" id="device-stats"></div>
+
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Source Breakdown</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Source</th><th>Sessions</th></tr></thead>
+      <tbody id="source-rows"><tr><td colspan="2" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Step Timing (avg seconds)</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Step</th><th>Avg</th><th>Min</th><th>Max</th><th>Count</th></tr></thead>
+      <tbody id="timing-rows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Daily Sessions</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Sessions</th></tr></thead>
+      <tbody id="daily-rows"><tr><td colspan="2" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
-let _opps = [], _subs = [], _users = [];
+let _opps = [], _subs = [], _users = [], _analyticsLoaded = false;
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const idx = { opportunities: 0, submissions: 1, users: 2 }[name];
+  const idx = { opportunities: 0, submissions: 1, users: 2, analytics: 3 }[name];
   document.querySelectorAll('.tab')[idx].classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'opportunities' && _opps.length === 0) loadOpps();
   if (name === 'submissions'   && _subs.length === 0) loadSubs();
   if (name === 'users'         && _users.length === 0) loadUsers();
+  if (name === 'analytics'     && !_analyticsLoaded)   loadAnalytics();
 }
 
 function showError(msg) {
@@ -571,6 +627,78 @@ async function deleteUser(id, name) {
   else {
     const err = await res.json().catch(() => ({}));
     showError(err.error || 'Delete failed');
+  }
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────
+async function loadAnalytics() {
+  try {
+    const res = await fetch(`/api/admin/analytics?token=${ADMIN_TOKEN}`);
+    if (!res.ok) throw new Error('Failed');
+    const d = await res.json();
+    _analyticsLoaded = true;
+
+    // Summary stats
+    const totalSessions = d.funnel.reduce((s, r) => s + r.sessions, 0);
+    const totalSignups  = d.funnel.reduce((s, r) => s + r.signed_up, 0);
+    const totalInvites  = d.funnel.reduce((s, r) => s + r.sent_invite, 0);
+    document.getElementById('analytics-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${totalSessions}</div><div class="stat-label">Total Sessions</div></div>
+      <div class="stat-card"><div class="stat-num">${totalSignups}</div><div class="stat-label">Signups</div></div>
+      <div class="stat-card"><div class="stat-num">${totalInvites}</div><div class="stat-label">Invites Sent</div></div>
+      <div class="stat-card"><div class="stat-num">${totalSessions ? Math.round(totalSignups/totalSessions*100) : 0}%</div><div class="stat-label">Conv Rate</div></div>
+    `;
+
+    // Funnel by hook
+    document.getElementById('funnel-rows').innerHTML = d.funnel.length === 0
+      ? '<tr><td colspan="8" class="empty">No data yet.</td></tr>'
+      : d.funnel.map(r => `<tr>
+          <td><strong>${esc(r.hook)}</strong></td>
+          <td>${r.sessions}</td>
+          <td>${r.started_schedule}</td>
+          <td>${r.reached_fork}</td>
+          <td>${r.saw_result}</td>
+          <td>${r.signed_up}</td>
+          <td>${r.sent_invite}</td>
+          <td><strong>${r.sessions ? Math.round(r.signed_up/r.sessions*100) : 0}%</strong></td>
+        </tr>`).join('');
+
+    // Person B stats
+    const pb = d.personB || {};
+    document.getElementById('person-b-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${pb.b_started||0}</div><div class="stat-label">B Started</div></div>
+      <div class="stat-card"><div class="stat-num">${pb.b_scheduled||0}</div><div class="stat-label">B Filled Schedule</div></div>
+      <div class="stat-card"><div class="stat-num">${pb.b_completed||0}</div><div class="stat-label">B Completed</div></div>
+      <div class="stat-card"><div class="stat-num">${pb.b_started ? Math.round(pb.b_completed/pb.b_started*100) : 0}%</div><div class="stat-label">B Conv %</div></div>
+    `;
+
+    // Device breakdown
+    document.getElementById('device-stats').innerHTML = (d.devices||[]).map(r =>
+      `<div class="stat-card"><div class="stat-num">${r.sessions}</div><div class="stat-label">${esc(r.device||'unknown')}</div></div>`
+    ).join('') || '<div class="empty">No data yet.</div>';
+
+    // Sources
+    document.getElementById('source-rows').innerHTML = (d.sources||[]).length === 0
+      ? '<tr><td colspan="2" class="empty">No data yet.</td></tr>'
+      : d.sources.map(r => `<tr><td>${esc(r.source)}</td><td>${r.sessions}</td></tr>`).join('');
+
+    // Timing
+    const ms2s = v => v != null ? (v/1000).toFixed(1) : '—';
+    document.getElementById('timing-rows').innerHTML = (d.timing||[]).length === 0
+      ? '<tr><td colspan="5" class="empty">No data yet.</td></tr>'
+      : d.timing.map(r => `<tr>
+          <td>${esc(r.event.replace('match_',''))}</td>
+          <td>${ms2s(r.avg_ms)}</td><td>${ms2s(r.min_ms)}</td><td>${ms2s(r.max_ms)}</td>
+          <td>${r.n}</td>
+        </tr>`).join('');
+
+    // Daily
+    document.getElementById('daily-rows').innerHTML = (d.daily||[]).length === 0
+      ? '<tr><td colspan="2" class="empty">No data yet.</td></tr>'
+      : d.daily.map(r => `<tr><td>${r.day}</td><td>${r.sessions}</td></tr>`).join('');
+
+  } catch(e) {
+    showError('Failed to load analytics');
   }
 }
 

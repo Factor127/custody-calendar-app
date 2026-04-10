@@ -44,11 +44,13 @@ app.use('/api', apiRouter);
 const opportunitiesRouter  = require('./routes/opportunities');
 const contributionsRouter  = require('./routes/contributions');
 const matchRouter          = require('./routes/match');
+const analyticsRouter      = require('./routes/analytics');
 app.use('/api', opportunitiesRouter);
 app.use('/api', contributionsRouter);
 app.use('/api', smartSuggestRouter);
 app.use('/api', pushRouter);
 app.use('/api', matchRouter);
+app.use('/api', analyticsRouter);
 app.use('/', pagesRouter);
 
 // ── Root: landing page ────────────────────────────────────────────────────────

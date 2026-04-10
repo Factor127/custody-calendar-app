@@ -311,6 +311,35 @@ db.exec(`CREATE TABLE IF NOT EXISTS outing_suggestions (
   created_at TEXT DEFAULT (datetime('now'))
 )`);
 
+// ── Campaign analytics ───────────────────────────────────────────────────────
+db.exec(`CREATE TABLE IF NOT EXISTS analytics_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    TEXT,
+  session_id TEXT,
+  event      TEXT NOT NULL,
+  props      TEXT DEFAULT '{}',
+  page       TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+try { db.exec('CREATE INDEX idx_ae_event ON analytics_events(event)'); } catch(e) {}
+try { db.exec('CREATE INDEX idx_ae_time  ON analytics_events(created_at)'); } catch(e) {}
+try { db.exec('CREATE INDEX idx_ae_sid   ON analytics_events(session_id)'); } catch(e) {}
+
+// UTM attribution on match requests
+try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_source TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_medium TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_campaign TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_content TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE match_requests ADD COLUMN referrer TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE match_requests ADD COLUMN device TEXT'); } catch(e) {}
+
+// UTM attribution on users (for full-signup tracking later)
+try { db.exec('ALTER TABLE users ADD COLUMN utm_source TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN utm_medium TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN utm_campaign TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN utm_content TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN referrer TEXT'); } catch(e) {}
+
 // ── Match requests ────────────────────────────────────────────────────────────
 db.exec(`CREATE TABLE IF NOT EXISTS match_requests (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -347,6 +376,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS match_invites (
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
+  // Analytics
+  insertAnalyticsEvent: db.prepare('INSERT INTO analytics_events (user_id, session_id, event, props, page) VALUES (?, ?, ?, ?, ?)'),
+
   getUserByToken:      db.prepare('SELECT * FROM users WHERE access_token = ?'),
   getUserById:         db.prepare('SELECT * FROM users WHERE id = ?'),
   getUserByEmail:      db.prepare('SELECT * FROM users WHERE email = ?'),

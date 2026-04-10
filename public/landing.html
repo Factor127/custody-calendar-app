@@ -6,6 +6,24 @@
 <title>Spontany — Know before you ask.</title>
 <meta name="description" content="Spontany maps custody schedules so plans happen in seconds, not days. See who's free. Skip the awkward texts. Make the plan.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2161239351358950');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+<script src="/sa.js"></script>
+
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -770,11 +788,29 @@
     const note = document.getElementById('signupNote');
     btn.disabled = true;
     btn.textContent = 'Sending…';
+
+    // Track signup attempt
+    if (typeof fbq !== 'undefined') {
+      var utm = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k) {
+        var v = sessionStorage.getItem(k); if (v) utm[k] = v;
+      });
+      fbq('track', 'Lead', Object.assign({ content_name: 'landing_signup' }, utm));
+    }
+    if (typeof sa !== 'undefined') sa('landing_signup');
+
     try {
+      var utmData = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k) {
+        var v = sessionStorage.getItem(k); if (v) utmData[k] = v;
+      });
+      var ref = sessionStorage.getItem('sa_ref');
+      if (ref) utmData.referrer = ref;
+
       const res = await fetch('/api/auth/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify(Object.assign({ email }, utmData))
       });
       if (res.ok) {
         btn.textContent = 'Check your email ✓';

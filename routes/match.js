@@ -19,25 +19,27 @@ const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭'
 // POST /api/match/create  — Person A submits their schedule
 // If partner_schedule is also provided (manual entry path), auto-complete the match
 router.post('/match/create', (req, res) => {
-  const { name, email, schedule, partner_schedule } = req.body;
+  const { name, email, schedule, partner_schedule, utm_source, utm_medium, utm_campaign, utm_content, referrer, device } = req.body;
   if (!schedule) return res.status(400).json({ error: 'Schedule is required' });
 
   const token = crypto.randomUUID();
   const scheduleStr = typeof schedule === 'string' ? schedule : JSON.stringify(schedule);
 
   if (partner_schedule) {
-    // Manual entry path — both schedules provided, mark as completed immediately
     const partnerStr = typeof partner_schedule === 'string' ? partner_schedule : JSON.stringify(partner_schedule);
     db.prepare(`
       INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule,
-        person_b_schedule, status, completed_at)
-      VALUES (?, ?, ?, ?, ?, 'completed', datetime('now'))
-    `).run(token, name || null, email || null, scheduleStr, partnerStr);
+        person_b_schedule, status, completed_at, utm_source, utm_medium, utm_campaign, utm_content, referrer, device)
+      VALUES (?, ?, ?, ?, ?, 'completed', datetime('now'), ?, ?, ?, ?, ?, ?)
+    `).run(token, name || null, email || null, scheduleStr, partnerStr,
+           utm_source || null, utm_medium || null, utm_campaign || null, utm_content || null, referrer || null, device || null);
   } else {
     db.prepare(`
-      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule)
-      VALUES (?, ?, ?, ?)
-    `).run(token, name || null, email || null, scheduleStr);
+      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule,
+        utm_source, utm_medium, utm_campaign, utm_content, referrer, device)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(token, name || null, email || null, scheduleStr,
+           utm_source || null, utm_medium || null, utm_campaign || null, utm_content || null, referrer || null, device || null);
   }
 
   res.json({ token, match_url: `/match/${token}` });

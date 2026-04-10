@@ -30,6 +30,7 @@
   </script>
   <noscript><img height="1" width="1" style="display:none"
   src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+  <script src="/sa.js"></script>
 
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -850,6 +851,9 @@ function go(screen) {
     if (screen === 'result') fbq('trackCustom', 'MatchCompleted');
   }
 
+  // First-party analytics — every screen transition
+  if (typeof sa !== 'undefined') sa('match_' + screen.replace(/-/g, '_'));
+
   // Init pickers on first visit
   if (screen === 'your-schedule')  initPicker('your');
   if (screen === 'their-schedule') initPicker('their');
@@ -985,7 +989,13 @@ async function showResult() {
       const theirSchedule = { week1: state.their.week1, week2: state.their.week2, twoWeek: state.their.twoWeek };
       const res = await fetch('/api/match/create', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name || null, email: email || null, schedule: JSON.stringify(mySchedule), partner_schedule: JSON.stringify(theirSchedule) })
+        body: JSON.stringify({
+          name: name || null, email: email || null,
+          schedule: JSON.stringify(mySchedule), partner_schedule: JSON.stringify(theirSchedule),
+          ...getUtmData(),
+          referrer: sessionStorage.getItem('sa_ref') || '',
+          device: screen.width <= 480 ? 'mobile' : screen.width <= 1024 ? 'tablet' : 'desktop'
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -1293,12 +1303,13 @@ async function saveCalendar() {
   if (typeof fbq !== 'undefined') {
     fbq('track', 'Lead', { content_name: 'match_signup', ...getUtmData() });
   }
+  if (typeof sa !== 'undefined') sa('match_signup');
 
   try {
     const res = await fetch('/api/auth/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name })
+      body: JSON.stringify({ email, name, ...getUtmData(), referrer: sessionStorage.getItem('sa_ref') || '' })
     });
 
     if (res.ok) {
@@ -1588,6 +1599,7 @@ function showSentConfirmation() {
   if (typeof fbq !== 'undefined') {
     fbq('trackCustom', 'MatchInviteSent', { match_type: matchTypeId, ...getUtmData() });
   }
+  if (typeof sa !== 'undefined') sa('match_invite_sent', { match_type: matchTypeId });
 }
 
 // Swipe-down to dismiss invite sheet
@@ -1625,6 +1637,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (parts[0] === 'match' && parts[1]) {
     matchToken = parts[1];
     isPersonB  = true;
+    sessionStorage.setItem('sa_role', 'person_b');
     // Person B - arrived via a direct match link
     initPersonB(matchToken);
   }
@@ -1705,13 +1718,19 @@ async function createMatch() {
     const res  = await fetch('/api/match/create', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, email, schedule: JSON.stringify(schedule) })
+      body:    JSON.stringify({
+        name, email, schedule: JSON.stringify(schedule),
+        ...getUtmData(),
+        referrer: sessionStorage.getItem('sa_ref') || '',
+        device: screen.width <= 480 ? 'mobile' : screen.width <= 1024 ? 'tablet' : 'desktop'
+      })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed');
 
     matchToken   = data.token;
     matchShareUrl = window.location.origin + data.match_url;
+    if (typeof sa !== 'undefined') sa('match_created', { token: data.token });
 
     // Update share message text
     const msgEl = document.getElementById('share-msg');
@@ -1807,15 +1826,7 @@ async function completeMatch() {
   }
 }
 
-// ── UTM tracking ─────────────────────────────────────────────────────────────
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
-    const v = params.get(k);
-    if (v) sessionStorage.setItem(k, v);
-  });
-})();
-
+// ── UTM tracking (capture handled by sa.js, this provides data to Meta Pixel)
 function getUtmData() {
   const utm = {};
   ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(k => {
