@@ -19,7 +19,7 @@ const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭'
 // POST /api/match/create  — Person A submits their schedule
 // If partner_schedule is also provided (manual entry path), auto-complete the match
 router.post('/match/create', (req, res) => {
-  const { name, email, schedule, partner_schedule, utm_source, utm_medium, utm_campaign, utm_content, referrer, device } = req.body;
+  const { name, email, phone, schedule, partner_schedule, utm_source, utm_medium, utm_campaign, utm_content, referrer, device } = req.body;
   if (!schedule) return res.status(400).json({ error: 'Schedule is required' });
 
   const token = crypto.randomUUID();
@@ -28,17 +28,17 @@ router.post('/match/create', (req, res) => {
   if (partner_schedule) {
     const partnerStr = typeof partner_schedule === 'string' ? partner_schedule : JSON.stringify(partner_schedule);
     db.prepare(`
-      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule,
+      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_phone, person_a_schedule,
         person_b_schedule, status, completed_at, utm_source, utm_medium, utm_campaign, utm_content, referrer, device)
-      VALUES (?, ?, ?, ?, ?, 'completed', datetime('now'), ?, ?, ?, ?, ?, ?)
-    `).run(token, name || null, email || null, scheduleStr, partnerStr,
+      VALUES (?, ?, ?, ?, ?, ?, 'completed', datetime('now'), ?, ?, ?, ?, ?, ?)
+    `).run(token, name || null, email || null, phone || null, scheduleStr, partnerStr,
            utm_source || null, utm_medium || null, utm_campaign || null, utm_content || null, referrer || null, device || null);
   } else {
     db.prepare(`
-      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_schedule,
+      INSERT INTO match_requests (token, person_a_name, person_a_email, person_a_phone, person_a_schedule,
         utm_source, utm_medium, utm_campaign, utm_content, referrer, device)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(token, name || null, email || null, scheduleStr,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(token, name || null, email || null, phone || null, scheduleStr,
            utm_source || null, utm_medium || null, utm_campaign || null, utm_content || null, referrer || null, device || null);
   }
 
@@ -165,7 +165,7 @@ router.get('/match/:token', (req, res) => {
 
 // POST /api/match/:token/complete  — Person B submits their schedule
 router.post('/match/:token/complete', async (req, res) => {
-  const { name, email, schedule } = req.body;
+  const { name, email, phone, schedule } = req.body;
   const { token } = req.params;
 
   const row = db.prepare('SELECT * FROM match_requests WHERE token = ?').get(token);
@@ -178,11 +178,12 @@ router.post('/match/:token/complete', async (req, res) => {
     UPDATE match_requests
     SET person_b_name     = ?,
         person_b_email    = ?,
+        person_b_phone    = ?,
         person_b_schedule = ?,
         status            = 'completed',
         completed_at      = datetime('now')
     WHERE token = ?
-  `).run(name || null, email || null, scheduleStr, token);
+  `).run(name || null, email || null, phone || null, scheduleStr, token);
 
   // Notify Person A via email
   if (row.person_a_email) {

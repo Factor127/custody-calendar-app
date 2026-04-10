@@ -346,14 +346,19 @@ db.exec(`CREATE TABLE IF NOT EXISTS match_requests (
   token           TEXT UNIQUE NOT NULL,
   person_a_name   TEXT,
   person_a_email  TEXT,
+  person_a_phone  TEXT,
   person_a_schedule TEXT,
   person_b_name   TEXT,
   person_b_email  TEXT,
+  person_b_phone  TEXT,
   person_b_schedule TEXT,
   status          TEXT DEFAULT 'pending',
   created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
   completed_at    DATETIME
 )`);
+// Migration for existing DBs
+try { db.exec('ALTER TABLE match_requests ADD COLUMN person_a_phone TEXT'); } catch(e) {}
+try { db.exec('ALTER TABLE match_requests ADD COLUMN person_b_phone TEXT'); } catch(e) {}
 
 db.exec(`CREATE TABLE IF NOT EXISTS match_invites (
   id              TEXT PRIMARY KEY,
