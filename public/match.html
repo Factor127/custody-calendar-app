@@ -614,7 +614,37 @@
 
     <div class="nav-row">
       <button class="btn-outline btn-sm" onclick="go('fork')">← Back</button>
-      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="showResult()">Show me the match →</button>
+      <button class="btn-primary" style="width:auto;padding:14px 28px;" onclick="go('collect-info')">Show me the match →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PATH A: COLLECT INFO (before showing result)                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-collect-info">
+    <div class="screen-header">
+      <div class="screen-title">Almost there</div>
+      <div class="screen-sub">Drop your details so we can notify you when they respond to your date invites.</div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="collect-name">Your name</label>
+      <input id="collect-name" class="field-input" type="text" placeholder="First name" autocomplete="given-name">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="collect-email">Email</label>
+      <input id="collect-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="collect-phone">Phone <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+      <input id="collect-phone" class="field-input" type="tel" placeholder="+1 (555) 123-4567" autocomplete="tel">
+    </div>
+
+    <button class="btn-primary" id="collect-submit-btn" onclick="submitCollectInfo()">See our match →</button>
+
+    <div class="nav-row">
+      <button class="btn-outline btn-sm" onclick="go('their-schedule')">← Back</button>
+      <span></span>
     </div>
   </div>
 
@@ -662,6 +692,10 @@
     <div class="field-group">
       <label class="field-label" for="wait-email">Email</label>
       <input id="wait-email" class="field-input" type="email" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="wait-phone">Phone <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+      <input id="wait-phone" class="field-input" type="tel" placeholder="+1 (555) 123-4567" autocomplete="tel">
     </div>
 
     <button class="btn-primary" id="signup-submit-btn" onclick="submitSignup()">Notify me →</button>
@@ -831,6 +865,7 @@ const PROGRESS = {
   'your-schedule': 15,
   'fork': 35,
   'their-schedule': 55,
+  'collect-info': 80,
   'send-link': 55,
   'signup-wait': 70,
   'waiting': 85,
@@ -976,21 +1011,61 @@ function computeOverlap() {
   return result;
 }
 
+// ── Collect info (Path A) then show result ───────────────────────────────────
+async function submitCollectInfo() {
+  const name  = document.getElementById('collect-name').value.trim();
+  const email = document.getElementById('collect-email').value.trim();
+  const phone = document.getElementById('collect-phone').value.trim();
+  if (!name || !email) { showToast('Name and email required'); return; }
+
+  const btn = document.getElementById('collect-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Computing match…';
+
+  try {
+    const mySchedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
+    const theirSchedule = { week1: state.their.week1, week2: state.their.week2, twoWeek: state.their.twoWeek };
+    const res = await fetch('/api/match/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, email, phone: phone || null,
+        schedule: JSON.stringify(mySchedule),
+        partner_schedule: JSON.stringify(theirSchedule),
+        ...getUtmData(),
+        referrer: sessionStorage.getItem('sa_ref') || '',
+        device: screen.width <= 480 ? 'mobile' : screen.width <= 1024 ? 'tablet' : 'desktop'
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      matchToken = data.token;
+      matchShareUrl = window.location.origin + data.match_url;
+    }
+  } catch(e) { /* non-critical — result still shows */ }
+
+  weekStartDate = weekStartDate || getNextFullWeekStart();
+  showResult();
+}
+
 // ── Show result ───────────────────────────────────────────────────────────────
 async function showResult() {
-  // Save match to backend if not already saved (manual entry path)
+  // Save match to backend if not already saved (fallback for edge cases)
   if (!matchToken && !isPersonB) {
     try {
-      const name = document.getElementById('wait-name')?.value?.trim()
+      const name = document.getElementById('collect-name')?.value?.trim()
+        || document.getElementById('wait-name')?.value?.trim()
         || document.getElementById('save-name')?.value?.trim() || '';
-      const email = document.getElementById('wait-email')?.value?.trim()
+      const email = document.getElementById('collect-email')?.value?.trim()
+        || document.getElementById('wait-email')?.value?.trim()
         || document.getElementById('save-email')?.value?.trim() || '';
+      const phone = document.getElementById('collect-phone')?.value?.trim()
+        || document.getElementById('wait-phone')?.value?.trim() || '';
       const mySchedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
       const theirSchedule = { week1: state.their.week1, week2: state.their.week2, twoWeek: state.their.twoWeek };
       const res = await fetch('/api/match/create', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name || null, email: email || null,
+          name: name || null, email: email || null, phone: phone || null,
           schedule: JSON.stringify(mySchedule), partner_schedule: JSON.stringify(theirSchedule),
           ...getUtmData(),
           referrer: sessionStorage.getItem('sa_ref') || '',
@@ -1021,7 +1096,7 @@ async function showResult() {
 
   // Upcoming dates - just first 3 for focus
   const upcoming = allOverlap.slice(0, 3);
-  partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+  partnerName = document.getElementById('collect-name')?.value.trim() || document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
 
   // Determine day type: weekend-heavy, weekday-heavy, or mixed
   const weekendOverlap = allOverlap.filter(d => { const dow = new Date(d.date + 'T12:00:00').getDay(); return dow === 0 || dow === 5 || dow === 6; }).length;
@@ -1189,13 +1264,15 @@ async function showResult() {
   const shareBtn = document.getElementById('result-share-btn');
   if (shareBtn && partnerName) shareBtn.textContent = `Tell ${partnerName} about it →`;
 
-  // Pre-fill signup fields from waiting screen if already collected
-  const waitName = document.getElementById('wait-name')?.value?.trim();
-  const waitEmail = document.getElementById('wait-email')?.value?.trim();
+  // Pre-fill signup fields from collect-info or waiting screen if already collected
+  const collectedName = document.getElementById('collect-name')?.value?.trim()
+    || document.getElementById('wait-name')?.value?.trim();
+  const collectedEmail = document.getElementById('collect-email')?.value?.trim()
+    || document.getElementById('wait-email')?.value?.trim();
   const saveName = document.getElementById('save-name');
   const saveEmail = document.getElementById('save-email');
-  if (waitName && saveName && !saveName.value) saveName.value = waitName;
-  if (waitEmail && saveEmail && !saveEmail.value) saveEmail.value = waitEmail;
+  if (collectedName && saveName && !saveName.value) saveName.value = collectedName;
+  if (collectedEmail && saveEmail && !saveEmail.value) saveEmail.value = collectedEmail;
 
   // If both fields are pre-filled (Person B or returning Person A), collapse to one-tap CTA
   if (saveName?.value && saveEmail?.value) {
@@ -1268,7 +1345,7 @@ function inviteToMatch() {
 
 function handleDateTap(e, date) {
   e.preventDefault();
-  const partnerName = document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
+  const partnerName = document.getElementById('collect-name')?.value.trim() || document.getElementById('wait-name')?.value.trim() || document.getElementById('save-name')?.value.trim() || '';
   const deepLink = `/calendar?action=plan&date=${date}` + (partnerName ? `&with=${encodeURIComponent(partnerName)}` : '');
 
   // Check if the app/PWA is likely installed (standalone mode)
@@ -1533,9 +1610,14 @@ async function sendMatchInvite() {
   btn.disabled = true;
   btn.textContent = 'Creating...';
 
-  const senderName = document.getElementById('save-name')?.value.trim()
+  const senderName = document.getElementById('collect-name')?.value.trim()
+    || document.getElementById('save-name')?.value.trim()
     || document.getElementById('wait-name')?.value.trim()
     || 'Someone';
+  const senderEmail = document.getElementById('collect-email')?.value.trim()
+    || document.getElementById('save-email')?.value.trim()
+    || document.getElementById('wait-email')?.value.trim()
+    || null;
 
   try {
     const res = await fetch('/api/match/invite', {
@@ -1543,6 +1625,7 @@ async function sendMatchInvite() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sender_name: senderName,
+        sender_email: senderEmail,
         recipient_name: partnerName || null,
         opportunity_id: _inviteOpp?.mock ? null : (_inviteOpp?.id || null),
         opportunity_title: _inviteOpp?.title,
@@ -1707,6 +1790,7 @@ async function submitSignup() {
 async function createMatch() {
   const name  = document.getElementById('wait-name').value.trim();
   const email = document.getElementById('wait-email').value.trim();
+  const phone = document.getElementById('wait-phone')?.value.trim() || '';
   if (!name || !email) { showToast('Name and email required'); return; }
 
   const schedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
@@ -1719,7 +1803,7 @@ async function createMatch() {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
-        name, email, schedule: JSON.stringify(schedule),
+        name, email, phone: phone || null, schedule: JSON.stringify(schedule),
         ...getUtmData(),
         referrer: sessionStorage.getItem('sa_ref') || '',
         device: screen.width <= 480 ? 'mobile' : screen.width <= 1024 ? 'tablet' : 'desktop'
@@ -1785,6 +1869,7 @@ function startWaitingPoll() {
 async function completeMatch() {
   const name  = document.getElementById('wait-name').value.trim();
   const email = document.getElementById('wait-email').value.trim();
+  const phone = document.getElementById('wait-phone')?.value.trim() || '';
   if (!name || !email) { showToast('Name and email required'); return; }
 
   const schedule = { week1: state.your.week1, week2: state.your.week2, twoWeek: state.your.twoWeek };
@@ -1802,7 +1887,7 @@ async function completeMatch() {
     const completeRes = await fetch(`/api/match/${matchToken}/complete`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ name, email, schedule: JSON.stringify(schedule) })
+      body:    JSON.stringify({ name, email, phone: phone || null, schedule: JSON.stringify(schedule) })
     });
     if (!completeRes.ok) throw new Error('Failed to submit');
 
