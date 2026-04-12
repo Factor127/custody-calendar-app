@@ -542,7 +542,7 @@
   <div class="screen" id="screen-your-schedule">
     <div class="screen-header">
       <div class="screen-title">Your custody days</div>
-      <div class="screen-sub">Tap the days your kids are with you. That's it.</div>
+      <div class="screen-sub">Tap the days your kids are with you across both weeks.</div>
     </div>
 
     <div id="privacy-note" style="display:none;padding:10px 14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:10px;margin-bottom:16px;font-size:12px;color:rgba(226,226,226,0.6);line-height:1.5;">
@@ -564,7 +564,7 @@
       <div class="week-picker-grid" id="your-week2-cells"></div>
     </div>
     <button class="expand-btn" id="your-expand-btn" onclick="expandWeeks('your')">
-      ↕ Two-week pattern? Tap to expand
+      ↕ Same every week? Tap to simplify
     </button>
 
     <div class="nav-row">
@@ -633,7 +633,7 @@
       <div class="week-picker-grid" id="their-week2-cells"></div>
     </div>
     <button class="expand-btn" id="their-expand-btn" onclick="expandWeeks('their')">
-      ↕ Two-week pattern? Tap to expand
+      ↕ Same every week? Tap to simplify
     </button>
 
     <div class="nav-row">
@@ -957,6 +957,8 @@ function initPicker(who) {
     headsEl.innerHTML = DAY_ABBR.map(d => `<div class="week-picker-head">${d}</div>`).join('');
   }
   renderCells(who, 1);
+  // Default to 2-week view — most custody patterns are biweekly
+  if (!state[who].twoWeek) expandWeeks(who);
 }
 
 function weekDateAt(weekNum, idx) {
@@ -995,10 +997,21 @@ function toggleDay(who, weekNum, idx, el) {
 
 function expandWeeks(who) {
   state[who].twoWeek = true;
-  document.getElementById(who + '-expand-btn').style.display = 'none';
+  const btn = document.getElementById(who + '-expand-btn');
+  btn.textContent = '↕ Same every week? Tap to simplify';
+  btn.onclick = function() { collapseWeeks(who); };
   document.getElementById(who + '-week2-section').style.display = 'block';
   renderCells(who, 1);
   renderCells(who, 2);
+}
+
+function collapseWeeks(who) {
+  state[who].twoWeek = false;
+  const btn = document.getElementById(who + '-expand-btn');
+  btn.textContent = '↕ Two-week pattern? Tap to expand';
+  btn.onclick = function() { expandWeeks(who); };
+  document.getElementById(who + '-week2-section').style.display = 'none';
+  renderCells(who, 1);
 }
 
 // ── Overlap calculation ───────────────────────────────────────────────────────
