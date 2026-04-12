@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spontany Match - Do your schedules actually work?</title>
+  <meta name="description" content="Two custody schedules. One answer. Find out if your free nights line up — in 30 seconds.">
+  <meta property="og:title" content="Spontany Match - Do your schedules actually work?">
+  <meta property="og:description" content="Two custody schedules. One answer. Find out if your free nights line up.">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:type" content="website">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0c0c15">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Meta Pixel -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '2161239351358950');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+  <script src="/sa.js"></script>
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --lime: #e6f952;
+      --lime-dim: #aec013;
+      --bg: #0a0a0a;
+      --surface: #131313;
+      --border: rgba(226,226,226,0.08);
+      --text: #e2e2e2;
+      --muted: rgba(226,226,226,0.42);
+      --accent: #c9b3f5;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 15px; font-weight: 800; color: rgba(255,255,255,0.6);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      text-decoration: none;
+    }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 8px; }
+    .nav-cta {
+      background: var(--accent); color: #0a0a0a;
+      padding: 10px 22px; border-radius: 50px; font-size: 14px; font-weight: 700;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── Sections ── */
+    section { padding: 80px 24px; max-width: 720px; margin: 0 auto; }
+
+    /* ── Hero ── */
+    .hero {
+      padding-top: 140px; text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 8vw, 52px);
+      font-weight: 900; color: white; line-height: 1.1;
+      letter-spacing: -0.03em; margin-bottom: 20px;
+    }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero p {
+      font-size: 18px; color: var(--muted); max-width: 440px; margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+    .btn-primary {
+      display: inline-block;
+      background: var(--accent); color: #0a0a0a;
+      padding: 16px 40px; border-radius: 50px; font-size: 17px; font-weight: 700;
+      border: none; cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 24px rgba(201,179,245,0.3);
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .hero-fine {
+      font-size: 13px; color: rgba(226,226,226,0.25); margin-top: 16px;
+    }
+
+    /* ── Benefits ── */
+    .benefits {
+      display: grid; gap: 20px; padding-top: 40px; padding-bottom: 40px;
+    }
+    @media (min-width: 600px) { .benefits { grid-template-columns: repeat(3, 1fr); } }
+    .benefit-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 24px; text-align: center;
+    }
+    .benefit-icon { font-size: 28px; margin-bottom: 12px; }
+    .benefit-card strong { display: block; color: var(--accent); font-size: 16px; margin-bottom: 8px; }
+    .benefit-card p { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Section headers ── */
+    .section-label {
+      text-align: center; font-size: 12px; font-weight: 700;
+      color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      text-align: center; font-size: clamp(24px, 6vw, 36px);
+      font-weight: 800; color: white; margin-bottom: 48px;
+      letter-spacing: -0.02em;
+    }
+
+    /* ── How it works ── */
+    .steps { display: grid; gap: 24px; }
+    @media (min-width: 600px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+    .step {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 24px; text-align: center;
+      position: relative;
+    }
+    .step-number {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--accent); color: #0a0a0a;
+      font-size: 18px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .step strong { display: block; color: white; font-size: 16px; margin-bottom: 8px; }
+    .step p { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Testimonials ── */
+    .testimonials { display: grid; gap: 24px; }
+    @media (min-width: 600px) { .testimonials { grid-template-columns: repeat(3, 1fr); } }
+    .testimonial {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 24px;
+    }
+    .testimonial-stars {
+      color: #facc15; font-size: 16px; letter-spacing: 2px; margin-bottom: 14px;
+    }
+    .testimonial-headline {
+      font-size: 17px; font-weight: 700; color: white; margin-bottom: 14px;
+      line-height: 1.35;
+    }
+    .testimonial-body {
+      font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 18px;
+    }
+    .testimonial-author {
+      font-size: 13px; color: var(--accent); font-weight: 600;
+    }
+
+    /* ── Bottom CTA ── */
+    .bottom-cta {
+      text-align: center; padding-top: 40px; padding-bottom: 100px;
+    }
+    .bottom-cta h2 {
+      font-size: clamp(24px, 6vw, 36px);
+      font-weight: 800; color: white; margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .bottom-cta p {
+      font-size: 16px; color: var(--muted); margin-bottom: 32px;
+      max-width: 400px; margin-left: auto; margin-right: auto;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px; color: rgba(226,226,226,0.25);
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="/" class="nav-logo">
+      <img src="/logo.svg" alt="Spontany">
+      <span>Spontany</span>
+    </a>
+    <a href="/match.html" class="nav-cta">Try it free</a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
+    <p>Two custody schedules. One answer. Find out if your free nights line up — in 30 seconds.</p>
+    <a href="/match.html" class="btn-primary">Check your match &rarr;</a>
+    <div class="hero-fine">Free. Private. No signup required.</div>
+  </section>
+
+  <!-- Benefits -->
+  <section>
+    <div class="benefits">
+      <div class="benefit-card">
+        <div class="benefit-icon">👀</div>
+        <strong>See when you're both free</strong>
+        <p>No awkward "do you have the kids?" texts.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">📅</div>
+        <strong>Know before you ask</strong>
+        <p>Custody schedules overlaid in one view.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">⚡</div>
+        <strong>Plan dates in seconds</strong>
+        <p>Not days of back-and-forth.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section>
+    <div class="section-label">How it works</div>
+    <div class="section-title">Three steps. Thirty seconds.</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <strong>Pick your free nights</strong>
+        <p>Tap the evenings you're available this week.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <strong>Share the link</strong>
+        <p>Send your match link — they tap their nights too.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <strong>See your overlap</strong>
+        <p>Instantly see how many nights you both have free.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section>
+    <div class="section-label">What people are saying</div>
+    <div class="section-title">Real stories, real relief.</div>
+    <div class="testimonials">
+
+      <div class="testimonial">
+        <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div class="testimonial-headline">"Stop playing Calendar Tetris."</div>
+        <div class="testimonial-body">Dating as a single mom is hard enough without the logistical headache. Spontany showed us right away that our schedules actually mesh. Now, it's the first thing I check before I get too emotionally invested.</div>
+        <div class="testimonial-author">&mdash; Elena, 31</div>
+      </div>
+
+      <div class="testimonial">
+        <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div class="testimonial-headline">"Get the answer without the 'Serious' talk."</div>
+        <div class="testimonial-body">I really liked her, but it felt way too heavy to talk custody rotations on date two. Sending a Spontany link felt like a fun compatibility check rather than a deposition. Knowing we had 8 nights a month in common took the pressure off immediately.</div>
+        <div class="testimonial-author">&mdash; David, 42</div>
+      </div>
+
+      <div class="testimonial">
+        <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div class="testimonial-headline">"Clarity without oversharing."</div>
+        <div class="testimonial-body">I'm private about my kids' schedule, so I was wary of a 'shared calendar.' But Spontany only shows the overlap count. It gave us the clarity to plan a night out without me having to reveal my entire life's itinerary.</div>
+        <div class="testimonial-author">&mdash; Jason, 45</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Bottom CTA -->
+  <section class="bottom-cta">
+    <h2>Ready to find out?</h2>
+    <p>It takes 30 seconds and your schedule stays private.</p>
+    <a href="/match.html" class="btn-primary">Check your match &rarr;</a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>Spontany &mdash; Finds your moments before they slip away.</p>
+    <p style="margin-top:8px;"><a href="/privacy-policy.html">Privacy</a> &nbsp;&middot;&nbsp; <a href="/terms-of-service.html">Terms</a></p>
+  </footer>
+
+</body>
+</html>

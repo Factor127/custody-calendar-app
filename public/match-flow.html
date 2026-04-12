@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spontany Match — User Journey Flowchart</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0a0f;
+    color: #e2e2e2;
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+
+  .page-header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10,10,15,0.95);
+    backdrop-filter: blur(12px);
+  }
+  .page-header h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .page-header p { font-size: 13px; color: rgba(226,226,226,0.5); }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    padding: 16px 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px; color: rgba(226,226,226,0.6);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch {
+    width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0;
+  }
+
+  /* Canvas */
+  .canvas {
+    padding: 40px;
+    min-width: 1400px;
+    position: relative;
+  }
+
+  /* Swim lanes */
+  .lanes {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 0;
+  }
+  .lane-label {
+    padding: 20px 16px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(226,226,226,0.3);
+    border-right: 1px solid rgba(255,255,255,0.04);
+    display: flex; align-items: flex-start; justify-content: flex-end;
+    text-align: right;
+    min-height: 180px;
+  }
+  .lane-content {
+    padding: 20px 30px;
+    position: relative;
+    min-height: 180px;
+  }
+  .lane-row {
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  /* Nodes */
+  .node {
+    display: inline-flex;
+    flex-direction: column;
+    border-radius: 12px;
+    padding: 14px 18px;
+    min-width: 160px;
+    max-width: 220px;
+    position: relative;
+    vertical-align: top;
+  }
+  .node-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .node-sub {
+    font-size: 10px;
+    line-height: 1.4;
+    opacity: 0.7;
+  }
+  .node-id {
+    font-size: 9px;
+    font-weight: 600;
+    opacity: 0.4;
+    margin-top: 6px;
+    font-family: 'SF Mono', monospace;
+  }
+
+  /* Screen nodes */
+  .node-screen {
+    background: rgba(201,179,245,0.08);
+    border: 1.5px solid rgba(201,179,245,0.3);
+  }
+  .node-screen .node-title { color: #c9b3f5; }
+
+  /* Decision nodes */
+  .node-decision {
+    background: rgba(251,191,36,0.08);
+    border: 1.5px solid rgba(251,191,36,0.3);
+    border-radius: 12px;
+  }
+  .node-decision .node-title { color: #fbbf24; }
+
+  /* API call nodes */
+  .node-api {
+    background: rgba(52,211,153,0.08);
+    border: 1.5px solid rgba(52,211,153,0.3);
+  }
+  .node-api .node-title { color: #34d399; }
+
+  /* Action nodes */
+  .node-action {
+    background: rgba(96,165,250,0.08);
+    border: 1.5px solid rgba(96,165,250,0.3);
+  }
+  .node-action .node-title { color: #60a5fa; }
+
+  /* Exit nodes */
+  .node-exit {
+    background: rgba(248,113,113,0.08);
+    border: 1.5px solid rgba(248,113,113,0.3);
+  }
+  .node-exit .node-title { color: #f87171; }
+
+  /* External page nodes */
+  .node-external {
+    background: rgba(249,115,22,0.08);
+    border: 1.5px solid rgba(249,115,22,0.3);
+  }
+  .node-external .node-title { color: #f97316; }
+
+  /* Pixel/tracking nodes */
+  .node-pixel {
+    background: rgba(168,85,247,0.06);
+    border: 1px dashed rgba(168,85,247,0.3);
+    padding: 8px 12px;
+    min-width: 120px;
+  }
+  .node-pixel .node-title { color: #a855f7; font-size: 10px; }
+
+  /* Flow rows */
+  .flow-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: nowrap;
+    margin-bottom: 8px;
+  }
+
+  /* Arrows */
+  .arrow {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(226,226,226,0.25);
+    font-size: 18px;
+    padding: 0 2px;
+    align-self: center;
+    flex-shrink: 0;
+  }
+  .arrow-label {
+    font-size: 9px;
+    color: rgba(226,226,226,0.4);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgba(226,226,226,0.25);
+    font-size: 18px;
+    padding: 4px 0;
+  }
+
+  /* Branch container */
+  .branch {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    border-left: 2px solid rgba(251,191,36,0.2);
+    margin-left: 8px;
+  }
+  .branch-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .branch-a .branch-label { color: #c9b3f5; }
+  .branch-b .branch-label { color: #60a5fa; }
+  .branch-c .branch-label { color: #f97316; }
+
+  /* Section headers */
+  .section-header {
+    font-size: 14px;
+    font-weight: 800;
+    color: rgba(226,226,226,0.5);
+    margin: 32px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-header .badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+
+  /* Connector lines (CSS-only) */
+  .connector-group {
+    position: relative;
+    display: flex;
+    gap: 20px;
+  }
+  .vline {
+    width: 2px;
+    background: rgba(226,226,226,0.08);
+    margin: 0 auto;
+    height: 20px;
+  }
+  .vline-accent { background: rgba(201,179,245,0.2); }
+  .vline-blue { background: rgba(96,165,250,0.2); }
+  .vline-orange { background: rgba(249,115,22,0.2); }
+
+  /* Path cards */
+  .path-card {
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    background: rgba(255,255,255,0.015);
+  }
+  .path-card-title {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .path-card-sub {
+    font-size: 12px;
+    color: rgba(226,226,226,0.4);
+    margin-bottom: 16px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .tag-purple { background: rgba(201,179,245,0.15); color: #c9b3f5; }
+  .tag-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .tag-orange { background: rgba(249,115,22,0.15); color: #f97316; }
+  .tag-green { background: rgba(52,211,153,0.15); color: #34d399; }
+  .tag-red { background: rgba(248,113,113,0.15); color: #f87171; }
+  .tag-yellow { background: rgba(251,191,36,0.15); color: #fbbf24; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>⚡ Spontany Match — User Journey Flowchart</h1>
+  <p>All paths through the match tool, from entry to conversion or exit</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(201,179,245,0.3);border:1px solid rgba(201,179,245,0.5);"></div> Screen</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(251,191,36,0.3);border:1px solid rgba(251,191,36,0.5);"></div> Decision</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(52,211,153,0.3);border:1px solid rgba(52,211,153,0.5);"></div> API Call</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(96,165,250,0.3);border:1px solid rgba(96,165,250,0.5);"></div> Action</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(248,113,113,0.3);border:1px solid rgba(248,113,113,0.5);"></div> Exit Point</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(249,115,22,0.3);border:1px solid rgba(249,115,22,0.5);"></div> External Page</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:rgba(168,85,247,0.2);border:1px dashed rgba(168,85,247,0.4);"></div> Pixel Event</div>
+</div>
+
+<div class="canvas">
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PATH 1: PERSON A — MANUAL ENTRY                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="path-card">
+  <div class="path-card-title" style="color:#c9b3f5;">
+    Path 1: Person A — Manual Entry
+    <span class="tag tag-purple">Fastest path</span>
+  </div>
+  <div class="path-card-sub">User enters both schedules themselves → instant result</div>
+
+  <div class="flow-row">
+    <div class="node node-screen">
+      <div class="node-title">🏠 Splash</div>
+      <div class="node-sub">"Your schedule is complicated. Dating shouldn't be."</div>
+      <div class="node-id">screen-splash</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-screen">
+      <div class="node-title">📅 Your Schedule</div>
+      <div class="node-sub">Tap custody days for week 1 (+ optional week 2)</div>
+      <div class="node-id">screen-your-schedule</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-decision">
+      <div class="node-title">🔀 Fork</div>
+      <div class="node-sub">"Now, their schedule. How do you want to check?"</div>
+      <div class="node-id">screen-fork</div>
+    </div>
+    <div class="arrow">
+      <div class="arrow-label">✏️ "I know<br>their days"</div>
+      →
+    </div>
+    <div class="node node-screen">
+      <div class="node-title">📅 Their Schedule</div>
+      <div class="node-sub">Enter partner's custody days</div>
+      <div class="node-id">screen-their-schedule</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-api">
+      <div class="node-title">POST /match/create</div>
+      <div class="node-sub">Sends both schedules, partner_schedule auto-completes match</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-screen">
+      <div class="node-title">🎯 Result</div>
+      <div class="node-sub">Match type, overlap calendar, date suggestions</div>
+      <div class="node-id">screen-result</div>
+    </div>
+  </div>
+
+  <div class="flow-row" style="margin-left: 920px; margin-top: -8px;">
+    <div class="node node-pixel">
+      <div class="node-title">📊 fbq MatchCompleted</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PATH 2: PERSON A — SEND LINK (WAITING)                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="path-card">
+  <div class="path-card-title" style="color:#60a5fa;">
+    Path 2: Person A — Send Link
+    <span class="tag tag-blue">Waiting path</span>
+  </div>
+  <div class="path-card-sub">User shares link with partner → waits for them to fill in → gets notified</div>
+
+  <div class="flow-row">
+    <div class="node node-screen">
+      <div class="node-title">🏠 Splash</div>
+      <div class="node-sub">Same as Path 1</div>
+      <div class="node-id">screen-splash</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-screen">
+      <div class="node-title">📅 Your Schedule</div>
+      <div class="node-sub">Same as Path 1</div>
+      <div class="node-id">screen-your-schedule</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-decision">
+      <div class="node-title">🔀 Fork</div>
+      <div class="node-sub">Chooses "Let them fill it in"</div>
+      <div class="node-id">screen-fork</div>
+    </div>
+    <div class="arrow">
+      <div class="arrow-label">🔗 "Let them<br>fill it in"</div>
+      →
+    </div>
+    <div class="node node-screen">
+      <div class="node-title">📤 Send Link</div>
+      <div class="node-sub">Editable share message, WhatsApp + Copy buttons</div>
+      <div class="node-id">screen-send-link</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-screen">
+      <div class="node-title">✍️ Signup</div>
+      <div class="node-sub">"One last thing" — name + email for notifications</div>
+      <div class="node-id">screen-signup-wait</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-api">
+      <div class="node-title">POST /match/create</div>
+      <div class="node-sub">Person A schedule only (no partner_schedule)</div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;gap:16px;margin-top:12px;margin-left:870px;">
+    <div style="display:flex;flex-direction:column;align-items:center;">
+      <div class="vline vline-blue"></div>
+    </div>
+  </div>
+
+  <div class="flow-row" style="margin-left:830px;">
+    <div class="node node-screen">
+      <div class="node-title">⏳ Waiting</div>
+      <div class="node-sub">Polls GET /match/:token every 10s. Share URL shown. "Invite someone else" CTA.</div>
+      <div class="node-id">screen-waiting</div>
+    </div>
+    <div class="arrow">
+      <div class="arrow-label">Person B<br>completes</div>
+      →
+    </div>
+    <div class="node node-action">
+      <div class="node-title">📥 Load B's Schedule</div>
+      <div class="node-sub">Parses person_b_schedule from poll response, sets state.their</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-screen">
+      <div class="node-title">🎯 Result</div>
+      <div class="node-sub">Pre-filled name+email → "Continue as [name] →"</div>
+      <div class="node-id">screen-result</div>
+    </div>
+  </div>
+
+  <div class="flow-row" style="margin-left:830px;margin-top:8px;">
+    <div style="display:flex;gap:12px;">
+      <div class="node node-exit" style="min-width:130px;">
+        <div class="node-title">📲 WhatsApp</div>
+        <div class="node-sub">Share match link externally</div>
+      </div>
+      <div class="node node-action" style="min-width:130px;">
+        <div class="node-title">📋 Copy Link</div>
+        <div class="node-sub">Clipboard copy</div>
+      </div>
+      <div class="node node-exit" style="min-width:130px;">
+        <div class="node-title">🔗 Invite Others</div>
+        <div class="node-sub">Web Share / clipboard viral loop</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-row" style="margin-left:830px;margin-top:8px;">
+    <div class="node node-pixel">
+      <div class="node-title">📊 Email notification sent to Person A via Resend</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PATH 3: PERSON B — RECEIVING LINK                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="path-card">
+  <div class="path-card-title" style="color:#f97316;">
+    Path 3: Person B — Received Link
+    <span class="tag tag-orange">Inbound</span>
+  </div>
+  <div class="path-card-sub">Partner arrives via /match/:token → enters their schedule → both see result</div>
+
+  <div class="flow-row">
+    <div class="node node-action">
+      <div class="node-title">🔗 URL: /match/:token</div>
+      <div class="node-sub">isPersonB = true, matchToken set from URL</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-api">
+      <div class="node-title">GET /match/:token</div>
+      <div class="node-sub">Check match status + get Person A's name</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-decision">
+      <div class="node-title">Status?</div>
+      <div class="node-sub">Is the match already completed?</div>
+    </div>
+  </div>
+
+  <!-- Branch: Pending (normal) -->
+  <div style="margin-left:460px;margin-top:12px;">
+    <div style="display:flex;gap:24px;">
+      <!-- Pending branch -->
+      <div>
+        <div class="branch-label" style="color:#34d399;margin-bottom:8px;">✅ status = "pending"</div>
+        <div class="flow-row">
+          <div class="node node-screen">
+            <div class="node-title">🏠 Splash (custom)</div>
+            <div class="node-sub">"[Name] wants to check your match."<br>Props hidden. "Enter my schedule →"</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node node-screen">
+            <div class="node-title">📅 Your Schedule</div>
+            <div class="node-sub">Same picker, state.your</div>
+            <div class="node-id">screen-your-schedule</div>
+          </div>
+          <div class="arrow">
+            <div class="arrow-label">skips fork</div>
+            →
+          </div>
+          <div class="node node-screen">
+            <div class="node-title">✍️ Signup (custom)</div>
+            <div class="node-sub">"Almost there" / name + email / "See the match →"</div>
+            <div class="node-id">screen-signup-wait</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:16px;margin-top:8px;margin-left:530px;">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="vline vline-orange"></div>
+          </div>
+        </div>
+
+        <div class="flow-row" style="margin-left:380px;">
+          <div class="node node-pixel">
+            <div class="node-title">📊 fbq Lead (person_b)</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node node-api">
+            <div class="node-title">POST /match/:token/complete</div>
+            <div class="node-sub">Submits Person B's schedule. Triggers email to Person A.</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node node-api">
+            <div class="node-title">GET /match/:token</div>
+            <div class="node-sub">Fetch Person A's schedule to compute overlap</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node node-screen">
+            <div class="node-title">🎯 Result</div>
+            <div class="node-sub">Pre-filled → "Continue as [name] →"</div>
+            <div class="node-id">screen-result</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed branch -->
+    <div style="margin-top:20px;">
+      <div class="branch-label" style="color:#f87171;margin-bottom:8px;">🚫 status = "completed"</div>
+      <div class="flow-row">
+        <div class="node node-screen">
+          <div class="node-title">🏠 Splash (dead end fixed)</div>
+          <div class="node-sub">"This match is already done."<br>"Ask them to share" + "Start your own"</div>
+        </div>
+        <div class="arrow">
+          <div class="arrow-label">"Start my<br>own match"</div>
+          →
+        </div>
+        <div class="node node-action">
+          <div class="node-title">🔄 Reset</div>
+          <div class="node-sub">isPersonB = false<br>matchToken = null</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node node-screen">
+          <div class="node-title">🏠 Splash (normal)</div>
+          <div class="node-sub">Restarts as Person A, Path 1 or 2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PATH 4: DATE INVITE RECIPIENT                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="path-card">
+  <div class="path-card-title" style="color:#34d399;">
+    Path 4: Date Invite Recipient
+    <span class="tag tag-green">External page</span>
+  </div>
+  <div class="path-card-sub">Someone received a date idea via /date/:token — separate HTML page</div>
+
+  <div class="flow-row">
+    <div class="node node-external">
+      <div class="node-title">🔗 URL: /date/:token</div>
+      <div class="node-sub">date-invite.html (separate page)</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-api">
+      <div class="node-title">GET /match/invite/:token</div>
+      <div class="node-sub">Load sender name, message, opportunity, date</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-external">
+      <div class="node-title">💌 Invite Card</div>
+      <div class="node-sub">From [name], message, opportunity details</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node node-decision">
+      <div class="node-title">Response?</div>
+      <div class="node-sub">"I'm in" or "Not this time"</div>
+    </div>
+  </div>
+
+  <!-- Accept branch -->
+  <div style="margin-left:560px;margin-top:12px;">
+    <div class="branch-label" style="color:#34d399;margin-bottom:8px;">✅ "I'm in"</div>
+    <div class="flow-row">
+      <div class="node node-api">
+        <div class="node-title">POST /invite/:token/respond</div>
+        <div class="node-sub">response: "in" — email sent to sender</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-external">
+        <div class="node-title">🎉 "You're on!"</div>
+        <div class="node-sub">Name + email fields appear. "Check our schedule match →"</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-api">
+        <div class="node-title">POST /auth/request</div>
+        <div class="node-sub">Creates account, gets magic token</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-exit" style="border-color:rgba(52,211,153,0.5);">
+        <div class="node-title" style="color:#34d399;">→ /setup</div>
+        <div class="node-sub">Redirects to onboarding with magic link</div>
+      </div>
+    </div>
+    <div class="flow-row" style="margin-left:360px;margin-top:4px;">
+      <div class="node node-exit" style="min-width:130px;">
+        <div class="node-title">Skip → /match</div>
+        <div class="node-sub">"Skip for now" link</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decline branch -->
+  <div style="margin-left:560px;margin-top:16px;">
+    <div class="branch-label" style="color:#f87171;margin-bottom:8px;">❌ "Not this time"</div>
+    <div class="flow-row">
+      <div class="node node-external">
+        <div class="node-title">📝 Decline Note</div>
+        <div class="node-sub">Optional message textarea</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-api">
+        <div class="node-title">POST /invite/:token/respond</div>
+        <div class="node-sub">response: "not_this_time" — email sent to sender</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-external">
+        <div class="node-title">🤷 "No worries."</div>
+        <div class="node-sub">"Maybe next time."</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node node-exit">
+        <div class="node-title">CTA → /match</div>
+        <div class="node-sub">"Try Spontany Match - it takes 30 seconds"</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- RESULT PAGE — ALL EXIT PATHS                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="path-card">
+  <div class="path-card-title" style="color:#e2e2e2;">
+    Result Page — All Actions & Exits
+    <span class="tag tag-yellow">Conversion hub</span>
+  </div>
+  <div class="path-card-sub">Where all paths converge — screen-result is the main conversion point</div>
+
+  <div style="display:flex;gap:24px;flex-wrap:wrap;">
+
+    <!-- Column 1: Content -->
+    <div style="flex:1;min-width:280px;">
+      <div class="section-header" style="margin-top:0;">Content Shown</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="node node-screen" style="max-width:100%;width:100%;">
+          <div class="node-title">🎠 Match Type Carousel</div>
+          <div class="node-sub">6 types: Slow Burn → All In. Swipeable. User's type highlighted. Based on overlap % + weekend ratio.</div>
+        </div>
+        <div class="node node-screen" style="max-width:100%;width:100%;">
+          <div class="node-title">📆 Two-Week Pattern</div>
+          <div class="node-sub">14-day mini calendar. Overlap days highlighted with pulse dots. Tappable.</div>
+        </div>
+        <div class="node node-api" style="max-width:100%;width:100%;">
+          <div class="node-title">GET /match/suggestions</div>
+          <div class="node-sub">Fetches real opportunities for overlap days. Falls back to mock suggestions.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: Day tap flow -->
+    <div style="flex:1;min-width:280px;">
+      <div class="section-header" style="margin-top:0;">Day Tap → Invite Flow</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="node node-action" style="max-width:100%;width:100%;">
+          <div class="node-title">👆 Tap Overlap Day</div>
+          <div class="node-sub">Click locks selection. Shows day popup with 2 opportunity suggestions.</div>
+        </div>
+        <div class="node node-action" style="max-width:100%;width:100%;">
+          <div class="node-title">💌 Invite Sheet Opens</div>
+          <div class="node-sub">Opportunity card, 3 message chips, custom input, live preview</div>
+        </div>
+        <div class="node node-api" style="max-width:100%;width:100%;">
+          <div class="node-title">POST /match/invite</div>
+          <div class="node-sub">Creates invite, returns invite_token + invite_url</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div class="node node-exit" style="flex:1;">
+            <div class="node-title">📲 WhatsApp</div>
+            <div class="node-sub">Pre-filled message + link</div>
+          </div>
+          <div class="node node-action" style="flex:1;">
+            <div class="node-title">📋 Copy</div>
+            <div class="node-sub">invite URL to clipboard</div>
+          </div>
+        </div>
+        <div class="node node-pixel" style="max-width:100%;width:100%;">
+          <div class="node-title">📊 fbq MatchInviteSent</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 3: Conversion -->
+    <div style="flex:1;min-width:280px;">
+      <div class="section-header" style="margin-top:0;">Conversion Actions</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="node node-action" style="max-width:100%;width:100%;">
+          <div class="node-title">📤 Share Report</div>
+          <div class="node-sub">Web Share API or clipboard. "Tell [name] about it →"</div>
+        </div>
+        <div class="node node-action" style="max-width:100%;width:100%;">
+          <div class="node-title">🔗 Invite to Match</div>
+          <div class="node-sub">Viral loop — share /match link with new person</div>
+        </div>
+
+        <div style="border:1.5px solid rgba(52,211,153,0.3);border-radius:14px;padding:14px;background:rgba(52,211,153,0.04);">
+          <div style="font-size:11px;font-weight:800;color:#34d399;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🎯 Registration CTA</div>
+          <div class="node node-screen" style="max-width:100%;width:100%;margin-bottom:8px;">
+            <div class="node-title">Capability Cards</div>
+            <div class="node-sub">📅 See months ahead · 💌 One-tap invites · 👥 Group plans · 🔒 Private by default</div>
+          </div>
+          <div class="node node-decision" style="max-width:100%;width:100%;margin-bottom:8px;">
+            <div class="node-title">Fields pre-filled?</div>
+            <div class="node-sub">If name+email from waiting screen → hide fields, show "Continue as [name] →"</div>
+          </div>
+          <div class="node node-api" style="max-width:100%;width:100%;margin-bottom:8px;">
+            <div class="node-title">POST /auth/request</div>
+            <div class="node-sub">Creates account with magic link</div>
+          </div>
+          <div class="node node-exit" style="max-width:100%;width:100%;border-color:rgba(52,211,153,0.5);">
+            <div class="node-title" style="color:#34d399;">→ /setup</div>
+            <div class="node-sub">Redirect to onboarding. Schedule data carries over.</div>
+          </div>
+          <div class="node node-pixel" style="max-width:100%;width:100%;margin-top:8px;">
+            <div class="node-title">📊 fbq Lead (match_signup)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SUMMARY: ALL API ENDPOINTS                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="path-card" style="margin-top:8px;">
+  <div class="path-card-title" style="color:#34d399;">
+    API Endpoint Map
+    <span class="tag tag-green">Backend</span>
+  </div>
+  <div class="path-card-sub">All endpoints called during match journeys</div>
+
+  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+        <th style="text-align:left;padding:8px 12px;color:rgba(226,226,226,0.5);font-weight:700;">Method</th>
+        <th style="text-align:left;padding:8px 12px;color:rgba(226,226,226,0.5);font-weight:700;">Endpoint</th>
+        <th style="text-align:left;padding:8px 12px;color:rgba(226,226,226,0.5);font-weight:700;">Called By</th>
+        <th style="text-align:left;padding:8px 12px;color:rgba(226,226,226,0.5);font-weight:700;">Purpose</th>
+        <th style="text-align:left;padding:8px 12px;color:rgba(226,226,226,0.5);font-weight:700;">Side Effects</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-green">POST</span></td>
+        <td style="padding:8px 12px;color:#34d399;font-family:monospace;">/api/match/create</td>
+        <td style="padding:8px 12px;">Person A (both paths)</td>
+        <td style="padding:8px 12px;">Create match request. If partner_schedule included → auto-complete</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">Creates DB row</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-blue">GET</span></td>
+        <td style="padding:8px 12px;color:#60a5fa;font-family:monospace;">/api/match/:token</td>
+        <td style="padding:8px 12px;">Person B init, Person A polling</td>
+        <td style="padding:8px 12px;">Check status, get schedules when completed</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">None</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-green">POST</span></td>
+        <td style="padding:8px 12px;color:#34d399;font-family:monospace;">/api/match/:token/complete</td>
+        <td style="padding:8px 12px;">Person B</td>
+        <td style="padding:8px 12px;">Submit Person B's schedule, mark match completed</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">Email to Person A via Resend</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-blue">GET</span></td>
+        <td style="padding:8px 12px;color:#60a5fa;font-family:monospace;">/api/match/suggestions</td>
+        <td style="padding:8px 12px;">Result page</td>
+        <td style="padding:8px 12px;">Fetch date night ideas for overlap days</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">None</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-green">POST</span></td>
+        <td style="padding:8px 12px;color:#34d399;font-family:monospace;">/api/match/invite</td>
+        <td style="padding:8px 12px;">Result page invite sheet</td>
+        <td style="padding:8px 12px;">Create date invite with opportunity + message</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">Creates DB row</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-blue">GET</span></td>
+        <td style="padding:8px 12px;color:#60a5fa;font-family:monospace;">/api/match/invite/:token</td>
+        <td style="padding:8px 12px;">date-invite.html</td>
+        <td style="padding:8px 12px;">Load invite details for recipient</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">None</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:8px 12px;"><span class="tag tag-green">POST</span></td>
+        <td style="padding:8px 12px;color:#34d399;font-family:monospace;">/api/match/invite/:token/respond</td>
+        <td style="padding:8px 12px;">date-invite.html</td>
+        <td style="padding:8px 12px;">Accept or decline date invite</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">Email to sender via Resend</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;"><span class="tag tag-green">POST</span></td>
+        <td style="padding:8px 12px;color:#34d399;font-family:monospace;">/api/auth/request</td>
+        <td style="padding:8px 12px;">Result signup, date-invite signup</td>
+        <td style="padding:8px 12px;">Create account + magic link</td>
+        <td style="padding:8px 12px;color:rgba(226,226,226,0.4);">Creates user, returns magic token</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /canvas -->
+
+</body>
+</html>

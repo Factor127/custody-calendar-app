@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spontany Ad Composer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #1a1a1a; color: #e2e2e2;
+      padding: 40px 20px;
+    }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { color: #888; font-size: 14px; margin-bottom: 32px; }
+
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      margin-bottom: 32px; align-items: flex-end;
+    }
+    .control-group { display: flex; flex-direction: column; gap: 4px; }
+    .control-group label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .control-group select, .control-group input[type="file"] {
+      padding: 8px 12px; background: #2a2a2a; color: #e2e2e2;
+      border: 1px solid #333; border-radius: 8px; font-family: inherit; font-size: 13px;
+    }
+    button.export-btn {
+      padding: 10px 20px; background: #e7f848; color: #0a0a0a;
+      border: none; border-radius: 8px; font-family: inherit;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    button.export-btn:hover { background: #d4e530; }
+
+    .ads-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 32px;
+    }
+
+    .ad-wrapper {
+      background: #111; border-radius: 12px; padding: 16px; border: 1px solid #333;
+    }
+    .ad-label {
+      font-size: 12px; font-weight: 700; color: #e7f848;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+    }
+    .ad-sublabel { font-size: 11px; color: #666; margin-bottom: 12px; }
+
+    /* The actual ad canvas */
+    .ad-canvas {
+      width: 540px; height: 540px;
+      position: relative; overflow: hidden;
+      background: #0a0a0a;
+    }
+    /* For export: 1080x1080 */
+    .ad-canvas.export-size { width: 1080px; height: 1080px; }
+
+    .ad-photo {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0.55;
+    }
+    .ad-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(180deg,
+        rgba(10,10,10,0.3) 0%,
+        rgba(10,10,10,0.1) 30%,
+        rgba(10,10,10,0.5) 60%,
+        rgba(10,10,10,0.92) 100%
+      );
+    }
+
+    .ad-content {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0 36px 0;
+      display: flex; flex-direction: column;
+    }
+
+    .ad-logo-row {
+      position: absolute; top: 24px; left: 28px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ad-logo-circle {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: #e7f848; display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .ad-logo-circle img { width: 100%; height: 100%; }
+    .ad-logo-text {
+      font-size: 13px; font-weight: 800; color: rgba(255,255,255,0.7);
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+
+    /* Hook 1 layout */
+    .hook1 .ad-headline {
+      font-size: 42px; font-weight: 900; color: white;
+      line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 10px;
+    }
+    .hook1 .ad-headline .lime { color: #e7f848; }
+    .hook1 .ad-subtext {
+      font-size: 16px; color: rgba(255,255,255,0.55); margin-bottom: 20px;
+    }
+
+    /* Hook 2 layout */
+    .hook2 .ad-headline {
+      font-size: 38px; font-weight: 900; color: white;
+      line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 6px;
+    }
+    .hook2 .ad-headline-sub {
+      font-size: 28px; font-weight: 800; color: #e7f848;
+      line-height: 1.2; margin-bottom: 20px;
+    }
+
+    /* Hook 3 layout */
+    .hook3 .ad-bubble {
+      background: rgba(255,255,255,0.12); border-radius: 18px 18px 18px 4px;
+      padding: 16px 20px; margin-bottom: 14px;
+      display: inline-block;
+    }
+    .hook3 .ad-bubble-text {
+      font-size: 22px; font-weight: 700; color: white;
+      line-height: 1.35;
+    }
+    .hook3 .ad-response {
+      font-size: 18px; font-weight: 700; color: #e7f848;
+      font-style: italic; margin-bottom: 20px;
+    }
+
+    /* CTA strip */
+    .ad-cta-strip {
+      background: #e7f848; margin: 0 -36px;
+      padding: 14px 36px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .ad-cta-text {
+      font-size: 16px; font-weight: 800; color: #0a0a0a;
+      letter-spacing: 0.02em;
+    }
+
+    .photo-drop {
+      width: 100%; padding: 12px; background: #2a2a2a;
+      border: 2px dashed #444; border-radius: 8px; margin-top: 10px;
+      text-align: center; cursor: pointer;
+    }
+    .photo-drop input { display: none; }
+    .photo-drop-label { font-size: 12px; color: #888; cursor: pointer; }
+
+    .export-single {
+      margin-top: 8px; padding: 6px 14px; background: #333; color: #e2e2e2;
+      border: 1px solid #555; border-radius: 6px; font-family: inherit;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .export-single:hover { background: #444; }
+  </style>
+</head>
+<body>
+
+<h1>Spontany Ad Composer</h1>
+<p class="subtitle">Drop in your AI-generated photos. Export at 1080x1080 for Meta ads.</p>
+
+<div class="ads-grid" id="ads-grid"></div>
+
+<script>
+const ADS = [
+  {
+    id: 'ad1w', label: 'Ad 1W', hook: 'hook1', gender: 'Woman',
+    hookName: 'Know before you ask.',
+    subtext: 'See if your custody schedules line up.'
+  },
+  {
+    id: 'ad1m', label: 'Ad 1M', hook: 'hook1', gender: 'Man',
+    hookName: 'Know before you ask.',
+    subtext: 'See if your custody schedules line up.'
+  },
+  {
+    id: 'ad2w', label: 'Ad 2W', hook: 'hook2', gender: 'Woman',
+    hookName: 'We matched.',
+    subtext: "Now let's see if our weeks do too."
+  },
+  {
+    id: 'ad2m', label: 'Ad 2M', hook: 'hook2', gender: 'Man',
+    hookName: 'We matched.',
+    subtext: "Now let's see if our weeks do too."
+  },
+  {
+    id: 'ad3w', label: 'Ad 3W', hook: 'hook3', gender: 'Woman',
+    hookName: "You're great, but our schedules just don't work.",
+    subtext: 'What if you knew before that moment?'
+  },
+  {
+    id: 'ad3m', label: 'Ad 3M', hook: 'hook3', gender: 'Man',
+    hookName: "You're great, but our schedules just don't work.",
+    subtext: 'What if you knew before that moment?'
+  },
+];
+
+const grid = document.getElementById('ads-grid');
+
+ADS.forEach(ad => {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ad-wrapper';
+
+  let contentHTML = '';
+  if (ad.hook === 'hook1') {
+    contentHTML = `
+      <div class="ad-headline">Know before you ask<span class="lime">.</span></div>
+      <div class="ad-subtext">${ad.subtext}</div>
+    `;
+  } else if (ad.hook === 'hook2') {
+    contentHTML = `
+      <div class="ad-headline">We matched.</div>
+      <div class="ad-headline-sub">Now let's see if our<br>weeks do too.</div>
+    `;
+  } else if (ad.hook === 'hook3') {
+    contentHTML = `
+      <div class="ad-bubble">
+        <div class="ad-bubble-text">You're great, but our schedules just don't work.</div>
+      </div>
+      <div class="ad-response">What if you knew before that moment?</div>
+    `;
+  }
+
+  wrapper.innerHTML = `
+    <div class="ad-label">${ad.label} — ${ad.gender}</div>
+    <div class="ad-sublabel">"${ad.hookName}"</div>
+    <div class="ad-canvas ${ad.hook}" id="canvas-${ad.id}">
+      <img class="ad-photo" id="photo-${ad.id}" src="" alt="" style="display:none;">
+      <div class="ad-overlay"></div>
+      <div class="ad-logo-row">
+        <div class="ad-logo-circle">
+          <img src="/icon-192.png" alt="S">
+        </div>
+        <div class="ad-logo-text">Spontany</div>
+      </div>
+      <div class="ad-content">
+        ${contentHTML}
+        <div class="ad-cta-strip">
+          <div class="ad-cta-text">Check your match &mdash; free</div>
+        </div>
+      </div>
+    </div>
+    <div class="photo-drop" onclick="document.getElementById('file-${ad.id}').click()">
+      <input type="file" id="file-${ad.id}" accept="image/*" onchange="loadPhoto('${ad.id}', this)">
+      <div class="photo-drop-label">Drop photo or click to upload</div>
+    </div>
+    <button class="export-single" onclick="exportAd('${ad.id}')">Export 1080x1080 PNG</button>
+  `;
+
+  grid.appendChild(wrapper);
+});
+
+function loadPhoto(id, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = document.getElementById('photo-' + id);
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function exportAd(id) {
+  const canvas = document.getElementById('canvas-' + id);
+
+  // Use html2canvas if available, otherwise prompt manual screenshot
+  if (typeof html2canvas !== 'undefined') {
+    const result = await html2canvas(canvas, { scale: 2, useCORS: true, width: 540, height: 540 });
+    const link = document.createElement('a');
+    link.download = `spontany-${id}.png`;
+    link.href = result.toDataURL('image/png');
+    link.click();
+  } else {
+    // Fallback: scale up and screenshot
+    canvas.classList.add('export-size');
+    alert('Canvas scaled to 1080x1080. Right-click the ad and "Save image as..." or take a screenshot. Click OK to restore.');
+    setTimeout(() => canvas.classList.remove('export-size'), 100);
+  }
+}
+</script>
+
+<!-- html2canvas for PNG export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+</body>
+</html>
