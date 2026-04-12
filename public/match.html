@@ -298,6 +298,18 @@
 
     /* ── Fork cards ── */
     .fork-cards { display: flex; flex-direction: column; gap: 14px; margin: 24px 0; }
+    .fork-card.recommended {
+      border-color: var(--accent-border);
+      background: rgba(201,179,245,0.06);
+    }
+    .fork-card.recommended .fork-badge {
+      display: inline-block;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent); background: rgba(201,179,245,0.12);
+      padding: 3px 8px; border-radius: 4px; margin-bottom: 4px;
+    }
+    .fork-badge { display: none; }
     .fork-card {
       display: flex; align-items: center; gap: 16px;
       padding: 20px; border-radius: 14px;
@@ -583,18 +595,19 @@
     </div>
 
     <div class="fork-cards">
-      <div class="fork-card" onclick="go('their-schedule')">
-        <span class="fork-emoji">✏️</span>
+      <div class="fork-card recommended" onclick="go('their-schedule')">
+        <span class="fork-emoji">⚡</span>
         <div>
-          <div class="fork-label">I know their days</div>
-          <div class="fork-sub">I'll enter their schedule myself.</div>
+          <div class="fork-badge">Instant results</div>
+          <div class="fork-label">I have a rough idea</div>
+          <div class="fork-sub">Enter what you know — a rough guess works great.</div>
         </div>
       </div>
       <div class="fork-card" onclick="go('send-link')">
         <span class="fork-emoji">🔗</span>
         <div>
-          <div class="fork-label">Let them fill it in</div>
-          <div class="fork-sub">I'll send them a link - more private.</div>
+          <div class="fork-label">Send them a link</div>
+          <div class="fork-sub">They'll fill in their own schedule. Results when they're done.</div>
         </div>
       </div>
     </div>
