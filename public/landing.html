@@ -299,29 +299,72 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     line-height: 1.5;
   }
 
-  /* ---- TESTIMONIAL ---- */
-  .testimonial {
-    padding: 140px 24px;
+  /* ---- TESTIMONIALS ---- */
+  .testimonials {
+    padding: 120px 24px;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .testimonials-label {
     text-align: center;
-    max-width: 720px; margin: 0 auto;
+    font-size: 14px; font-weight: 600; color: var(--lime);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 16px;
   }
-  .testimonial blockquote {
-    font-size: clamp(22px, 3vw, 32px);
-    font-weight: 500; font-style: italic;
-    line-height: 1.5; letter-spacing: -0.5px;
-    color: rgba(255,255,255,0.9);
-    margin-bottom: 32px;
+  .testimonials-title {
+    text-align: center;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800; letter-spacing: -1px;
+    margin-bottom: 64px;
   }
-  .testimonial-attr {
-    font-size: 14px; color: var(--muted);
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .testimonial-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    position: relative;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .testimonial-card:hover {
+    border-color: rgba(196,214,48,0.2);
+    transform: translateY(-4px);
+  }
+  .testimonial-quote-icon {
+    font-size: 40px; line-height: 1; color: rgba(196,214,48,0.2);
+    font-family: Georgia, serif;
+    margin-bottom: 16px;
+    user-select: none;
+  }
+  .testimonial-card blockquote {
+    font-size: 15px; font-style: italic;
+    line-height: 1.7; letter-spacing: -0.2px;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 24px;
+  }
+  .testimonial-footer {
+    display: flex; align-items: center; gap: 12px;
   }
   .testimonial-avatar {
-    width: 48px; height: 48px;
-    background: rgba(196,214,48,0.15);
+    width: 40px; height: 40px;
+    background: rgba(196,214,48,0.12);
     border-radius: 50%;
-    margin: 0 auto 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 700; color: var(--lime);
+    font-size: 16px; font-weight: 700; color: var(--lime);
+    flex-shrink: 0;
+  }
+  .testimonial-name {
+    font-size: 14px; font-weight: 600; color: var(--white);
+  }
+  .testimonial-detail {
+    font-size: 12px; color: var(--muted);
+  }
+
+  @media (max-width: 768px) {
+    .testimonials-grid { grid-template-columns: 1fr; gap: 16px; }
   }
 
   /* ---- FAQ ---- */
@@ -655,11 +698,48 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
   </div>
 </section>
 
-<!-- TESTIMONIAL -->
-<section class="testimonial">
-  <div class="testimonial-avatar">S</div>
-  <blockquote>"He just opened the app, saw I was free Thursday, and texted 'Italian?' One message. Done."</blockquote>
-  <p class="testimonial-attr">— Early beta user</p>
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <p class="testimonials-label">Early testers</p>
+  <h2 class="testimonials-title">What people are saying.</h2>
+
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="testimonial-quote-icon">&ldquo;</div>
+      <blockquote>I can finally see when my friends are actually free without the endless back-and-forth texting. No more "are you free Saturday?" x12.</blockquote>
+      <div class="testimonial-footer">
+        <div class="testimonial-avatar">M</div>
+        <div>
+          <div class="testimonial-name">Morin</div>
+          <div class="testimonial-detail">Mom of 2 &middot; Early access tester</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonial-card">
+      <div class="testimonial-quote-icon">&ldquo;</div>
+      <blockquote>Seeing my custody calendar overlaid with my partner's is a game changer. We plan date nights in seconds now instead of comparing screenshots.</blockquote>
+      <div class="testimonial-footer">
+        <div class="testimonial-avatar">Y</div>
+        <div>
+          <div class="testimonial-name">Yossi</div>
+          <div class="testimonial-detail">Dad of 3 &middot; Early access tester</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonial-card">
+      <div class="testimonial-quote-icon">&ldquo;</div>
+      <blockquote>Took me 2 minutes to set up. I've already made more plans this week than I did all last month. Turns out I just needed to stop talking about it.</blockquote>
+      <div class="testimonial-footer">
+        <div class="testimonial-avatar">N</div>
+        <div>
+          <div class="testimonial-name">Noa</div>
+          <div class="testimonial-detail">Recently divorced mom &middot; Early access tester</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- FAQ -->
