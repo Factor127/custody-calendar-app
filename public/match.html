@@ -82,12 +82,42 @@
 
     /* ── Progress bar ── */
     .progress-bar {
-      height: 3px; background: var(--border); margin: 0 0 0;
+      height: 4px; background: var(--border); margin: 0 0 0;
       position: sticky; top: 0; z-index: 50;
     }
     .progress-fill {
       height: 100%; background: var(--accent);
       transition: width 0.4s ease; width: 0%;
+    }
+
+    /* ── Step indicator ── */
+    .step-indicator {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .step-indicator.visible { display: flex; }
+    .step-dots {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border);
+      transition: all 0.3s ease;
+    }
+    .step-dot.active {
+      background: var(--accent);
+      width: 24px; border-radius: 4px;
+    }
+    .step-dot.done {
+      background: var(--accent);
     }
 
     /* ── Nav bar ── */
@@ -484,12 +514,20 @@
 
   <!-- Progress -->
   <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+  <div class="step-indicator" id="step-indicator">
+    <div class="step-dots">
+      <div class="step-dot" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+    <span id="step-label">Step 1 of 3</span>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="splash-screen active" id="screen-splash">
-    <img src="/logo.svg" class="splash-logo" alt="Spontany" style="width:56px;height:56px;margin-bottom:12px;">
+    <img src="/logo3.svg" class="splash-logo" alt="Spontany" style="width:64px;height:64px;margin-bottom:12px;">
     <div class="splash-brand">Spontany</div>
     <h1 class="splash-headline">Your schedule is complicated.<br><em>Dating shouldn't be.</em></h1>
     <button class="btn-primary" onclick="go('your-schedule')">Check your match →</button>
@@ -864,6 +902,22 @@ function go(screen) {
   const el = document.getElementById('screen-' + screen);
   if (el) el.classList.add('active');
   document.getElementById('progress').style.width = (PROGRESS[screen] ?? 50) + '%';
+
+  // Step indicator
+  const STEPS = { 'your-schedule': 1, 'fork': 2, 'their-schedule': 2, 'collect-info': 3, 'send-link': 2, 'signup-wait': 3, 'result': 3 };
+  const stepEl = document.getElementById('step-indicator');
+  const stepNum = STEPS[screen];
+  if (stepNum) {
+    stepEl.classList.add('visible');
+    document.getElementById('step-label').textContent = 'Step ' + stepNum + ' of 3';
+    for (let i = 1; i <= 3; i++) {
+      const dot = document.getElementById('dot-' + i);
+      dot.className = 'step-dot' + (i === stepNum ? ' active' : i < stepNum ? ' done' : '');
+    }
+  } else {
+    stepEl.classList.remove('visible');
+  }
+
   window.scrollTo(0, 0);
 
   // Meta Pixel events
