@@ -64,7 +64,7 @@
     }
     #app-frame {
       background: var(--bg); border-radius: 0 0 24px 24px;
-      min-height: calc(100vh - 24px); overflow: clip;
+      min-height: calc(100vh - 24px); overflow-x: hidden;
       max-width: 480px; margin: 0 auto;
     }
     @media (min-width: 860px) {
@@ -136,9 +136,9 @@
     .splash-screen {
       display: none; padding: 0 28px 40px;
       text-align: center;
-      min-height: calc(100vh - 80px);
       flex-direction: column;
-      align-items: center; justify-content: center;
+      align-items: center;
+      overflow-y: auto;
     }
     .splash-screen.active { display: flex; }
     .splash-logo {
@@ -151,10 +151,14 @@
     .splash-headline {
       font-size: clamp(28px, 7vw, 38px);
       font-weight: 900; color: white; line-height: 1.15;
-      letter-spacing: -0.02em; margin-bottom: 32px;
+      letter-spacing: -0.02em; margin-bottom: 12px;
     }
     .splash-headline em {
       font-style: normal; color: var(--accent);
+    }
+    .splash-sub {
+      font-size: 15px; color: var(--muted); line-height: 1.6;
+      max-width: 340px; margin: 0 auto 28px;
     }
     .splash-props {
       display: flex; flex-direction: column; gap: 16px;
@@ -173,6 +177,139 @@
     .splash-fine {
       font-size: 12px; color: rgba(226,226,226,0.25); margin-top: 16px;
     }
+
+    /* ── Phone mockup ── */
+    .phone-mockup {
+      position: relative;
+      width: 240px; margin: 28px auto 0;
+      background: #1a1a1a;
+      border-radius: 32px;
+      padding: 12px 10px;
+      border: 2.5px solid #333;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.05),
+        0 20px 60px rgba(0,0,0,0.5),
+        0 4px 16px rgba(0,0,0,0.3),
+        inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+    .phone-notch {
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      width: 72px; height: 20px; background: #0a0a0a;
+      border-radius: 0 0 14px 14px; z-index: 2;
+    }
+    .phone-screen {
+      border-radius: 22px; overflow: hidden;
+      background: #0a0a0a;
+    }
+    .phone-screen img {
+      width: 100%; display: block;
+    }
+
+    /* ── Social proof ── */
+    .social-proof {
+      margin: 28px 0 8px;
+      padding: 14px 16px;
+      background: rgba(201,179,245,0.06);
+      border: 1px solid rgba(201,179,245,0.12);
+      border-radius: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      text-align: center;
+    }
+    .social-proof strong {
+      color: var(--accent); font-weight: 700;
+    }
+
+    /* ── Splash benefits ── */
+    .splash-benefits {
+      display: flex; flex-direction: column; gap: 12px;
+      margin: 24px 0 8px; width: 100%;
+    }
+    .splash-benefit {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: left;
+    }
+    .splash-benefit-icon {
+      font-size: 22px; flex-shrink: 0;
+    }
+    .splash-benefit-text {
+      font-size: 14px; color: var(--text); line-height: 1.4;
+    }
+    .splash-benefit-text strong {
+      color: var(--accent); font-weight: 700; display: block;
+      margin-bottom: 2px;
+    }
+
+    /* ── Splash testimonials ── */
+    .splash-testimonials {
+      width: 100%; margin: 24px 0 8px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .splash-testimonial-label {
+      font-size: 11px; font-weight: 700;
+      color: var(--accent); letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+    .splash-testimonial {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 18px;
+      text-align: left;
+    }
+    .splash-testimonial-stars {
+      color: #facc15; font-size: 14px; letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+    .splash-testimonial-quote {
+      font-size: 15px; font-weight: 700; color: white;
+      line-height: 1.35; margin-bottom: 10px;
+    }
+    .splash-testimonial-body {
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .splash-testimonial-author {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .splash-testimonial-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .splash-testimonial-name {
+      font-size: 13px; font-weight: 600; color: var(--accent);
+    }
+
+    /* ── Splash bottom CTA ── */
+    .splash-bottom-cta {
+      text-align: center; margin: 28px 0 20px; width: 100%;
+    }
+    .splash-bottom-cta h2 {
+      font-size: 24px; font-weight: 800; color: white;
+      margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .splash-bottom-cta p {
+      font-size: 14px; color: var(--muted); margin-bottom: 20px;
+    }
+
+    /* ── Splash footer ── */
+    .splash-footer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 12px; color: rgba(226,226,226,0.2);
+      text-align: center; width: 100%;
+    }
+    .splash-footer a {
+      color: var(--muted); text-decoration: none;
+    }
+    .splash-footer a:hover { color: var(--text); }
 
     /* ── Hero / Hook ── */
     .hero-screen {
@@ -539,11 +676,90 @@
   <!-- SCREEN: SPLASH (brand intro for cold ad traffic)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="splash-screen active" id="screen-splash">
-    <img src="/logo3.svg" class="splash-logo" alt="Spontany" style="width:64px;height:64px;margin-bottom:12px;">
-    <div class="splash-brand">Spontany</div>
-    <h1 class="splash-headline">Your schedule is complicated.<br><em>Making plans shouldn't be.</em></h1>
-    <button class="btn-primary" onclick="go('your-schedule')">See when you're both free →</button>
-    <p class="splash-fine">Free. Private. 30 seconds.</p>
+
+    <!-- Hero -->
+    <h1 class="splash-headline" style="margin-top:24px;">Stop playing<br><em>calendar Tetris.</em></h1>
+    <p class="splash-sub">Two custody schedules. One answer. See if your free nights actually line up.</p>
+    <button class="btn-primary" onclick="splashCTA()">Check your match &rarr;</button>
+    <p class="splash-fine">Free. Private. No signup required.</p>
+
+    <!-- Phone mockup -->
+    <div class="phone-mockup">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <img src="/hero-screenshot.png" alt="Spontany Match — tap your custody days" loading="lazy">
+      </div>
+    </div>
+
+    <!-- Social proof -->
+    <div class="social-proof">
+      Beta users come back <strong>4&times; a week</strong> to check their schedule and their partner's before making plans.
+    </div>
+
+    <!-- Benefits -->
+    <div class="splash-benefits">
+      <div class="splash-benefit">
+        <span class="splash-benefit-icon">👀</span>
+        <div class="splash-benefit-text"><strong>See when you're both free</strong>No awkward "do you have the kids?" texts.</div>
+      </div>
+      <div class="splash-benefit">
+        <span class="splash-benefit-icon">📅</span>
+        <div class="splash-benefit-text"><strong>Know before you ask</strong>Both schedules, one view.</div>
+      </div>
+      <div class="splash-benefit">
+        <span class="splash-benefit-icon">⚡</span>
+        <div class="splash-benefit-text"><strong>Plan dates in seconds</strong>Not days of back-and-forth.</div>
+      </div>
+    </div>
+
+    <!-- Testimonials -->
+    <div class="splash-testimonials">
+      <div class="splash-testimonial-label">From real users</div>
+
+      <div class="splash-testimonial">
+        <div class="splash-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div class="splash-testimonial-quote">"Stop playing Calendar Tetris."</div>
+        <div class="splash-testimonial-body">Dating as a single mom is already hard enough. Spontany showed us right away that our schedules actually work together. It's the first thing I check now before I catch feelings.</div>
+        <div class="splash-testimonial-author">
+          <img src="/testimonials-elena.jpg" alt="Elena" class="splash-testimonial-avatar">
+          <span class="splash-testimonial-name">Elena, 31</span>
+        </div>
+      </div>
+
+      <div class="splash-testimonial">
+        <div class="splash-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div class="splash-testimonial-quote">"Get the answer without the 'Serious' talk."</div>
+        <div class="splash-testimonial-body">I really liked her, but it felt way too heavy to talk custody rotations on date two. Sending a Spontany link felt like a fun compatibility check rather than a deposition. Knowing we had 8 nights a month in common took the pressure off immediately.</div>
+        <div class="splash-testimonial-author">
+          <img src="/testimonials-david.jpg" alt="David" class="splash-testimonial-avatar">
+          <span class="splash-testimonial-name">David, 42</span>
+        </div>
+      </div>
+
+      <div class="splash-testimonial">
+        <div class="splash-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <div class="splash-testimonial-quote">"I didn't have to share everything."</div>
+        <div class="splash-testimonial-body">I'm private about my kids' schedule, so a 'shared calendar' sounded like a nightmare. But Spontany just shows how many nights overlap. We planned a night out without her seeing my whole custody breakdown.</div>
+        <div class="splash-testimonial-author">
+          <img src="/testimonials-jason.jpg" alt="Jason" class="splash-testimonial-avatar">
+          <span class="splash-testimonial-name">Jason, 32</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom CTA -->
+    <div class="splash-bottom-cta">
+      <h2>Ready to find out?</h2>
+      <p>It takes 30 seconds and your schedule stays private.</p>
+      <button class="btn-primary" onclick="splashCTA()">Check your match &rarr;</button>
+    </div>
+
+    <!-- Footer -->
+    <div class="splash-footer">
+      <p>Spontany &middot; Finds your moments before they slip away.</p>
+      <p style="margin-top:6px;"><a href="/privacy-policy.html">Privacy</a> &nbsp;&middot;&nbsp; <a href="/terms-of-service.html">Terms</a></p>
+    </div>
+
   </div>
 
   <!-- Hero screen removed - splash goes directly to your-schedule -->
@@ -908,6 +1124,12 @@ const PROGRESS = {
 };
 
 // ── Navigation ────────────────────────────────────────────────────────────────
+function splashCTA() {
+  if (typeof fbq !== 'undefined') fbq('track', 'Lead');
+  if (typeof sa === 'function') sa('splash_cta_click');
+  go('your-schedule');
+}
+
 function go(screen) {
   document.querySelectorAll('.screen, .hero-screen, .splash-screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + screen);
@@ -1796,14 +2018,31 @@ async function initPersonB(token) {
     if (!res.ok) return; // bad token - fall through to splash screen
     const data = await res.json();
 
-    const headline = document.querySelector('#screen-splash .splash-headline');
-    const btn = document.querySelector('#screen-splash .btn-primary');
-    const props = document.querySelector('#screen-splash .splash-props');
-    const fine = document.querySelector('#screen-splash .splash-fine');
+    const splash = document.getElementById('screen-splash');
+    const headline = splash.querySelector('.splash-headline');
+    const btn = splash.querySelector('.btn-primary');
+    const fine = splash.querySelector('.splash-fine');
+    const sub = splash.querySelector('.splash-sub');
+
+    // Hide landing page sections for Person B
+    splash.querySelectorAll('.phone-mockup, .social-proof, .splash-benefits, .splash-testimonials, .splash-bottom-cta, .splash-footer').forEach(el => el.style.display = 'none');
+
+    // Create props container for Person B
+    let props = splash.querySelector('.splash-props');
+    if (!props) {
+      props = document.createElement('div');
+      props.className = 'splash-props';
+      btn.parentNode.insertBefore(props, btn);
+    }
+
+    // Center the splash for Person B (simpler view)
+    splash.style.justifyContent = 'center';
+    splash.style.minHeight = 'calc(100vh - 80px)';
 
     if (data.status === 'completed') {
       headline.innerHTML = 'This match is<br><em>already done.</em>';
-      if (props) props.innerHTML = `
+      if (sub) sub.style.display = 'none';
+      props.innerHTML = `
         <div class="splash-prop"><span class="splash-prop-icon">✅</span><div class="splash-prop-text">Ask ${data.person_a_name || 'them'} to share the result with you</div></div>
         <div class="splash-prop"><span class="splash-prop-icon">🔄</span><div class="splash-prop-text">Or start your own match with someone new</div></div>
       `;
@@ -1815,7 +2054,8 @@ async function initPersonB(token) {
 
     const name = data.person_a_name || 'Someone';
     headline.innerHTML = `${name} wants to check<br><em>your match.</em>`;
-    if (props) props.innerHTML = `
+    if (sub) sub.style.display = 'none';
+    props.innerHTML = `
       <div class="splash-prop"><span class="splash-prop-icon">🔒</span><div class="splash-prop-text"><strong>Your schedule stays private</strong> - ${name} won't see your exact days or pattern, only how well you match</div></div>
       <div class="splash-prop"><span class="splash-prop-icon">⚡</span><div class="splash-prop-text"><strong>Takes 30 seconds</strong> - tap your custody days and you'll both see if your free nights line up</div></div>
     `;
