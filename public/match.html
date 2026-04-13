@@ -2015,16 +2015,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fire splash analytics (entry point for funnel dashboard)
   if (typeof sa !== 'undefined') sa('match_splash');
 
-  // Skip splash for Meta ad traffic — they already saw the pitch in the ad
-  if (!isPersonB) {
-    const utmSource = sessionStorage.getItem('utm_source');
-    if (utmSource === 'meta') {
-      if (typeof sa !== 'undefined') sa('splash_skipped', { utm_source: 'meta' });
-      const ctx = document.getElementById('scheduleContext');
-      if (ctx) ctx.style.display = 'block';
-      go('your-schedule');
-    }
-  }
+  // Meta ad traffic — show full splash to gather behavior data
+  // (splash skip disabled while we collect scroll/engagement metrics)
 
   // ── Behavior tracking ──────────────────────────────────────────────────
 
