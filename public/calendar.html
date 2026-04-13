@@ -1247,6 +1247,102 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .fab-backdrop.open { opacity: 1; pointer-events: auto; }
 
+    /* ── Daily carousel view ─────────────────────────────────────────── */
+    .day-carousel {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; padding: 24px 0 12px; min-height: 380px; position: relative;
+      overflow: hidden;
+    }
+    .day-carousel-arrow {
+      flex-shrink: 0; background: rgba(230,249,82,0.10); border: 1.5px solid rgba(230,249,82,0.35);
+      border-radius: 10px; color: #e6f952; font-size: 28px; width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      line-height: 1; padding: 0; transition: background .15s, border-color .15s; z-index: 3;
+    }
+    .day-carousel-arrow:hover { background: rgba(230,249,82,0.20); border-color: rgba(230,249,82,0.65); }
+    .day-carousel-track {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; flex: 1; overflow: hidden; padding: 10px 4px;
+    }
+    .day-card {
+      border-radius: 18px; position: relative; overflow: hidden;
+      transition: all .3s cubic-bezier(.4,0,.2,1); cursor: pointer; flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0; background: var(--cell-bg);
+    }
+    .day-card.center {
+      width: 190px; height: 290px; border: 2.5px solid var(--lime);
+      box-shadow: 0 8px 32px rgba(230,249,82,0.15), 0 2px 12px rgba(0,0,0,0.4);
+      z-index: 2;
+    }
+    .day-card.side {
+      width: 90px; height: 210px; opacity: 0.55; filter: brightness(0.75); z-index: 1;
+    }
+    .day-card.far {
+      width: 60px; height: 160px; opacity: 0.3; filter: brightness(0.55); z-index: 0;
+    }
+    .day-card.r { background: rgba(124,92,191,0.22); }
+    .day-card.z { background: rgba(230,249,82,0.12); }
+    .day-card.bothfree { box-shadow: inset 0 0 0 1.5px var(--lime); }
+    .day-card.center.bothfree { box-shadow: 0 8px 32px rgba(230,249,82,0.15), 0 2px 12px rgba(0,0,0,0.4), inset 0 0 0 1.5px var(--lime); }
+
+    .day-card-label {
+      position: absolute; top: 12px; left: 0; right: 0; text-align: center;
+      font-size: 15px; font-weight: 800; color: var(--text); text-transform: uppercase;
+      letter-spacing: 0.03em; z-index: 4; text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+    .day-card.side .day-card-label, .day-card.far .day-card-label { font-size: 11px; top: 8px; }
+
+    .day-card-img {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+      border-radius: 18px; z-index: 1;
+    }
+    .day-card-img::after {
+      content: ''; position: absolute; inset: 0; border-radius: 18px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+    }
+
+    .day-card-badge {
+      position: absolute; top: 10px; right: 10px; z-index: 5;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--lime); display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: #0a0a0a; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .day-card.side .day-card-badge, .day-card.far .day-card-badge { width: 20px; height: 20px; font-size: 10px; top: 6px; right: 6px; }
+
+    .day-card-bottom {
+      position: relative; z-index: 3; padding: 10px 12px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .day-card.side .day-card-bottom, .day-card.far .day-card-bottom { padding: 6px 8px; }
+    .day-card-bottom .cell-avatars { position: static; display: flex; align-items: center; gap: 2px; }
+    .day-card-bottom .cell-avatar-more { font-size: 10px; }
+
+    .day-card-date-num {
+      position: absolute; bottom: 8px; right: 10px; z-index: 4;
+      font-size: 32px; font-weight: 900; color: rgba(238,238,248,0.12);
+      line-height: 1;
+    }
+    .day-card.side .day-card-date-num { font-size: 20px; bottom: 6px; right: 6px; }
+    .day-card.far .day-card-date-num { font-size: 16px; bottom: 4px; right: 4px; }
+
+    .day-card .cell-plans { position: relative; z-index: 3; }
+    .day-card .plan-dot { position: relative; z-index: 3; }
+    .day-card .cell-pending-ring { z-index: 3; }
+
+    /* Toast notification */
+    .app-toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--text);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 2000;
+      opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+    }
+    .app-toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+
+    /* Month heading hide in day mode */
+    body.day-view-active .month-heading-row { display: none; }
+
     /* ── Browse sheet ────────────────────────────────────────────────── */
     #browse-sheet { z-index:2000; align-items:flex-end; padding:0; }
     .browse-inner {
@@ -1910,7 +2006,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- ── Month heading row: prev / month+year / next + edit ── -->
-<div style="max-width:680px;margin:0 auto;padding:20px 16px 6px;display:flex;align-items:center;gap:8px;">
+<div id="month-heading-row" style="max-width:680px;margin:0 auto;padding:20px 16px 6px;display:flex;align-items:center;gap:8px;">
   <button onclick="prevMonth()" style="flex-shrink:0;background:rgba(230,249,82,0.10);border:1.5px solid rgba(230,249,82,0.35);border-radius:10px;color:#e6f952;font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:background .15s,border-color .15s;" onmouseover="this.style.background='rgba(230,249,82,0.20)';this.style.borderColor='rgba(230,249,82,0.65)'" onmouseout="this.style.background='rgba(230,249,82,0.10)';this.style.borderColor='rgba(230,249,82,0.35)'">‹</button>
   <div class="app-title-strip" id="app-title-strip" style="flex:1;margin:0;padding:0;text-align:center;"></div>
   <button onclick="nextMonth()" style="flex-shrink:0;background:rgba(230,249,82,0.10);border:1.5px solid rgba(230,249,82,0.35);border-radius:10px;color:#e6f952;font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:background .15s,border-color .15s;" onmouseover="this.style.background='rgba(230,249,82,0.20)';this.style.borderColor='rgba(230,249,82,0.65)'" onmouseout="this.style.background='rgba(230,249,82,0.10)';this.style.borderColor='rgba(230,249,82,0.35)'">›</button>
@@ -2565,7 +2661,11 @@ function nextMonth() {
     const sheet = document.getElementById('day-sheet');
     if (sheet && sheet.classList.contains('open')) return;
     if (document.getElementById('sc-overlay')?.classList.contains('open')) return;
-    dx < 0 ? nextMonth() : prevMonth();
+    if (calendarViewMode === 'day') {
+      dx < 0 ? focusNextDay() : focusPrevDay();
+    } else {
+      dx < 0 ? nextMonth() : prevMonth();
+    }
   }
 
   function onTouchMove(e) {
@@ -3007,6 +3107,7 @@ function renderMiniCal() {
 
 // ── Render calendar (single month) ────────────────────────────────────────
 function renderCalendar() {
+  if (calendarViewMode === 'day') { renderDayCarousel(); return; }
   const container = document.getElementById('calendar-container');
   const today = new Date();
   if (currentViewYear === null) { currentViewYear = today.getFullYear(); currentViewMonth = today.getMonth(); }
@@ -6006,10 +6107,21 @@ function showToast(msg) {
 
 </div>
 
-<!-- ── Bottom navigation bar — FAB only ── -->
-<nav class="bottom-nav" id="bottom-nav" style="justify-content:center;">
-  <button class="bn-item bn-fab" onclick="openSmartCrafter()">
-    <div class="bn-fab-inner">＋</div>
+<!-- Toast notification -->
+<div class="app-toast" id="app-toast"></div>
+
+<!-- ── Bottom navigation bar ── -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bn-item active" id="bn-view-toggle" onclick="toggleCalendarView()">
+    <span class="bn-icon" id="bn-view-icon">📅</span>
+    <span class="bn-label" id="bn-view-label">Month</span>
+  </button>
+  <button class="bn-item bn-fab" id="bn-fab-btn" onclick="openSmartCrafter()">
+    <div class="bn-fab-inner">⚡</div>
+  </button>
+  <button class="bn-item" id="bn-pulse" onclick="showToast('My Pulse — coming soon')">
+    <span class="bn-icon" style="font-size:22px;line-height:1;">〰️</span>
+    <span class="bn-label">Pulse</span>
   </button>
 </nav>
 
@@ -6021,6 +6133,191 @@ function bnTab(tab) {
   if (tab === 'connections') document.getElementById('connections-btn')?.click();
   if (tab === 'profile')     document.getElementById('profile-btn')?.click();
   if (tab === 'home')        window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Calendar view toggle (Month / Day carousel) ────────────────────────────
+let calendarViewMode = 'month'; // 'month' | 'day'
+let focusDate = null;           // YYYY-MM-DD for day carousel focus
+
+function toggleCalendarView() {
+  if (calendarViewMode === 'month') {
+    calendarViewMode = 'day';
+    // Default focus to today
+    const today = new Date();
+    focusDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    document.getElementById('bn-view-icon').textContent = '📆';
+    document.getElementById('bn-view-label').textContent = 'Day';
+    document.getElementById('month-heading-row').style.display = 'none';
+  } else {
+    calendarViewMode = 'month';
+    // Sync month/year from focusDate
+    if (focusDate) {
+      const parts = focusDate.split('-');
+      currentViewYear = parseInt(parts[0]);
+      currentViewMonth = parseInt(parts[1]) - 1;
+    }
+    document.getElementById('bn-view-icon').textContent = '📅';
+    document.getElementById('bn-view-label').textContent = 'Month';
+    document.getElementById('month-heading-row').style.display = '';
+  }
+  renderCalendar();
+}
+
+function _dateAdd(dateStr, days) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderDayCarousel() {
+  const container = document.getElementById('calendar-container');
+  if (!focusDate) {
+    const today = new Date();
+    focusDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  }
+
+  // Update title strip to show month + year of focus date
+  const fd = new Date(focusDate + 'T12:00:00');
+  const monthName = fd.toLocaleDateString('en-US', { month: 'long' });
+  const y = fd.getFullYear();
+  const titleStrip = document.getElementById('app-title-strip');
+  if (titleStrip) titleStrip.innerHTML = '<div class="month-heading"><span class="month-name">' + monthName + '</span><span class="month-year">' + y + '</span></div>';
+
+  // Build cards: far-left, side-left, center, side-right, far-right
+  const positions = [
+    { offset: -2, cls: 'far' },
+    { offset: -1, cls: 'side' },
+    { offset:  0, cls: 'center' },
+    { offset:  1, cls: 'side' },
+    { offset:  2, cls: 'far' },
+  ];
+
+  let cardsHtml = '';
+  for (const p of positions) {
+    const dateStr = _dateAdd(focusDate, p.offset);
+    cardsHtml += buildDayCard(dateStr, p.cls, p.offset);
+  }
+
+  const html = `<div class="day-carousel">
+    <button class="day-carousel-arrow" onclick="focusPrevDay()">‹</button>
+    <div class="day-carousel-track">${cardsHtml}</div>
+    <button class="day-carousel-arrow" onclick="focusNextDay()">›</button>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function buildDayCard(dateStr, posClass, offset) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dayNames = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const dayLabel = `${dayNames[d.getDay()]} ${_ordinal(d.getDate())}`;
+  const isCenter = posClass === 'center';
+
+  const dayData = calendarDays[dateStr];
+  const pDay = partnerDays[dateStr];
+  const owner = dayData?.owner;
+  const withinWin = !partnerWindowUntil || dateStr <= partnerWindowUntil;
+  const isBothFree = owner === 'coparent' && withinWin && pDay && pDay.owner === 'coparent';
+
+  let colorClass = owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : '');
+  if (isBothFree) colorClass += ' bothfree';
+
+  // Event image
+  const outingsOnDay = outingsByDate[dateStr] || [];
+  const imgOuting = outingsOnDay.find(o => o.image_url && o.status !== 'cancelled');
+  const imgHtml = imgOuting ? `<div class="day-card-img" style="background-image:url('${imgOuting.image_url.replace(/'/g,"\\'")}')"></div>` : '';
+
+  // Lightning badge if has events
+  const hasEvents = outingsOnDay.some(o => o.status !== 'cancelled');
+  const badgeHtml = hasEvents ? `<div class="day-card-badge">⚡</div>` : '';
+
+  // Avatars
+  const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
+  let avatarHtml = '';
+  if (freeFriends.length && isCenter) {
+    avatarHtml = `<div class="cell-avatars" style="position:static;">
+      ${freeFriends.length > 1 ? `<span class="cell-avatar cell-avatar-more" style="position:static;">+${freeFriends.length}</span>` : ''}
+      ${freeFriends.slice(0, 2).map(sc => scAvatar(sc, 20, 'border:1.5px solid var(--cell-bg);')).join('')}
+    </div>`;
+  } else if (freeFriends.length) {
+    avatarHtml = `<div class="cell-avatars" style="position:static;">
+      ${freeFriends.length > 0 ? `<span class="cell-avatar cell-avatar-more" style="position:static;font-size:9px;">+${freeFriends.length}</span>` : ''}
+    </div>`;
+  }
+
+  // Plan bubbles
+  const dayOutings = outingsOnDay.filter(o => o.status !== 'cancelled');
+  let planHtml = '';
+  if (dayOutings.length && isCenter) {
+    planHtml = `<div class="cell-plans" style="position:static;margin-top:4px;">${
+      dayOutings.slice(0, 4).map(o => {
+        const isPending = myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending');
+        const cls = isPending ? 'status-pending' : o.status === 'accepted' ? 'status-accepted' : o.status === 'planning' ? 'status-planning' : 'status-my';
+        return `<div class="plan-bubble ${cls}"></div>`;
+      }).join('')
+    }</div>`;
+  }
+
+  // Plan dot
+  const planDot = planDates[dateStr] ? '<span class="plan-dot" style="position:static;display:block;margin-top:4px;"></span>' : '';
+
+  // Pending ring
+  const hasPendingInvite = outingsOnDay.some(o =>
+    myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending')
+  );
+  const pendingRing = hasPendingInvite && isCenter ? '<div class="cell-pending-ring"></div>' : '';
+
+  // Click handler
+  const clickAction = isCenter
+    ? `openDaySheet('${dateStr}')`
+    : `focusDate='${dateStr}';renderDayCarousel()`;
+
+  return `<div class="day-card ${posClass} ${colorClass}" onclick="${clickAction}">
+    ${imgHtml}
+    <div class="day-card-label">${dayLabel}</div>
+    ${badgeHtml}
+    <div class="day-card-bottom">
+      ${avatarHtml}
+      ${planHtml}
+      ${pendingRing}
+      ${planDot}
+    </div>
+    <div class="day-card-date-num">${d.getDate()}</div>
+  </div>`;
+}
+
+function _ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function focusNextDay() {
+  focusDate = _dateAdd(focusDate, 1);
+  // Update month/year tracking
+  const fd = new Date(focusDate + 'T12:00:00');
+  currentViewYear = fd.getFullYear();
+  currentViewMonth = fd.getMonth();
+  renderDayCarousel();
+}
+
+function focusPrevDay() {
+  focusDate = _dateAdd(focusDate, -1);
+  const fd = new Date(focusDate + 'T12:00:00');
+  currentViewYear = fd.getFullYear();
+  currentViewMonth = fd.getMonth();
+  renderDayCarousel();
+}
+
+// ── Toast notification ─────────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('app-toast');
+  if (!el) return;
+  clearTimeout(_toastTimer);
+  el.textContent = msg;
+  el.classList.add('show');
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 // ── FAB menu ────────────────────────────────────────────────────────────────
