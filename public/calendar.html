@@ -1282,7 +1282,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
                   border-color .45s ease,
                   box-shadow .45s ease,
                   transform .5s cubic-bezier(.32,.72,.18,1);
-      will-change: width, height, opacity, filter, transform, margin;
+      will-change: transform, opacity;
     }
 
     /* Center — big hero card that overlaps neighbours */
@@ -1316,7 +1316,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* Exiting — shrinks to nothing */
     .day-card.pos-exit {
-      width: 0; height: 0; opacity: 0; padding: 0; margin: 0 !important; border-width: 0;
+      width: 0; height: 0; opacity: 0; padding: 0; margin: 0; border-width: 0;
       filter: blur(6px); transform: scale(0.3); overflow: hidden;
       transition: all .45s cubic-bezier(.32,.72,.18,1);
     }
@@ -6280,11 +6280,17 @@ function renderDayCarousel() {
 }
 
 // ── Smooth navigation (mutate DOM, don't rebuild) ───────────────────────────
-function focusNextDay() {
+// Shared positions sequence for shift mapping
+const _POS_SEQ = ['pos-n2', 'pos-n1', 'pos-0', 'pos-1', 'pos-2'];
+
+function focusNextDay() { _focusDay(1); }
+function focusPrevDay() { _focusDay(-1); }
+
+function _focusDay(dir) {
   if (_carouselAnimating) return;
   _carouselAnimating = true;
 
-  focusDate = _dateAdd(focusDate, 1);
+  focusDate = _dateAdd(focusDate, dir);
   const fd = new Date(focusDate + 'T12:00:00');
   currentViewYear = fd.getFullYear();
   currentViewMonth = fd.getMonth();
@@ -6293,84 +6299,57 @@ function focusNextDay() {
   const track = document.getElementById('day-carousel-track');
   if (!track) { _carouselAnimating = false; renderDayCarousel(); return; }
 
-  const cards = Array.from(track.querySelectorAll('.day-card'));
+  const cards = Array.from(track.querySelectorAll('.day-card:not(.pos-exit)'));
 
-  // 1. The leftmost card (pos-n2) exits
-  if (cards[0]) {
-    cards[0].className = cards[0].className.replace(/pos-[^\s]+/g, '') + ' pos-exit';
-    setTimeout(() => cards[0]?.remove(), CAROUSEL_TRANSITION_MS);
+  // 1. Exit the edge card (first for next, last for prev)
+  const exitCard = dir > 0 ? cards[0] : cards[cards.length - 1];
+  if (exitCard) {
+    _stripPosClasses(exitCard);
+    exitCard.classList.add('pos-exit');
+    exitCard.addEventListener('transitionend', () => exitCard.remove(), { once: true });
+    setTimeout(() => exitCard.remove(), CAROUSEL_TRANSITION_MS + 100); // safety fallback
   }
 
-  // 2. Shift remaining cards one position left
-  _shiftCardPos(cards[1], 'pos-n1', 'pos-n2');
-  _shiftCardPos(cards[2], 'pos-0',  'pos-n1');
-  _shiftCardPos(cards[3], 'pos-1',  'pos-0');   // this becomes center
-  _shiftCardPos(cards[4], 'pos-2',  'pos-1');
+  // 2. Shift remaining cards one step in the navigation direction
+  if (dir > 0) {
+    for (let i = 1; i < cards.length; i++) {
+      _shiftCardPos(cards[i], _POS_SEQ[i], _POS_SEQ[i - 1]);
+    }
+  } else {
+    for (let i = cards.length - 2; i >= 0; i--) {
+      _shiftCardPos(cards[i], _POS_SEQ[i], _POS_SEQ[i + 1]);
+    }
+  }
 
-  // 3. Update click handlers for new center
-  _updateCardClicks(track);
-
-  // 4. Append new far-right card
-  const newDate = _dateAdd(focusDate, 2);
+  // 3. Create and insert new edge card
+  const newOffset = dir > 0 ? 2 : -2;
+  const newDate = _dateAdd(focusDate, newOffset);
   const tmp = document.createElement('div');
-  tmp.innerHTML = _buildCardHTML(newDate, 2);
+  tmp.innerHTML = _buildCardHTML(newDate, newOffset);
   const newCard = tmp.firstElementChild;
-  // Start invisible, then let transition kick in
+  // Start at zero size, double-rAF forces browser to commit initial style before transitioning
   newCard.style.width = '0'; newCard.style.opacity = '0';
-  track.appendChild(newCard);
+  if (dir > 0) track.appendChild(newCard); else track.prepend(newCard);
   requestAnimationFrame(() => {
     requestAnimationFrame(() => { newCard.style.width = ''; newCard.style.opacity = ''; });
   });
 
-  setTimeout(() => { _carouselAnimating = false; }, CAROUSEL_TRANSITION_MS);
-}
-
-function focusPrevDay() {
-  if (_carouselAnimating) return;
-  _carouselAnimating = true;
-
-  focusDate = _dateAdd(focusDate, -1);
-  const fd = new Date(focusDate + 'T12:00:00');
-  currentViewYear = fd.getFullYear();
-  currentViewMonth = fd.getMonth();
-  _updateCarouselTitle();
-
-  const track = document.getElementById('day-carousel-track');
-  if (!track) { _carouselAnimating = false; renderDayCarousel(); return; }
-
-  const cards = Array.from(track.querySelectorAll('.day-card'));
-
-  // 1. Rightmost card (pos-2) exits
-  const last = cards[cards.length - 1];
-  if (last) {
-    last.className = last.className.replace(/pos-[^\s]+/g, '') + ' pos-exit';
-    setTimeout(() => last?.remove(), CAROUSEL_TRANSITION_MS);
-  }
-
-  // 2. Shift remaining cards one position right
-  _shiftCardPos(cards[3], 'pos-1',  'pos-2');
-  _shiftCardPos(cards[2], 'pos-0',  'pos-1');
-  _shiftCardPos(cards[1], 'pos-n1', 'pos-0');   // this becomes center
-  _shiftCardPos(cards[0], 'pos-n2', 'pos-n1');
-
-  // 3. Update click handlers
+  // 4. Bind click handlers (after new card is in DOM)
   _updateCardClicks(track);
 
-  // 4. Prepend new far-left card
-  const newDate = _dateAdd(focusDate, -2);
-  const tmp = document.createElement('div');
-  tmp.innerHTML = _buildCardHTML(newDate, -2);
-  const newCard = tmp.firstElementChild;
-  newCard.style.width = '0'; newCard.style.opacity = '0';
-  track.prepend(newCard);
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => { newCard.style.width = ''; newCard.style.opacity = ''; });
-  });
-
-  setTimeout(() => { _carouselAnimating = false; }, CAROUSEL_TRANSITION_MS);
+  // 5. Unlock after transition completes
+  const newCenter = track.querySelector('.pos-0');
+  let unlocked = false;
+  const unlock = () => { if (!unlocked) { unlocked = true; _carouselAnimating = false; } };
+  if (newCenter) newCenter.addEventListener('transitionend', unlock, { once: true });
+  setTimeout(unlock, CAROUSEL_TRANSITION_MS + 100);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+function _stripPosClasses(el) {
+  Array.from(el.classList).forEach(c => { if (c.startsWith('pos-')) el.classList.remove(c); });
+}
+
 function _shiftCardPos(card, fromCls, toCls) {
   if (!card) return;
   card.classList.remove(fromCls);
@@ -6419,9 +6398,11 @@ function _buildCardHTML(dateStr, offset) {
   let colorClass = owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : '');
   if (isBothFree) colorClass += ' bothfree';
 
-  // Event image
+  // Event image (prefer saved outings first, matching monthly view)
   const outingsOnDay = outingsByDate[dateStr] || [];
-  const imgOuting = outingsOnDay.find(o => o.image_url && o.status !== 'cancelled');
+  const savedImg = outingsOnDay.find(o => o.status === 'saved' && o.image_url);
+  const otherImg = outingsOnDay.find(o => o.status !== 'saved' && o.image_url && o.status !== 'cancelled');
+  const imgOuting = savedImg || otherImg;
   const imgHtml = imgOuting ? `<div class="day-card-img" style="background-image:url('${imgOuting.image_url.replace(/'/g,"\\'")}')"></div>` : '';
 
   // Lightning badge
@@ -6439,9 +6420,9 @@ function _buildCardHTML(dateStr, offset) {
   const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
   let avatarHtml = '';
   if (freeFriends.length) {
-    avatarHtml = `<div class="cell-avatars" style="position:static;">
+    avatarHtml = `<div class="cell-avatars">
       ${freeFriends.slice(0, 3).map(sc => scAvatar(sc, 22, 'border:2px solid rgba(20,20,30,0.8);')).join('')}
-      ${freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more" style="position:static;">+${freeFriends.length - 3}</span>` : ''}
+      ${freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 3}</span>` : ''}
     </div>`;
   }
 
@@ -6449,7 +6430,7 @@ function _buildCardHTML(dateStr, offset) {
   const dayOutings = outingsOnDay.filter(o => o.status !== 'cancelled');
   let planHtml = '';
   if (dayOutings.length) {
-    planHtml = `<div class="cell-plans" style="position:static;margin-top:4px;">${
+    planHtml = `<div class="cell-plans">${
       dayOutings.slice(0, 4).map(o => {
         const isPending = myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending');
         const cls = isPending ? 'status-pending' : o.status === 'accepted' ? 'status-accepted' : o.status === 'planning' ? 'status-planning' : 'status-my';
@@ -6458,7 +6439,7 @@ function _buildCardHTML(dateStr, offset) {
     }</div>`;
   }
 
-  const planDot = planDates[dateStr] ? '<span class="plan-dot" style="position:static;display:block;margin-top:4px;"></span>' : '';
+  const planDot = planDates[dateStr] ? '<span class="plan-dot"></span>' : '';
   const hasPendingInvite = outingsOnDay.some(o => myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending'));
   const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
