@@ -1164,6 +1164,7 @@ function go(screen) {
 
   // First-party analytics — every screen transition
   if (typeof sa !== 'undefined') sa('match_' + screen.replace(/-/g, '_'));
+  if (typeof sa !== 'undefined') sa('screen_view', { screen: screen });
 
   // Init pickers on first visit
   if (screen === 'your-schedule')  initPicker('your');
@@ -2024,6 +2025,57 @@ document.addEventListener('DOMContentLoaded', () => {
       go('your-schedule');
     }
   }
+
+  // ── Behavior tracking ──────────────────────────────────────────────────
+
+  // 1. Scroll depth on splash screen (IntersectionObserver)
+  const scrollFired = new Set();
+  const scrollTargets = [
+    { selector: '#screen-splash .phone-mockup', event: 'splash_scroll_25' },
+    { selector: '#screen-splash .splash-benefits', event: 'splash_scroll_50' },
+    { selector: '#screen-splash .splash-testimonials', event: 'splash_scroll_75' },
+    { selector: '#screen-splash .splash-bottom-cta', event: 'splash_scroll_100' }
+  ];
+  const scrollObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const evt = entry.target.dataset.scrollEvent;
+        if (evt && !scrollFired.has(evt)) {
+          scrollFired.add(evt);
+          if (typeof sa !== 'undefined') sa(evt);
+        }
+        scrollObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  scrollTargets.forEach(t => {
+    const el = document.querySelector(t.selector);
+    if (el) { el.dataset.scrollEvent = t.event; scrollObserver.observe(el); }
+  });
+
+  // 2. Engagement timers (how long before bounce)
+  const engageTimers = [];
+  [5, 15, 30].forEach(seconds => {
+    engageTimers.push(setTimeout(() => {
+      if (document.getElementById('screen-splash')?.classList.contains('active')) {
+        if (typeof sa !== 'undefined') sa('splash_engaged_' + seconds + 's');
+      }
+    }, seconds * 1000));
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) engageTimers.forEach(clearTimeout);
+  });
+
+  // 3. Page exit intent
+  let hasTrackedExit = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !hasTrackedExit) {
+      hasTrackedExit = true;
+      const activeScreen = document.querySelector('.screen.active, .splash-screen.active');
+      const screenId = activeScreen?.id?.replace('screen-', '') || 'unknown';
+      if (typeof sa !== 'undefined') sa('page_exit', { last_screen: screenId });
+    }
+  });
 });
 
 async function initPersonB(token) {

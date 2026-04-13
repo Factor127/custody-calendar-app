@@ -115,7 +115,29 @@ router.get('/admin/analytics', (req, res) => {
     GROUP BY event
   `).all();
 
-  res.json({ funnel, totals, personB, devices, daily, sources, timing });
+  // 8. Screen-level funnel (from screen_view events)
+  const screenFunnel = db.prepare(`
+    SELECT
+      json_extract(props, '$.screen') as screen,
+      COUNT(DISTINCT session_id) as visitors
+    FROM analytics_events
+    WHERE event = 'screen_view'
+    GROUP BY json_extract(props, '$.screen')
+    ORDER BY visitors DESC
+  `).all();
+
+  // 9. Where users exit
+  const exitScreens = db.prepare(`
+    SELECT
+      json_extract(props, '$.last_screen') as screen,
+      COUNT(DISTINCT session_id) as visitors
+    FROM analytics_events
+    WHERE event = 'page_exit'
+    GROUP BY json_extract(props, '$.last_screen')
+    ORDER BY visitors DESC
+  `).all();
+
+  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens });
 });
 
 // DELETE /api/admin/analytics — archive then reset analytics data
