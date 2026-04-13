@@ -2010,6 +2010,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Person B - arrived via a direct match link
     initPersonB(matchToken);
   }
+
+  // Fire splash analytics (entry point for funnel dashboard)
+  if (typeof sa !== 'undefined') sa('match_splash');
 });
 
 async function initPersonB(token) {
