@@ -242,6 +242,9 @@
     </table>
   </div>
 
+  <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Splash Behavior</h3>
+  <div class="stats" id="splash-behavior-stats"></div>
+
   <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Person B Viral Loop</h3>
   <div class="stats" id="person-b-stats"></div>
 
@@ -718,6 +721,26 @@ async function loadAnalytics() {
           <td>${r.sent_invite}</td>
           <td><strong>${r.sessions ? Math.round(r.created_match/r.sessions*100) : 0}%</strong></td>
         </tr>`).join('');
+
+    // Splash behavior (from totals)
+    const splashEvents = [
+      { key: 'splash_engaged_5s', label: 'Engaged 5s' },
+      { key: 'splash_engaged_15s', label: 'Engaged 15s' },
+      { key: 'splash_engaged_30s', label: 'Engaged 30s' },
+      { key: 'splash_scroll_25', label: 'Scroll 25%' },
+      { key: 'splash_scroll_50', label: 'Scroll 50%' },
+      { key: 'splash_scroll_75', label: 'Scroll 75%' },
+      { key: 'splash_scroll_100', label: 'Scroll 100%' },
+      { key: 'splash_cta_click', label: 'CTA Clicked' },
+      { key: 'splash_skipped', label: 'Skipped (Meta)' },
+      { key: 'page_exit', label: 'Page Exit' }
+    ];
+    const totalsMap = {};
+    (d.totals || []).forEach(t => { totalsMap[t.event] = t; });
+    document.getElementById('splash-behavior-stats').innerHTML = splashEvents.map(e => {
+      const t = totalsMap[e.key];
+      return `<div class="stat-card"><div class="stat-num">${t ? t.sessions : 0}</div><div class="stat-label">${e.label}</div></div>`;
+    }).join('');
 
     // Person B stats
     const pb = d.personB || {};

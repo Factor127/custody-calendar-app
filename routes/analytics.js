@@ -55,11 +55,10 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY sessions DESC
   `).all();
 
-  // 2. Overall funnel totals
+  // 2. Overall funnel totals (all events, not just match_*)
   const totals = db.prepare(`
     SELECT event, COUNT(*) AS total, COUNT(DISTINCT session_id) AS sessions
     FROM analytics_events
-    WHERE event LIKE 'match_%'
     GROUP BY event
     ORDER BY total DESC
   `).all();
