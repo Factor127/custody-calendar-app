@@ -1247,76 +1247,83 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .fab-backdrop.open { opacity: 1; pointer-events: auto; }
 
-    /* ── Daily carousel view ─────────────────────────────────────────── */
+    /* ── Daily carousel view — absolute-positioned cards ────────────── */
     .day-carousel {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0; padding: 16px 0 8px; min-height: 480px; position: relative;
-      overflow: hidden;
+      position: relative; height: 500px; overflow: hidden;
+      padding: 0; margin: 0 auto;
+      /* Break out of parent max-width so cards can use full viewport */
+      width: 100vw; margin-left: calc(-50vw + 50%);
     }
     .day-carousel-arrow {
-      flex-shrink: 0; background: rgba(230,249,82,0.06); border: 1.5px solid rgba(230,249,82,0.25);
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(230,249,82,0.06); border: 1.5px solid rgba(230,249,82,0.25);
       border-radius: 50%; color: #e6f952; font-size: 24px; width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
       line-height: 1; padding: 0; transition: all .2s ease; z-index: 10;
       backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     }
-    .day-carousel-arrow:hover { background: rgba(230,249,82,0.18); border-color: var(--lime); transform: scale(1.08); }
-    .day-carousel-arrow:active { transform: scale(0.92); }
+    .day-carousel-arrow.arrow-left  { left: 4px; }
+    .day-carousel-arrow.arrow-right { right: 4px; }
+    .day-carousel-arrow:hover { background: rgba(230,249,82,0.18); border-color: var(--lime); }
+    .day-carousel-arrow:active { transform: translateY(-50%) scale(0.92); }
     .day-carousel-track {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0; flex: 1; overflow: visible; padding: 12px 0;
+      position: relative; width: 100%; height: 100%;
     }
 
-    /* ── Day cards — position-based layout with overlap ─────────────── */
+    /* ── Day cards — absolutely positioned from center ──────────────── */
     .day-card {
-      border-radius: 24px; position: relative; overflow: hidden;
-      cursor: pointer; flex-shrink: 0;
+      position: absolute; top: 50%; border-radius: 24px; overflow: hidden;
+      cursor: pointer;
       display: flex; flex-direction: column; justify-content: flex-end;
       padding: 0; background: var(--cell-bg); border: 2px solid transparent;
-      /* Smooth, satisfying transitions */
-      transition: width .55s cubic-bezier(.32,.72,.18,1),
-                  height .55s cubic-bezier(.32,.72,.18,1),
-                  margin .55s cubic-bezier(.32,.72,.18,1),
-                  opacity .5s cubic-bezier(.32,.72,.18,1),
-                  filter .5s cubic-bezier(.32,.72,.18,1),
-                  border-color .45s ease,
-                  box-shadow .45s ease,
-                  transform .5s cubic-bezier(.32,.72,.18,1);
+      transition: all .55s cubic-bezier(.32,.72,.18,1);
       will-change: transform, opacity;
     }
 
-    /* Center — big hero card that overlaps neighbours */
+    /* Center — hero card, nearly full viewport width */
     .day-card.pos-0 {
-      width: calc(100vw - 40px); max-width: 500px; height: 440px;
+      width: calc(100vw - 60px); max-width: 500px;
+      height: 420px;
+      left: 50%; transform: translate(-50%, -50%);
       border-color: rgba(230,249,82,0.55); opacity: 1; filter: none;
       box-shadow:
         0 0 60px rgba(230,249,82,0.10),
         0 16px 48px rgba(0,0,0,0.5),
         0 4px 16px rgba(0,0,0,0.3);
-      z-index: 6; transform: scale(1);
-      margin-left: -40px; margin-right: -40px;
+      z-index: 6;
     }
-    .day-card.pos-0:active { transform: scale(0.97); }
+    .day-card.pos-0:active { transform: translate(-50%, -50%) scale(0.97); }
 
-    /* Immediate neighbours — peek out behind center */
-    .day-card.pos-n1, .day-card.pos-1 {
-      width: 70px; height: 300px; opacity: 0.5;
-      filter: brightness(0.55) saturate(0.65);
-      z-index: 4; transform: scale(0.92);
+    /* Side neighbours — peek out from behind center */
+    .day-card.pos-n1 {
+      width: 80px; height: 320px;
+      left: 6px; transform: translateY(-50%);
+      opacity: 0.5; filter: brightness(0.55) saturate(0.65); z-index: 4;
     }
-    .day-card.pos-n1:hover, .day-card.pos-1:hover { opacity: 0.7; transform: scale(0.95); }
+    .day-card.pos-1 {
+      width: 80px; height: 320px;
+      right: 6px; left: auto; transform: translateY(-50%);
+      opacity: 0.5; filter: brightness(0.55) saturate(0.65); z-index: 4;
+    }
+    .day-card.pos-n1:hover, .day-card.pos-1:hover { opacity: 0.7; }
 
-    /* Far neighbours — barely visible edges */
-    .day-card.pos-n2, .day-card.pos-2 {
-      width: 40px; height: 220px; opacity: 0.18;
-      filter: brightness(0.3) saturate(0.4) blur(2px);
-      z-index: 2; transform: scale(0.85);
+    /* Far neighbours — barely visible on edges */
+    .day-card.pos-n2 {
+      width: 30px; height: 240px;
+      left: 0; transform: translateY(-50%);
+      opacity: 0.15; filter: brightness(0.3) saturate(0.4) blur(2px); z-index: 2;
+    }
+    .day-card.pos-2 {
+      width: 30px; height: 240px;
+      right: 0; left: auto; transform: translateY(-50%);
+      opacity: 0.15; filter: brightness(0.3) saturate(0.4) blur(2px); z-index: 2;
     }
 
-    /* Exiting — shrinks to nothing */
+    /* Exiting — collapses to nothing */
     .day-card.pos-exit {
-      width: 0; height: 0; opacity: 0; padding: 0; margin: 0; border-width: 0;
-      filter: blur(6px); transform: scale(0.3); overflow: hidden;
+      width: 0; height: 0; opacity: 0; padding: 0; border-width: 0;
+      left: 50%; transform: translate(-50%, -50%) scale(0.3);
+      filter: blur(6px); overflow: hidden; z-index: 1;
       transition: all .45s cubic-bezier(.32,.72,.18,1);
     }
 
@@ -6340,9 +6347,9 @@ function renderDayCarousel() {
   }
 
   container.innerHTML = `<div class="day-carousel">
-    <button class="day-carousel-arrow" onclick="focusPrevDay()" aria-label="Previous day">‹</button>
+    <button class="day-carousel-arrow arrow-left" onclick="focusPrevDay()" aria-label="Previous day">‹</button>
     <div class="day-carousel-track" id="day-carousel-track">${cardsHtml}</div>
-    <button class="day-carousel-arrow" onclick="focusNextDay()" aria-label="Next day">›</button>
+    <button class="day-carousel-arrow arrow-right" onclick="focusNextDay()" aria-label="Next day">›</button>
   </div>`;
 
   // Attach click handlers
