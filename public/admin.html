@@ -220,6 +220,9 @@
 <div class="panel" id="panel-analytics">
   <div class="stats" id="analytics-stats"></div>
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <button onclick="resetAnalytics()" style="padding:6px 14px;font-size:12px;font-weight:600;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">Reset Analytics</button>
+  </div>
   <h3 style="font-size:14px;font-weight:700;margin:20px 0 10px;color:#111827;">Match Funnel by Ad Hook</h3>
   <div class="tbl-wrap">
     <table>
@@ -229,8 +232,8 @@
           <th>Sessions</th>
           <th>Started</th>
           <th>Fork</th>
+          <th>Created</th>
           <th>Result</th>
-          <th>Signup</th>
           <th>Invite</th>
           <th>Conv %</th>
         </tr>
@@ -662,6 +665,17 @@ async function deleteUser(id, name) {
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────
+async function resetAnalytics() {
+  if (!confirm('Clear all analytics data? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`/api/admin/analytics?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+    if (res.ok) {
+      _analyticsLoaded = false;
+      loadAnalytics();
+    }
+  } catch(e) { alert('Reset failed'); }
+}
+
 async function loadAnalytics() {
   try {
     const res = await fetch(`/api/admin/analytics?token=${ADMIN_TOKEN}`);
@@ -671,13 +685,13 @@ async function loadAnalytics() {
 
     // Summary stats
     const totalSessions = d.funnel.reduce((s, r) => s + r.sessions, 0);
-    const totalSignups  = d.funnel.reduce((s, r) => s + r.signed_up, 0);
+    const totalCreated  = d.funnel.reduce((s, r) => s + r.created_match, 0);
     const totalInvites  = d.funnel.reduce((s, r) => s + r.sent_invite, 0);
     document.getElementById('analytics-stats').innerHTML = `
       <div class="stat-card"><div class="stat-num">${totalSessions}</div><div class="stat-label">Total Sessions</div></div>
-      <div class="stat-card"><div class="stat-num">${totalSignups}</div><div class="stat-label">Signups</div></div>
+      <div class="stat-card"><div class="stat-num">${totalCreated}</div><div class="stat-label">Matches Created</div></div>
       <div class="stat-card"><div class="stat-num">${totalInvites}</div><div class="stat-label">Invites Sent</div></div>
-      <div class="stat-card"><div class="stat-num">${totalSessions ? Math.round(totalSignups/totalSessions*100) : 0}%</div><div class="stat-label">Conv Rate</div></div>
+      <div class="stat-card"><div class="stat-num">${totalSessions ? Math.round(totalCreated/totalSessions*100) : 0}%</div><div class="stat-label">Conv Rate</div></div>
     `;
 
     // Funnel by hook
@@ -688,10 +702,10 @@ async function loadAnalytics() {
           <td>${r.sessions}</td>
           <td>${r.started_schedule}</td>
           <td>${r.reached_fork}</td>
+          <td>${r.created_match}</td>
           <td>${r.saw_result}</td>
-          <td>${r.signed_up}</td>
           <td>${r.sent_invite}</td>
-          <td><strong>${r.sessions ? Math.round(r.signed_up/r.sessions*100) : 0}%</strong></td>
+          <td><strong>${r.sessions ? Math.round(r.created_match/r.sessions*100) : 0}%</strong></td>
         </tr>`).join('');
 
     // Person B stats

@@ -1662,12 +1662,6 @@ async function saveCalendar() {
   btn.disabled = true;
   btn.textContent = 'Setting up...';
 
-  // Meta Pixel - track signup as Lead event
-  if (typeof fbq !== 'undefined') {
-    fbq('track', 'Lead', { content_name: 'match_signup', ...getUtmData() });
-  }
-  if (typeof sa !== 'undefined') sa('match_signup');
-
   try {
     const res = await fetch('/api/auth/request', {
       method: 'POST',
@@ -1677,6 +1671,9 @@ async function saveCalendar() {
 
     if (res.ok) {
       const data = await res.json();
+      // Only track signup after server confirms success
+      if (typeof fbq !== 'undefined') fbq('track', 'Lead', { content_name: 'match_signup', ...getUtmData() });
+      if (typeof sa !== 'undefined') sa('match_signup');
       if (data.magic) {
         window.location.href = `/setup?magic=${data.magic}&email=${encodeURIComponent(email)}`;
         return;

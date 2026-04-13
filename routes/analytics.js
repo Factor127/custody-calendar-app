@@ -38,8 +38,8 @@ router.get('/admin/analytics', (req, res) => {
       COUNT(DISTINCT e_start.session_id) AS sessions,
       COUNT(DISTINCT e_sched.session_id) AS started_schedule,
       COUNT(DISTINCT e_fork.session_id) AS reached_fork,
+      COUNT(DISTINCT e_created.session_id) AS created_match,
       COUNT(DISTINCT e_result.session_id) AS saw_result,
-      COUNT(DISTINCT e_signup.session_id) AS signed_up,
       COUNT(DISTINCT e_invite.session_id) AS sent_invite
     FROM (
       SELECT DISTINCT session_id,
@@ -48,8 +48,8 @@ router.get('/admin/analytics', (req, res) => {
     ) e_start
     LEFT JOIN (SELECT DISTINCT session_id FROM analytics_events WHERE event = 'match_your_schedule') e_sched ON e_sched.session_id = e_start.session_id
     LEFT JOIN (SELECT DISTINCT session_id FROM analytics_events WHERE event = 'match_fork') e_fork ON e_fork.session_id = e_start.session_id
+    LEFT JOIN (SELECT DISTINCT session_id FROM analytics_events WHERE event = 'match_created') e_created ON e_created.session_id = e_start.session_id
     LEFT JOIN (SELECT DISTINCT session_id FROM analytics_events WHERE event = 'match_result') e_result ON e_result.session_id = e_start.session_id
-    LEFT JOIN (SELECT DISTINCT session_id FROM analytics_events WHERE event = 'match_signup') e_signup ON e_signup.session_id = e_start.session_id
     LEFT JOIN (SELECT DISTINCT session_id FROM analytics_events WHERE event = 'match_invite_sent') e_invite ON e_invite.session_id = e_start.session_id
     GROUP BY hook
     ORDER BY sessions DESC
@@ -116,6 +116,15 @@ router.get('/admin/analytics', (req, res) => {
   `).all();
 
   res.json({ funnel, totals, personB, devices, daily, sources, timing });
+});
+
+// DELETE /api/admin/analytics — reset all analytics data
+router.delete('/admin/analytics', (req, res) => {
+  const adminToken = process.env.ADMIN_TOKEN;
+  if (!adminToken || req.query.token !== adminToken) return res.status(403).end();
+
+  db.prepare('DELETE FROM analytics_events').run();
+  res.json({ cleared: true });
 });
 
 module.exports = router;
