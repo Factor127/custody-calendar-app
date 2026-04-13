@@ -104,15 +104,15 @@
 <div id="error"></div>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('opportunities')">Opportunities</button>
+  <button class="tab" onclick="switchTab('opportunities')">Opportunities</button>
   <button class="tab" onclick="switchTab('submissions')">Submissions</button>
   <button class="tab" onclick="switchTab('users')">Users</button>
-  <button class="tab" onclick="switchTab('analytics')">Analytics</button>
+  <button class="tab active" onclick="switchTab('analytics')">Analytics</button>
   <button class="tab" onclick="switchTab('waitlist')">Waitlist</button>
 </div>
 
 <!-- ── Opportunities panel ── -->
-<div class="panel active" id="panel-opportunities">
+<div class="panel" id="panel-opportunities">
   <div class="stats" id="opp-stats"></div>
 
   <div class="toolbar">
@@ -217,7 +217,7 @@
 </div>
 
 <!-- ── Analytics panel ── -->
-<div class="panel" id="panel-analytics">
+<div class="panel active" id="panel-analytics">
   <div class="stats" id="analytics-stats"></div>
 
   <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
@@ -796,7 +796,7 @@ async function approveWaitlist(id, email) {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
-loadOpps();
+loadAnalytics();
 </script>
 </body>
 </html>

@@ -325,6 +325,18 @@ try { db.exec('CREATE INDEX idx_ae_event ON analytics_events(event)'); } catch(e
 try { db.exec('CREATE INDEX idx_ae_time  ON analytics_events(created_at)'); } catch(e) {}
 try { db.exec('CREATE INDEX idx_ae_sid   ON analytics_events(session_id)'); } catch(e) {}
 
+// Analytics archive — permanent history that survives dashboard resets
+db.exec(`CREATE TABLE IF NOT EXISTS analytics_archive (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    TEXT,
+  session_id TEXT,
+  event      TEXT NOT NULL,
+  props      TEXT DEFAULT '{}',
+  page       TEXT,
+  created_at TEXT,
+  archived_at TEXT DEFAULT (datetime('now'))
+)`);
+
 // UTM attribution on match requests
 try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_source TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_medium TEXT'); } catch(e) {}

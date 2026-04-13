@@ -118,13 +118,19 @@ router.get('/admin/analytics', (req, res) => {
   res.json({ funnel, totals, personB, devices, daily, sources, timing });
 });
 
-// DELETE /api/admin/analytics — reset all analytics data
+// DELETE /api/admin/analytics — archive then reset analytics data
 router.delete('/admin/analytics', (req, res) => {
   const adminToken = process.env.ADMIN_TOKEN;
   if (!adminToken || req.query.token !== adminToken) return res.status(403).end();
 
-  db.prepare('DELETE FROM analytics_events').run();
-  res.json({ cleared: true });
+  // Copy everything to permanent archive before clearing
+  db.prepare(`
+    INSERT INTO analytics_archive (user_id, session_id, event, props, page, created_at)
+    SELECT user_id, session_id, event, props, page, created_at FROM analytics_events
+  `).run();
+
+  const { changes } = db.prepare('DELETE FROM analytics_events').run();
+  res.json({ cleared: true, archived: changes });
 });
 
 module.exports = router;
