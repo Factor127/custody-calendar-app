@@ -769,6 +769,9 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div class="screen" id="screen-your-schedule">
     <div class="screen-header">
+      <p class="screen-context" id="scheduleContext" style="display:none;font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;">
+        Check if your custody schedules match — takes 30 seconds
+      </p>
       <div class="screen-title">Your custody days</div>
       <div class="screen-sub">Tap the days your kids are with you across both weeks.</div>
     </div>
@@ -2010,6 +2013,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fire splash analytics (entry point for funnel dashboard)
   if (typeof sa !== 'undefined') sa('match_splash');
+
+  // Skip splash for Meta ad traffic — they already saw the pitch in the ad
+  if (!isPersonB) {
+    const utmSource = sessionStorage.getItem('utm_source');
+    if (utmSource === 'meta') {
+      if (typeof sa !== 'undefined') sa('splash_skipped', { utm_source: 'meta' });
+      const ctx = document.getElementById('scheduleContext');
+      if (ctx) ctx.style.display = 'block';
+      go('your-schedule');
+    }
+  }
 });
 
 async function initPersonB(token) {
