@@ -37,6 +37,7 @@ try { db.exec('ALTER TABLE users ADD COLUMN email_seq_last_sent TEXT'); } catch(
 try { db.exec('ALTER TABLE users ADD COLUMN email_seq_opened TEXT DEFAULT \'[]\''); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN email_seq_2b_sent INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN unsubscribed INTEGER DEFAULT 0'); } catch(e) {}
+try { db.exec('ALTER TABLE users ADD COLUMN sms_opt_in INTEGER DEFAULT 1'); } catch(e) {}
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }

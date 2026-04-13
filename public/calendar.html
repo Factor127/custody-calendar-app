@@ -1250,93 +1250,163 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     /* ── Daily carousel view ─────────────────────────────────────────── */
     .day-carousel {
       display: flex; align-items: center; justify-content: center;
-      gap: 0; padding: 24px 0 12px; min-height: 380px; position: relative;
-      overflow: hidden;
+      gap: 0; padding: 30px 0 16px; min-height: 420px; position: relative;
+      overflow: hidden; perspective: 800px;
     }
     .day-carousel-arrow {
-      flex-shrink: 0; background: rgba(230,249,82,0.10); border: 1.5px solid rgba(230,249,82,0.35);
-      border-radius: 10px; color: #e6f952; font-size: 28px; width: 38px; height: 38px;
+      flex-shrink: 0; background: rgba(230,249,82,0.08); border: 1.5px solid rgba(230,249,82,0.30);
+      border-radius: 50%; color: #e6f952; font-size: 26px; width: 42px; height: 42px;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
-      line-height: 1; padding: 0; transition: background .15s, border-color .15s; z-index: 3;
+      line-height: 1; padding: 0; transition: all .2s ease; z-index: 5;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     }
-    .day-carousel-arrow:hover { background: rgba(230,249,82,0.20); border-color: rgba(230,249,82,0.65); }
+    .day-carousel-arrow:hover { background: rgba(230,249,82,0.18); border-color: var(--lime); transform: scale(1.08); }
+    .day-carousel-arrow:active { transform: scale(0.95); }
     .day-carousel-track {
       display: flex; align-items: center; justify-content: center;
-      gap: 8px; flex: 1; overflow: hidden; padding: 10px 4px;
+      gap: 10px; flex: 1; overflow: visible; padding: 16px 4px;
+      transition: none;
     }
+    /* Slide animations */
+    .day-carousel-track.slide-left  { animation: carouselSlideLeft  .35s cubic-bezier(.4,0,.2,1); }
+    .day-carousel-track.slide-right { animation: carouselSlideRight .35s cubic-bezier(.4,0,.2,1); }
+    @keyframes carouselSlideLeft {
+      0%   { transform: translateX(30%); opacity: 0.4; }
+      100% { transform: translateX(0);   opacity: 1; }
+    }
+    @keyframes carouselSlideRight {
+      0%   { transform: translateX(-30%); opacity: 0.4; }
+      100% { transform: translateX(0);    opacity: 1; }
+    }
+
     .day-card {
-      border-radius: 18px; position: relative; overflow: hidden;
-      transition: all .3s cubic-bezier(.4,0,.2,1); cursor: pointer; flex-shrink: 0;
+      border-radius: 20px; position: relative; overflow: hidden;
+      cursor: pointer; flex-shrink: 0;
       display: flex; flex-direction: column; justify-content: flex-end;
       padding: 0; background: var(--cell-bg);
+      transition: all .4s cubic-bezier(.25,.8,.25,1);
+      will-change: transform, opacity, width, height;
     }
     .day-card.center {
-      width: 190px; height: 290px; border: 2.5px solid var(--lime);
-      box-shadow: 0 8px 32px rgba(230,249,82,0.15), 0 2px 12px rgba(0,0,0,0.4);
-      z-index: 2;
+      width: 210px; height: 320px;
+      border: 2px solid rgba(230,249,82,0.6);
+      box-shadow:
+        0 0 40px rgba(230,249,82,0.12),
+        0 12px 40px rgba(0,0,0,0.5),
+        0 4px 16px rgba(0,0,0,0.3);
+      z-index: 3; transform: scale(1);
     }
+    .day-card.center:active { transform: scale(0.97); }
     .day-card.side {
-      width: 90px; height: 210px; opacity: 0.55; filter: brightness(0.75); z-index: 1;
+      width: 100px; height: 230px; opacity: 0.6;
+      z-index: 2; transform: scale(0.92) rotateY(0deg);
+      filter: brightness(0.7) saturate(0.8);
     }
+    .day-card.side:hover { opacity: 0.8; transform: scale(0.95); filter: brightness(0.8) saturate(0.9); }
     .day-card.far {
-      width: 60px; height: 160px; opacity: 0.3; filter: brightness(0.55); z-index: 0;
+      width: 65px; height: 175px; opacity: 0.25;
+      z-index: 1; transform: scale(0.85);
+      filter: brightness(0.5) saturate(0.6) blur(1px);
     }
-    .day-card.r { background: rgba(124,92,191,0.22); }
-    .day-card.z { background: rgba(230,249,82,0.12); }
-    .day-card.bothfree { box-shadow: inset 0 0 0 1.5px var(--lime); }
-    .day-card.center.bothfree { box-shadow: 0 8px 32px rgba(230,249,82,0.15), 0 2px 12px rgba(0,0,0,0.4), inset 0 0 0 1.5px var(--lime); }
+    .day-card.far:hover { opacity: 0.4; filter: brightness(0.6) saturate(0.7) blur(0.5px); }
+    .day-card.r {
+      background: linear-gradient(160deg, rgba(124,92,191,0.35) 0%, rgba(90,60,160,0.18) 100%);
+    }
+    .day-card.z {
+      background: linear-gradient(160deg, rgba(230,249,82,0.15) 0%, rgba(180,200,60,0.08) 100%);
+    }
+    .day-card.bothfree {
+      box-shadow: inset 0 0 0 1.5px rgba(230,249,82,0.5);
+    }
+    .day-card.center.bothfree {
+      border-color: var(--lime);
+      box-shadow:
+        0 0 50px rgba(230,249,82,0.18),
+        0 12px 40px rgba(0,0,0,0.5),
+        inset 0 0 0 1px rgba(230,249,82,0.3);
+    }
 
     .day-card-label {
-      position: absolute; top: 12px; left: 0; right: 0; text-align: center;
-      font-size: 15px; font-weight: 800; color: var(--text); text-transform: uppercase;
-      letter-spacing: 0.03em; z-index: 4; text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      position: absolute; top: 14px; left: 0; right: 0; text-align: center;
+      font-size: 14px; font-weight: 800; color: white; text-transform: uppercase;
+      letter-spacing: 0.06em; z-index: 4;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.4);
     }
-    .day-card.side .day-card-label, .day-card.far .day-card-label { font-size: 11px; top: 8px; }
+    .day-card.center .day-card-label { font-size: 16px; top: 16px; }
+    .day-card.side .day-card-label { font-size: 10px; top: 10px; letter-spacing: 0.04em; }
+    .day-card.far .day-card-label { font-size: 9px; top: 8px; opacity: 0.7; }
 
     .day-card-img {
       position: absolute; inset: 0; background-size: cover; background-position: center;
-      border-radius: 18px; z-index: 1;
+      border-radius: 20px; z-index: 1; transition: transform .5s ease;
     }
+    .day-card.center:hover .day-card-img { transform: scale(1.03); }
     .day-card-img::after {
-      content: ''; position: absolute; inset: 0; border-radius: 18px;
-      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+      content: ''; position: absolute; inset: 0; border-radius: 20px;
+      background: linear-gradient(to top,
+        rgba(0,0,0,0.8) 0%,
+        rgba(0,0,0,0.3) 35%,
+        transparent 60%);
     }
 
     .day-card-badge {
-      position: absolute; top: 10px; right: 10px; z-index: 5;
-      width: 28px; height: 28px; border-radius: 50%;
+      position: absolute; top: 12px; right: 12px; z-index: 5;
+      width: 30px; height: 30px; border-radius: 50%;
       background: var(--lime); display: flex; align-items: center; justify-content: center;
-      font-size: 14px; color: #0a0a0a; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      font-size: 14px; color: #0a0a0a;
+      box-shadow: 0 2px 10px rgba(230,249,82,0.4), 0 1px 4px rgba(0,0,0,0.3);
+      animation: badgePulse 2s ease-in-out infinite;
     }
-    .day-card.side .day-card-badge, .day-card.far .day-card-badge { width: 20px; height: 20px; font-size: 10px; top: 6px; right: 6px; }
+    @keyframes badgePulse {
+      0%, 100% { box-shadow: 0 2px 10px rgba(230,249,82,0.4); }
+      50% { box-shadow: 0 2px 20px rgba(230,249,82,0.7), 0 0 8px rgba(230,249,82,0.3); }
+    }
+    .day-card.side .day-card-badge { width: 22px; height: 22px; font-size: 10px; top: 8px; right: 8px; animation: none; }
+    .day-card.far .day-card-badge { display: none; }
 
     .day-card-bottom {
-      position: relative; z-index: 3; padding: 10px 12px;
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      position: relative; z-index: 3; padding: 12px 14px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
-    .day-card.side .day-card-bottom, .day-card.far .day-card-bottom { padding: 6px 8px; }
-    .day-card-bottom .cell-avatars { position: static; display: flex; align-items: center; gap: 2px; }
+    .day-card.side .day-card-bottom { padding: 8px 8px; }
+    .day-card.far .day-card-bottom { padding: 4px 6px; }
+    .day-card-bottom .cell-avatars { position: static; display: flex; align-items: center; gap: 3px; }
     .day-card-bottom .cell-avatar-more { font-size: 10px; }
 
     .day-card-date-num {
-      position: absolute; bottom: 8px; right: 10px; z-index: 4;
-      font-size: 32px; font-weight: 900; color: rgba(238,238,248,0.12);
-      line-height: 1;
+      position: absolute; bottom: 10px; right: 12px; z-index: 2;
+      font-size: 48px; font-weight: 900; color: rgba(238,238,248,0.06);
+      line-height: 1; pointer-events: none;
     }
-    .day-card.side .day-card-date-num { font-size: 20px; bottom: 6px; right: 6px; }
-    .day-card.far .day-card-date-num { font-size: 16px; bottom: 4px; right: 4px; }
+    .day-card.center .day-card-date-num { font-size: 56px; color: rgba(238,238,248,0.08); }
+    .day-card.side .day-card-date-num { font-size: 24px; bottom: 6px; right: 6px; }
+    .day-card.far .day-card-date-num { font-size: 18px; bottom: 4px; right: 4px; }
 
     .day-card .cell-plans { position: relative; z-index: 3; }
     .day-card .plan-dot { position: relative; z-index: 3; }
     .day-card .cell-pending-ring { z-index: 3; }
 
+    /* Custody status pill on center card */
+    .day-card-custody {
+      position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; z-index: 4;
+      pointer-events: none;
+    }
+    .day-card-custody-pill {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .day-card-custody-pill.custody { background: rgba(124,92,191,0.5); color: #d4bfff; }
+    .day-card-custody-pill.free { background: rgba(230,249,82,0.2); color: var(--lime); }
+
     /* Toast notification */
     .app-toast {
       position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--text);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 2000;
-      opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+      background: rgba(20,20,30,0.9); border: 1px solid rgba(230,249,82,0.25); border-radius: 14px;
+      padding: 12px 24px; font-size: 13px; font-weight: 600; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 2000;
+      opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(.25,.8,.25,1);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     .app-toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
 
@@ -6169,21 +6239,22 @@ function _dateAdd(dateStr, days) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function renderDayCarousel() {
+let _carouselAnimating = false;
+
+function renderDayCarousel(slideDir) {
   const container = document.getElementById('calendar-container');
   if (!focusDate) {
     const today = new Date();
     focusDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   }
 
-  // Update title strip to show month + year of focus date
+  // Update title strip
   const fd = new Date(focusDate + 'T12:00:00');
   const monthName = fd.toLocaleDateString('en-US', { month: 'long' });
   const y = fd.getFullYear();
   const titleStrip = document.getElementById('app-title-strip');
   if (titleStrip) titleStrip.innerHTML = '<div class="month-heading"><span class="month-name">' + monthName + '</span><span class="month-year">' + y + '</span></div>';
 
-  // Build cards: far-left, side-left, center, side-right, far-right
   const positions = [
     { offset: -2, cls: 'far' },
     { offset: -1, cls: 'side' },
@@ -6198,13 +6269,26 @@ function renderDayCarousel() {
     cardsHtml += buildDayCard(dateStr, p.cls, p.offset);
   }
 
+  const slideClass = slideDir === 'next' ? ' slide-left' : (slideDir === 'prev' ? ' slide-right' : '');
+
   const html = `<div class="day-carousel">
-    <button class="day-carousel-arrow" onclick="focusPrevDay()">‹</button>
-    <div class="day-carousel-track">${cardsHtml}</div>
-    <button class="day-carousel-arrow" onclick="focusNextDay()">›</button>
+    <button class="day-carousel-arrow" onclick="focusPrevDay()" aria-label="Previous day">‹</button>
+    <div class="day-carousel-track${slideClass}" id="day-carousel-track">${cardsHtml}</div>
+    <button class="day-carousel-arrow" onclick="focusNextDay()" aria-label="Next day">›</button>
   </div>`;
 
   container.innerHTML = html;
+
+  // Remove animation class after it completes
+  if (slideDir) {
+    const track = document.getElementById('day-carousel-track');
+    if (track) {
+      track.addEventListener('animationend', () => {
+        track.classList.remove('slide-left', 'slide-right');
+        _carouselAnimating = false;
+      }, { once: true });
+    }
+  }
 }
 
 function buildDayCard(dateStr, posClass, offset) {
@@ -6227,25 +6311,35 @@ function buildDayCard(dateStr, posClass, offset) {
   const imgOuting = outingsOnDay.find(o => o.image_url && o.status !== 'cancelled');
   const imgHtml = imgOuting ? `<div class="day-card-img" style="background-image:url('${imgOuting.image_url.replace(/'/g,"\\'")}')"></div>` : '';
 
-  // Lightning badge if has events
+  // Lightning badge
   const hasEvents = outingsOnDay.some(o => o.status !== 'cancelled');
   const badgeHtml = hasEvents ? `<div class="day-card-badge">⚡</div>` : '';
+
+  // Custody status pill (center card only)
+  let custodyHtml = '';
+  if (isCenter && owner) {
+    const isMine = owner === 'self';
+    const pillClass = isMine ? 'custody' : 'free';
+    const pillText = isMine ? 'My custody' : 'Kid-free';
+    custodyHtml = `<div class="day-card-custody"><span class="day-card-custody-pill ${pillClass}">${pillText}</span></div>`;
+  }
 
   // Avatars
   const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
   let avatarHtml = '';
   if (freeFriends.length && isCenter) {
     avatarHtml = `<div class="cell-avatars" style="position:static;">
-      ${freeFriends.length > 1 ? `<span class="cell-avatar cell-avatar-more" style="position:static;">+${freeFriends.length}</span>` : ''}
-      ${freeFriends.slice(0, 2).map(sc => scAvatar(sc, 20, 'border:1.5px solid var(--cell-bg);')).join('')}
+      ${freeFriends.slice(0, 3).map(sc => scAvatar(sc, 22, 'border:2px solid rgba(20,20,30,0.8);')).join('')}
+      ${freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more" style="position:static;">+${freeFriends.length - 3}</span>` : ''}
     </div>`;
   } else if (freeFriends.length) {
     avatarHtml = `<div class="cell-avatars" style="position:static;">
-      ${freeFriends.length > 0 ? `<span class="cell-avatar cell-avatar-more" style="position:static;font-size:9px;">+${freeFriends.length}</span>` : ''}
+      ${scAvatar(freeFriends[0], 16, 'border:1.5px solid var(--cell-bg);')}
+      ${freeFriends.length > 1 ? `<span class="cell-avatar cell-avatar-more" style="position:static;font-size:9px;">+${freeFriends.length - 1}</span>` : ''}
     </div>`;
   }
 
-  // Plan bubbles
+  // Plan bubbles (center only)
   const dayOutings = outingsOnDay.filter(o => o.status !== 'cancelled');
   let planHtml = '';
   if (dayOutings.length && isCenter) {
@@ -6258,24 +6352,25 @@ function buildDayCard(dateStr, posClass, offset) {
     }</div>`;
   }
 
-  // Plan dot
   const planDot = planDates[dateStr] ? '<span class="plan-dot" style="position:static;display:block;margin-top:4px;"></span>' : '';
 
-  // Pending ring
   const hasPendingInvite = outingsOnDay.some(o =>
     myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending')
   );
   const pendingRing = hasPendingInvite && isCenter ? '<div class="cell-pending-ring"></div>' : '';
 
-  // Click handler
+  // Click: center opens day sheet, side/far refocuses with animation
   const clickAction = isCenter
     ? `openDaySheet('${dateStr}')`
-    : `focusDate='${dateStr}';renderDayCarousel()`;
+    : (offset < 0
+      ? `focusDate='${dateStr}';renderDayCarousel('prev')`
+      : `focusDate='${dateStr}';renderDayCarousel('next')`);
 
-  return `<div class="day-card ${posClass} ${colorClass}" onclick="${clickAction}">
+  return `<div class="day-card ${posClass} ${colorClass}" data-date="${dateStr}" onclick="${clickAction}">
     ${imgHtml}
     <div class="day-card-label">${dayLabel}</div>
     ${badgeHtml}
+    ${custodyHtml}
     <div class="day-card-bottom">
       ${avatarHtml}
       ${planHtml}
@@ -6293,20 +6388,23 @@ function _ordinal(n) {
 }
 
 function focusNextDay() {
+  if (_carouselAnimating) return;
+  _carouselAnimating = true;
   focusDate = _dateAdd(focusDate, 1);
-  // Update month/year tracking
   const fd = new Date(focusDate + 'T12:00:00');
   currentViewYear = fd.getFullYear();
   currentViewMonth = fd.getMonth();
-  renderDayCarousel();
+  renderDayCarousel('next');
 }
 
 function focusPrevDay() {
+  if (_carouselAnimating) return;
+  _carouselAnimating = true;
   focusDate = _dateAdd(focusDate, -1);
   const fd = new Date(focusDate + 'T12:00:00');
   currentViewYear = fd.getFullYear();
   currentViewMonth = fd.getMonth();
-  renderDayCarousel();
+  renderDayCarousel('prev');
 }
 
 // ── Toast notification ─────────────────────────────────────────────────────

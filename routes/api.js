@@ -9,6 +9,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
 const { sendCalendarInvite, sendEmail } = require('../utils/email');
 const { sendPush } = require('../utils/push');
+const { sendSMSToUser, sendSMS } = require('../utils/sms');
 const { startSequence } = require('../utils/emailSequence');
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
@@ -364,6 +365,7 @@ router.post('/connections/request', (req, res) => {
     tag:   'connection-request',
     url:   '/calendar.html',
   });
+  sendSMSToUser(owner.id, `${partner.name} wants to connect with you on Spontany. Open the app to respond.`, { event: 'connection-request' });
 });
 
 // GET /api/connections/status?token= — partner polls their connection status
@@ -447,6 +449,7 @@ router.post('/connections/approve', (req, res) => {
     tag:   'connection-approved',
     url:   '/calendar.html',
   });
+  sendSMSToUser(conn.requester_id, `${user.name} approved your connection on Spontany! You can now see each other's availability.`, { event: 'connection-approved' });
 });
 
 // POST /api/connections/reject — either party can disconnect
@@ -1191,6 +1194,9 @@ router.post('/calendar/notify-change', async (req, res) => {
     });
   }
 
+  // SMS notification for schedule change
+  sendSMSToUser(otherId, `${me.name} updated the custody schedule (${changes.length} day${changes.length > 1 ? 's' : ''} changed). Open Spontany to review.`, { event: 'schedule-change' });
+
   res.json({ ok: true, notified: !!other?.email });
 });
 
@@ -1316,6 +1322,7 @@ router.post('/outings', (req, res) => {
           tag:   `outing-invite-${outingId}`,
           url:   `/calendar.html?openEvent=${outingId}`,
         });
+        sendSMSToUser(inv.userId, `${me.name} invited you out on ${dateLabel}: ${message || 'An outing'}. Open Spontany to respond.`, { event: 'outing-invite' });
       }
     }
   }
@@ -1380,6 +1387,8 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
       tag:   `outing-rsvp-${outing.id}`,
       url:   `/calendar.html?openEvent=${outing.id}`,
     });
+    const rsvpVerb = status === 'accepted' ? 'accepted' : 'declined';
+    sendSMSToUser(outing.created_by, `${me.name} ${rsvpVerb} your outing invite${outing.message ? ': ' + outing.message : ''}.`, { event: 'outing-rsvp' });
   }
 });
 
@@ -1891,6 +1900,7 @@ router.put('/outings/:id', (req, res) => {
           tag:   `outing-updated-${outing.id}`,
           url:   `/calendar.html?openEvent=${outing.id}`,
         });
+        sendSMSToUser(inv.user_id, `${me.name} updated your plan: ${venue || outing.venue || outing.message || 'your outing'}`, { event: 'outing-updated' });
       }
     }
   }
@@ -2121,6 +2131,7 @@ router.delete('/outings/:id', (req, res) => {
         tag:   `outing-cancelled-${outing.id}`,
         url:   '/calendar.html',
       });
+      sendSMSToUser(inv.user_id, `${me.name} cancelled "${eventName}".`, { event: 'outing-cancelled' });
     }
   }
 
@@ -2364,6 +2375,7 @@ router.post('/connections/request-friend', (req, res) => {
     tag:   `friend-request-${connId}`,
     url:   '/connections',
   });
+  sendSMSToUser(target.id, `${me.name} wants to connect with you on Spontany. Open the app to respond.`, { event: 'friend-request' });
 });
 
 // ── POST /api/users/rotate-token — generate a new access token for the caller ──
