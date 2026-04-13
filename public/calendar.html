@@ -2719,40 +2719,112 @@ function nextMonth() {
 // ── Swipe navigation ─────────────────────────────────────────────────────────
 (function initCalendarSwipe() {
   let _tx = 0, _ty = 0, _swiping = false;
-  const THRESHOLD = 48; // px minimum swipe distance
-  const MAX_VERT  = 80; // px maximum vertical drift before cancelling
+  let _dragging = false;   // true once we've committed to a horizontal drag (day mode)
+  let _cancelled = false;  // true if vertical drift killed this gesture
+  const THRESHOLD = 48;    // px minimum swipe to commit navigation
+  const MAX_VERT  = 80;    // px vertical drift before cancelling
+  const DRAG_LOCK = 12;    // px horizontal movement before we lock to drag
+  const DAMPING   = 0.55;  // resistance factor — drag feels heavier past threshold
+
+  function _isOverlayOpen() {
+    const sheet = document.getElementById('day-sheet');
+    if (sheet && sheet.classList.contains('open')) return true;
+    if (document.getElementById('sc-overlay')?.classList.contains('open')) return true;
+    return false;
+  }
 
   function onTouchStart(e) {
     if (e.touches.length !== 1) return;
     _tx = e.touches[0].clientX;
     _ty = e.touches[0].clientY;
     _swiping = true;
+    _dragging = false;
+    _cancelled = false;
+
+    // In day carousel mode, disable card CSS transitions during drag for instant response
+    if (calendarViewMode === 'day') {
+      const track = document.getElementById('day-carousel-track');
+      if (track) track.style.transition = 'none';
+    }
+  }
+
+  function onTouchMove(e) {
+    if (!_swiping || _cancelled || e.touches.length !== 1) return;
+    const cx = e.touches[0].clientX;
+    const cy = e.touches[0].clientY;
+    const dx = cx - _tx;
+    const dy = cy - _ty;
+
+    // If vertical drift is too big, cancel this gesture
+    if (Math.abs(dy) > MAX_VERT && !_dragging) { _cancelled = true; _resetTrackPos(); return; }
+
+    // Lock to horizontal once past threshold
+    if (!_dragging && Math.abs(dx) > DRAG_LOCK && Math.abs(dx) > Math.abs(dy)) {
+      _dragging = true;
+    }
+
+    if (_dragging) {
+      e.preventDefault();
+
+      // In day carousel mode: move the track to follow the finger
+      if (calendarViewMode === 'day' && !_carouselAnimating) {
+        const track = document.getElementById('day-carousel-track');
+        if (track) {
+          // Apply damping for a rubber-band feel
+          const dampedDx = Math.sign(dx) * Math.pow(Math.abs(dx), DAMPING) * 2.5;
+          track.style.transform = `translateX(${dampedDx}px)`;
+          // Slightly fade/scale cards based on drag distance for visual feedback
+          const progress = Math.min(Math.abs(dx) / 150, 1);
+          const cards = track.querySelectorAll('.day-card');
+          cards.forEach(card => {
+            if (card.classList.contains('pos-0')) {
+              card.style.opacity = 1 - progress * 0.15;
+            }
+          });
+        }
+      }
+    }
   }
 
   function onTouchEnd(e) {
     if (!_swiping) return;
     _swiping = false;
+
+    if (_isOverlayOpen()) { _resetTrackPos(); return; }
+
     const dx = e.changedTouches[0].clientX - _tx;
     const dy = e.changedTouches[0].clientY - _ty;
-    if (Math.abs(dy) > MAX_VERT) return;      // too much vertical drift
-    if (Math.abs(dx) < THRESHOLD) return;     // too short
-    // Don't fire if a sheet/overlay is open
-    const sheet = document.getElementById('day-sheet');
-    if (sheet && sheet.classList.contains('open')) return;
-    if (document.getElementById('sc-overlay')?.classList.contains('open')) return;
+
+    if (_cancelled || Math.abs(dy) > MAX_VERT) { _resetTrackPos(); return; }
+
     if (calendarViewMode === 'day') {
-      dx < 0 ? focusNextDay() : focusPrevDay();
+      // Reset track transform — the navigation functions handle the animation
+      _resetTrackPos();
+
+      if (Math.abs(dx) >= THRESHOLD && !_carouselAnimating) {
+        dx < 0 ? focusNextDay() : focusPrevDay();
+      }
     } else {
-      dx < 0 ? nextMonth() : prevMonth();
+      // Month mode: simple threshold swipe
+      if (Math.abs(dx) >= THRESHOLD) {
+        dx < 0 ? nextMonth() : prevMonth();
+      }
     }
+
+    _dragging = false;
   }
 
-  function onTouchMove(e) {
-    if (!_swiping || e.touches.length !== 1) return;
-    const dx = Math.abs(e.touches[0].clientX - _tx);
-    const dy = Math.abs(e.touches[0].clientY - _ty);
-    // If clearly a horizontal swipe, prevent page scroll
-    if (dx > dy && dx > 12) e.preventDefault();
+  function _resetTrackPos() {
+    const track = document.getElementById('day-carousel-track');
+    if (track) {
+      // Animate back to center with a spring-like ease
+      track.style.transition = 'transform .35s cubic-bezier(.32,.72,.18,1)';
+      track.style.transform = '';
+      // Also reset any inline opacity on cards
+      track.querySelectorAll('.day-card').forEach(c => { c.style.opacity = ''; });
+      // Clear transition override after snap-back completes
+      setTimeout(() => { if (track) track.style.transition = ''; }, 360);
+    }
   }
 
   // Attach once the calendar container exists
