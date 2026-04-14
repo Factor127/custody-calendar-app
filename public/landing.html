@@ -819,6 +819,9 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
 </footer>
 
 <script>
+  // ---- A/B TRACKING ----
+  if (typeof sa === 'function') sa('lp_view');
+
   // ---- HERO: SYNCED ROTATING TEXT + BACKGROUND IMAGES + DOTS ----
   const rotatingEl = document.getElementById('heroRotating');
   const textSpans = rotatingEl.querySelectorAll('span');
@@ -877,7 +880,7 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
       });
       fbq('track', 'Lead', Object.assign({ content_name: 'landing_signup' }, utm));
     }
-    if (typeof sa !== 'undefined') sa('landing_signup');
+    if (typeof sa !== 'undefined') { sa('landing_signup'); sa('lp_signup'); }
 
     try {
       var utmData = {};

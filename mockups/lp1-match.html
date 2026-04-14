@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Spontany — See who your life actually lines up with</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy: #0a0a0a;
+  --purple-bg: #141414;
+  --lime: #c4d630;
+  --lime-dark: #a3b325;
+  --lime-glow: rgba(196, 214, 48, 0.25);
+  --lime-dim: rgba(196, 214, 48, 0.08);
+  --purple: #a78bfa;
+  --purple-deep: #7c5cbf;
+  --white: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --muted-light: rgba(255, 255, 255, 0.35);
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-hover: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html, body {
+  height: 100%;
+  background: var(--navy);
+  color: var(--white);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════════════════════════════════════ */
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
+  opacity: 0;
+  transform: translateX(60px);
+  pointer-events: none;
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+
+.screen.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.screen.exit-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROGRESS BAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+#progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  z-index: 100;
+  padding: 0 24px;
+  top: max(12px, env(safe-area-inset-top));
+}
+#progress-inner {
+  height: 100%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--lime), var(--purple));
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BACK BUTTON
+   ═══════════════════════════════════════════════════════════════════════════ */
+.back-btn {
+  position: absolute;
+  top: 16px;
+  left: 24px;
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.back-btn:active { transform: scale(0.92); }
+.back-btn svg { width: 18px; height: 18px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════════════════ */
+.headline {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+.subheadline {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 12px;
+}
+.prompt {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+.sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.microcopy {
+  font-size: 13px;
+  color: var(--muted-light);
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 18px 32px;
+  background: var(--lime);
+  color: var(--navy);
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--bounce);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--surface);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-secondary:active { transform: scale(0.97); background: var(--surface-hover); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DAY TILES
+   ═══════════════════════════════════════════════════════════════════════════ */
+.week-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lime);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+.week-label:first-of-type { margin-top: 0; }
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.day-tile {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: var(--bounce);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  position: relative;
+}
+.day-tile:active { transform: scale(0.9); }
+
+.day-tile.selected {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: var(--navy);
+  box-shadow: 0 0 20px var(--lime-glow), 0 4px 12px rgba(196, 214, 48, 0.3);
+  transform: scale(1.02);
+}
+.day-tile.selected:active { transform: scale(0.95); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INPUTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.input-field {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.input-field::placeholder { color: var(--muted-light); }
+.input-field:focus {
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px var(--lime-glow);
+}
+
+/* Tag pills */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.tag-pill {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: var(--bounce);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.tag-pill:active { transform: scale(0.93); }
+.tag-pill.selected {
+  background: rgba(196, 214, 48, 0.12);
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRIMING CARDS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.priming-card {
+  padding: 22px 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--white);
+  cursor: pointer;
+  transition: var(--bounce);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  margin-bottom: 12px;
+  text-align: left;
+}
+.priming-card:active { transform: scale(0.97); }
+.priming-card.selected {
+  background: rgba(196, 214, 48, 0.08);
+  border-color: var(--lime);
+  box-shadow: 0 0 24px rgba(196, 214, 48, 0.1);
+}
+.priming-card .card-emoji {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESULT CARDS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.result-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 14px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.result-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.result-card .person-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.result-card .overlap-date {
+  font-size: 14px;
+  color: var(--lime);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Group card special style */
+.result-card.group-card {
+  background: linear-gradient(135deg, rgba(196, 214, 48, 0.06) 0%, rgba(167, 139, 250, 0.04) 100%);
+  border-color: rgba(196, 214, 48, 0.2);
+}
+.result-card .group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--purple);
+  margin-bottom: 6px;
+}
+
+/* Mini overlap strip */
+.overlap-strip {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.overlap-strip .strip-dot {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: var(--transition);
+}
+.overlap-strip .strip-dot.user-free {
+  background: rgba(167, 139, 250, 0.35);
+}
+.overlap-strip .strip-dot.person-free {
+  background: rgba(196, 214, 48, 0.3);
+}
+.overlap-strip .strip-dot.overlap {
+  background: linear-gradient(135deg, var(--lime), var(--purple));
+  box-shadow: 0 0 8px rgba(196, 214, 48, 0.3);
+  height: 8px;
+  margin-top: -1px;
+  border-radius: 4px;
+}
+.strip-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.strip-label span {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted-light);
+  letter-spacing: 0.5px;
+}
+
+.result-card .suggestion {
+  background: var(--lime-dim);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+.result-card .suggestion .venue-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+}
+.result-card .suggestion .venue-location {
+  font-size: 12px;
+  color: var(--muted-light);
+  margin-top: 2px;
+}
+.result-card .suggestion .venue-vibe {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.result-card .no-overlap {
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Invite button inside result cards */
+.invite-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  border-radius: var(--radius-sm);
+  color: #25d366;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--bounce);
+  -webkit-tap-highlight-color: transparent;
+}
+.invite-btn:active { transform: scale(0.97); }
+.invite-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INVITE OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+.invite-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.invite-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.invite-sheet {
+  width: 100%;
+  max-width: 430px;
+  background: #1a1a1f;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 24px max(24px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.invite-overlay.open .invite-sheet {
+  transform: translateY(0);
+}
+.invite-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.invite-sheet-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.invite-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.invite-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-wrap;
+  margin-bottom: 20px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.invite-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 24px;
+  background: #25d366;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--bounce);
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.invite-send-btn:active { transform: scale(0.97); }
+.invite-send-btn svg { width: 20px; height: 20px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOADING SCREEN
+   ═══════════════════════════════════════════════════════════════════════════ */
+.loader-dots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.loader-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--lime);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+.loader-dots span:nth-child(2) { animation-delay: 0.15s; }
+.loader-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(0.6); opacity: 0.3; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO SPECIFIC
+   ═══════════════════════════════════════════════════════════════════════════ */
+.hero-glow {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--lime-glow) 0%, transparent 70%);
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: glow-float 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes glow-float {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.6; }
+  50% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+}
+
+.hero-orb {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, transparent 70%);
+  bottom: 28%;
+  right: -20px;
+  animation: glow-float 8s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PEOPLE COUNT BADGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.people-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.person-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(196, 214, 48, 0.1);
+  border: 1px solid rgba(196, 214, 48, 0.25);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lime);
+}
+
+/* Demo notice */
+.demo-notice {
+  font-size: 13px;
+  color: var(--muted-light);
+  text-align: center;
+  margin-top: 16px;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPACERS & LAYOUT HELPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.spacer { flex: 1; }
+.gap-8 { height: 8px; }
+.gap-12 { height: 12px; }
+.gap-16 { height: 16px; }
+.gap-20 { height: 20px; }
+.gap-24 { height: 24px; }
+.gap-32 { height: 32px; }
+.gap-40 { height: 40px; }
+.bottom-action {
+  padding: 16px 0 max(24px, env(safe-area-inset-bottom));
+  margin-top: auto;
+}
+.content-area {
+  padding-top: 68px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Screen 1 hero centers content */
+.hero-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 80px;
+}
+
+/* Logo */
+.logo-img {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 36px;
+  border-radius: 14px;
+}
+
+/* Wordmark at bottom */
+.watermark {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.15);
+  padding: 16px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESKTOP GUARD
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 431px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #060609;
+  }
+  #app {
+    height: 100%;
+    max-height: 900px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(196, 214, 48, 0.06), 0 0 0 1px var(--border);
+    background: var(--navy);
+  }
+  #progress {
+    position: absolute;
+    padding: 0 24px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- PROGRESS BAR -->
+<div id="progress"><div id="progress-inner"><div id="progress-fill"></div></div></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 1: HERO
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen active" id="screen-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-orb"></div>
+    <div class="hero-content">
+      <img src="/logo3.svg" alt="Spontany" class="logo-img">
+      <h1 class="headline" style="font-size: 32px; max-width: 300px;">Let's see who your life actually lines up with.</h1>
+      <p class="subheadline" style="max-width: 280px;">Most people have way less overlap than they think.</p>
+      <div class="gap-40"></div>
+      <button class="btn-primary" style="max-width: 220px;" onclick="if(typeof sa==='function')sa('lp_cta_click');goTo('screen-priming')">Try a demo</button>
+      <p class="demo-notice">This is a quick demo of what Spontany does.<br>Use real details or make some up.</p>
+    </div>
+    <div class="watermark">spontany</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 2: PRIMING — emotional context
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-priming">
+    <div class="content-area">
+      <button class="back-btn" onclick="goTo('screen-hero')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <p class="prompt">Who are you hoping to make more time for?</p>
+      <div class="gap-24"></div>
+
+      <div class="priming-card" data-priming="dating" onclick="selectPriming(this)">
+        <span class="card-emoji">&#128140;</span>
+        Someone I'm dating / want to date
+      </div>
+      <div class="priming-card" data-priming="friends" onclick="selectPriming(this)">
+        <span class="card-emoji">&#128588;</span>
+        Friends I miss seeing
+      </div>
+      <div class="priming-card" data-priming="both" onclick="selectPriming(this)">
+        <span class="card-emoji">&#128064;</span>
+        Honestly&hellip; both
+      </div>
+
+      <div class="bottom-action">
+        <button class="btn-primary" id="btn-priming-continue" disabled onclick="if(typeof sa==='function')sa('lp_demo_start',{priming:state.primingChoice});goTo('screen-user')">Let's check</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 3: USER AVAILABILITY
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-user">
+    <div class="content-area">
+      <button class="back-btn" onclick="goTo('screen-priming')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <p class="prompt">When could you realistically say yes to plans?</p>
+      <p class="sub">Tap your usual free nights.</p>
+      <div class="gap-24"></div>
+
+      <div class="week-label">Week A</div>
+      <div class="day-grid" id="user-weekA"></div>
+      <div class="week-label">Week B</div>
+      <div class="day-grid" id="user-weekB"></div>
+
+      <div class="gap-12"></div>
+      <p class="microcopy">Rough is fine.</p>
+
+      <div class="bottom-action">
+        <button class="btn-primary" id="btn-user-continue" disabled onclick="finishUserAvailability()">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 4A: PERSON NAME
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-person-name">
+    <div class="content-area">
+      <button class="back-btn" onclick="goBackFromPersonName()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <p class="prompt" id="person-name-prompt">Who do you want to check?</p>
+      <p class="sub" id="person-name-sub">Just start with whoever comes to mind first.</p>
+      <div class="gap-24"></div>
+
+      <input class="input-field" id="person-name" type="text" placeholder="e.g. Sarah" autocomplete="off" maxlength="20">
+      <div class="tag-row" id="tag-row">
+        <div class="tag-pill" data-tag="date" onclick="selectTag(this)">date</div>
+        <div class="tag-pill" data-tag="friend" onclick="selectTag(this)">friend</div>
+        <div class="tag-pill" data-tag="maybe" onclick="selectTag(this)">maybe</div>
+        <div class="tag-pill" data-tag="gym buddy" onclick="selectTag(this)">gym buddy</div>
+        <div class="tag-pill" data-tag="girls night" onclick="selectTag(this)">girls night</div>
+      </div>
+
+      <div class="spacer"></div>
+      <div class="bottom-action">
+        <button class="btn-primary" id="btn-person-name-next" disabled onclick="goToPersonSchedule()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 4B: PERSON AVAILABILITY
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-person-schedule">
+    <div class="content-area">
+      <button class="back-btn" onclick="goTo('screen-person-name')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <p class="prompt" id="person-schedule-prompt">When are they usually around?</p>
+      <p class="sub">Best guess is fine.</p>
+      <div class="gap-24"></div>
+
+      <div class="week-label">Their Week A</div>
+      <div class="day-grid" id="person-weekA"></div>
+      <div class="week-label">Their Week B</div>
+      <div class="day-grid" id="person-weekB"></div>
+
+      <div class="gap-12"></div>
+      <p class="microcopy">Just your best guess.</p>
+
+      <div class="bottom-action">
+        <button class="btn-primary" id="btn-person-schedule-done" disabled onclick="finishPerson()">Find Our Next Night</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 5: LOADING
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-loading">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div class="loader-dots"><span></span><span></span><span></span></div>
+      <p class="prompt" style="font-size: 20px;">Finding your next real opportunities...</p>
+      <div class="gap-12"></div>
+      <p class="sub">Untangling schedules, custody, chaos, and vibes.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 6: RESULTS
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-results">
+    <div class="content-area" style="padding-top: 32px;">
+      <p class="prompt" style="padding-top: 12px;">Here's when life actually lines up <span style="font-size:20px;">&#128064;</span></p>
+      <div class="gap-20"></div>
+      <div id="results-container"></div>
+
+      <div id="add-more-section" style="margin-bottom: 12px;">
+        <button class="btn-secondary" id="btn-check-another" onclick="addAnotherPerson()">Check Someone Else Too</button>
+      </div>
+
+      <div class="bottom-action" style="padding-top: 4px;">
+        <button class="btn-primary" onclick="goTo('screen-bridge')">This is cool. What else?</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       SCREEN 7: PRODUCT BRIDGE
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-bridge">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 8px;">
+      <div class="hero-glow" style="top: 25%;"></div>
+      <h2 class="headline" style="font-size: 28px; max-width: 320px;">Now imagine this staying updated automatically.</h2>
+      <p class="subheadline" style="max-width: 300px;">Spontany keeps the guesswork out of planning &mdash; so good plans don't die in the chat.</p>
+      <div class="gap-40"></div>
+      <button class="btn-primary" style="max-width: 300px;" onclick="if(typeof sa==='function')sa('lp_signup');alert('This would link to signup!')">Keep This Updated Automatically</button>
+      <div class="gap-16"></div>
+      <p class="microcopy">This was the rough version.</p>
+    </div>
+    <div class="watermark">spontany</div>
+  </div>
+
+</div>
+
+<!-- INVITE OVERLAY (bottom sheet) -->
+<div class="invite-overlay" id="invite-overlay" onclick="closeInvite(event)">
+  <div class="invite-sheet">
+    <div class="invite-sheet-header">
+      <h3 id="invite-header">Send invite</h3>
+      <button class="invite-close" onclick="closeInvite()">&times;</button>
+    </div>
+    <div class="invite-preview" id="invite-preview"></div>
+    <button class="invite-send-btn" id="invite-send-btn" onclick="sendWhatsApp()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.553 4.12 1.522 5.857L.055 23.456l5.725-1.502A11.938 11.938 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.964 0-3.832-.53-5.45-1.498l-.39-.232-3.397.891.907-3.313-.255-.404A9.786 9.786 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/></svg>
+      Send via WhatsApp
+    </button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════════════ */
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const TODAY = new Date();
+// Reference Monday: find the most recent Monday, call it Week A
+const REFERENCE_MONDAY = (function() {
+  const d = new Date(TODAY);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // back to Monday
+  d.setHours(0,0,0,0);
+  return d;
+})();
+
+const state = {
+  user: { weekA: new Set(), weekB: new Set() },
+  people: [],       // { name, tag, weekA: Set, weekB: Set }
+  matches: [],      // { name, date, dateStr, opp } — computed results for invite
+  primingChoice: null,
+  screenHistory: []
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DFW OPPORTUNITIES — loaded from real database via API
+   ═══════════════════════════════════════════════════════════════════════════ */
+let opportunities = []; // populated on load
+
+// Vibe line generator based on category + tags
+function generateVibe(opp) {
+  const tag = opp.tags || [];
+  const cat = opp.category;
+  if (tag.includes('rooftop'))     return 'Rooftop vibes, skyline views, killer cocktails';
+  if (tag.includes('speakeasy'))   return 'Speakeasy energy, low light, great cocktails';
+  if (tag.includes('romantic'))    return 'Warm and romantic, perfect for two';
+  if (tag.includes('cozy'))        return 'Cozy and intimate, easy conversation';
+  if (tag.includes('live music'))  return 'Live music, easy vibes';
+  if (tag.includes('comedy'))      return 'Low-pressure laughs, good group energy';
+  if (tag.includes('outdoor') || tag.includes('walk'))  return 'Easy outdoor hang, zero commitment';
+  if (tag.includes('food trucks')) return 'Food trucks, games, hang outside';
+  if (tag.includes('upscale'))     return `Upscale ${cat === 'restaurants' ? 'dinner' : 'evening'}, worth dressing up`;
+  if (tag.includes('casual'))      return 'Casual and easy, no pressure';
+  if (tag.includes('group'))       return 'Great energy for a group';
+  if (tag.includes('intimate'))    return 'Intimate and moody, great for connection';
+  if (tag.includes('wine'))        return 'Wine and good conversation';
+  if (tag.includes('cocktails'))   return 'Killer cocktails, sharp atmosphere';
+  if (tag.includes('patio'))       return 'Nice patio, perfect when the weather is right';
+  if (cat === 'coffee')            return 'Chill coffee spot, good for catching up';
+  if (cat === 'restaurants')       return 'Solid dinner spot, good energy';
+  if (cat === 'drinks')            return 'Great drinks spot, easy vibe';
+  return 'Worth checking out';
+}
+
+// Fetch real opportunities from database
+async function loadOpportunities() {
+  try {
+    const res = await fetch('/api/public/opportunities');
+    const data = await res.json();
+    if (data.opportunities && data.opportunities.length > 0) {
+      opportunities = data.opportunities.map(o => ({
+        title: o.title,
+        category: o.category,
+        tags: o.tags || [],
+        location: o.location_name || 'Dallas',
+        vibe: generateVibe(o),
+        price_tier: o.price_tier,
+        source_url: o.source_url || null,
+      }));
+      console.log(`Loaded ${opportunities.length} real opportunities from DB`);
+    }
+  } catch(e) {
+    console.warn('Could not load opportunities from API, using fallback', e);
+    opportunities = [
+      { title: 'Midnight Rambler', category: 'drinks', tags: ['cocktails','speakeasy'], location: 'The Joule Hotel, 1530 Main St, Dallas', vibe: 'Speakeasy energy, low light, great cocktails', source_url: null },
+      { title: 'Catbird', category: 'drinks', tags: ['rooftop','cocktails'], location: 'Thompson Hotel, 10th Floor, Dallas', vibe: 'Rooftop vibes, skyline views, killer cocktails', source_url: null },
+      { title: 'Houndstooth Coffee', category: 'coffee', tags: ['specialty','modern'], location: '1900 N Henderson Ave, Dallas', vibe: 'Chill coffee spot, good for catching up', source_url: null },
+      { title: 'Katy Trail Walk', category: 'activities', tags: ['walk','outdoor','free'], location: 'Katy Trail, Dallas', vibe: 'Easy outdoor hang, zero commitment', source_url: null },
+      { title: 'Mercat', category: 'restaurants', tags: ['french','bistro','romantic'], location: 'Dallas', vibe: 'Warm and romantic, perfect for two', source_url: null },
+    ];
+  }
+}
+
+loadOpportunities();
+
+// Fire lp_view on page load (analytics script is auto-injected by server)
+if (typeof sa === 'function') sa('lp_view');
+
+/* Category biases by relationship tag */
+const TAG_CATEGORIES = {
+  'date':        ['drinks','restaurants'],
+  'friend':      ['activities','drinks','coffee'],
+  'maybe':       ['coffee','activities'],
+  'gym buddy':   ['activities','coffee'],
+  'girls night': ['drinks','restaurants','activities'],
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+const progressMap = {
+  'screen-hero': 0,
+  'screen-priming': 8,
+  'screen-user': 20,
+  'screen-person-name': 40,
+  'screen-person-schedule': 55,
+  'screen-loading': 75,
+  'screen-results': 90,
+  'screen-bridge': 100,
+};
+
+let currentScreen = 'screen-hero';
+
+function goTo(id) {
+  if (id === currentScreen) return;
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+
+  const screens = Object.keys(progressMap);
+  const goingForward = screens.indexOf(id) > screens.indexOf(currentScreen);
+
+  prev.classList.remove('active');
+  prev.classList.add('exit-left');
+
+  if (goingForward) {
+    next.style.transform = 'translateX(60px)';
+  } else {
+    next.style.transform = 'translateX(-60px)';
+  }
+  next.style.opacity = '0';
+
+  next.offsetHeight; // force reflow
+
+  next.classList.remove('exit-left');
+  next.classList.add('active');
+  next.style.transform = '';
+  next.style.opacity = '';
+
+  setTimeout(() => { prev.classList.remove('exit-left'); }, 500);
+
+  state.screenHistory.push(currentScreen);
+  currentScreen = id;
+
+  document.getElementById('progress-fill').style.width = (progressMap[id] || 0) + '%';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREEN 2: PRIMING
+   ═══════════════════════════════════════════════════════════════════════════ */
+function selectPriming(el) {
+  document.querySelectorAll('.priming-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.primingChoice = el.dataset.priming;
+  document.getElementById('btn-priming-continue').disabled = false;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DAY TILE RENDERING
+   ═══════════════════════════════════════════════════════════════════════════ */
+function renderDayGrid(containerId, selectionSet, onChangeCallback) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  DAYS.forEach((day, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'day-tile' + (selectionSet.has(i) ? ' selected' : '');
+    tile.textContent = day;
+    tile.addEventListener('click', () => {
+      if (selectionSet.has(i)) selectionSet.delete(i);
+      else selectionSet.add(i);
+      tile.classList.toggle('selected');
+      if (onChangeCallback) onChangeCallback();
+    });
+    container.appendChild(tile);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREEN 3: USER AVAILABILITY
+   ═══════════════════════════════════════════════════════════════════════════ */
+function checkUserReady() {
+  const btn = document.getElementById('btn-user-continue');
+  btn.disabled = state.user.weekA.size === 0 && state.user.weekB.size === 0;
+}
+
+function finishUserAvailability() {
+  resetPersonForm();
+  goTo('screen-person-name');
+}
+
+renderDayGrid('user-weekA', state.user.weekA, checkUserReady);
+renderDayGrid('user-weekB', state.user.weekB, checkUserReady);
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREEN 4A+B: ADD PERSON (split into name + schedule)
+   ═══════════════════════════════════════════════════════════════════════════ */
+let personWeekA = new Set();
+let personWeekB = new Set();
+let personTag = null;
+
+function resetPersonForm() {
+  personWeekA = new Set();
+  personWeekB = new Set();
+  personTag = null;
+
+  document.getElementById('person-name').value = '';
+  document.querySelectorAll('#tag-row .tag-pill').forEach(p => p.classList.remove('selected'));
+  document.getElementById('btn-person-name-next').disabled = true;
+  document.getElementById('btn-person-schedule-done').disabled = true;
+
+  const num = state.people.length + 1;
+  const prompts = ['Who do you want to check?', 'Who else?', 'One more?', 'Last one!'];
+  const subs = [
+    'Just start with whoever comes to mind first.',
+    'Add another person to compare.',
+    'One more and we\'ll update your results.',
+    'Last slot \u2014 make it count.'
+  ];
+  document.getElementById('person-name-prompt').textContent = prompts[Math.min(num - 1, prompts.length - 1)];
+  document.getElementById('person-name-sub').textContent = subs[Math.min(num - 1, subs.length - 1)];
+}
+
+function selectTag(el) {
+  document.querySelectorAll('#tag-row .tag-pill').forEach(p => p.classList.remove('selected'));
+  if (personTag === el.dataset.tag) {
+    personTag = null;
+  } else {
+    el.classList.add('selected');
+    personTag = el.dataset.tag;
+  }
+}
+
+function checkPersonNameReady() {
+  const name = document.getElementById('person-name').value.trim();
+  document.getElementById('btn-person-name-next').disabled = !name;
+}
+
+document.getElementById('person-name').addEventListener('input', checkPersonNameReady);
+
+function goToPersonSchedule() {
+  const name = document.getElementById('person-name').value.trim();
+  if (!name) return;
+  document.getElementById('person-schedule-prompt').textContent = `When is ${name} usually around?`;
+
+  personWeekA = new Set();
+  personWeekB = new Set();
+  renderDayGrid('person-weekA', personWeekA, checkPersonScheduleReady);
+  renderDayGrid('person-weekB', personWeekB, checkPersonScheduleReady);
+  document.getElementById('btn-person-schedule-done').disabled = true;
+
+  goTo('screen-person-schedule');
+}
+
+function checkPersonScheduleReady() {
+  document.getElementById('btn-person-schedule-done').disabled =
+    personWeekA.size === 0 && personWeekB.size === 0;
+}
+
+function goBackFromPersonName() {
+  if (state.people.length === 0) {
+    goTo('screen-user');
+  } else {
+    goTo('screen-results');
+  }
+}
+
+function finishPerson() {
+  const name = document.getElementById('person-name').value.trim();
+  if (!name) return;
+
+  state.people.push({
+    name,
+    tag: personTag,
+    weekA: new Set(personWeekA),
+    weekB: new Set(personWeekB),
+  });
+
+  showLoading();
+}
+
+function addAnotherPerson() {
+  if (state.people.length >= 4) return;
+  resetPersonForm();
+  goTo('screen-person-name');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCREEN 5: LOADING → RESULTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+function showLoading() {
+  goTo('screen-loading');
+  setTimeout(() => {
+    computeResults();
+    goTo('screen-results');
+    animateResultCards();
+  }, 2200);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OVERLAP LOGIC
+   ═══════════════════════════════════════════════════════════════════════════ */
+function isWeekA(date) {
+  const diffDays = Math.floor((date - REFERENCE_MONDAY) / 86400000);
+  const weekNum = Math.floor(diffDays / 7);
+  return weekNum % 2 === 0;
+}
+
+function findNextOverlap(person) {
+  for (let d = 1; d <= 56; d++) {
+    const date = new Date(TODAY);
+    date.setDate(date.getDate() + d);
+    const dayOfWeek = date.getDay();
+    const weekA = isWeekA(date);
+
+    const userFree = weekA ? state.user.weekA.has(dayOfWeek) : state.user.weekB.has(dayOfWeek);
+    const personFree = weekA ? person.weekA.has(dayOfWeek) : person.weekB.has(dayOfWeek);
+
+    if (userFree && personFree) {
+      return date;
+    }
+  }
+  return null;
+}
+
+/* Find first night ALL people + user are free */
+function findGroupOverlap(people) {
+  for (let d = 1; d <= 56; d++) {
+    const date = new Date(TODAY);
+    date.setDate(date.getDate() + d);
+    const dayOfWeek = date.getDay();
+    const weekA = isWeekA(date);
+
+    const userFree = weekA ? state.user.weekA.has(dayOfWeek) : state.user.weekB.has(dayOfWeek);
+    if (!userFree) continue;
+
+    const allFree = people.every(p => {
+      return weekA ? p.weekA.has(dayOfWeek) : p.weekB.has(dayOfWeek);
+    });
+
+    if (allFree) return date;
+  }
+  return null;
+}
+
+function pickOpportunity(tag, dayOfWeek, isGroup) {
+  const preferredCats = isGroup
+    ? ['activities','drinks','restaurants']
+    : (TAG_CATEGORIES[tag] || ['drinks','activities','coffee','restaurants']);
+
+  let pool = opportunities.filter(o => preferredCats.includes(o.category));
+  if (pool.length === 0) pool = opportunities;
+
+  // Bias: group → group-friendly; weeknights → casual
+  if (isGroup) {
+    const groupFriendly = pool.filter(o => o.tags.includes('group') || o.tags.includes('food trucks') || o.tags.includes('casual') || o.category === 'activities');
+    if (groupFriendly.length > 0 && Math.random() < 0.6) pool = groupFriendly;
+  } else {
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
+    if (!isWeekend) {
+      const casual = pool.filter(o => ['coffee','activities'].includes(o.category));
+      if (casual.length > 0 && Math.random() < 0.4) pool = casual;
+    }
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function formatDate(date) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+}
+
+/* Build overlap strip for a person — shows week pattern with overlap highlight */
+function buildOverlapStrip(person, overlapDate) {
+  const overlapIsWeekA = overlapDate ? isWeekA(overlapDate) : true;
+
+  const weekLabel = overlapIsWeekA ? 'Week A' : 'Week B';
+  const userSet = overlapIsWeekA ? state.user.weekA : state.user.weekB;
+  const personSet = overlapIsWeekA ? person.weekA : person.weekB;
+
+  let html = `<div class="strip-label"><span>${weekLabel}</span><span>`;
+  html += `<span style="color:var(--purple);">\u25CF</span> you &nbsp; <span style="color:var(--lime);">\u25CF</span> them</span></div>`;
+  html += '<div class="overlap-strip">';
+  DAYS.forEach((day, i) => {
+    const uFree = userSet.has(i);
+    const pFree = personSet.has(i);
+    const isOverlap = uFree && pFree;
+    let cls = 'strip-dot';
+    if (isOverlap) cls += ' overlap';
+    else if (uFree) cls += ' user-free';
+    else if (pFree) cls += ' person-free';
+    html += `<div class="${cls}" title="${day}"></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+/* Build overlap strip for group — highlight only nights all are free */
+function buildGroupStrip(people, overlapDate) {
+  const overlapIsWeekA = overlapDate ? isWeekA(overlapDate) : true;
+  const weekLabel = overlapIsWeekA ? 'Week A' : 'Week B';
+  const userSet = overlapIsWeekA ? state.user.weekA : state.user.weekB;
+
+  let html = `<div class="strip-label"><span>${weekLabel}</span><span>everyone free</span></div>`;
+  html += '<div class="overlap-strip">';
+  DAYS.forEach((day, i) => {
+    const uFree = userSet.has(i);
+    const allFree = uFree && people.every(p => {
+      return overlapIsWeekA ? p.weekA.has(i) : p.weekB.has(i);
+    });
+    let cls = 'strip-dot';
+    if (allFree) cls += ' overlap';
+    else if (uFree) cls += ' user-free';
+    html += `<div class="${cls}" title="${day}"></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+/* WhatsApp icon SVG for reuse */
+const WA_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.553 4.12 1.522 5.857L.055 23.456l5.725-1.502A11.938 11.938 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.964 0-3.832-.53-5.45-1.498l-.39-.232-3.397.891.907-3.313-.255-.404A9.786 9.786 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/></svg>`;
+
+function buildGoogleMapsUrl(location) {
+  return `https://www.google.com/maps/search/${encodeURIComponent(location)}`;
+}
+
+function computeResults() {
+  if (typeof sa === 'function') sa('lp_demo_complete', { people_count: state.people.length });
+  const container = document.getElementById('results-container');
+  container.innerHTML = '';
+  state.matches = [];
+
+  // Individual results
+  const results = state.people.map(person => {
+    const overlapDate = findNextOverlap(person);
+    return { person, overlapDate };
+  }).sort((a, b) => {
+    if (!a.overlapDate && !b.overlapDate) return 0;
+    if (!a.overlapDate) return 1;
+    if (!b.overlapDate) return -1;
+    return a.overlapDate - b.overlapDate;
+  });
+
+  const usedVenues = new Set();
+
+  results.forEach(({ person, overlapDate }, idx) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+
+    if (overlapDate) {
+      let opp = pickOpportunity(person.tag, overlapDate.getDay(), false);
+      let attempts = 0;
+      while (usedVenues.has(opp.title) && attempts < 10) {
+        opp = pickOpportunity(person.tag, overlapDate.getDay(), false);
+        attempts++;
+      }
+      usedVenues.add(opp.title);
+
+      // Store match for invite
+      state.matches.push({
+        name: person.name,
+        date: overlapDate,
+        dateStr: formatDate(overlapDate),
+        opp: opp,
+        isGroup: false,
+      });
+
+      const matchIdx = state.matches.length - 1;
+
+      card.innerHTML = `
+        <div class="person-name">${person.name}</div>
+        <div class="overlap-date">Next overlap: ${formatDate(overlapDate)}</div>
+        ${buildOverlapStrip(person, overlapDate)}
+        <div class="suggestion">
+          <div class="venue-name">${opp.title}</div>
+          <div class="venue-location">${opp.location}</div>
+          <div class="venue-vibe">${opp.vibe}</div>
+        </div>
+        <button class="invite-btn" onclick="openInvite(${matchIdx})">
+          ${WA_ICON}
+          Send ${person.name} an invite
+        </button>
+      `;
+    } else {
+      let fallbackDate = null;
+      for (let d = 1; d <= 28; d++) {
+        const date = new Date(TODAY);
+        date.setDate(date.getDate() + d);
+        const dayOfWeek = date.getDay();
+        const weekA = isWeekA(date);
+        const userFree = weekA ? state.user.weekA.has(dayOfWeek) : state.user.weekB.has(dayOfWeek);
+        if (userFree) { fallbackDate = date; break; }
+      }
+
+      card.innerHTML = `
+        <div class="person-name">${person.name}</div>
+        <div class="no-overlap">Harder to line up soon${fallbackDate ? ` &mdash; next likely shot: ${formatDate(fallbackDate)}` : ''}</div>
+        ${buildOverlapStrip(person, null)}
+      `;
+    }
+
+    container.appendChild(card);
+  });
+
+  // ── GROUP CARD: show when 3+ people ─────────────────────────────────────
+  if (state.people.length >= 3) {
+    const groupDate = findGroupOverlap(state.people);
+    const groupCard = document.createElement('div');
+    groupCard.className = 'result-card group-card';
+
+    const names = state.people.map(p => p.name);
+    const nameStr = names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1];
+
+    if (groupDate) {
+      let opp = pickOpportunity(null, groupDate.getDay(), true);
+      let attempts = 0;
+      while (usedVenues.has(opp.title) && attempts < 10) {
+        opp = pickOpportunity(null, groupDate.getDay(), true);
+        attempts++;
+      }
+      usedVenues.add(opp.title);
+
+      // Store group match
+      state.matches.push({
+        name: nameStr,
+        date: groupDate,
+        dateStr: formatDate(groupDate),
+        opp: opp,
+        isGroup: true,
+      });
+
+      const matchIdx = state.matches.length - 1;
+
+      groupCard.innerHTML = `
+        <div class="group-label">Everyone together</div>
+        <div class="person-name">${nameStr}</div>
+        <div class="overlap-date">Next night you're all free: ${formatDate(groupDate)}</div>
+        ${buildGroupStrip(state.people, groupDate)}
+        <div class="suggestion">
+          <div class="venue-name">${opp.title}</div>
+          <div class="venue-location">${opp.location}</div>
+          <div class="venue-vibe">${opp.vibe}</div>
+        </div>
+        <button class="invite-btn" onclick="openInvite(${matchIdx})">
+          ${WA_ICON}
+          Send the group an invite
+        </button>
+      `;
+    } else {
+      groupCard.innerHTML = `
+        <div class="group-label">Everyone together</div>
+        <div class="person-name">${nameStr}</div>
+        <div class="no-overlap">Tough to get everyone together in the next 8 weeks. Spontany would keep watching for you.</div>
+        ${buildGroupStrip(state.people, null)}
+      `;
+    }
+
+    container.appendChild(groupCard);
+  }
+
+  // Update "add another" button visibility
+  const addSection = document.getElementById('add-more-section');
+  if (state.people.length >= 4) {
+    addSection.style.display = 'none';
+  } else {
+    addSection.style.display = '';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INVITE OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════ */
+let currentInviteIdx = null;
+
+function buildInviteMessage(match) {
+  const mapsUrl = buildGoogleMapsUrl(match.opp.location + ', ' + match.opp.title);
+  const venueLink = match.opp.source_url || mapsUrl;
+
+  let msg = `Hey! Are you free ${match.dateStr}?\n\n`;
+  msg += `I found this spot \u2014 ${match.opp.title}`;
+  if (match.opp.location) msg += ` (${match.opp.location})`;
+  msg += `\n`;
+  msg += `${match.opp.vibe}\n\n`;
+  msg += `\ud83d\udccd ${mapsUrl}\n`;
+  if (match.opp.source_url) {
+    msg += `\ud83d\udd17 ${match.opp.source_url}\n`;
+  }
+  msg += `\nLet me know!`;
+
+  return msg;
+}
+
+function openInvite(matchIdx) {
+  currentInviteIdx = matchIdx;
+  const match = state.matches[matchIdx];
+  if (!match) return;
+
+  document.getElementById('invite-header').textContent =
+    match.isGroup ? 'Invite the group' : `Invite ${match.name}`;
+  document.getElementById('invite-preview').textContent = buildInviteMessage(match);
+  document.getElementById('invite-overlay').classList.add('open');
+}
+
+function closeInvite(e) {
+  if (e && e.target !== e.currentTarget) return; // only close on backdrop click
+  document.getElementById('invite-overlay').classList.remove('open');
+  currentInviteIdx = null;
+}
+
+function sendWhatsApp() {
+  if (currentInviteIdx === null) return;
+  const match = state.matches[currentInviteIdx];
+  const msg = buildInviteMessage(match);
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  if (typeof sa === 'function') sa('lp_invite_sent', { venue: match.opp?.title || '' });
+  window.open(waUrl, '_blank');
+  closeInvite();
+}
+
+function animateResultCards() {
+  const cards = document.querySelectorAll('.result-card');
+  cards.forEach((card, i) => {
+    setTimeout(() => card.classList.add('visible'), 200 + i * 180);
+  });
+}
+</script>
+</body>
+</html>

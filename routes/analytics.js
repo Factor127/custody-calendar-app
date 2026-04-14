@@ -136,7 +136,23 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY visitors DESC
   `).all();
 
-  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens });
+  // 10. A/B variant funnel
+  const variantFunnel = db.prepare(`
+    SELECT
+      json_extract(props, '$.variant') AS variant,
+      COUNT(DISTINCT CASE WHEN event='lp_view' THEN session_id END) AS views,
+      COUNT(DISTINCT CASE WHEN event='lp_cta_click' THEN session_id END) AS cta_clicks,
+      COUNT(DISTINCT CASE WHEN event='lp_demo_start' THEN session_id END) AS demo_starts,
+      COUNT(DISTINCT CASE WHEN event='lp_demo_complete' THEN session_id END) AS demo_completes,
+      COUNT(DISTINCT CASE WHEN event='lp_signup' THEN session_id END) AS signups,
+      COUNT(DISTINCT CASE WHEN event='lp_invite_sent' THEN session_id END) AS invites
+    FROM analytics_events
+    WHERE event IN ('lp_view','lp_cta_click','lp_demo_start','lp_demo_complete','lp_signup','lp_invite_sent')
+      AND json_extract(props, '$.variant') IS NOT NULL
+    GROUP BY variant
+  `).all();
+
+  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel });
 });
 
 // DELETE /api/admin/analytics — archive then reset analytics data

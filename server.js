@@ -6,6 +6,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
+// ── A/B Testing Variants ─────────────────────────────────────────────────────
+const AB_VARIANTS = [
+  { id: 'control',   file: 'public/landing.html',    active: true },
+  { id: 'lp1-match', file: 'mockups/lp1-match.html', active: true },
+];
+
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -24,6 +30,35 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
+
+// Serve mockups in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/mockups', express.static(path.join(__dirname, 'mockups'), {
+    setHeaders(res) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }));
+
+  // Public opportunities endpoint for landing page mockups (no auth)
+  app.get('/api/public/opportunities', (req, res) => {
+    const db = require('./db');
+    try {
+      const rows = db.searchOpportunities({});
+      const opps = rows.map(o => ({
+        title: o.title,
+        category: o.category,
+        tags: JSON.parse(o.tags || '[]'),
+        location_name: o.location_name,
+        price_tier: o.price_tier,
+        type: o.type,
+        source_url: o.source_url || null,
+      }));
+      res.json({ opportunities: opps });
+    } catch(e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+}
 
 // Make BASE_URL available to routes
 app.locals.BASE_URL = BASE_URL;
@@ -105,7 +140,7 @@ app.put('/api/admin/waitlist/:id/approve', async (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Root: landing page (gated by campaign access) ─────────────────────────────
+// ── Root: landing page with A/B testing ──────────────────────────────────────
 function parseCookies(req) {
   const raw = req.headers.cookie || '';
   const out = {};
@@ -116,31 +151,102 @@ function parseCookies(req) {
   return out;
 }
 
-app.get('/', (req, res) => {
-  const cookies = parseCookies(req);
+function assignVariant(cookies) {
+  const active = AB_VARIANTS.filter(v => v.active);
+  if (active.length === 0) return AB_VARIANTS[0]; // fallback
 
-  // 1. Already has access cookie → serve landing
-  if (cookies.sa_access === '1') {
+  // Honor existing cookie if variant is still active
+  const existing = cookies.sa_variant;
+  if (existing) {
+    const match = active.find(v => v.id === existing);
+    if (match) return match;
+  }
+
+  // Least-assigned balancing: count distinct sessions per variant
+  try {
+    const counts = _db.prepare(`
+      SELECT json_extract(props, '$.variant') AS variant, COUNT(DISTINCT session_id) AS cnt
+      FROM analytics_events
+      WHERE json_extract(props, '$.variant') IS NOT NULL
+      GROUP BY variant
+    `).all();
+    const countMap = {};
+    counts.forEach(r => { countMap[r.variant] = r.cnt; });
+
+    // Pick active variant with fewest sessions
+    let min = Infinity, pick = active[0];
+    for (const v of active) {
+      const c = countMap[v.id] || 0;
+      if (c < min) { min = c; pick = v; }
+    }
+    return pick;
+  } catch(e) {
+    // DB error fallback: random assignment
+    return active[Math.floor(Math.random() * active.length)];
+  }
+}
+
+function serveVariant(req, res, variant) {
+  const filePath = path.join(__dirname, variant.file);
+  let html;
+  try {
+    html = fs.readFileSync(filePath, 'utf8');
+  } catch(e) {
+    console.error(`A/B: failed to read ${variant.file}:`, e.message);
     return res.sendFile(path.join(__dirname, 'public', 'landing.html'));
   }
 
-  // 2. Came from waitlist approval email → validate token, set cookie, serve landing
-  if (req.query.access) {
+  // Set variant cookie (readable by client JS)
+  res.cookie('sa_variant', variant.id, { maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+
+  // Auto-inject tracking before </head>
+  const trackingSnippet = `<script src="/sa.js"></script>
+<script>sessionStorage.setItem('sa_variant','${variant.id}');window.__SA_VARIANT='${variant.id}';</script>`;
+
+  // Only inject sa.js if not already present (check for actual script tag)
+  if (html.includes('src="/sa.js"') || html.includes("src='/sa.js'")) {
+    html = html.replace('</head>',
+      `<script>sessionStorage.setItem('sa_variant','${variant.id}');window.__SA_VARIANT='${variant.id}';</script>\n</head>`);
+  } else {
+    html = html.replace('</head>', trackingSnippet + '\n</head>');
+  }
+
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(html);
+}
+
+app.get('/', (req, res) => {
+  const cookies = parseCookies(req);
+  let hasAccess = false;
+
+  // 1. Already has access cookie
+  if (cookies.sa_access === '1') {
+    hasAccess = true;
+  }
+
+  // 2. Came from waitlist approval email
+  if (!hasAccess && req.query.access) {
     const row = _db.prepare("SELECT id FROM waitlist WHERE access_token = ? AND status = 'approved'").get(req.query.access);
     if (row) {
       res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-      return res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+      hasAccess = true;
     }
   }
 
-  // 3. Has UTM params (came from ad campaign) → set cookie, serve landing
-  if (req.query.utm_source || req.query.utm_campaign) {
+  // 3. Has UTM params (came from ad campaign)
+  if (!hasAccess && (req.query.utm_source || req.query.utm_campaign)) {
     res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-    return res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+    hasAccess = true;
   }
 
   // 4. No access → serve waitlist page
-  res.sendFile(path.join(__dirname, 'public', 'waitlist.html'));
+  if (!hasAccess) {
+    return res.sendFile(path.join(__dirname, 'public', 'waitlist.html'));
+  }
+
+  // 5. Assign A/B variant and serve
+  const variant = assignVariant(cookies);
+  serveVariant(req, res, variant);
 });
 
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));

@@ -46,6 +46,8 @@
     });
     var ref = sessionStorage.getItem('sa_ref');
     if (ref) utmProps.referrer = ref;
+    var variant = sessionStorage.getItem('sa_variant') || '';
+    if (variant) utmProps.variant = variant;
 
     var elapsed = Date.now() - parseInt(sessionStorage.getItem('sa_start') || Date.now());
 
