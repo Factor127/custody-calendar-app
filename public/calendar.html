@@ -121,6 +121,7 @@ body {
 /* ── Calendar container — kill all white backgrounds from styles.css ── */
 .cal-section { padding: 0 12px; }
 .calendar-container { background: transparent !important; gap: 0 !important; overflow: hidden; }
+.calendar-container.day-mode { overflow: visible; }
 
 /* ── Month slide animation ── */
 @keyframes slideInLeft  { from { opacity:0; transform:translateX(-32px); } to { opacity:1; transform:translateX(0); } }
@@ -1266,6 +1267,19 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .day-carousel-arrow.arrow-left  { left: 8px; }
     .day-carousel-arrow.arrow-right { right: 8px; }
+
+    /* Today jump button */
+    .day-carousel-today {
+      position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+      z-index: 20; background: rgba(230,249,82,0.12); border: 1px solid rgba(230,249,82,0.35);
+      border-radius: 20px; color: var(--lime); font-size: 12px; font-weight: 700;
+      padding: 5px 14px; cursor: pointer; white-space: nowrap;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      transition: all .2s ease; font-family: inherit; letter-spacing: .03em;
+      display: none; /* hidden when already on today */
+    }
+    .day-carousel-today:hover { background: rgba(230,249,82,0.25); border-color: var(--lime); }
+    .day-carousel-today.visible { display: block; }
     .day-carousel-arrow:hover { background: rgba(230,249,82,0.3); border-color: var(--lime); transform: translateY(-50%) scale(1.1); }
     .day-carousel-arrow:active { transform: translateY(-50%) scale(0.92); }
     .day-carousel-track {
@@ -1334,9 +1348,11 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       transition: all .45s cubic-bezier(.32,.72,.18,1);
     }
 
-    /* Custody colours */
-    .day-card.r { background: linear-gradient(160deg, rgba(124,92,191,0.38) 0%, rgba(90,60,160,0.20) 100%); }
-    .day-card.z { background: linear-gradient(160deg, rgba(230,249,82,0.16) 0%, rgba(180,200,60,0.08) 100%); }
+    /* Custody colours — strong fills matching monthly view */
+    .day-card.r { background: linear-gradient(160deg, rgba(124,92,191,0.6) 0%, rgba(90,60,160,0.4) 100%); border-color: rgba(124,92,191,0.5); }
+    .day-card.z { background: linear-gradient(160deg, rgba(180,210,60,0.3) 0%, rgba(230,249,82,0.15) 100%); border-color: rgba(230,249,82,0.3); }
+    .day-card.pos-0.r { border-color: rgba(167,139,250,0.7); box-shadow: 0 0 60px rgba(124,92,191,0.2), 0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3); }
+    .day-card.pos-0.z { border-color: rgba(230,249,82,0.5); box-shadow: 0 0 60px rgba(230,249,82,0.15), 0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3); }
     .day-card.bothfree { box-shadow: inset 0 0 0 1.5px rgba(230,249,82,0.5); }
     .day-card.pos-0.bothfree {
       border-color: var(--lime);
@@ -6346,6 +6362,7 @@ let focusDate = null;           // YYYY-MM-DD for day carousel focus
 function toggleCalendarView() {
   const icon = document.getElementById('bn-view-icon');
   const label = document.getElementById('bn-view-label');
+  const container = document.getElementById('calendar-container');
   if (calendarViewMode === 'month') {
     calendarViewMode = 'day';
     // Default focus to today
@@ -6356,6 +6373,7 @@ function toggleCalendarView() {
     icon.alt = 'Month';
     label.textContent = 'Month';
     document.getElementById('month-heading-row').style.display = 'none';
+    container.classList.add('day-mode');
   } else {
     calendarViewMode = 'month';
     // Sync month/year from focusDate
@@ -6369,6 +6387,7 @@ function toggleCalendarView() {
     icon.alt = 'Day';
     label.textContent = 'Day';
     document.getElementById('month-heading-row').style.display = '';
+    container.classList.remove('day-mode');
   }
   renderCalendar();
 }
@@ -6410,11 +6429,13 @@ function renderDayCarousel() {
     <button class="day-carousel-arrow arrow-left" onclick="focusPrevDay()" aria-label="Previous day">‹</button>
     <div class="day-carousel-track" id="day-carousel-track">${cardsHtml}</div>
     <button class="day-carousel-arrow arrow-right" onclick="focusNextDay()" aria-label="Next day">›</button>
+    <button class="day-carousel-today" id="carousel-today-btn" onclick="jumpToToday()">← Today</button>
   </div>`;
 
   // Attach click handlers
   const track = document.getElementById('day-carousel-track');
   if (track) _updateCardClicks(track);
+  _updateTodayBtn();
 }
 
 // ── Smooth navigation (mutate DOM, don't rebuild) ───────────────────────────
@@ -6481,6 +6502,35 @@ function _focusDay(dir) {
   const unlock = () => { if (!unlocked) { unlocked = true; _carouselAnimating = false; } };
   if (newCenter) newCenter.addEventListener('transitionend', unlock, { once: true });
   setTimeout(unlock, CAROUSEL_TRANSITION_MS + 100);
+
+  _updateTodayBtn();
+}
+
+// ── Today jump ──────────────────────────────────────────────────────────────
+function _getTodayStr() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+}
+
+function _updateTodayBtn() {
+  const btn = document.getElementById('carousel-today-btn');
+  if (!btn) return;
+  const todayStr = _getTodayStr();
+  const isToday = focusDate === todayStr;
+  btn.classList.toggle('visible', !isToday);
+
+  // Arrow direction: if today is in the past (focus > today) → "← Today", else "Today →"
+  if (!isToday) {
+    btn.textContent = focusDate > todayStr ? '← Today' : 'Today →';
+  }
+}
+
+function jumpToToday() {
+  focusDate = _getTodayStr();
+  const fd = new Date(focusDate + 'T12:00:00');
+  currentViewYear = fd.getFullYear();
+  currentViewMonth = fd.getMonth();
+  renderDayCarousel();
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
