@@ -12,11 +12,13 @@
 
 :root {
   --bg: #0a0a0a;
+  --surface: rgba(255, 255, 255, 0.04);
   --white: #ffffff;
-  --muted: #999;
-  --accent: #c4d630;
-  --accent-dark: #a3b325;
+  --muted: rgba(255, 255, 255, 0.5);
+  --lime: #c4d630;
+  --lime-dark: #a3b325;
   --dark-text: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.08);
 }
 
 html, body {
@@ -211,11 +213,11 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px 24px;
+  padding: 18px 32px;
   border: none;
   border-radius: 16px;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -238,19 +240,19 @@ html, body {
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: var(--lime);
   color: var(--dark-text);
 }
 
 .btn-primary:active {
   transform: scale(0.97);
-  background: var(--accent-dark);
+  background: var(--lime-dark);
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.08);
+  background: var(--surface);
   color: var(--white);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid var(--border);
 }
 
 .btn-secondary:active {
@@ -273,19 +275,25 @@ html, body {
 /* ---- PROGRESS BAR ---- */
 .progress-bar {
   position: fixed;
-  top: 0;
+  top: max(8px, env(safe-area-inset-top));
   left: 0;
   right: 0;
-  height: 3px;
+  height: 4px;
   z-index: 100;
-  background: rgba(255,255,255,0.06);
+  padding: 0 24px;
+}
+.progress-bar-track {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--lime);
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 0 2px 2px 0;
+  border-radius: 2px;
 }
 
 /* ---- BACK BUTTON ---- */
@@ -327,14 +335,16 @@ html, body {
 /* ---- LOGO ---- */
 .top-logo {
   position: fixed;
-  top: 18px;
+  top: 16px;
   right: 20px;
   z-index: 100;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  color: rgba(255,255,255,0.25);
   transition: opacity 0.3s;
+}
+.top-logo img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  opacity: 0.6;
 }
 
 /* ---- SLIDE-SPECIFIC ---- */
@@ -383,7 +393,7 @@ html, body {
 
 /* ---- EMPHASIS ---- */
 .text-accent {
-  color: var(--accent);
+  color: var(--lime);
 }
 
 .text-dim {
@@ -498,7 +508,9 @@ html, body {
 
 <!-- Progress -->
 <div class="progress-bar">
-  <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+  <div class="progress-bar-track">
+    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+  </div>
 </div>
 
 <!-- Back -->
@@ -509,7 +521,7 @@ html, body {
 </button>
 
 <!-- Logo -->
-<div class="top-logo">spontany</div>
+<div class="top-logo"><img src="/logo3.svg" alt="Spontany"></div>
 
 <!-- ============ SLIDES ============ -->
 <div class="slides-wrapper">
@@ -599,8 +611,8 @@ html, body {
       It helps you spot when life actually lines up, so plans happen before momentum dies.
     </p>
     <div class="btn-group">
-      <button class="btn btn-primary" onclick="if(typeof sa==='function')sa('lp_signup',{cta:'how_it_works'});window.location.href='/landing.html'">Show Me How It Works</button>
-      <button class="btn btn-secondary" onclick="if(typeof sa==='function')sa('lp_signup',{cta:'sign_up'});window.location.href='/onboard.html'">I Get It &mdash; Take Me To Sign Up</button>
+      <button class="btn btn-primary" onclick="if(typeof sa==='function')sa('lp_signup',{cta:'try_demo'});window.location.href='/?variant=lp1-match'">Try the Demo</button>
+      <button class="btn btn-secondary" onclick="if(typeof sa==='function')sa('lp_signup',{cta:'sign_up'});window.location.href='/login'">I Get It &mdash; Sign Me Up</button>
     </div>
   </div>
 

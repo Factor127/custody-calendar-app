@@ -152,9 +152,15 @@ function parseCookies(req) {
   return out;
 }
 
-function assignVariant(cookies) {
+function assignVariant(cookies, query) {
   const active = AB_VARIANTS.filter(v => v.active);
   if (active.length === 0) return AB_VARIANTS[0]; // fallback
+
+  // Query param override (e.g. /?variant=lp1-match) — used for cross-variant links
+  if (query.variant) {
+    const forced = active.find(v => v.id === query.variant);
+    if (forced) return forced;
+  }
 
   // Honor existing cookie if variant is still active
   const existing = cookies.sa_variant;
@@ -246,7 +252,7 @@ app.get('/', (req, res) => {
   }
 
   // 5. Assign A/B variant and serve
-  const variant = assignVariant(cookies);
+  const variant = assignVariant(cookies, req.query);
   serveVariant(req, res, variant);
 });
 
