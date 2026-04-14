@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Spontany</title>
+<meta name="description" content="Life gave you time back. Spontany helps you actually use it.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a0a;
+  --white: #ffffff;
+  --muted: #999;
+  --accent: #c4d630;
+  --accent-dark: #a3b325;
+  --dark-text: #1a1a1a;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- SLIDES CONTAINER ---- */
+.slides-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 28px 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(30px);
+  z-index: 1;
+}
+
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  z-index: 10;
+}
+
+.slide.exit-up {
+  opacity: 0;
+  transform: translateY(-40px);
+  pointer-events: none;
+}
+
+/* ---- BACKGROUND LAYERS ---- */
+.slide-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.slide-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.slide-bg-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+}
+
+/* Per-slide background gradients (cinematic overlays) */
+#slide-hook .slide-bg::before {
+  background: linear-gradient(
+    to top,
+    rgba(10,10,10,1) 0%,
+    rgba(10,10,10,0.85) 30%,
+    rgba(20,15,30,0.6) 60%,
+    rgba(30,20,50,0.4) 100%
+  );
+}
+
+#slide-hook .slide-bg-img {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%231a1030"/><stop offset="100%" stop-color="%230d0d1a"/></linearGradient></defs><rect fill="url(%23g1)" width="400" height="800"/><circle cx="320" cy="200" r="120" fill="%23201540" opacity="0.5"/><rect x="50" y="400" width="200" height="300" rx="8" fill="%23161225" opacity="0.4"/><rect x="280" y="500" width="80" height="200" rx="4" fill="%23191330" opacity="0.3"/></svg>');
+  opacity: 0.5;
+}
+
+#slide-belief1 .slide-bg::before {
+  background: linear-gradient(
+    to top,
+    rgba(10,10,10,1) 0%,
+    rgba(10,10,10,0.9) 25%,
+    rgba(15,12,25,0.7) 60%,
+    rgba(20,15,35,0.5) 100%
+  );
+}
+
+#slide-belief1 .slide-bg-img {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800"><defs><linearGradient id="g2" x1="0" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="%23151025"/><stop offset="100%" stop-color="%230a0a12"/></linearGradient></defs><rect fill="url(%23g2)" width="400" height="800"/><rect x="60" y="350" width="280" height="180" rx="12" fill="%23181430" opacity="0.3"/><circle cx="200" cy="440" r="40" fill="%23201845" opacity="0.25"/><rect x="150" y="550" width="100" height="8" rx="4" fill="%23252040" opacity="0.3"/></svg>');
+  opacity: 0.45;
+}
+
+#slide-belief2 .slide-bg::before {
+  background: linear-gradient(
+    to top,
+    rgba(10,10,10,1) 0%,
+    rgba(10,10,10,0.88) 30%,
+    rgba(18,14,28,0.65) 65%,
+    rgba(25,18,40,0.45) 100%
+  );
+}
+
+#slide-belief2 .slide-bg-img {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800"><defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="0.8"><stop offset="0%" stop-color="%23120e20"/><stop offset="100%" stop-color="%230e0a18"/></linearGradient></defs><rect fill="url(%23g3)" width="400" height="800"/><rect x="30" y="200" width="150" height="100" rx="8" fill="%231a1535" opacity="0.35"/><rect x="200" y="230" width="170" height="70" rx="8" fill="%23181230" opacity="0.3"/><rect x="80" y="330" width="240" height="60" rx="8" fill="%23161028" opacity="0.25"/><rect x="30" y="420" width="120" height="50" rx="6" fill="%23141025" opacity="0.3"/></svg>');
+  opacity: 0.45;
+}
+
+#slide-belief3 .slide-bg::before {
+  background: linear-gradient(
+    to top,
+    rgba(10,10,10,1) 0%,
+    rgba(10,10,10,0.85) 28%,
+    rgba(20,18,12,0.6) 60%,
+    rgba(35,25,15,0.35) 100%
+  );
+}
+
+#slide-belief3 .slide-bg-img {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800"><defs><linearGradient id="g4" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="%231a1510"/><stop offset="100%" stop-color="%230d0b08"/></linearGradient></defs><rect fill="url(%23g4)" width="400" height="800"/><circle cx="100" cy="280" r="30" fill="%23302518" opacity="0.3"/><circle cx="200" cy="250" r="25" fill="%23282015" opacity="0.35"/><circle cx="290" cy="300" r="28" fill="%23352a1a" opacity="0.3"/><circle cx="150" cy="340" r="22" fill="%23252010" opacity="0.25"/></svg>');
+  opacity: 0.45;
+}
+
+#slide-disqualify .slide-bg::before {
+  background: linear-gradient(
+    to top,
+    rgba(10,10,10,1) 0%,
+    rgba(10,10,10,0.92) 40%,
+    rgba(15,12,18,0.75) 100%
+  );
+}
+
+#slide-reveal .slide-bg::before {
+  background: linear-gradient(
+    to top,
+    rgba(10,10,10,1) 0%,
+    rgba(10,10,10,0.82) 30%,
+    rgba(15,20,10,0.55) 65%,
+    rgba(20,28,12,0.35) 100%
+  );
+}
+
+#slide-reveal .slide-bg-img {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800"><defs><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%23141a0e"/><stop offset="100%" stop-color="%230a0e08"/></linearGradient></defs><rect fill="url(%23g5)" width="400" height="800"/><circle cx="200" cy="300" r="140" fill="%23192210" opacity="0.2"/></svg>');
+  opacity: 0.4;
+}
+
+/* ---- TYPOGRAPHY ---- */
+.slide-headline {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  max-width: 340px;
+}
+
+.slide-subheadline {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 20px;
+  max-width: 320px;
+}
+
+.slide-prompt {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 24px;
+  letter-spacing: 0.2px;
+}
+
+/* ---- BUTTONS ---- */
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 24px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-appearance: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.1);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.btn:active::after {
+  opacity: 1;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--dark-text);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  background: var(--accent-dark);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.btn-secondary:active {
+  transform: scale(0.97);
+  background: rgba(255,255,255,0.14);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 14px 24px;
+}
+
+.btn-ghost:active {
+  color: var(--white);
+}
+
+/* ---- PROGRESS BAR ---- */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 100;
+  background: rgba(255,255,255,0.06);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ---- BACK BUTTON ---- */
+.back-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, background 0.2s;
+  backdrop-filter: blur(8px);
+}
+
+.back-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.back-btn:active {
+  background: rgba(255,255,255,0.16);
+}
+
+.back-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---- LOGO ---- */
+.top-logo {
+  position: fixed;
+  top: 18px;
+  right: 20px;
+  z-index: 100;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: rgba(255,255,255,0.25);
+  transition: opacity 0.3s;
+}
+
+/* ---- SLIDE-SPECIFIC ---- */
+
+/* Hook slide */
+#slide-hook {}
+
+#slide-hook .slide-headline {
+  font-size: 36px;
+  line-height: 1.12;
+  max-width: 300px;
+  margin-bottom: 32px;
+}
+
+#slide-hook .btn-group {
+  margin-top: 8px;
+}
+
+/* Disqualify */
+#slide-disqualify {}
+
+#slide-disqualify .slide-headline {
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+#slide-disqualify .slide-subheadline {
+  font-size: 16px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 300px;
+}
+
+/* Reveal */
+#slide-reveal {}
+
+#slide-reveal .slide-headline {
+  font-size: 30px;
+  margin-bottom: 16px;
+}
+
+#slide-reveal .slide-subheadline {
+  margin-bottom: 40px;
+}
+
+/* ---- EMPHASIS ---- */
+.text-accent {
+  color: var(--accent);
+}
+
+.text-dim {
+  color: rgba(255,255,255,0.5);
+}
+
+/* ---- FADE-IN CHILDREN ---- */
+.slide.active .slide-headline,
+.slide.active .slide-subheadline,
+.slide.active .slide-prompt,
+.slide.active .btn-group {
+  animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+.slide.active .slide-headline { animation-delay: 0.15s; }
+.slide.active .slide-subheadline { animation-delay: 0.3s; }
+.slide.active .slide-prompt { animation-delay: 0.4s; }
+.slide.active .btn-group { animation-delay: 0.5s; }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- RESPONSIVE ---- */
+@media (min-width: 480px) {
+  .slide {
+    padding: 0 40px 0;
+    align-items: center;
+    text-align: center;
+  }
+
+  .slide-headline {
+    max-width: 480px;
+  }
+
+  .slide-subheadline {
+    max-width: 420px;
+  }
+
+  #slide-hook, #slide-disqualify, #slide-reveal {
+    align-items: center;
+  }
+
+  .btn-group {
+    max-width: 380px;
+  }
+}
+
+@media (max-height: 680px) {
+  .slide-headline {
+    font-size: 26px;
+    margin-bottom: 12px;
+  }
+
+  #slide-hook .slide-headline {
+    font-size: 30px;
+    margin-bottom: 20px;
+  }
+
+  .slide-subheadline {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+
+  .slide-prompt {
+    margin-bottom: 18px;
+  }
+
+  .btn {
+    padding: 15px 20px;
+    font-size: 15px;
+  }
+
+  .btn-group {
+    gap: 10px;
+  }
+
+  #slide-disqualify .slide-subheadline {
+    margin-bottom: 28px;
+  }
+
+  #slide-reveal .slide-subheadline {
+    margin-bottom: 28px;
+  }
+}
+
+@media (min-width: 768px) {
+  .slide-headline {
+    font-size: 42px;
+  }
+
+  #slide-hook .slide-headline {
+    font-size: 48px;
+    max-width: 500px;
+  }
+
+  .slide-subheadline {
+    font-size: 20px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Progress -->
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+</div>
+
+<!-- Back -->
+<button class="back-btn" id="backBtn" aria-label="Go back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+</button>
+
+<!-- Logo -->
+<div class="top-logo">spontany</div>
+
+<!-- ============ SLIDES ============ -->
+<div class="slides-wrapper">
+
+  <!-- HOOK -->
+  <div class="slide active" id="slide-hook" data-step="0">
+    <div class="slide-bg"><div class="slide-bg-img"></div></div>
+    <h1 class="slide-headline">
+      You got your time back.<br>
+      <span class="text-dim">So why doesn't life feel fuller?</span>
+    </h1>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="if(typeof sa==='function')sa('lp_cta_click');goTo(1)">Let's talk about it</button>
+    </div>
+  </div>
+
+  <!-- BELIEF 1 -->
+  <div class="slide" id="slide-belief1" data-step="1">
+    <div class="slide-bg"><div class="slide-bg-img"></div></div>
+    <h2 class="slide-headline">
+      Having free time means very little<br>
+      <span class="text-dim">if no one's free with you.</span>
+    </h2>
+    <p class="slide-prompt">Does that feel true to you?</p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="answer(1, true)">Honestly, yes</button>
+      <button class="btn btn-secondary" onclick="answer(1, false)">Not really</button>
+    </div>
+  </div>
+
+  <!-- BELIEF 2 -->
+  <div class="slide" id="slide-belief2" data-step="2">
+    <div class="slide-bg"><div class="slide-bg-img"></div></div>
+    <h2 class="slide-headline">
+      Most adult friendships don't die because people stop caring.
+    </h2>
+    <p class="slide-subheadline">
+      They fade because making plans became admin.
+    </p>
+    <p class="slide-prompt">True?</p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="answer(2, true)">Painfully true</button>
+      <button class="btn btn-secondary" onclick="answer(2, false)">I disagree</button>
+    </div>
+  </div>
+
+  <!-- BELIEF 3 -->
+  <div class="slide" id="slide-belief3" data-step="3">
+    <div class="slide-bg"><div class="slide-bg-img"></div></div>
+    <h2 class="slide-headline">
+      Good social lives don't happen by intention alone.
+    </h2>
+    <p class="slide-subheadline">
+      They happen when opportunity becomes visible and easy.
+    </p>
+    <p class="slide-prompt">Fair?</p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="answer(3, true)">Makes sense</button>
+      <button class="btn btn-secondary" onclick="answer(3, false)">Don't buy it</button>
+    </div>
+  </div>
+
+  <!-- DISQUALIFY -->
+  <div class="slide" id="slide-disqualify" data-step="dq">
+    <div class="slide-bg"><div class="slide-bg-img"></div></div>
+    <h2 class="slide-headline">
+      Fair enough &mdash;<br>we may not be your thing.
+    </h2>
+    <p class="slide-subheadline">
+      Spontany clicks most with people who feel logistics quietly get in the way of their social life.<br><br>
+      If that's not you, no problem.
+    </p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="goToReveal()">Try It Anyway</button>
+      <button class="btn btn-ghost" onclick="window.location.href='/'">Exit</button>
+    </div>
+  </div>
+
+  <!-- PRODUCT REVEAL -->
+  <div class="slide" id="slide-reveal" data-step="reveal">
+    <div class="slide-bg"><div class="slide-bg-img"></div></div>
+    <h2 class="slide-headline">
+      If this resonates &mdash;<br>
+      <span class="text-accent">Spontany</span> was built for exactly this.
+    </h2>
+    <p class="slide-subheadline">
+      It helps you spot when life actually lines up, so plans happen before momentum dies.
+    </p>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="if(typeof sa==='function')sa('lp_signup',{cta:'how_it_works'});window.location.href='/landing.html'">Show Me How It Works</button>
+      <button class="btn btn-secondary" onclick="if(typeof sa==='function')sa('lp_signup',{cta:'sign_up'});window.location.href='/onboard.html'">I Get It &mdash; Take Me To Sign Up</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  // A/B tracking
+  if (typeof sa === 'function') sa('lp_view');
+
+  // State
+  let currentStep = 0;
+  let disagreeCount = 0;
+  const history = [0];
+  const totalSteps = 5; // hook(0) + 3 beliefs + reveal
+
+  const slides = {
+    0: document.getElementById('slide-hook'),
+    1: document.getElementById('slide-belief1'),
+    2: document.getElementById('slide-belief2'),
+    3: document.getElementById('slide-belief3'),
+    dq: document.getElementById('slide-disqualify'),
+    reveal: document.getElementById('slide-reveal'),
+  };
+
+  const progressFill = document.getElementById('progressFill');
+  const backBtn = document.getElementById('backBtn');
+
+  function updateProgress(step) {
+    let pct = 0;
+    if (step === 0) pct = 0;
+    else if (step === 1) pct = 25;
+    else if (step === 2) pct = 50;
+    else if (step === 3) pct = 75;
+    else if (step === 'reveal' || step === 'dq') pct = 100;
+    progressFill.style.width = pct + '%';
+  }
+
+  function showSlide(step) {
+    // Deactivate all
+    Object.values(slides).forEach(s => {
+      s.classList.remove('active');
+      s.classList.remove('exit-up');
+    });
+
+    // Remove old animations so they replay
+    const target = slides[step];
+    target.querySelectorAll('.slide-headline, .slide-subheadline, .slide-prompt, .btn-group').forEach(el => {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = '';
+    });
+
+    // Activate
+    target.classList.add('active');
+    currentStep = step;
+    updateProgress(step);
+
+    // Track reveal screen as demo complete
+    if (step === 'reveal' && typeof sa === 'function') sa('lp_demo_complete', { disagrees: disagreeCount });
+
+    // Back button visibility
+    if (step === 0) {
+      backBtn.classList.remove('visible');
+    } else {
+      backBtn.classList.add('visible');
+    }
+  }
+
+  // Public: navigate to a step
+  window.goTo = function(step) {
+    history.push(step);
+    showSlide(step);
+  };
+
+  // Public: answer a belief check
+  window.answer = function(beliefNum, agreed) {
+    if (!agreed) {
+      disagreeCount++;
+    }
+
+    // Check if disqualified
+    if (disagreeCount >= 3) {
+      history.push('dq');
+      showSlide('dq');
+      return;
+    }
+
+    // Next step
+    if (beliefNum < 3) {
+      const next = beliefNum + 1;
+      history.push(next);
+      showSlide(next);
+    } else {
+      // All beliefs answered, go to reveal
+      history.push('reveal');
+      showSlide('reveal');
+    }
+  };
+
+  // Public: from DQ go to reveal
+  window.goToReveal = function() {
+    history.push('reveal');
+    showSlide('reveal');
+  };
+
+  // Back button
+  backBtn.addEventListener('click', function() {
+    if (history.length > 1) {
+      history.pop();
+      const prev = history[history.length - 1];
+
+      // If going back from a belief, undo that disagree if applicable
+      // (simplified: just go back, disagreeCount stays — acceptable for mockup)
+
+      showSlide(prev);
+    }
+  });
+
+  // Swipe support
+  let touchStartY = 0;
+  let touchStartX = 0;
+
+  document.addEventListener('touchstart', function(e) {
+    touchStartY = e.touches[0].clientY;
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    const dy = touchStartY - e.changedTouches[0].clientY;
+    const dx = Math.abs(touchStartX - e.changedTouches[0].clientX);
+
+    // Only trigger on clear vertical swipe (not horizontal)
+    if (dy > 60 && dx < 80) {
+      // Swipe up — could auto-advance on hook screen
+      if (currentStep === 0) {
+        window.goTo(1);
+      }
+    }
+  }, { passive: true });
+
+  // Keyboard support
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.key === 'ArrowLeft') {
+      backBtn.click();
+    }
+  });
+
+  // Init
+  showSlide(0);
+})();
+</script>
+
+</body>
+</html>

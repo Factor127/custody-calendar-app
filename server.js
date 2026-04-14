@@ -10,6 +10,7 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const AB_VARIANTS = [
   { id: 'control',   file: 'public/landing.html',    active: true },
   { id: 'lp1-match', file: 'mockups/lp1-match.html', active: true },
+  { id: 'believe',   file: 'public/believe.html',    active: true },
 ];
 
 app.set('trust proxy', 1);
