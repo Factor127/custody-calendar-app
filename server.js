@@ -31,33 +31,33 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// Serve mockups in development
+// Public opportunities endpoint (needed by A/B variant pages)
+app.get('/api/public/opportunities', (req, res) => {
+  const db = require('./db');
+  try {
+    const rows = db.searchOpportunities({});
+    const opps = rows.map(o => ({
+      title: o.title,
+      category: o.category,
+      tags: JSON.parse(o.tags || '[]'),
+      location_name: o.location_name,
+      price_tier: o.price_tier,
+      type: o.type,
+      source_url: o.source_url || null,
+    }));
+    res.json({ opportunities: opps });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Serve mockups directory in development
 if (process.env.NODE_ENV !== 'production') {
   app.use('/mockups', express.static(path.join(__dirname, 'mockups'), {
     setHeaders(res) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
   }));
-
-  // Public opportunities endpoint for landing page mockups (no auth)
-  app.get('/api/public/opportunities', (req, res) => {
-    const db = require('./db');
-    try {
-      const rows = db.searchOpportunities({});
-      const opps = rows.map(o => ({
-        title: o.title,
-        category: o.category,
-        tags: JSON.parse(o.tags || '[]'),
-        location_name: o.location_name,
-        price_tier: o.price_tier,
-        type: o.type,
-        source_url: o.source_url || null,
-      }));
-      res.json({ opportunities: opps });
-    } catch(e) {
-      res.status(500).json({ error: e.message });
-    }
-  });
 }
 
 // Make BASE_URL available to routes
