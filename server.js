@@ -207,15 +207,18 @@ function serveVariant(req, res, variant) {
   res.cookie('sa_variant', variant.id, { maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
 
   // Auto-inject tracking before </head>
-  const trackingSnippet = `<script src="/sa.js"></script>
-<script>sessionStorage.setItem('sa_variant','${variant.id}');window.__SA_VARIANT='${variant.id}';</script>`;
+  // Wrap sa() to always include variant — works even with old cached sa.js
+  const variantScript = `<script>
+sessionStorage.setItem('sa_variant','${variant.id}');
+window.__SA_VARIANT='${variant.id}';
+(function(){var _sa=window.sa;if(_sa){window.sa=function(e,p){p=p||{};if(!p.variant)p.variant='${variant.id}';return _sa(e,p);};}})();
+</script>`;
 
   // Only inject sa.js if not already present (check for actual script tag)
   if (html.includes('src="/sa.js"') || html.includes("src='/sa.js'")) {
-    html = html.replace('</head>',
-      `<script>sessionStorage.setItem('sa_variant','${variant.id}');window.__SA_VARIANT='${variant.id}';</script>\n</head>`);
+    html = html.replace('</head>', variantScript + '\n</head>');
   } else {
-    html = html.replace('</head>', trackingSnippet + '\n</head>');
+    html = html.replace('</head>', `<script src="/sa.js"></script>\n` + variantScript + '\n</head>');
   }
 
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -297,7 +300,7 @@ app.get('/api/email/unsubscribe', (req, res) => {
     <body><div class="box"><h1>Unsubscribed.</h1><p>You won't receive further emails from us.</p></div></body></html>`);
 });
 
-// ── PWA icon PNGs — generated from icon.svg via sharp ────────────────────────
+// ── PWA icon PNGs — generated from icon-source.png via sharp ─────────────────
 const _iconCache = {};
 app.get('/icon-:size.png', async (req, res) => {
   const size = parseInt(req.params.size);
@@ -305,8 +308,8 @@ app.get('/icon-:size.png', async (req, res) => {
   try {
     if (!_iconCache[size]) {
       const sharp = require('sharp');
-      const svgBuf = fs.readFileSync(path.join(__dirname, 'public', 'icon.svg'));
-      _iconCache[size] = await sharp(svgBuf).resize(size, size).png().toBuffer();
+      const srcBuf = fs.readFileSync(path.join(__dirname, 'public', 'icon-source.png'));
+      _iconCache[size] = await sharp(srcBuf).resize(size, size).png().toBuffer();
     }
     res.set('Content-Type', 'image/png');
     res.set('Cache-Control', 'public, max-age=604800'); // 1 week
