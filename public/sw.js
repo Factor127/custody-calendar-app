@@ -2,7 +2,7 @@
 // Phase 1: Offline shell + static asset caching
 // Phase 2: Push notification handling (added below)
 
-const CACHE_VERSION = 'spontany-v8';
+const CACHE_VERSION = 'spontany-v9';
 const STATIC_ASSETS = [
   '/styles.css',
   '/logo.svg',
@@ -58,6 +58,12 @@ self.addEventListener('fetch', event => {
             .then(cached => cached || caches.match('/calendar.html'))
         )
     );
+    return;
+  }
+
+  // Analytics script: always network-first (must stay up to date)
+  if (url.pathname === '/sa.js') {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
     return;
   }
 
