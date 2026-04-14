@@ -1249,22 +1249,22 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Daily carousel view — absolute-positioned cards ────────────── */
     .day-carousel {
-      position: relative; height: 500px; overflow: hidden;
+      position: relative; height: 420px; overflow: visible;
       padding: 0; margin: 0 auto;
       /* Break out of parent max-width so cards can use full viewport */
       width: 100vw; margin-left: calc(-50vw + 50%);
     }
     .day-carousel-arrow {
       position: absolute; top: 50%; transform: translateY(-50%);
-      background: rgba(230,249,82,0.06); border: 1.5px solid rgba(230,249,82,0.25);
-      border-radius: 50%; color: #e6f952; font-size: 24px; width: 36px; height: 36px;
+      background: rgba(230,249,82,0.12); border: 1.5px solid rgba(230,249,82,0.4);
+      border-radius: 50%; color: #e6f952; font-size: 26px; width: 42px; height: 42px;
       display: flex; align-items: center; justify-content: center; cursor: pointer;
-      line-height: 1; padding: 0; transition: all .2s ease; z-index: 10;
-      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      line-height: 1; padding: 0; transition: all .2s ease; z-index: 20;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     }
-    .day-carousel-arrow.arrow-left  { left: 4px; }
-    .day-carousel-arrow.arrow-right { right: 4px; }
-    .day-carousel-arrow:hover { background: rgba(230,249,82,0.18); border-color: var(--lime); }
+    .day-carousel-arrow.arrow-left  { left: 8px; }
+    .day-carousel-arrow.arrow-right { right: 8px; }
+    .day-carousel-arrow:hover { background: rgba(230,249,82,0.3); border-color: var(--lime); transform: translateY(-50%) scale(1.1); }
     .day-carousel-arrow:active { transform: translateY(-50%) scale(0.92); }
     .day-carousel-track {
       position: relative; width: 100%; height: 100%;
@@ -1280,10 +1280,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       will-change: transform, opacity;
     }
 
-    /* Center — hero card, nearly full viewport width */
+    /* Center — hero card, responsive width */
     .day-card.pos-0 {
-      width: calc(100vw - 32px); max-width: 600px;
-      height: 420px;
+      width: calc(100vw - 120px); max-width: 480px;
+      height: 340px;
       left: 50%; transform: translate(-50%, -50%);
       border-color: rgba(230,249,82,0.55); opacity: 1; filter: none;
       box-shadow:
@@ -1294,27 +1294,32 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .day-card.pos-0:active { transform: translate(-50%, -50%) scale(0.97); }
 
+    /* Larger screens: wider card with more room for arrows */
+    @media (min-width: 480px) {
+      .day-card.pos-0 { width: calc(100vw - 160px); height: 380px; }
+    }
+
     /* Side neighbours — peek out from behind center */
     .day-card.pos-n1 {
-      width: 80px; height: 320px;
-      left: 6px; transform: translateY(-50%);
+      width: 50px; height: 260px;
+      left: 4px; transform: translateY(-50%);
       opacity: 0.5; filter: brightness(0.55) saturate(0.65); z-index: 4;
     }
     .day-card.pos-1 {
-      width: 80px; height: 320px;
-      right: 6px; left: auto; transform: translateY(-50%);
+      width: 50px; height: 260px;
+      right: 4px; left: auto; transform: translateY(-50%);
       opacity: 0.5; filter: brightness(0.55) saturate(0.65); z-index: 4;
     }
-    .day-card.pos-n1:hover, .day-card.pos-1:hover { opacity: 0.7; }
+    .day-card.pos-n1:hover, .day-card.pos-1:hover { opacity: 0.7; cursor: pointer; }
 
     /* Far neighbours — barely visible on edges */
     .day-card.pos-n2 {
-      width: 30px; height: 240px;
+      width: 20px; height: 200px;
       left: 0; transform: translateY(-50%);
       opacity: 0.15; filter: brightness(0.3) saturate(0.4) blur(2px); z-index: 2;
     }
     .day-card.pos-2 {
-      width: 30px; height: 240px;
+      width: 20px; height: 200px;
       right: 0; left: auto; transform: translateY(-50%);
       opacity: 0.15; filter: brightness(0.3) saturate(0.4) blur(2px); z-index: 2;
     }
@@ -2834,6 +2839,41 @@ function nextMonth() {
     }
   }
 
+  // ── Mouse drag for desktop ──────────────────────────────────────────────
+  let _mouseDown = false;
+  function onMouseDown(e) {
+    if (calendarViewMode !== 'day') return;
+    if (e.target.closest('.day-carousel-arrow')) return; // don't interfere with arrow clicks
+    _tx = e.clientX; _ty = e.clientY;
+    _swiping = true; _mouseDown = true; _dragging = false; _cancelled = false;
+  }
+  function onMouseMove(e) {
+    if (!_mouseDown || !_swiping) return;
+    const dx = e.clientX - _tx;
+    const dy = e.clientY - _ty;
+    if (!_dragging && Math.abs(dx) > 8) _dragging = true;
+    if (_dragging && calendarViewMode === 'day' && !_carouselAnimating) {
+      e.preventDefault();
+      const track = document.getElementById('day-carousel-track');
+      if (track) {
+        const dampedDx = Math.sign(dx) * Math.pow(Math.abs(dx), DAMPING) * 2.5;
+        track.style.transform = `translateX(${dampedDx}px)`;
+        const progress = Math.min(Math.abs(dx) / 150, 1);
+        track.querySelectorAll('.day-card.pos-0').forEach(c => { c.style.opacity = 1 - progress * 0.15; });
+      }
+    }
+  }
+  function onMouseUp(e) {
+    if (!_mouseDown) return;
+    _mouseDown = false; _swiping = false;
+    const dx = e.clientX - _tx;
+    _resetTrackPos();
+    if (calendarViewMode === 'day' && Math.abs(dx) >= THRESHOLD && !_carouselAnimating) {
+      dx < 0 ? focusNextDay() : focusPrevDay();
+    }
+    _dragging = false;
+  }
+
   // Attach once the calendar container exists
   function attach() {
     const el = document.getElementById('calendar-container');
@@ -2841,6 +2881,10 @@ function nextMonth() {
     el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchend',   onTouchEnd,   { passive: true });
     el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    // Desktop mouse drag
+    el.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
   attach();
 })();
@@ -6320,6 +6364,14 @@ function toggleCalendarView() {
   }
   renderCalendar();
 }
+
+// Keyboard navigation for desktop
+document.addEventListener('keydown', (e) => {
+  if (calendarViewMode !== 'day') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); focusPrevDay(); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); focusNextDay(); }
+});
 
 function _dateAdd(dateStr, days) {
   const d = new Date(dateStr + 'T12:00:00');
