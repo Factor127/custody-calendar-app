@@ -1170,6 +1170,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .bn-item:hover { color: var(--text); }
     .bn-item.active { color: var(--accent); }
     .bn-icon { font-size: 20px; line-height: 1; }
+    .bn-svg-icon { width: 26px; height: 26px; object-fit: contain; }
+    .bn-fab-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 50%; }
     .bn-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     .bn-badge {
       position: absolute; top: 4px; right: calc(50% - 14px);
@@ -6315,14 +6317,14 @@ function showToast(msg) {
 <!-- ── Bottom navigation bar ── -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bn-item active" id="bn-view-toggle" onclick="toggleCalendarView()">
-    <span class="bn-icon" id="bn-view-icon">📅</span>
-    <span class="bn-label" id="bn-view-label">Month</span>
+    <img src="/icons/daily-view.svg" alt="Day" id="bn-view-icon" class="bn-svg-icon">
+    <span class="bn-label" id="bn-view-label">Day</span>
   </button>
   <button class="bn-item bn-fab" id="bn-fab-btn" onclick="openSmartCrafter()">
-    <div class="bn-fab-inner">⚡</div>
+    <div class="bn-fab-inner"><img src="/icons/logo-fab.svg" alt="Spontany" class="bn-fab-logo"></div>
   </button>
   <button class="bn-item" id="bn-pulse" onclick="showToast('My Pulse — coming soon')">
-    <span class="bn-icon" style="font-size:22px;line-height:1;">〰️</span>
+    <img src="/icons/pulse.svg" alt="Pulse" class="bn-svg-icon">
     <span class="bn-label">Pulse</span>
   </button>
 </nav>
@@ -6342,13 +6344,17 @@ let calendarViewMode = 'month'; // 'month' | 'day'
 let focusDate = null;           // YYYY-MM-DD for day carousel focus
 
 function toggleCalendarView() {
+  const icon = document.getElementById('bn-view-icon');
+  const label = document.getElementById('bn-view-label');
   if (calendarViewMode === 'month') {
     calendarViewMode = 'day';
     // Default focus to today
     const today = new Date();
     focusDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    document.getElementById('bn-view-icon').textContent = '📆';
-    document.getElementById('bn-view-label').textContent = 'Day';
+    // Now on day view → show monthly icon (to switch back)
+    icon.src = '/icons/monthly-view.svg';
+    icon.alt = 'Month';
+    label.textContent = 'Month';
     document.getElementById('month-heading-row').style.display = 'none';
   } else {
     calendarViewMode = 'month';
@@ -6358,8 +6364,10 @@ function toggleCalendarView() {
       currentViewYear = parseInt(parts[0]);
       currentViewMonth = parseInt(parts[1]) - 1;
     }
-    document.getElementById('bn-view-icon').textContent = '📅';
-    document.getElementById('bn-view-label').textContent = 'Month';
+    // Now on month view → show daily icon (to switch to day)
+    icon.src = '/icons/daily-view.svg';
+    icon.alt = 'Day';
+    label.textContent = 'Day';
     document.getElementById('month-heading-row').style.display = '';
   }
   renderCalendar();
