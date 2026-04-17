@@ -1129,7 +1129,7 @@ const PROGRESS = {
 // ── Navigation ────────────────────────────────────────────────────────────────
 function splashCTA() {
   if (typeof fbq !== 'undefined') fbq('track', 'Lead');
-  if (typeof sa === 'function') sa('splash_cta_click');
+  if (typeof sa === 'function') { sa('splash_cta_click'); sa('lp_cta_click'); }
   go('your-schedule');
 }
 
@@ -2014,6 +2014,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fire splash analytics (entry point for funnel dashboard)
   if (typeof sa !== 'undefined') sa('match_splash');
+  if (typeof sa === 'function') sa('lp_view');
 
   // Meta ad traffic — show full splash to gather behavior data
   // (splash skip disabled while we collect scroll/engagement metrics)

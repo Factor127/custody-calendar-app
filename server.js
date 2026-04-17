@@ -8,7 +8,7 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // ── A/B Testing Variants ─────────────────────────────────────────────────────
 const AB_VARIANTS = [
-  { id: 'control',   file: 'public/landing.html',    active: true },
+  { id: 'control',   file: 'public/match.html',      active: true },
   { id: 'lp1-match', file: 'mockups/lp1-match.html', active: true },
   { id: 'believe',   file: 'public/believe.html',    active: true },
 ];
@@ -16,6 +16,18 @@ const AB_VARIANTS = [
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ── A/B intercept for /match.html (ad traffic entry point) ─────────────────
+// Must be registered BEFORE express.static so we can inject variant tracking
+app.get('/match.html', (req, res) => {
+  const cookies = parseCookies(req);
+  if (req.query.utm_source || req.query.utm_campaign) {
+    res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+  }
+  const variant = assignVariant(cookies, req.query);
+  serveVariant(req, res, variant);
+});
+
 // Serve static files — HTML never cached so deploys are instant
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res, filePath) {
