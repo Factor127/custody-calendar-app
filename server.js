@@ -17,9 +17,11 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── A/B intercept for /match.html (ad traffic entry point) ─────────────────
-// Must be registered BEFORE express.static so we can inject variant tracking
-app.get('/match.html', (req, res) => {
+// ── A/B intercept for /match and /match.html (ad traffic entry point) ──────
+// Must be registered BEFORE express.static and the pages router so we can
+// inject variant tracking. Both paths are used in ad URLs (docs reference
+// /match without the extension; some links still use /match.html).
+app.get(['/match', '/match.html'], (req, res) => {
   const cookies = parseCookies(req);
   if (req.query.utm_source || req.query.utm_campaign) {
     res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
