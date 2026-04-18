@@ -338,6 +338,51 @@ db.exec(`CREATE TABLE IF NOT EXISTS analytics_archive (
   archived_at TEXT DEFAULT (datetime('now'))
 )`);
 
+// ── LP signups (separate from existing waitlist/users — captures pre-commitment intent) ─
+db.exec(`CREATE TABLE IF NOT EXISTS lp_signups (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id   TEXT,
+  variant      TEXT,
+  email        TEXT,
+  first_name   TEXT,
+  utm_source   TEXT,
+  utm_campaign TEXT,
+  utm_content  TEXT,
+  created_at   TEXT DEFAULT (datetime('now'))
+)`);
+try { db.exec('CREATE INDEX idx_lp_signups_variant ON lp_signups(variant)'); } catch(e) {}
+
+// ── Nudges (SMS + email reminders, user-requested from LP) ──────────────────
+db.exec(`CREATE TABLE IF NOT EXISTS nudges (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id   TEXT,
+  variant      TEXT,
+  channel      TEXT NOT NULL CHECK(channel IN ('sms','email')),
+  phone        TEXT,
+  email        TEXT,
+  first_name   TEXT,
+  send_at      TEXT NOT NULL,
+  time_choice  TEXT,
+  status       TEXT NOT NULL DEFAULT 'scheduled'
+    CHECK(status IN ('scheduled','sent','failed','opted_out','cancelled')),
+  twilio_sid   TEXT,
+  error        TEXT,
+  utm_source   TEXT,
+  utm_campaign TEXT,
+  utm_content  TEXT,
+  created_at   TEXT DEFAULT (datetime('now')),
+  sent_at      TEXT
+)`);
+try { db.exec('CREATE INDEX idx_nudges_status_send ON nudges(status, send_at)'); } catch(e) {}
+try { db.exec('CREATE INDEX idx_nudges_phone ON nudges(phone)'); } catch(e) {}
+
+// ── SMS opt-outs (STOP keyword) ─────────────────────────────────────────────
+db.exec(`CREATE TABLE IF NOT EXISTS sms_opt_outs (
+  phone      TEXT PRIMARY KEY,
+  source     TEXT DEFAULT 'stop_keyword',
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
 // UTM attribution on match requests
 try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_source TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_medium TEXT'); } catch(e) {}

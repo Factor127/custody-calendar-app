@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — Let him show he's serious</title>
+<meta name="description" content="You shouldn't have to chase his schedule. Send him a link. He fills it in. You see when you're both actually free.">
+<link rel="icon" href="/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="/sa.js"></script>
+<script src="/lp/_shared/lp-tracker.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(167,139,250,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(196,214,48,0.08) 0%, transparent 50%),
+      #0a0a0a;
+    color: #fff; min-height: 100vh; line-height: 1.5;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 140px; }
+  .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 40px; }
+  .logo img { height: 26px; }
+  .logo span { font-weight: 800; font-size: 14px; letter-spacing: 1px; }
+  h1 {
+    font-size: 36px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  h1 em { color: #a78bfa; font-style: normal; }
+  .sub { font-size: 17px; color: rgba(255,255,255,0.65); margin-bottom: 32px; }
+
+  .steps { margin: 32px 0; display: grid; gap: 12px; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+  }
+  .step .num {
+    flex: 0 0 28px; height: 28px; border-radius: 50%;
+    background: #a78bfa; color: #0a0a0a; font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step strong { display: block; font-size: 15px; margin-bottom: 2px; }
+  .step span { color: rgba(255,255,255,0.55); font-size: 13px; }
+
+  .form-card {
+    margin-top: 32px; padding: 24px; background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.3); border-radius: 16px;
+  }
+  .form-card h2 { font-size: 18px; margin-bottom: 6px; }
+  .form-card p { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 16px; }
+  label { display: block; margin: 12px 0 6px; font-size: 13px; color: rgba(255,255,255,0.7); }
+  input[type="text"], input[type="tel"] {
+    width: 100%; padding: 13px 14px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 15px;
+    font-family: inherit;
+  }
+  input:focus { outline: 0; border-color: #a78bfa; }
+  button.cta {
+    width: 100%; padding: 15px; margin-top: 18px; background: #a78bfa; color: #0a0a0a;
+    border: 0; border-radius: 999px; font-weight: 700; font-size: 15px; cursor: pointer;
+    font-family: inherit;
+  }
+  button.cta:disabled { opacity: 0.6; }
+  .fine { color: rgba(255,255,255,0.35); font-size: 11px; margin-top: 10px; line-height: 1.4; }
+  .mini { color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 14px; text-align: center; }
+  .thanks { text-align: center; padding: 30px 10px; }
+  .thanks h3 { font-size: 20px; margin-bottom: 8px; color: #a78bfa; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="logo">
+      <img src="/icon.svg" alt="">
+      <span>SPONTANY</span>
+    </div>
+
+    <h1>Let him <em>show</em> he's serious.</h1>
+    <p class="sub">Stop playing detective with his schedule. Send him a link. He fills in his custody weekends. You both see when you're actually free.</p>
+
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div><strong>Tell us your name + his number.</strong><span>We'll text him a private link. Takes 10 seconds.</span></div></div>
+      <div class="step"><div class="num">2</div><div><strong>He fills in his kid-free nights.</strong><span>No signup. No app. Just a calendar he taps through.</span></div></div>
+      <div class="step"><div class="num">3</div><div><strong>You see the overlap.</strong><span>The nights you're both free. Go book dinner.</span></div></div>
+    </div>
+
+    <div class="form-card" id="form-card">
+      <h2>Send him the link</h2>
+      <p>He gets a text from Spontany. You get a heads-up when he fills it in.</p>
+      <form id="share-form">
+        <label for="your_name">Your first name</label>
+        <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" required>
+
+        <label for="his_phone">His mobile</label>
+        <input id="his_phone" name="his_phone" type="tel" placeholder="+1 214 555 0123" required>
+
+        <button class="cta" type="submit">Send him the link →</button>
+        <p class="fine">He'll get one text from Spontany. Reply STOP to opt out anytime. No signup, no app.</p>
+      </form>
+    </div>
+
+    <div class="thanks" id="thanks" style="display:none;">
+      <h3>Sent.</h3>
+      <p style="color:rgba(255,255,255,0.6);">We'll text you the moment he fills it in.</p>
+    </div>
+
+    <p class="mini">Prefer to just check your own schedule? <a href="#" id="secondary-cta" style="color:#c4d630;">Do a quick demo →</a></p>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      window.LP && LP.init({ id: 'serious-v1', type: 'teaser-share', totalSteps: 0 });
+
+      var form = document.getElementById('share-form');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var yourName = form.your_name.value.trim();
+        var phone    = form.his_phone.value.trim();
+        if (!yourName || !phone) return;
+
+        var btn = form.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+
+        // Re-use the nudge endpoint — same SMS pipeline, different framing.
+        // The nudge copy will include the sender's first name.
+        var utm = {};
+        ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k) {
+          var v = sessionStorage.getItem(k);
+          if (v) utm[k] = v;
+        });
+
+        window.LP && LP.ctaClick({ button: 'share', role: 'sender' });
+        if (typeof sa === 'function') sa('share_open', { lp_type: 'teaser-share' });
+
+        fetch('/api/nudge/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: phone,
+            first_name: yourName, // sender's name — appears in message to recipient
+            time_choice: 'tomorrow_9am', // actually ~immediate for share; we keep the contract
+            tz_offset_min: new Date().getTimezoneOffset(),
+            variant: 'serious-v1',
+            session_id: sessionStorage.getItem('sa_sid'),
+            utm_source:   utm.utm_source,
+            utm_campaign: utm.utm_campaign,
+            utm_content:  utm.utm_content,
+          }),
+        })
+        .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+        .then(function(res) {
+          if (res.ok) {
+            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share' });
+            document.getElementById('form-card').style.display = 'none';
+            document.getElementById('thanks').style.display = 'block';
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Try again';
+          }
+        })
+        .catch(function() {
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+        });
+      });
+
+      document.getElementById('secondary-cta').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.LP && LP.ctaClick({ button: 'secondary' });
+        window.LP && LP.goToSignup('fallback');
+      });
+    });
+  </script>
+</body>
+</html>

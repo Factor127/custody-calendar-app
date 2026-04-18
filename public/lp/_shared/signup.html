@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — Get early access</title>
+<link rel="icon" href="/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0a0a0a; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 20px; min-height: 100vh; line-height: 1.5;
+  }
+  .card {
+    width: 100%; max-width: 420px; background: #111; border: 1px solid #1f1f1f;
+    border-radius: 20px; padding: 32px 24px;
+  }
+  .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+  .logo img { height: 28px; }
+  .logo span { font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
+  h1 { font-size: 24px; margin-bottom: 10px; line-height: 1.25; }
+  .sub { color: rgba(255,255,255,0.55); margin-bottom: 24px; font-size: 14px; }
+  label { display: block; font-size: 12px; color: rgba(255,255,255,0.6); margin: 14px 0 6px; }
+  input[type="text"], input[type="email"] {
+    width: 100%; padding: 13px 14px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 15px;
+    font-family: inherit;
+  }
+  input:focus { outline: 0; border-color: #c4d630; }
+  button.primary {
+    width: 100%; padding: 14px; margin-top: 20px; background: #c4d630;
+    color: #0a0a0a; border: 0; border-radius: 999px; font-weight: 700;
+    font-size: 15px; cursor: pointer; font-family: inherit;
+  }
+  button.primary:disabled { opacity: 0.6; cursor: default; }
+  .nudge-link {
+    display: block; text-align: center; margin-top: 16px;
+    color: rgba(255,255,255,0.55); font-size: 13px; text-decoration: underline;
+  }
+  .thanks { text-align: center; padding: 20px 0; }
+  .thanks h2 { font-size: 22px; margin-bottom: 8px; }
+  .thanks p { color: rgba(255,255,255,0.6); font-size: 14px; }
+  .fine { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 16px; text-align: center; }
+</style>
+</head>
+<body>
+  <main class="card" id="card">
+    <div class="logo">
+      <img src="/icon.svg" alt="">
+      <span>SPONTANY</span>
+    </div>
+
+    <div id="form-view">
+      <h1>You're almost in.</h1>
+      <p class="sub">Drop your email — we'll send early access as spots open.</p>
+
+      <form id="signup-form">
+        <label for="first_name">First name <span style="opacity:0.4">(optional)</span></label>
+        <input id="first_name" name="first_name" type="text" autocomplete="given-name" maxlength="40">
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+
+        <button class="primary" type="submit">Get early access</button>
+        <a href="#" id="nudge-open" class="nudge-link">Not ready now? Nudge me later →</a>
+        <p class="fine">No spam. One email when your spot opens.</p>
+      </form>
+    </div>
+
+    <div id="thanks-view" class="thanks" style="display:none;">
+      <h2>You're on the list.</h2>
+      <p id="thanks-sub">We'll email you as soon as your spot opens.</p>
+    </div>
+  </main>
+
+  <script src="/sa.js"></script>
+  <script src="/lp/_shared/lp-tracker.js"></script>
+  <script>
+    var params  = new URLSearchParams(location.search);
+    var variant = params.get('variant') || sessionStorage.getItem('sa_variant') || '';
+    if (variant) sessionStorage.setItem('sa_variant', variant);
+
+    window.LP && LP.init({ id: variant || 'signup', type: 'signup', totalSteps: 0 });
+    // Fire signup_view separately — decisive metric
+    if (typeof sa === 'function') sa('signup_view', { variant: variant, src: params.get('src') || 'cta' });
+
+    document.getElementById('signup-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var email = document.getElementById('email').value.trim();
+      var first = document.getElementById('first_name').value.trim();
+      if (!email) return;
+
+      var btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      var utm = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k) {
+        var v = params.get(k) || sessionStorage.getItem(k);
+        if (v) utm[k] = v;
+      });
+
+      fetch('/api/lp/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          first_name: first,
+          variant: variant,
+          session_id: sessionStorage.getItem('sa_sid'),
+          utm_source:   utm.utm_source,
+          utm_campaign: utm.utm_campaign,
+          utm_content:  utm.utm_content,
+        }),
+      })
+      .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
+      .then(function(res) {
+        if (res.ok) {
+          sa('signup_submit', { variant: variant, src: params.get('src') || 'cta' });
+          document.getElementById('form-view').style.display   = 'none';
+          document.getElementById('thanks-view').style.display = 'block';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Try again';
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'Try again';
+      });
+    });
+  </script>
+</body>
+</html>

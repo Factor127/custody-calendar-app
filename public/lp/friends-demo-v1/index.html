@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — See when you're both actually free</title>
+<meta name="description" content="Two custody schedules. One answer. 30-second demo of how Spontany finds the nights you both have the kids — or don't.">
+<link rel="icon" href="/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/sa.js"></script>
+<script src="/lp/_shared/lp-tracker.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0a0a0a; color: #fff; min-height: 100vh; line-height: 1.5;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 140px; }
+  .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 36px; }
+  .logo img { height: 26px; }
+  .logo span { font-weight: 800; font-size: 14px; letter-spacing: 1px; }
+
+  /* Hero */
+  .hero { text-align: center; margin-bottom: 36px; }
+  h1 { font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
+  h1 em { color: #c4d630; font-style: normal; }
+  .sub { font-size: 16px; color: rgba(255,255,255,0.65); }
+
+  /* Progress bar */
+  .progress {
+    display: flex; gap: 6px; margin-bottom: 24px;
+  }
+  .progress .bar {
+    flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
+  }
+  .progress .bar.active { background: rgba(196,214,48,0.3); }
+  .progress .bar.done   { background: #c4d630; }
+
+  /* Steps */
+  .step-card {
+    background: #111; border: 1px solid #1f1f1f; border-radius: 16px;
+    padding: 24px 20px; min-height: 400px;
+  }
+  .step-label { color: #c4d630; font-size: 12px; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .step-card h2 { font-size: 22px; margin-bottom: 6px; }
+  .step-card p.instr { color: rgba(255,255,255,0.55); font-size: 14px; margin-bottom: 20px; }
+
+  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 20px 0; }
+  .day {
+    aspect-ratio: 1; background: #1a1a1a; border: 1px solid #222; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); transition: all 0.15s;
+    user-select: none;
+  }
+  .day.selected { background: #c4d630; color: #0a0a0a; border-color: #c4d630; }
+  .day.partner  { background: #a78bfa; color: #0a0a0a; border-color: #a78bfa; }
+  .day.overlap  { background: linear-gradient(135deg, #c4d630 50%, #a78bfa 50%); color: #0a0a0a; }
+  .dow { font-size: 10px; color: rgba(255,255,255,0.35); text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .legend { display: flex; gap: 16px; margin-top: 16px; font-size: 12px; color: rgba(255,255,255,0.6); flex-wrap: wrap; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+  .sw.you { background: #c4d630; }
+  .sw.them { background: #a78bfa; }
+  .sw.both { background: linear-gradient(135deg, #c4d630 50%, #a78bfa 50%); }
+
+  .next {
+    width: 100%; margin-top: 24px; padding: 14px; background: #c4d630; color: #0a0a0a;
+    border: 0; border-radius: 999px; font-weight: 700; font-size: 15px; cursor: pointer;
+    font-family: inherit;
+  }
+  .next:disabled { opacity: 0.4; cursor: default; }
+  .back {
+    background: transparent; color: rgba(255,255,255,0.5); border: 0;
+    padding: 12px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+
+  /* Result */
+  .result h2 { font-size: 26px; }
+  .result .big { font-size: 40px; font-weight: 800; color: #c4d630; margin: 16px 0 4px; }
+  .result .lil { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 24px; }
+  .result ul.overlap-list { list-style: none; padding: 0; margin: 20px 0; }
+  .result ul.overlap-list li {
+    padding: 12px 14px; background: rgba(196,214,48,0.08); border: 1px solid rgba(196,214,48,0.2);
+    border-radius: 10px; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #c4d630;
+  }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="logo">
+      <img src="/icon.svg" alt="">
+      <span>SPONTANY</span>
+    </div>
+
+    <div class="hero">
+      <h1>Two schedules.<br><em>One answer.</em></h1>
+      <p class="sub">30-second demo. See how it actually works.</p>
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+
+    <section class="step-card" id="step-card"></section>
+  </main>
+
+  <script>
+    // Step content is a single-file mini-SPA. Each step calls LP.step().
+    // Demo uses a 14-day grid (2 weeks).
+    var state = { step: 1, youDays: new Set(), themDays: new Set() };
+
+    var dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    function daysGrid(selectedSet, partnerSet, onToggle) {
+      var html = '<div class="calendar">';
+      dows.forEach(function(d) { html += '<div class="dow">' + d + '</div>'; });
+      for (var i = 0; i < 14; i++) {
+        var classes = 'day';
+        var you   = selectedSet.has(i);
+        var them  = partnerSet && partnerSet.has(i);
+        if (you && them) classes += ' overlap';
+        else if (you)    classes += ' selected';
+        else if (them)   classes += ' partner';
+        html += '<div class="' + classes + '" data-idx="' + i + '">' + (i + 1) + '</div>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function render() {
+      var card = document.getElementById('step-card');
+      var bars = document.querySelectorAll('.progress .bar');
+      bars.forEach(function(b, i) {
+        b.classList.remove('active','done');
+        if (i + 1 < state.step) b.classList.add('done');
+        else if (i + 1 === state.step) b.classList.add('active');
+      });
+
+      if (state.step === 1) {
+        card.innerHTML =
+          '<div class="step-label">STEP 1 OF 3</div>' +
+          '<h2>Tap your kid-free nights.</h2>' +
+          '<p class="instr">Next 2 weeks. Just tap the evenings you don\'t have the kids.</p>' +
+          daysGrid(state.youDays, null) +
+          '<div class="legend"><span><span class="sw you"></span>You (free)</span></div>' +
+          '<button class="next" id="go1">Next →</button>';
+
+        card.querySelector('.calendar').addEventListener('click', function(e) {
+          var d = e.target.closest('.day');
+          if (!d) return;
+          var idx = parseInt(d.dataset.idx);
+          if (state.youDays.has(idx)) state.youDays.delete(idx);
+          else state.youDays.add(idx);
+          render();
+        });
+        document.getElementById('go1').disabled = state.youDays.size === 0;
+        document.getElementById('go1').addEventListener('click', function() {
+          window.LP && LP.step(2, 'partner_days');
+          state.step = 2; render();
+        });
+
+      } else if (state.step === 2) {
+        card.innerHTML =
+          '<div class="step-label">STEP 2 OF 3</div>' +
+          '<h2>Now imagine your partner\'s.</h2>' +
+          '<p class="instr">Tap the nights they\'re kid-free. We\'ll show you where they overlap.</p>' +
+          daysGrid(state.themDays, state.youDays) +
+          '<div class="legend">' +
+            '<span><span class="sw you"></span>You</span>' +
+            '<span><span class="sw them"></span>Them</span>' +
+            '<span><span class="sw both"></span>Overlap</span>' +
+          '</div>' +
+          '<button class="next" id="go2">See the overlap →</button>' +
+          '<button class="back" id="back2">← Back</button>';
+
+        card.querySelector('.calendar').addEventListener('click', function(e) {
+          var d = e.target.closest('.day');
+          if (!d) return;
+          var idx = parseInt(d.dataset.idx);
+          if (state.themDays.has(idx)) state.themDays.delete(idx);
+          else state.themDays.add(idx);
+          render();
+        });
+        document.getElementById('go2').disabled = state.themDays.size === 0;
+        document.getElementById('go2').addEventListener('click', function() {
+          window.LP && LP.complete({ you_days: state.youDays.size, them_days: state.themDays.size });
+          state.step = 3; render();
+        });
+        document.getElementById('back2').addEventListener('click', function() {
+          state.step = 1; render();
+        });
+
+      } else {
+        var overlap = [];
+        state.youDays.forEach(function(d) { if (state.themDays.has(d)) overlap.push(d); });
+        var yourFree = state.youDays.size;
+        var theirFree = state.themDays.size;
+        var bothFree  = overlap.length;
+
+        var msgs = overlap.sort(function(a,b){return a-b;}).slice(0,5).map(function(d){
+          return '<li>Day ' + (d + 1) + ' — both free</li>';
+        }).join('');
+
+        card.innerHTML =
+          '<div class="result">' +
+          '<div class="step-label">STEP 3 OF 3</div>' +
+          '<h2>Your answer:</h2>' +
+          '<div class="big">' + bothFree + ' night' + (bothFree === 1 ? '' : 's') + '</div>' +
+          '<div class="lil">where you\'re both actually free in the next 2 weeks.</div>' +
+          (msgs ? '<ul class="overlap-list">' + msgs + '</ul>' : '<p style="color:rgba(255,255,255,0.5);">No overlap yet. Try again, or sync with someone real.</p>') +
+          '<button class="next" id="signup">Get my real calendar →</button>' +
+          '<button class="back" id="back3">← Try different days</button>' +
+          '</div>';
+
+        document.getElementById('signup').addEventListener('click', function() {
+          window.LP && LP.ctaClick({ button: 'post-demo', overlap: bothFree });
+          window.LP && LP.goToSignup('post-demo');
+        });
+        document.getElementById('back3').addEventListener('click', function() {
+          state.step = 2; render();
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      window.LP && LP.init({ id: 'friends-demo-v1', type: 'demo', totalSteps: 3 });
+      window.LP && LP.step(1, 'your_days');
+      render();
+    });
+  </script>
+</body>
+</html>

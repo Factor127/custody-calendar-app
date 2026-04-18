@@ -7,11 +7,21 @@ const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // ── A/B Testing Variants ─────────────────────────────────────────────────────
-const AB_VARIANTS = [
-  { id: 'control',   file: 'public/match.html',      active: true },
-  { id: 'lp1-match', file: 'mockups/lp1-match.html', active: true },
-  { id: 'believe',   file: 'public/believe.html',    active: true },
-];
+// Source of truth: routes/lp.js exports the LPs registry. We mirror the
+// shape the rotator needs here. To add/retire LPs, edit routes/lp.js.
+const AB_VARIANTS = (() => {
+  try {
+    const { LPs } = require('./routes/lp');
+    return LPs.filter(lp => lp.active).map(lp => ({ id: lp.id, file: lp.file, active: true, lpType: lp.type }));
+  } catch (e) {
+    console.error('[ab] failed to load LP registry, falling back to legacy variants:', e.message);
+    return [
+      { id: 'control',   file: 'public/match.html',      active: true },
+      { id: 'lp1-match', file: 'mockups/lp1-match.html', active: true },
+      { id: 'believe',   file: 'public/believe.html',    active: true },
+    ];
+  }
+})();
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
@@ -95,12 +105,16 @@ const opportunitiesRouter  = require('./routes/opportunities');
 const contributionsRouter  = require('./routes/contributions');
 const matchRouter          = require('./routes/match');
 const analyticsRouter      = require('./routes/analytics');
+const nudgeRouter          = require('./routes/nudge');
+const lpRouter             = require('./routes/lp');
 app.use('/api', opportunitiesRouter);
 app.use('/api', contributionsRouter);
 app.use('/api', smartSuggestRouter);
 app.use('/api', pushRouter);
 app.use('/api', matchRouter);
 app.use('/api', analyticsRouter);
+app.use('/api', nudgeRouter);
+app.use('/', lpRouter);
 app.use('/', pagesRouter);
 
 // ── Waitlist API (public + admin) ─────────────────────────────────────────────
@@ -222,9 +236,12 @@ function serveVariant(req, res, variant) {
 
   // Auto-inject tracking before </head>
   // Wrap sa() to always include variant — works even with old cached sa.js
+  const lpType = variant.lpType || '';
   const variantScript = `<script>
 sessionStorage.setItem('sa_variant','${variant.id}');
 window.__SA_VARIANT='${variant.id}';
+window.__LP_ID='${variant.id}';
+window.__LP_TYPE='${lpType}';
 (function(){var _sa=window.sa;if(_sa){window.sa=function(e,p){p=p||{};if(!p.variant)p.variant='${variant.id}';return _sa(e,p);};}})();
 </script>`;
 
@@ -233,6 +250,11 @@ window.__SA_VARIANT='${variant.id}';
     html = html.replace('</head>', variantScript + '\n</head>');
   } else {
     html = html.replace('</head>', `<script src="/sa.js"></script>\n` + variantScript + '\n</head>');
+  }
+
+  // LP variants get the SDK auto-injected (floating CTA + nudge panel)
+  if (lpType && !html.includes('/lp/_shared/lp-tracker.js')) {
+    html = html.replace('</head>', `<script src="/lp/_shared/lp-tracker.js"></script>\n</head>`);
   }
 
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -362,6 +384,14 @@ app.listen(PORT, () => {
     startSequenceProcessor();
   } else {
     console.log('  → Email sequence: disabled (set RESEND_API_KEY to enable)');
+  }
+
+  // ── Nudge worker (polls every 60s for due SMS nudges) ────────────────────
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    nudgeRouter.startNudgeWorker();
+    console.log('  → Nudge worker: active (polls every 60s)');
+  } else {
+    console.log('  → Nudge worker: disabled (set TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN to enable)');
   }
 });
 

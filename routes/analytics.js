@@ -136,7 +136,7 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY visitors DESC
   `).all();
 
-  // 10. A/B variant funnel
+  // 10. A/B variant funnel (legacy events — kept for historical compatibility)
   const variantFunnel = db.prepare(`
     SELECT
       json_extract(props, '$.variant') AS variant,
@@ -152,7 +152,44 @@ router.get('/admin/analytics', (req, res) => {
     GROUP BY variant
   `).all();
 
-  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel });
+  // 11. LP framework funnel — the new canonical metrics.
+  // Pulls LP metadata (label, type) from routes/lp.js so the UI can show
+  // type pills + fair comparisons.
+  let lpFunnel = [];
+  try {
+    const { LPs } = require('./lp');
+    lpFunnel = LPs.map(lp => {
+      const row = db.prepare(`
+        SELECT
+          COUNT(DISTINCT CASE WHEN event='lp_view'           THEN session_id END) AS views,
+          COUNT(DISTINCT CASE WHEN event='lp_cta_click'      THEN session_id END) AS cta_clicks,
+          COUNT(DISTINCT CASE WHEN event='lp_cta_float_click'THEN session_id END) AS cta_float_clicks,
+          COUNT(DISTINCT CASE WHEN event='demo_step'         THEN session_id END) AS demo_any_step,
+          COUNT(DISTINCT CASE WHEN event='demo_complete'     THEN session_id END) AS demo_completes,
+          COUNT(DISTINCT CASE WHEN event='nudge_open'        THEN session_id END) AS nudge_opens,
+          COUNT(DISTINCT CASE WHEN event='nudge_scheduled'   THEN session_id END) AS nudges_scheduled,
+          COUNT(DISTINCT CASE WHEN event='signup_view'       THEN session_id END) AS signup_views,
+          COUNT(DISTINCT CASE WHEN event='signup_submit'     THEN session_id END) AS signups,
+          COUNT(DISTINCT CASE WHEN event='share_sent'        THEN session_id END) AS shares
+        FROM analytics_events
+        WHERE json_extract(props, '$.variant') = ?
+      `).get(lp.id) || {};
+      return {
+        id: lp.id,
+        label: lp.label,
+        type: lp.type,
+        active: lp.active,
+        ...row,
+      };
+    });
+  } catch(e) { /* lp registry may not be available */ }
+
+  // 12. Nudge pipeline status
+  const nudgeStatus = db.prepare(`
+    SELECT status, COUNT(*) AS cnt FROM nudges GROUP BY status
+  `).all();
+
+  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel, lpFunnel, nudgeStatus });
 });
 
 // DELETE /api/admin/analytics — archive then reset analytics data

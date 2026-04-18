@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — You got your time back</title>
+<meta name="description" content="Free time is only free if you can use it. Spontany lines up your schedule with the people you care about.">
+<link rel="icon" href="/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="/sa.js"></script>
+<script src="/lp/_shared/lp-tracker.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: radial-gradient(ellipse at 50% 0%, #131321 0%, #0a0a0a 60%);
+    color: #fff; min-height: 100vh; line-height: 1.5;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 120px; }
+  .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 48px; }
+  .logo img { height: 26px; }
+  .logo span { font-weight: 800; font-size: 14px; letter-spacing: 1px; }
+  h1 {
+    font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  h1 em { color: #c4d630; font-style: normal; }
+  .sub { font-size: 17px; color: rgba(255,255,255,0.65); margin-bottom: 32px; }
+  .cta {
+    display: inline-block; padding: 16px 32px; background: #c4d630; color: #0a0a0a;
+    text-decoration: none; border-radius: 999px; font-weight: 700; font-size: 16px;
+    box-shadow: 0 8px 24px rgba(196,214,48,0.2);
+  }
+  .cta:active { transform: scale(0.98); }
+  .mini { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 14px; }
+  .proof {
+    margin-top: 56px; padding: 20px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+    color: rgba(255,255,255,0.75); font-size: 14px;
+  }
+  .proof b { color: #c4d630; }
+  .spacer { height: 60px; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="logo">
+      <img src="/icon.svg" alt="">
+      <span>SPONTANY</span>
+    </div>
+
+    <h1>You got your <em>time back</em>.<br>Now sync it with the people you love.</h1>
+    <p class="sub">Free time is only free if someone you care about is free too. Spontany quietly lines up your custody schedule with your partner, your friends, your kid-free nights.</p>
+
+    <a href="#" class="cta" id="primary-cta">See how it lines up →</a>
+    <p class="mini">Free. Private. No app download.</p>
+
+    <div class="proof">
+      <b>Beta users</b> check their shared schedule <b>4× a week</b> before making plans — because knowing beats asking.
+    </div>
+
+    <div class="spacer"></div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      window.LP && LP.init({ id: 'timeback-v1', type: 'hero', totalSteps: 0 });
+      var cta = document.getElementById('primary-cta');
+      cta.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.LP && LP.ctaClick({ button: 'primary' });
+        window.LP && LP.goToSignup('hero');
+      });
+    });
+  </script>
+</body>
+</html>

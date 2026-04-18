@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — Why we built this</title>
+<meta name="description" content="The honest story behind Spontany — why it's free, how your privacy works, and what we're actually trying to solve.">
+<link rel="icon" href="/icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/sa.js"></script>
+<script src="/lp/_shared/lp-tracker.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0a0a0a; color: #fff; min-height: 100vh; line-height: 1.6;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 28px 20px 140px; }
+  .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 40px; }
+  .logo img { height: 26px; }
+  .logo span { font-weight: 800; font-size: 14px; letter-spacing: 1px; }
+  h1 {
+    font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .intro {
+    color: rgba(255,255,255,0.7); font-size: 17px; margin-bottom: 32px;
+  }
+  h2 {
+    font-size: 15px; font-weight: 700; margin: 32px 0 10px;
+    color: #c4d630; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  p { color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 12px; }
+  p.quiet { color: rgba(255,255,255,0.5); font-size: 14px; }
+  ul { padding-left: 20px; color: rgba(255,255,255,0.8); font-size: 15px; }
+  ul li { margin-bottom: 6px; }
+  .cta-block {
+    margin-top: 48px; padding: 24px; background: rgba(196,214,48,0.06);
+    border: 1px solid rgba(196,214,48,0.2); border-radius: 14px; text-align: center;
+  }
+  .cta-block h3 { font-size: 19px; margin-bottom: 8px; }
+  .cta-block p { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+  .cta {
+    display: inline-block; padding: 15px 30px; background: #c4d630; color: #0a0a0a;
+    text-decoration: none; border-radius: 999px; font-weight: 700; font-size: 15px;
+  }
+  .cta:active { transform: scale(0.98); }
+  .sign { margin-top: 40px; color: rgba(255,255,255,0.45); font-size: 13px; font-style: italic; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="logo">
+      <img src="/icon.svg" alt="">
+      <span>SPONTANY</span>
+    </div>
+
+    <h1>Why we built Spontany.</h1>
+    <p class="intro">Short version: I got divorced, spent years staring at calendars, and realized the hardest part wasn't custody — it was coordinating a life around it. So I built the thing I wished existed.</p>
+
+    <h2>Who it's for</h2>
+    <p>Divorced parents with kids aged 0–14. You've got a custody schedule, and half your mental energy goes to texting "do you have the kids that weekend?" Spontany does that math once, quietly, and lets you both see the overlap.</p>
+
+    <h2>Why it's free</h2>
+    <p>No ads. No selling data. No freemium gates. At least not yet.</p>
+    <p>The real answer: I'd rather 5,000 people use it and make one compound suggestion than 50 people pay $9/month for a half-built product. If it works, I'll figure out pricing later — probably a small fee to unlock friend-group planning or venue recommendations. The core custody sync will stay free. Always.</p>
+
+    <h2>How your privacy works</h2>
+    <ul>
+      <li>Your schedule is visible only to people you explicitly invite.</li>
+      <li>You can revoke access any time — it's one tap.</li>
+      <li>We don't share, sell, or look at your data to show you ads.</li>
+      <li>If you delete your account, we delete your data. For real.</li>
+    </ul>
+
+    <h2>What it won't do</h2>
+    <p>Spontany won't fix your coparent relationship, won't solve your custody dispute, won't replace therapy. It's a calendar overlap tool. A really good one — and one that's built for the shape your life actually has.</p>
+
+    <div class="cta-block">
+      <h3>Want to try it?</h3>
+      <p>We're in gated beta. Drop your email — we'll text you when your spot opens.</p>
+      <a href="#" class="cta" id="primary-cta">Get on the list →</a>
+    </div>
+
+    <p class="sign">— Ran, founder</p>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      window.LP && LP.init({ id: 'why-v1', type: 'explainer', totalSteps: 0 });
+      var cta = document.getElementById('primary-cta');
+      cta.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.LP && LP.ctaClick({ button: 'primary' });
+        window.LP && LP.goToSignup('hero');
+      });
+    });
+  </script>
+</body>
+</html>
