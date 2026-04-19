@@ -62,29 +62,27 @@
   h1 em { color: #a78bfa; font-style: normal; }
   .sub { font-size: 17px; color: rgba(255,255,255,0.65); margin-bottom: 32px; }
 
-  .steps { margin: 32px 0; display: grid; gap: 12px; }
-  .step {
-    display: flex; gap: 14px; align-items: flex-start;
-    padding: 14px; background: rgba(15, 15, 22, 0.88);
-    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  }
-  .step .num {
-    flex: 0 0 28px; height: 28px; border-radius: 50%;
-    background: #a78bfa; color: #0a0a0a; font-weight: 800; font-size: 13px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .step strong { display: block; font-size: 15px; margin-bottom: 2px; }
-  .step span { color: rgba(255,255,255,0.55); font-size: 13px; }
-
   .form-card {
     margin-top: 32px; padding: 24px;
     background: linear-gradient(to bottom, rgba(20, 15, 30, 0.95), rgba(15, 15, 22, 0.95));
     border: 1px solid rgba(167,139,250,0.3); border-radius: 16px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
-  .form-card h2 { font-size: 18px; margin-bottom: 6px; }
-  .form-card p { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 16px; }
+  .step-list {
+    list-style: none; padding: 0; margin: 0 0 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 18px;
+  }
+  .step-list li {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 6px 0; font-size: 14px; color: rgba(255,255,255,0.75);
+  }
+  .step-list .num {
+    flex: 0 0 22px; height: 22px; margin-top: 1px; border-radius: 50%;
+    background: #a78bfa; color: #0a0a0a; font-weight: 800; font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .step-list .txt { flex: 1; line-height: 1.45; }
+  .step-list strong { color: #fff; font-weight: 700; }
   label { display: block; margin: 12px 0 6px; font-size: 13px; color: rgba(255,255,255,0.7); }
   input[type="text"], input[type="tel"] {
     width: 100%; padding: 13px 14px; background: #1a1a1a; color: #fff;
@@ -116,15 +114,13 @@
       <p class="sub">Stop playing detective with his schedule. Send him a link. He fills in his custody weekends. You both see when you're actually free.</p>
     </section>
 
-    <div class="steps">
-      <div class="step"><div class="num">1</div><div><strong>Tell us your name + his number.</strong><span>We'll text him a private link. Takes 10 seconds.</span></div></div>
-      <div class="step"><div class="num">2</div><div><strong>He fills in his kid-free nights.</strong><span>No signup. No app. Just a calendar he taps through.</span></div></div>
-      <div class="step"><div class="num">3</div><div><strong>You see the overlap.</strong><span>The nights you're both free. Go book dinner.</span></div></div>
-    </div>
-
     <div class="form-card" id="form-card">
-      <h2>Send him the link</h2>
-      <p>He gets a text from Spontany. You get a heads-up when he fills it in.</p>
+      <ol class="step-list">
+        <li><span class="num">1</span><span class="txt"><strong>Enter his number.</strong> We text him a private link.</span></li>
+        <li><span class="num">2</span><span class="txt"><strong>He taps his kid-free nights.</strong> No signup. No app.</span></li>
+        <li><span class="num">3</span><span class="txt"><strong>You see the overlap.</strong> The nights you're both free.</span></li>
+      </ol>
+
       <form id="share-form">
         <label for="your_name">Your first name</label>
         <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" required>
@@ -133,7 +129,7 @@
         <input id="his_phone" name="his_phone" type="tel" placeholder="+1 214 555 0123" required>
 
         <button class="cta" type="submit">Send him the link →</button>
-        <p class="fine">He'll get one text from Spontany. Reply STOP to opt out anytime. No signup, no app.</p>
+        <p class="fine">He gets one text from Spontany. Reply STOP to opt out anytime. No signup, no app.</p>
       </form>
     </div>
 
