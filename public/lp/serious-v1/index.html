@@ -13,13 +13,28 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Inter', system-ui, sans-serif;
-    background:
-      radial-gradient(ellipse at 20% 0%, rgba(167,139,250,0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 80%, rgba(196,214,48,0.08) 0%, transparent 50%),
-      #0a0a0a;
     color: #fff; min-height: 100vh; line-height: 1.5;
+    background: #0a0a0a;
   }
-  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 140px; }
+  /* Fixed backdrop image behind everything, with a gradient overlay that
+     keeps the image visible at the top (hero) and fades to solid dark
+     for form/steps readability further down. */
+  .backdrop {
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      linear-gradient(to bottom,
+        rgba(10,10,10,0.15) 0%,
+        rgba(10,10,10,0.25) 28%,
+        rgba(10,10,10,0.75) 52%,
+        #0a0a0a 72%
+      ),
+      url('/lp/serious-v1/assets/hero-backdrop.webp') top center / cover no-repeat,
+      #0a0a0a;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 140px; position: relative; }
+  /* Hero section gets extra top padding so the image carries the visual story */
+  .hero-area { padding-top: 42vh; }
+  .hero-area h1, .hero-area .sub { text-shadow: 0 2px 14px rgba(0,0,0,0.55); }
   .logo { margin-bottom: 40px; }
   .logo img { height: 30px; width: auto; display: block; }
   h1 {
@@ -32,8 +47,9 @@
   .steps { margin: 32px 0; display: grid; gap: 12px; }
   .step {
     display: flex; gap: 14px; align-items: flex-start;
-    padding: 14px; background: rgba(255,255,255,0.04);
+    padding: 14px; background: rgba(15, 15, 22, 0.88);
     border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
   .step .num {
     flex: 0 0 28px; height: 28px; border-radius: 50%;
@@ -44,8 +60,10 @@
   .step span { color: rgba(255,255,255,0.55); font-size: 13px; }
 
   .form-card {
-    margin-top: 32px; padding: 24px; background: rgba(167,139,250,0.08);
+    margin-top: 32px; padding: 24px;
+    background: linear-gradient(to bottom, rgba(20, 15, 30, 0.95), rgba(15, 15, 22, 0.95));
     border: 1px solid rgba(167,139,250,0.3); border-radius: 16px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
   .form-card h2 { font-size: 18px; margin-bottom: 6px; }
   .form-card p { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 16px; }
@@ -69,13 +87,16 @@
 </style>
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true"></div>
   <main class="wrap">
     <div class="logo">
       <img src="/logo-wordmark.svg" alt="Spontany">
     </div>
 
-    <h1>Let him <em>show</em> he's serious.</h1>
-    <p class="sub">Stop playing detective with his schedule. Send him a link. He fills in his custody weekends. You both see when you're actually free.</p>
+    <section class="hero-area">
+      <h1>Let him <em>show</em> he's serious.</h1>
+      <p class="sub">Stop playing detective with his schedule. Send him a link. He fills in his custody weekends. You both see when you're actually free.</p>
+    </section>
 
     <div class="steps">
       <div class="step"><div class="num">1</div><div><strong>Tell us your name + his number.</strong><span>We'll text him a private link. Takes 10 seconds.</span></div></div>
