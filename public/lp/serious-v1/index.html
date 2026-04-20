@@ -164,8 +164,8 @@
         <label for="your_name">Your first name</label>
         <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" required>
 
-        <label for="his_phone">His mobile</label>
-        <input id="his_phone" name="his_phone" type="tel" placeholder="+1 214 555 0123" required>
+        <label for="his_phone">His mobile <span style="opacity:0.5;font-weight:400;">(only if you want us to text him)</span></label>
+        <input id="his_phone" name="his_phone" type="tel" placeholder="+1 214 555 0123">
 
         <button class="cta" type="submit">Text him the link →</button>
         <a href="#" class="alt-link" id="copy-mode-link">Or get a link to send yourself →</a>
@@ -213,7 +213,15 @@
       function createShare(mode) {
         var yourName = form.your_name.value.trim();
         var phone    = form.his_phone.value.trim();
-        if (!yourName || !phone) { form.reportValidity(); return Promise.reject('invalid'); }
+
+        // Name is always required; phone is only required in text mode.
+        if (!yourName) { form.your_name.focus(); return Promise.reject('missing_name'); }
+        if (mode === 'text' && !phone) {
+          form.his_phone.setAttribute('required', 'required');
+          form.reportValidity();
+          form.his_phone.removeAttribute('required');
+          return Promise.reject('missing_phone');
+        }
 
         window.LP && LP.ctaClick({ button: 'share', mode: mode });
         if (typeof sa === 'function') sa('share_open', { lp_type: 'teaser-share', mode: mode });
@@ -224,7 +232,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             person_a_name: yourName,
-            person_b_phone: phone,
+            person_b_phone: phone || undefined, // omit if empty (copy mode)
             mode: mode, // 'text' | 'copy'
             variant: 'serious-v1',
             session_id: sessionStorage.getItem('sa_sid'),
@@ -258,8 +266,6 @@
 
       document.getElementById('copy-mode-link').addEventListener('click', function(e) {
         e.preventDefault();
-        if (!form.reportValidity()) return;
-
         createShare('copy').then(function(res) {
           if (res.ok && res.body.token) {
             if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', mode: 'copy' });
@@ -269,7 +275,7 @@
             document.getElementById('share-link').value = link;
             document.getElementById('copy-continue').href = '/share/' + res.body.token + '/me';
           }
-        });
+        }, function() { /* missing_name already focused field */ });
       });
 
       document.getElementById('copy-btn').addEventListener('click', function() {

@@ -43,11 +43,12 @@ function dayKey(dateStr) {
 router.post('/api/share/create', async (req, res) => {
   const b = req.body || {};
   const name  = (b.person_a_name || '').trim().slice(0, 60);
-  const phone = toE164(b.person_b_phone);
   const mode  = b.mode === 'copy' ? 'copy' : 'text';
+  const phone = b.person_b_phone ? toE164(b.person_b_phone) : null;
 
-  if (!name)  return res.status(400).json({ error: 'name_required' });
-  if (!phone) return res.status(400).json({ error: 'invalid_phone' });
+  if (!name) return res.status(400).json({ error: 'name_required' });
+  // Phone only required when we're asked to text him directly.
+  if (mode === 'text' && !phone) return res.status(400).json({ error: 'invalid_phone' });
 
   const token = crypto.randomUUID();
 
@@ -57,7 +58,7 @@ router.post('/api/share/create', async (req, res) => {
        utm_source, utm_campaign, utm_content)
     VALUES (?, ?, ?, 'pending', ?, ?, ?)
   `).run(
-    token, name, phone,
+    token, name, phone, // phone may be NULL in copy mode
     b.utm_source || null,
     b.utm_campaign || null,
     b.utm_content || null,
@@ -66,7 +67,7 @@ router.post('/api/share/create', async (req, res) => {
   // If 'text' mode, fire SMS to B with the share link. 'copy' mode: caller
   // will surface the link in the LP UI for the user to share manually.
   const shareUrl = `${baseUrl(req)}/share/${token}`;
-  if (mode === 'text' && !isOptedOut(phone)) {
+  if (mode === 'text' && phone && !isOptedOut(phone)) {
     const body = `${name} wants to see when you two are both free. Tap to pick your kid-free nights (no signup): ${shareUrl}  Reply STOP to opt out.`;
     // Fire-and-forget; the record is already saved, SMS failure shouldn't block.
     sendSMS(phone, body, { event: 'share_invite', token }).catch(() => {});
