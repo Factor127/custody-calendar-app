@@ -16,10 +16,28 @@
     font-family: 'Inter', system-ui, sans-serif;
     background: #0a0a0a; color: #fff; line-height: 1.6;
     overflow: hidden;
+    position: relative;
+  }
+  .backdrop {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url('310a29_08a3251094d042afa599e6f6ce314706~mv2.avif');
+    background-size: cover;
+    background-position: center 20%;
+    background-repeat: no-repeat;
+    filter: grayscale(0.15);
+    opacity: 0.32;
+  }
+  .backdrop::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.75) 45%, rgba(10,10,10,0.95) 100%),
+      radial-gradient(ellipse at top, rgba(10,10,10,0) 0%, rgba(10,10,10,0.5) 70%);
   }
   .wrap {
     max-width: 520px; margin: 0 auto; min-height: 100vh;
     padding: 28px 20px 28px; display: flex; flex-direction: column;
+    position: relative; z-index: 1;
   }
   .logo { margin-bottom: 24px; }
   .logo img { height: 30px; width: auto; display: block; }
@@ -94,6 +112,7 @@
 </style>
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true"></div>
   <main class="wrap">
     <div class="logo">
       <img src="/logo-wordmark.svg" alt="Spontany">
