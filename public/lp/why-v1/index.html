@@ -21,18 +21,17 @@
   .bg {
     position: fixed; inset: 0; z-index: 0;
     background-size: cover;
-    background-position: center 20%;
+    background-position: center 25%;
     background-repeat: no-repeat;
-    filter: grayscale(0.15);
+    filter: grayscale(0.1);
     opacity: 0;
     transition: opacity 0.4s ease;
   }
-  .bg.show { opacity: 0.32; }
+  .bg.show { opacity: 0.85; }
   .overlay {
     position: fixed; inset: 0; z-index: 1; pointer-events: none;
     background:
-      linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.75) 45%, rgba(10,10,10,0.95) 100%),
-      radial-gradient(ellipse at top, rgba(10,10,10,0) 0%, rgba(10,10,10,0.5) 70%);
+      linear-gradient(180deg, rgba(10,10,10,0.15) 0%, rgba(10,10,10,0.45) 55%, rgba(10,10,10,0.85) 100%);
   }
   .wrap {
     max-width: 520px; margin: 0 auto; min-height: 100vh;
