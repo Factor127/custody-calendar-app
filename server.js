@@ -107,6 +107,7 @@ const matchRouter          = require('./routes/match');
 const analyticsRouter      = require('./routes/analytics');
 const nudgeRouter          = require('./routes/nudge');
 const lpRouter             = require('./routes/lp');
+const shareRouter          = require('./routes/share');
 app.use('/api', opportunitiesRouter);
 app.use('/api', contributionsRouter);
 app.use('/api', smartSuggestRouter);
@@ -115,6 +116,7 @@ app.use('/api', matchRouter);
 app.use('/api', analyticsRouter);
 app.use('/api', nudgeRouter);
 app.use('/', lpRouter);
+app.use('/', shareRouter);
 app.use('/', pagesRouter);
 
 // ── Waitlist API (public + admin) ─────────────────────────────────────────────

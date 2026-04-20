@@ -111,8 +111,28 @@
   button.cta:disabled { opacity: 0.6; }
   .fine { color: rgba(255,255,255,0.35); font-size: 11px; margin-top: 10px; line-height: 1.4; }
   .mini { color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 14px; text-align: center; }
+  .alt-link {
+    display: block; text-align: center; color: rgba(255,255,255,0.55); font-size: 13px;
+    margin-top: 14px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .alt-link:hover { color: rgba(255,255,255,0.8); }
   .thanks { text-align: center; padding: 30px 10px; }
   .thanks h3 { font-size: 20px; margin-bottom: 8px; color: #a78bfa; }
+
+  .copy-card {
+    margin-top: 24px; padding: 24px;
+    background: linear-gradient(to bottom, rgba(20, 15, 30, 0.95), rgba(15, 15, 22, 0.95));
+    border: 1px solid rgba(167,139,250,0.3); border-radius: 16px; text-align: center;
+  }
+  .copy-card h3 { font-size: 18px; margin-bottom: 6px; }
+  .copy-row {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .copy-row input {
+    flex: 1; padding: 13px 14px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 13px;
+    font-family: ui-monospace, Menlo, monospace;
+  }
 </style>
 </head>
 <body>
@@ -129,9 +149,9 @@
 
     <div class="form-card" id="form-card">
       <ol class="step-list">
-        <li><span class="num">1</span><span class="txt"><strong>Enter his number.</strong> We text him a private link.</span></li>
-        <li><span class="num">2</span><span class="txt"><strong>He taps his kid-free nights.</strong> No signup. No app.</span></li>
-        <li><span class="num">3</span><span class="txt"><strong>You see the overlap.</strong> The nights you're both free.</span></li>
+        <li><span class="num">1</span><span class="txt"><strong>You mark your kid-free nights.</strong> 30 seconds, no signup.</span></li>
+        <li><span class="num">2</span><span class="txt"><strong>He taps his on a link.</strong> No app, no account.</span></li>
+        <li><span class="num">3</span><span class="txt"><strong>We text you when the overlap is ready.</strong> With venue picks.</span></li>
       </ol>
 
       <form id="share-form">
@@ -141,14 +161,26 @@
         <label for="his_phone">His mobile</label>
         <input id="his_phone" name="his_phone" type="tel" placeholder="+1 214 555 0123" required>
 
-        <button class="cta" type="submit">Send him the link →</button>
-        <p class="fine">He gets one text from Spontany. Reply STOP to opt out anytime. No signup, no app.</p>
+        <button class="cta" type="submit">Text him the link →</button>
+        <a href="#" class="alt-link" id="copy-mode-link">Or get a link to send yourself →</a>
+        <p class="fine">One text from Spontany. Reply STOP to opt out. No signup on either side.</p>
       </form>
     </div>
 
     <div class="thanks" id="thanks" style="display:none;">
-      <h3>Sent.</h3>
-      <p style="color:rgba(255,255,255,0.6);">We'll text you the moment he fills it in.</p>
+      <h3>On its way.</h3>
+      <p style="color:rgba(255,255,255,0.6);" id="thanks-body">Let's get your side done — takes 30 seconds.</p>
+      <a href="#" id="continue-link" class="cta" style="display:inline-block;text-decoration:none;margin-top:16px;padding:14px 28px;">Continue →</a>
+    </div>
+
+    <div class="copy-card" id="copy-card" style="display:none;">
+      <h3>Here's your link</h3>
+      <p style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:16px;">Paste into iMessage, WhatsApp, wherever feels natural.</p>
+      <div class="copy-row">
+        <input type="text" id="share-link" readonly>
+        <button type="button" id="copy-btn" class="cta" style="width:auto;padding:14px 20px;margin:0;">Copy</button>
+      </div>
+      <a href="#" id="copy-continue" class="cta" style="display:inline-block;text-decoration:none;margin-top:18px;padding:14px 28px;">Now do yours →</a>
     </div>
 
     <p class="mini">Prefer to just check your own schedule? <a href="#" id="secondary-cta" style="color:#c4d630;">Do a quick demo →</a></p>
@@ -158,64 +190,93 @@
     document.addEventListener('DOMContentLoaded', function() {
       window.LP && LP.init({ id: 'serious-v1', type: 'teaser-share', totalSteps: 0 });
 
-      var form = document.getElementById('share-form');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        var yourName = form.your_name.value.trim();
-        var phone    = form.his_phone.value.trim();
-        if (!yourName || !phone) return;
+      var form       = document.getElementById('share-form');
+      var formCard   = document.getElementById('form-card');
+      var thanksView = document.getElementById('thanks');
+      var copyView   = document.getElementById('copy-card');
 
-        var btn = form.querySelector('button');
-        btn.disabled = true;
-        btn.textContent = 'Sending…';
-
-        // Re-use the nudge endpoint — same SMS pipeline, different framing.
-        // The nudge copy will include the sender's first name.
+      function utmPayload() {
         var utm = {};
         ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k) {
           var v = sessionStorage.getItem(k);
           if (v) utm[k] = v;
         });
+        return utm;
+      }
 
-        window.LP && LP.ctaClick({ button: 'share', role: 'sender' });
-        if (typeof sa === 'function') sa('share_open', { lp_type: 'teaser-share' });
+      function createShare(mode) {
+        var yourName = form.your_name.value.trim();
+        var phone    = form.his_phone.value.trim();
+        if (!yourName || !phone) { form.reportValidity(); return Promise.reject('invalid'); }
 
-        fetch('/api/nudge/schedule', {
+        window.LP && LP.ctaClick({ button: 'share', mode: mode });
+        if (typeof sa === 'function') sa('share_open', { lp_type: 'teaser-share', mode: mode });
+
+        var utm = utmPayload();
+        return fetch('/api/share/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phone: phone,
-            first_name: yourName, // sender's name — appears in message to recipient
-            time_choice: 'tomorrow_9am', // actually ~immediate for share; we keep the contract
-            tz_offset_min: new Date().getTimezoneOffset(),
+            person_a_name: yourName,
+            person_b_phone: phone,
+            mode: mode, // 'text' | 'copy'
             variant: 'serious-v1',
             session_id: sessionStorage.getItem('sa_sid'),
             utm_source:   utm.utm_source,
             utm_campaign: utm.utm_campaign,
             utm_content:  utm.utm_content,
           }),
-        })
-        .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); })
-        .then(function(res) {
-          if (res.ok) {
-            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share' });
-            document.getElementById('form-card').style.display = 'none';
-            document.getElementById('thanks').style.display = 'block';
+        }).then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); });
+      }
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+
+        createShare('text').then(function(res) {
+          if (res.ok && res.body.token) {
+            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', mode: 'text' });
+            // Move A to her own calendar input, preserving the share token
+            window.location.href = '/share/' + res.body.token + '/me';
           } else {
             btn.disabled = false;
             btn.textContent = 'Try again';
           }
-        })
-        .catch(function() {
+        }, function() {
           btn.disabled = false;
-          btn.textContent = 'Try again';
+          btn.textContent = 'Text him the link →';
         });
       });
 
-      document.getElementById('secondary-cta').addEventListener('click', function(e) {
+      document.getElementById('copy-mode-link').addEventListener('click', function(e) {
         e.preventDefault();
-        window.LP && LP.ctaClick({ button: 'secondary' });
-        window.LP && LP.goToSignup('fallback');
+        if (!form.reportValidity()) return;
+
+        createShare('copy').then(function(res) {
+          if (res.ok && res.body.token) {
+            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', mode: 'copy' });
+            formCard.style.display = 'none';
+            copyView.style.display = 'block';
+            var link = location.origin + '/share/' + res.body.token;
+            document.getElementById('share-link').value = link;
+            document.getElementById('copy-continue').href = '/share/' + res.body.token + '/me';
+          }
+        });
+      });
+
+      document.getElementById('copy-btn').addEventListener('click', function() {
+        var input = document.getElementById('share-link');
+        input.select();
+        try {
+          navigator.clipboard.writeText(input.value);
+        } catch(err) {
+          document.execCommand('copy');
+        }
+        this.textContent = 'Copied ✓';
+        var self = this;
+        setTimeout(function() { self.textContent = 'Copy'; }, 2000);
       });
     });
   </script>

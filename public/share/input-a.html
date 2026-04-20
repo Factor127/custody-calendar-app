@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — Mark your kid-free nights</title>
+<link rel="icon" href="/logo3.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/sa.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(167,139,250,0.12) 0%, transparent 50%),
+      #0a0a0a;
+    color: #fff; min-height: 100vh; line-height: 1.5; padding-bottom: 40px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px; }
+  .logo { margin-bottom: 28px; }
+  .logo img { height: 28px; width: auto; display: block; }
+
+  .progress { display: flex; gap: 6px; margin-bottom: 20px; }
+  .progress .bar { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .progress .bar.active { background: rgba(167,139,250,0.4); }
+  .progress .bar.done   { background: #a78bfa; }
+
+  .card {
+    background: #111; border: 1px solid #1f1f1f; border-radius: 16px; padding: 24px 20px;
+  }
+  .step-label { color: #a78bfa; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 6px; text-transform: uppercase; }
+  h1 { font-size: 22px; margin-bottom: 8px; line-height: 1.2; }
+  .sub { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 22px; }
+
+  /* Calendar */
+  .cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .cal-week-label { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
+  .dow { font-size: 10px; color: rgba(255,255,255,0.35); text-align: center; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 0; }
+  .day {
+    aspect-ratio: 1; background: #1a1a1a; border: 1px solid #222; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.75);
+    user-select: none; transition: all 0.15s;
+  }
+  .day .num { font-size: 14px; }
+  .day .mo  { font-size: 9px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+  .day.selected { background: #a78bfa; color: #0a0a0a; border-color: #a78bfa; }
+  .day.selected .mo { color: rgba(10,10,10,0.5); }
+  .day.past { opacity: 0.3; pointer-events: none; }
+
+  .selected-count {
+    font-size: 13px; color: rgba(255,255,255,0.55); text-align: center; margin: 10px 0;
+  }
+  .selected-count b { color: #a78bfa; }
+
+  button.primary {
+    width: 100%; padding: 14px; background: #a78bfa; color: #0a0a0a;
+    border: 0; border-radius: 999px; font-weight: 700; font-size: 15px; cursor: pointer;
+    font-family: inherit; margin-top: 10px;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: default; }
+  button.ghost {
+    background: transparent; color: rgba(255,255,255,0.5); border: 0;
+    font-size: 13px; padding: 10px; cursor: pointer; font-family: inherit; margin-top: 6px;
+    width: 100%;
+  }
+
+  label.field { display: block; font-size: 13px; color: rgba(255,255,255,0.7); margin: 14px 0 6px; }
+  input[type="tel"] {
+    width: 100%; padding: 13px 14px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 15px; font-family: inherit;
+  }
+  input:focus { outline: 0; border-color: #a78bfa; }
+  .fine { color: rgba(255,255,255,0.35); font-size: 11px; margin-top: 10px; line-height: 1.4; }
+
+  .done-view { text-align: center; padding: 20px 0; }
+  .done-view .emoji { font-size: 48px; margin-bottom: 12px; }
+  .done-view h2 { font-size: 22px; margin-bottom: 8px; }
+  .done-view p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="logo">
+      <img src="/logo-wordmark.svg" alt="Spontany">
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="bar active"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+
+    <section class="card" id="step-1">
+      <div class="step-label">Your side · Step 1 of 2</div>
+      <h1 id="h1-title">Your kid-free nights</h1>
+      <p class="sub">Tap the evenings you <em>don't</em> have the kids in the next 2 weeks.</p>
+
+      <div class="cal-head"><span class="cal-week-label" id="range-label">Next 14 days</span></div>
+      <div class="cal-grid" id="dow-row"></div>
+      <div class="cal-grid" id="cal"></div>
+
+      <div class="selected-count"><b id="count">0</b> nights selected</div>
+      <button class="primary" id="btn-next-1" disabled>Next →</button>
+    </section>
+
+    <section class="card" id="step-2" style="display:none;">
+      <div class="step-label">Your side · Step 2 of 2</div>
+      <h1>Get a text when he's done?</h1>
+      <p class="sub">We'll ping you the moment he fills in his calendar, with the overlap and a couple of venue picks.</p>
+
+      <label class="field" for="phone">Your mobile <span style="opacity:0.5;">(optional)</span></label>
+      <input id="phone" type="tel" placeholder="+1 214 555 0123" autocomplete="tel">
+
+      <button class="primary" id="btn-next-2">Lock it in →</button>
+      <button class="ghost" id="btn-skip">Skip — I'll check back myself</button>
+      <p class="fine">One SMS max. Reply STOP to opt out.</p>
+    </section>
+
+    <section class="card done-view" id="step-done" style="display:none;">
+      <div class="emoji">✨</div>
+      <h2 id="done-title">On its way.</h2>
+      <p id="done-body">We texted him the link. When he fills in his schedule, we'll text you the overlap and venue picks.</p>
+      <a id="live-report-link" href="#" class="primary" style="display:inline-block;text-decoration:none;padding:13px 28px;width:auto;">Check status now</a>
+    </section>
+  </main>
+
+  <script>
+    var TOKEN = location.pathname.split('/')[2];
+    var selected = new Set(); // YYYY-MM-DD strings
+    var today = new Date(); today.setHours(0,0,0,0);
+
+    function ymd(d) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function renderCalendar() {
+      var dowRow = document.getElementById('dow-row');
+      var cal    = document.getElementById('cal');
+      var dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      // Align so first cell is Monday of the week containing today
+      var todayDow = (today.getDay() + 6) % 7; // 0=Mon
+      dowRow.innerHTML = dows.map(d => '<div class="dow">' + d + '</div>').join('');
+
+      cal.innerHTML = '';
+      // 2 weeks = 14 days, but start from Monday of current week for a clean grid
+      var start = new Date(today);
+      start.setDate(start.getDate() - todayDow);
+
+      for (var i = 0; i < 14; i++) {
+        var d = new Date(start);
+        d.setDate(start.getDate() + i);
+        var isPast = d < today;
+        var key = ymd(d);
+        var monthAbbr = d.toLocaleString('en', { month: 'short' });
+        var el = document.createElement('div');
+        el.className = 'day' + (isPast ? ' past' : '') + (selected.has(key) ? ' selected' : '');
+        el.dataset.key = key;
+        el.innerHTML = '<span class="num">' + d.getDate() + '</span><span class="mo">' + monthAbbr + '</span>';
+        el.addEventListener('click', function() {
+          var k = this.dataset.key;
+          if (selected.has(k)) selected.delete(k);
+          else selected.add(k);
+          renderCalendar();
+        });
+        cal.appendChild(el);
+      }
+
+      document.getElementById('count').textContent = selected.size;
+      document.getElementById('btn-next-1').disabled = selected.size === 0;
+    }
+
+    function show(stepId) {
+      ['step-1','step-2','step-done'].forEach(function(id) {
+        document.getElementById(id).style.display = id === stepId ? '' : 'none';
+      });
+      var bars = document.querySelectorAll('.progress .bar');
+      var idx = { 'step-1': 0, 'step-2': 1, 'step-done': 2 }[stepId];
+      bars.forEach(function(b, i) {
+        b.classList.remove('active','done');
+        if (i < idx)       b.classList.add('done');
+        else if (i === idx) b.classList.add('active');
+      });
+    }
+
+    document.getElementById('btn-next-1').addEventListener('click', function() {
+      // Submit schedule now; phone comes next
+      if (typeof sa === 'function') sa('share_a_schedule_submit', { token: TOKEN, count: selected.size });
+      fetch('/api/share/' + TOKEN + '/submit-a', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule: Array.from(selected) })
+      }).catch(function(){ /* non-critical */ });
+      show('step-2');
+    });
+
+    function goDone(withPhone) {
+      if (typeof sa === 'function') sa('share_a_complete', { token: TOKEN, with_phone: withPhone });
+      document.getElementById('live-report-link').href = '/share/' + TOKEN + '/report';
+      show('step-done');
+    }
+
+    document.getElementById('btn-next-2').addEventListener('click', function() {
+      var phone = document.getElementById('phone').value.trim();
+      if (phone) {
+        fetch('/api/share/' + TOKEN + '/submit-a', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schedule: Array.from(selected), phone: phone })
+        }).catch(function(){});
+      }
+      goDone(!!phone);
+    });
+
+    document.getElementById('btn-skip').addEventListener('click', function() {
+      goDone(false);
+    });
+
+    renderCalendar();
+  </script>
+</body>
+</html>

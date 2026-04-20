@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — Your overlap</title>
+<link rel="icon" href="/logo3.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/sa.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0a0a0a; color: #fff; min-height: 100vh; line-height: 1.5; padding-bottom: 60px;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 28px 20px; }
+  .logo { margin-bottom: 28px; }
+  .logo img { height: 28px; width: auto; display: block; }
+
+  /* Headline */
+  .headline {
+    text-align: center; padding: 32px 20px;
+    background: linear-gradient(135deg, rgba(167,139,250,0.15) 0%, rgba(196,214,48,0.08) 100%);
+    border: 1px solid rgba(167,139,250,0.25); border-radius: 20px; margin-bottom: 24px;
+  }
+  .headline .big { font-size: 52px; font-weight: 800; color: #a78bfa; line-height: 1; margin: 6px 0; letter-spacing: -0.02em; }
+  .headline .lbl { font-size: 13px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .headline .sub { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 10px; }
+
+  /* Waiting state */
+  .waiting {
+    background: #111; border: 1px solid #1f1f1f; border-radius: 16px;
+    padding: 30px 20px; text-align: center;
+  }
+  .waiting .em { font-size: 42px; margin-bottom: 10px; }
+  .waiting h2 { font-size: 18px; margin-bottom: 8px; }
+  .waiting p { color: rgba(255,255,255,0.55); font-size: 14px; }
+
+  /* Section */
+  .sect-title {
+    font-size: 12px; color: rgba(255,255,255,0.5); text-transform: uppercase;
+    letter-spacing: 0.8px; font-weight: 700; margin: 28px 0 12px;
+  }
+
+  /* Overlap chips */
+  .dates-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;
+  }
+  .date-chip {
+    padding: 10px 14px; background: rgba(196,214,48,0.1);
+    border: 1px solid rgba(196,214,48,0.35); border-radius: 10px;
+    color: #c4d630; font-weight: 600; font-size: 14px;
+  }
+  .date-chip .dow { display: block; font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+
+  /* Venue cards */
+  .venues { display: grid; gap: 14px; }
+  .venue {
+    display: flex; gap: 14px; background: #111; border: 1px solid #1f1f1f;
+    border-radius: 14px; padding: 14px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .venue:hover { border-color: rgba(167,139,250,0.35); }
+  .venue img {
+    width: 84px; height: 84px; object-fit: cover; border-radius: 10px; flex: 0 0 84px;
+    background: #1a1a1a;
+  }
+  .venue-emoji {
+    width: 84px; height: 84px; border-radius: 10px; flex: 0 0 84px;
+    background: linear-gradient(135deg, rgba(167,139,250,0.18), rgba(196,214,48,0.1));
+    display: flex; align-items: center; justify-content: center; font-size: 36px;
+  }
+  .venue .body { flex: 1; min-width: 0; }
+  .venue h3 { font-size: 15px; margin-bottom: 3px; line-height: 1.25; }
+  .venue .meta {
+    font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 4px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .venue .price { color: #c4d630; font-weight: 600; }
+  .venue .cat {
+    display: inline-block; padding: 2px 8px; background: rgba(255,255,255,0.06);
+    border-radius: 10px; font-size: 10px; color: rgba(255,255,255,0.65);
+    text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-top: 6px;
+  }
+
+  button.primary {
+    width: 100%; padding: 15px; background: #a78bfa; color: #0a0a0a;
+    border: 0; border-radius: 999px; font-weight: 700; font-size: 15px; cursor: pointer;
+    font-family: inherit; margin-top: 20px;
+  }
+  .secondary-action {
+    text-align: center; margin-top: 14px; color: rgba(255,255,255,0.5); font-size: 13px;
+  }
+  .secondary-action a { color: rgba(255,255,255,0.75); text-decoration: underline; text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="logo">
+      <img src="/logo-wordmark.svg" alt="Spontany">
+    </div>
+
+    <div id="content">
+      <div class="waiting"><div class="em">⌛</div><h2>Loading…</h2></div>
+    </div>
+  </main>
+
+  <script>
+    var TOKEN = location.pathname.split('/')[2];
+    var content = document.getElementById('content');
+
+    function fmtDate(ymd) {
+      var d = new Date(ymd + 'T12:00:00');
+      return {
+        dow: d.toLocaleString('en', { weekday: 'short' }),
+        label: d.toLocaleString('en', { month: 'short', day: 'numeric' }),
+      };
+    }
+
+    function renderWaiting(s) {
+      var title, body;
+      if (!s.a_done && !s.b_done) {
+        title = 'Nothing yet';
+        body  = 'Neither of you has filled in their schedule. Start with <a href="/share/' + TOKEN + '/me" style="color:#a78bfa;">your side</a>.';
+      } else if (!s.b_done) {
+        title = 'Waiting on ' + (s.person_b_name || 'them') + '…';
+        body  = 'You\'re done. We\'ll text you the moment they finish.';
+      } else {
+        title = 'Waiting on you';
+        body  = '<a href="/share/' + TOKEN + '/me" style="color:#a78bfa;">Fill in your nights</a> to see the overlap.';
+      }
+      content.innerHTML =
+        '<div class="waiting">' +
+        '<div class="em">⌛</div>' +
+        '<h2>' + title + '</h2>' +
+        '<p>' + body + '</p>' +
+        '</div>';
+    }
+
+    function renderReport(data) {
+      var chips = (data.overlap || []).map(function(d) {
+        var f = fmtDate(d);
+        return '<div class="date-chip"><span class="dow">' + f.dow + '</span>' + f.label + '</div>';
+      }).join('');
+
+      function catEmoji(cat) {
+        var map = { food:'🍽', dining:'🍽', restaurant:'🍽', bar:'🍸', drinks:'🍸',
+                    music:'🎵', show:'🎭', theatre:'🎭', movie:'🎬', cinema:'🎬',
+                    outdoor:'🌲', park:'🌳', sport:'⚽', fitness:'💪',
+                    art:'🎨', museum:'🏛', festival:'🎉', shopping:'🛍', wine:'🍷',
+                    coffee:'☕', brunch:'🥞', date:'💜', kids:'🧒' };
+        return map[(cat || '').toLowerCase()] || '✨';
+      }
+      var venueCards = (data.venues || []).map(function(v) {
+        var img = v.image_url
+          ? '<img src="' + v.image_url + '" alt="">'
+          : '<div class="venue-emoji">' + catEmoji(v.category) + '</div>';
+        var meta = [];
+        if (v.location_name) meta.push(v.location_name);
+        if (v.price_tier)    meta.push('<span class="price">' + v.price_tier + '</span>');
+        return '<a class="venue" href="' + (v.source_url || '#') + '" target="_blank" rel="noopener" onclick="if(typeof sa===\'function\')sa(\'share_venue_click\',{id:' + v.id + '});">' +
+          img +
+          '<div class="body">' +
+          (v.category ? '<span class="cat">' + v.category + '</span>' : '') +
+          '<h3>' + v.title + '</h3>' +
+          '<div class="meta">' + meta.join(' · ') + '</div>' +
+          '</div>' +
+        '</a>';
+      }).join('');
+
+      content.innerHTML =
+        '<div class="headline">' +
+          '<div class="lbl">You\'re both free on</div>' +
+          '<div class="big">' + (data.overlap || []).length + '</div>' +
+          '<div class="lbl">night' + ((data.overlap||[]).length === 1 ? '' : 's') + ' in the next 2 weeks</div>' +
+          (chips ? '<div class="sub">Go pick one.</div>' : '<div class="sub">No overlap yet. Try different nights?</div>') +
+        '</div>' +
+
+        (chips ? '<div class="sect-title">Open nights</div><div class="dates-row">' + chips + '</div>' : '') +
+
+        (venueCards ? '<div class="sect-title">Where to go</div><div class="venues">' + venueCards + '</div>' : '') +
+
+        '<button class="primary" id="save-btn">Save this to Spontany →</button>' +
+        '<p class="secondary-action">Want the full app? <a href="/">Get early access</a></p>';
+
+      document.getElementById('save-btn').addEventListener('click', function() {
+        if (typeof sa === 'function') sa('share_save_click', { token: TOKEN });
+        window.location.href = '/?share_token=' + TOKEN;
+      });
+
+      if (typeof sa === 'function') sa('share_report_view', {
+        token: TOKEN,
+        overlap_count: (data.overlap || []).length,
+        venue_count: (data.venues || []).length,
+      });
+    }
+
+    // Fetch status first — if not complete, show waiting. Else, fetch full report.
+    fetch('/api/share/' + TOKEN + '/status').then(function(r){return r.json();}).then(function(s) {
+      if (!s.complete) {
+        renderWaiting(s);
+        return;
+      }
+      fetch('/api/share/' + TOKEN + '/report').then(function(r){return r.json();}).then(renderReport);
+    }).catch(function() {
+      content.innerHTML = '<div class="waiting"><h2>Couldn\'t load</h2><p>Try refreshing.</p></div>';
+    });
+  </script>
+</body>
+</html>
