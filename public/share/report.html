@@ -35,6 +35,23 @@
   .waiting .em { font-size: 42px; margin-bottom: 10px; }
   .waiting h2 { font-size: 18px; margin-bottom: 8px; }
   .waiting p { color: rgba(255,255,255,0.55); font-size: 14px; }
+  .live-dot {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 18px; padding: 6px 12px; border-radius: 999px;
+    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
+    color: rgba(255,255,255,0.6); font-size: 12px;
+  }
+  .live-dot .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #a78bfa;
+    animation: livepulse 1.6s ease-in-out infinite;
+  }
+  @keyframes livepulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.85); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot .dot { animation: none; }
+  }
 
   /* Section */
   .sect-title {
@@ -194,13 +211,71 @@
       });
     }
 
-    // Fetch status first — if not complete, show waiting. Else, fetch full report.
-    fetch('/api/share/' + TOKEN + '/status').then(function(r){return r.json();}).then(function(s) {
-      if (!s.complete) {
-        renderWaiting(s);
-        return;
+    // ── Live polling ──────────────────────────────────────────────────────
+    // Poll status every 5s while waiting. Stop on completion, pause when tab
+    // is hidden, and cap at 5 minutes so we don't poll forever if she walks
+    // away from the page.
+    var pollTimer  = null;
+    var pollCount  = 0;
+    var POLL_INTERVAL_MS = 5000;
+    var POLL_MAX_COUNT   = 60; // 5 minutes total
+    var rendered = null; // 'waiting' | 'report' — so we only re-render on transition
+
+    function loadAndRender() {
+      return fetch('/api/share/' + TOKEN + '/status').then(function(r){return r.json();}).then(function(s) {
+        if (s.complete) {
+          if (rendered !== 'report') {
+            stopPolling();
+            return fetch('/api/share/' + TOKEN + '/report').then(function(r){return r.json();}).then(function(d) {
+              rendered = 'report';
+              renderReport(d);
+            });
+          }
+        } else {
+          if (rendered !== 'waiting') {
+            rendered = 'waiting';
+            renderWaiting(s);
+            addLiveIndicator();
+          }
+        }
+      });
+    }
+
+    function addLiveIndicator() {
+      var w = content.querySelector('.waiting');
+      if (!w || w.querySelector('.live-dot')) return;
+      var pill = document.createElement('div');
+      pill.className = 'live-dot';
+      pill.innerHTML = '<span class="dot"></span> Checking for updates…';
+      w.appendChild(pill);
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      pollTimer = setInterval(function() {
+        if (++pollCount > POLL_MAX_COUNT) {    // stop after 5 minutes idle
+          stopPolling();
+          return;
+        }
+        loadAndRender();
+      }, POLL_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    // Resume polling when tab becomes visible again
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && rendered === 'waiting') {
+        loadAndRender();
+        if (!pollTimer) startPolling();
       }
-      fetch('/api/share/' + TOKEN + '/report').then(function(r){return r.json();}).then(renderReport);
+    });
+
+    // Initial load
+    loadAndRender().then(function() {
+      if (rendered === 'waiting') startPolling();
     }).catch(function() {
       content.innerHTML = '<div class="waiting"><h2>Couldn\'t load</h2><p>Try refreshing.</p></div>';
     });
