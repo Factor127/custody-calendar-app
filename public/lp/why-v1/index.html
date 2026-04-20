@@ -11,30 +11,56 @@
 <script src="/lp/_shared/lp-tracker.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
   body {
     font-family: 'Inter', system-ui, sans-serif;
-    background: #0a0a0a; color: #fff; min-height: 100vh; line-height: 1.6;
+    background: #0a0a0a; color: #fff; line-height: 1.6;
+    overflow: hidden;
   }
-  .wrap { max-width: 520px; margin: 0 auto; padding: 28px 20px 140px; }
-  .logo { margin-bottom: 40px; }
+  .wrap {
+    max-width: 520px; margin: 0 auto; min-height: 100vh;
+    padding: 28px 20px 28px; display: flex; flex-direction: column;
+  }
+  .logo { margin-bottom: 24px; }
   .logo img { height: 30px; width: auto; display: block; }
-  h1 {
-    font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em;
-    margin-bottom: 12px;
+
+  .progress {
+    display: flex; gap: 6px; margin-bottom: 28px;
   }
-  .intro {
-    color: rgba(255,255,255,0.7); font-size: 17px; margin-bottom: 32px;
+  .progress span {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px;
+    transition: background 0.3s ease;
+  }
+  .progress span.done { background: #c4d630; }
+  .progress span.active { background: #c4d630; }
+
+  .slides { flex: 1; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    opacity: 0; pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.28s ease, transform 0.28s ease;
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+  .slide.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+  h1 {
+    font-size: 30px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em;
+    margin-bottom: 14px;
   }
   h2 {
-    font-size: 15px; font-weight: 700; margin: 32px 0 10px;
+    font-size: 13px; font-weight: 700; margin: 0 0 12px;
     color: #c4d630; text-transform: uppercase; letter-spacing: 0.8px;
   }
-  p { color: rgba(255,255,255,0.8); font-size: 15px; margin-bottom: 12px; }
-  p.quiet { color: rgba(255,255,255,0.5); font-size: 14px; }
-  ul { padding-left: 20px; color: rgba(255,255,255,0.8); font-size: 15px; }
-  ul li { margin-bottom: 6px; }
+  .eyebrow { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 10px; letter-spacing: 0.4px; }
+  p { color: rgba(255,255,255,0.85); font-size: 16px; margin-bottom: 14px; }
+  p.intro { color: rgba(255,255,255,0.7); font-size: 17px; }
+  ul { padding-left: 20px; color: rgba(255,255,255,0.85); font-size: 16px; }
+  ul li { margin-bottom: 8px; }
+
   .cta-block {
-    margin-top: 48px; padding: 24px; background: rgba(196,214,48,0.06);
+    margin-top: 12px; padding: 22px; background: rgba(196,214,48,0.06);
     border: 1px solid rgba(196,214,48,0.2); border-radius: 14px; text-align: center;
   }
   .cta-block h3 { font-size: 19px; margin-bottom: 8px; }
@@ -42,9 +68,29 @@
   .cta {
     display: inline-block; padding: 15px 30px; background: #c4d630; color: #0a0a0a;
     text-decoration: none; border-radius: 999px; font-weight: 700; font-size: 15px;
+    border: 0; cursor: pointer; font-family: inherit;
   }
   .cta:active { transform: scale(0.98); }
-  .sign { margin-top: 40px; color: rgba(255,255,255,0.45); font-size: 13px; font-style: italic; }
+  .sign { margin-top: 28px; color: rgba(255,255,255,0.45); font-size: 13px; font-style: italic; text-align: center; }
+
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 20px; gap: 12px;
+  }
+  .nav-btn {
+    padding: 13px 26px; border-radius: 999px; font-weight: 700; font-size: 15px;
+    font-family: inherit; cursor: pointer; border: 0;
+  }
+  .next {
+    background: #c4d630; color: #0a0a0a; margin-left: auto;
+  }
+  .next:active { transform: scale(0.98); }
+  .back {
+    background: transparent; color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .back.hidden { visibility: hidden; }
+  .step-count { color: rgba(255,255,255,0.4); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -53,46 +99,136 @@
       <img src="/logo-wordmark.svg" alt="Spontany">
     </div>
 
-    <h1>Why we built Spontany.</h1>
-    <p class="intro">Short version: I got divorced, spent years staring at calendars, and realized the hardest part wasn't custody — it was coordinating a life around it. So I built the thing I wished existed.</p>
+    <div class="progress" id="progress" aria-hidden="true"></div>
 
-    <h2>Who it's for</h2>
-    <p>Divorced parents with kids aged 0–14. You've got a custody schedule, and half your mental energy goes to texting "do you have the kids that weekend?" Spontany does that math once, quietly, and lets you both see the overlap.</p>
+    <div class="slides" id="slides">
+      <!-- Step 1: Intro -->
+      <section class="slide active" data-step="1" data-name="intro">
+        <div class="eyebrow">A note from the founder</div>
+        <h1>Why we built Spontany.</h1>
+        <p class="intro">Short version: I got divorced, spent years staring at calendars, and realized the hardest part wasn't custody — it was coordinating a life around it.</p>
+        <p class="intro">So I built the thing I wished existed.</p>
+      </section>
 
-    <h2>Why it's free</h2>
-    <p>No ads. No selling data. No freemium gates. At least not yet.</p>
-    <p>The real answer: I'd rather 5,000 people use it and make one compound suggestion than 50 people pay $9/month for a half-built product. If it works, I'll figure out pricing later — probably a small fee to unlock friend-group planning or venue recommendations. The core custody sync will stay free. Always.</p>
+      <!-- Step 2: Who it's for -->
+      <section class="slide" data-step="2" data-name="audience">
+        <h2>Who it's for</h2>
+        <p>Divorced parents with kids aged 0–14.</p>
+        <p>You've got a custody schedule, and half your mental energy goes to texting "do you have the kids that weekend?"</p>
+        <p>Spontany does that math once, quietly, and lets you both see the overlap.</p>
+      </section>
 
-    <h2>How your privacy works</h2>
-    <ul>
-      <li>Your schedule is visible only to people you explicitly invite.</li>
-      <li>You can revoke access any time — it's one tap.</li>
-      <li>We don't share, sell, or look at your data to show you ads.</li>
-      <li>If you delete your account, we delete your data. For real.</li>
-    </ul>
+      <!-- Step 3: Why it's free -->
+      <section class="slide" data-step="3" data-name="why_free">
+        <h2>Why it's free</h2>
+        <p>No ads. No selling data. No freemium gates. At least not yet.</p>
+        <p>The real answer: I'd rather 5,000 people use it and make one compound suggestion than 50 people pay $9/month for a half-built product.</p>
+        <p>If it works, I'll figure out pricing later — probably a small fee to unlock friend-group planning or venue recommendations. The core custody sync will stay free. Always.</p>
+      </section>
 
-    <h2>What it won't do</h2>
-    <p>Spontany won't fix your coparent relationship, won't solve your custody dispute, won't replace therapy. It's a calendar overlap tool. A really good one — and one that's built for the shape your life actually has.</p>
+      <!-- Step 4: Privacy -->
+      <section class="slide" data-step="4" data-name="privacy">
+        <h2>How your privacy works</h2>
+        <ul>
+          <li>Your schedule is visible only to people you explicitly invite.</li>
+          <li>You can revoke access any time — it's one tap.</li>
+          <li>We don't share, sell, or look at your data to show you ads.</li>
+          <li>If you delete your account, we delete your data. For real.</li>
+        </ul>
+      </section>
 
-    <div class="cta-block">
-      <h3>Want to try it?</h3>
-      <p>We're in gated beta. Drop your email — we'll text you when your spot opens.</p>
-      <a href="#" class="cta" id="primary-cta">Get on the list →</a>
+      <!-- Step 5: What it won't do -->
+      <section class="slide" data-step="5" data-name="wont_do">
+        <h2>What it won't do</h2>
+        <p>Spontany won't fix your coparent relationship, won't solve your custody dispute, won't replace therapy.</p>
+        <p>It's a calendar overlap tool. A really good one — and one that's built for the shape your life actually has.</p>
+      </section>
+
+      <!-- Step 6: CTA -->
+      <section class="slide" data-step="6" data-name="cta">
+        <div class="cta-block">
+          <h3>Want to try it?</h3>
+          <p>We're in gated beta. Drop your email — we'll text you when your spot opens.</p>
+          <button type="button" class="cta" id="primary-cta">Get on the list →</button>
+        </div>
+        <p class="sign">— Ran, founder</p>
+      </section>
     </div>
 
-    <p class="sign">— Ran, founder</p>
+    <div class="nav">
+      <button type="button" class="nav-btn back hidden" id="back-btn">Back</button>
+      <span class="step-count" id="step-count"></span>
+      <button type="button" class="nav-btn next" id="next-btn">Next →</button>
+    </div>
   </main>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      window.LP && LP.init({ id: 'why-v1', type: 'explainer', totalSteps: 0 });
-      var cta = document.getElementById('primary-cta');
-      cta.addEventListener('click', function(e) {
-        e.preventDefault();
-        window.LP && LP.ctaClick({ button: 'primary' });
-        window.LP && LP.goToSignup('hero');
+    (function() {
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var total = slides.length;
+      var current = 0;
+
+      var progress = document.getElementById('progress');
+      for (var i = 0; i < total; i++) progress.appendChild(document.createElement('span'));
+      var dots = Array.prototype.slice.call(progress.children);
+
+      var nextBtn = document.getElementById('next-btn');
+      var backBtn = document.getElementById('back-btn');
+      var stepCount = document.getElementById('step-count');
+
+      function render() {
+        slides.forEach(function(s, i) { s.classList.toggle('active', i === current); });
+        dots.forEach(function(d, i) {
+          d.classList.toggle('done', i < current);
+          d.classList.toggle('active', i === current);
+        });
+        backBtn.classList.toggle('hidden', current === 0);
+        stepCount.textContent = (current + 1) + ' / ' + total;
+        if (current === total - 1) {
+          nextBtn.style.display = 'none';
+        } else {
+          nextBtn.style.display = '';
+          nextBtn.textContent = current === total - 2 ? 'Finish →' : 'Next →';
+        }
+        var active = slides[current];
+        if (active) active.scrollTop = 0;
+      }
+
+      function go(to) {
+        if (to < 0 || to >= total) return;
+        current = to;
+        render();
+        var s = slides[current];
+        var idx = parseInt(s.getAttribute('data-step'), 10);
+        var name = s.getAttribute('data-name') || '';
+        window.LP && LP.step(idx, name);
+        if (current === total - 1) {
+          window.LP && LP.complete();
+        }
+      }
+
+      nextBtn.addEventListener('click', function() { go(current + 1); });
+      backBtn.addEventListener('click', function() { go(current - 1); });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight') go(current + 1);
+        else if (e.key === 'ArrowLeft') go(current - 1);
       });
-    });
+
+      document.addEventListener('DOMContentLoaded', function() {
+        window.LP && LP.init({ id: 'why-v1', type: 'explainer', totalSteps: total });
+        window.LP && LP.step(1, slides[0].getAttribute('data-name'));
+
+        var cta = document.getElementById('primary-cta');
+        cta.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.LP && LP.ctaClick({ button: 'primary' });
+          window.LP && LP.goToSignup('hero');
+        });
+
+        render();
+      });
+    })();
   </script>
 </body>
 </html>
