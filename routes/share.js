@@ -7,10 +7,17 @@
 
 const express  = require('express');
 const path     = require('path');
+const fs       = require('fs');
 const crypto   = require('crypto');
 const router   = express.Router();
 const { db }   = require('../db');
 const { sendSMS, toE164, isValidE164 } = require('../utils/sms');
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+  }[c]));
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function getMatch(token) {
@@ -215,8 +222,18 @@ router.get('/share/:token/report', (req, res, next) => {
 });
 
 router.get('/share/:token', (req, res, next) => {
-  if (!getMatch(req.params.token)) return next();
-  res.sendFile(path.join(__dirname, '..', 'public', 'share', 'input-b.html'));
+  const m = getMatch(req.params.token);
+  if (!m) return next();
+
+  let html;
+  try {
+    html = fs.readFileSync(path.join(__dirname, '..', 'public', 'share', 'input-b.html'), 'utf8');
+  } catch(e) { return next(); }
+
+  const aName = escHtml(m.person_a_name || 'Someone');
+  html = html.replace(/\{\{A_NAME\}\}/g, aName);
+
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate').send(html);
 });
 
 module.exports = router;

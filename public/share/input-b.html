@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Spontany — Your kid-free nights</title>
+<title>{{A_NAME}} wants a night with you — Spontany</title>
 <link rel="icon" href="/logo3.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/sa.js"></script>
@@ -21,13 +21,17 @@
   .logo img { height: 28px; width: auto; display: block; }
 
   .invite-banner {
-    padding: 18px 16px; background: rgba(196,214,48,0.08);
-    border: 1px solid rgba(196,214,48,0.25); border-radius: 12px;
+    padding: 20px 18px; background: linear-gradient(135deg, rgba(196,214,48,0.12), rgba(167,139,250,0.08));
+    border: 1px solid rgba(196,214,48,0.3); border-radius: 14px;
     margin-bottom: 22px;
   }
-  .invite-banner h1 { font-size: 17px; line-height: 1.3; font-weight: 700; }
+  .invite-banner .eyebrow {
+    font-size: 11px; color: #c4d630; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .invite-banner h1 { font-size: 22px; line-height: 1.2; font-weight: 800; letter-spacing: -0.01em; }
   .invite-banner em { color: #c4d630; font-style: normal; }
-  .invite-banner p { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 4px; }
+  .invite-banner p { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 8px; line-height: 1.5; }
 
   .card {
     background: #111; border: 1px solid #1f1f1f; border-radius: 16px; padding: 22px 20px;
@@ -82,13 +86,14 @@
     </div>
 
     <div class="invite-banner" id="banner">
-      <h1><span id="a-name">Someone</span> wants to see when you're <em>both</em> free.</h1>
-      <p>Takes 20 seconds. No signup, no app.</p>
+      <div class="eyebrow">An invite from {{A_NAME}}</div>
+      <h1>{{A_NAME}} wants to find a <em>night for the two of you</em>.</h1>
+      <p>Tap the evenings you're kid-free — we'll text {{A_NAME}} where your schedules line up. No signup, no app, takes 20 seconds.</p>
     </div>
 
     <section class="card" id="step-input">
-      <h2>Tap your kid-free evenings.</h2>
-      <p class="sub">Just the next 2 weeks. We'll overlap it with theirs and text them the matches.</p>
+      <h2>Your kid-free nights</h2>
+      <p class="sub">Pick the evenings you don't have the kids in the next 2 weeks.</p>
 
       <div class="cal-grid" id="dow-row"></div>
       <div class="cal-grid" id="cal"></div>
@@ -114,13 +119,9 @@
     var selected = new Set();
     var today = new Date(); today.setHours(0,0,0,0);
 
-    // Fetch status to populate A's name in the banner
+    // A's name is server-rendered into the banner; just check if B already submitted.
     fetch('/api/share/' + TOKEN + '/status').then(function(r) { return r.json(); }).then(function(d) {
-      if (d && d.person_a_name) {
-        document.getElementById('a-name').textContent = d.person_a_name;
-      }
       if (d && d.b_done) {
-        // B already submitted for this token — show done state directly
         document.getElementById('step-input').style.display = 'none';
         document.getElementById('step-done').style.display = '';
       }
