@@ -109,12 +109,16 @@
     font-family: inherit;
   }
   input:focus { outline: 0; border-color: #a78bfa; }
-  button.cta {
-    width: 100%; padding: 15px; margin-top: 18px; background: #a78bfa; color: #0a0a0a;
+  .cta {
+    display: inline-block; width: 100%; padding: 15px; margin-top: 18px;
+    background: #a78bfa; color: #0a0a0a;
     border: 0; border-radius: 999px; font-weight: 700; font-size: 15px; cursor: pointer;
-    font-family: inherit;
+    font-family: inherit; text-align: center; text-decoration: none; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
-  button.cta:disabled { opacity: 0.6; }
+  .cta:hover   { background: #b89efb; }
+  .cta:active  { transform: scale(0.98); }
+  .cta:disabled { opacity: 0.6; }
   .fine { color: rgba(255,255,255,0.35); font-size: 11px; margin-top: 10px; line-height: 1.4; }
   .mini { color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 14px; text-align: center; }
   .alt-link {
@@ -176,7 +180,7 @@
     <div class="thanks" id="thanks" style="display:none;">
       <h3>On its way.</h3>
       <p style="color:rgba(255,255,255,0.6);" id="thanks-body">Let's get your side done — takes 30 seconds.</p>
-      <a href="#" id="continue-link" class="cta" style="display:inline-block;text-decoration:none;margin-top:16px;padding:14px 28px;">Continue →</a>
+      <a href="#" id="continue-link" class="cta">Continue →</a>
     </div>
 
     <div class="copy-card" id="copy-card" style="display:none;">
@@ -186,7 +190,7 @@
         <input type="text" id="share-link" readonly>
         <button type="button" id="copy-btn" class="cta" style="width:auto;padding:14px 20px;margin:0;">Copy</button>
       </div>
-      <a href="#" id="copy-continue" class="cta" style="display:inline-block;text-decoration:none;margin-top:18px;padding:14px 28px;">Now do yours →</a>
+      <a href="#" id="copy-continue" class="cta">Now do yours →</a>
     </div>
 
     <p class="mini">Prefer to just check your own schedule? <a href="#" id="secondary-cta" style="color:#c4d630;">Do a quick demo →</a></p>
