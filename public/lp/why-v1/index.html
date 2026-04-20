@@ -18,18 +18,18 @@
     overflow: hidden;
     position: relative;
   }
-  .backdrop {
+  .bg {
     position: fixed; inset: 0; z-index: 0;
-    background-image: url('310a29_08a3251094d042afa599e6f6ce314706~mv2.avif');
     background-size: cover;
     background-position: center 20%;
     background-repeat: no-repeat;
     filter: grayscale(0.15);
-    opacity: 0.32;
+    opacity: 0;
+    transition: opacity 0.4s ease;
   }
-  .backdrop::after {
-    content: '';
-    position: absolute; inset: 0;
+  .bg.show { opacity: 0.32; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
     background:
       linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.75) 45%, rgba(10,10,10,0.95) 100%),
       radial-gradient(ellipse at top, rgba(10,10,10,0) 0%, rgba(10,10,10,0.5) 70%);
@@ -37,7 +37,7 @@
   .wrap {
     max-width: 520px; margin: 0 auto; min-height: 100vh;
     padding: 28px 20px 28px; display: flex; flex-direction: column;
-    position: relative; z-index: 1;
+    position: relative; z-index: 2;
   }
   .logo { margin-bottom: 24px; }
   .logo img { height: 30px; width: auto; display: block; }
@@ -112,7 +112,9 @@
 </style>
 </head>
 <body>
-  <div class="backdrop" aria-hidden="true"></div>
+  <div class="bg" id="bg-a" aria-hidden="true"></div>
+  <div class="bg" id="bg-b" aria-hidden="true"></div>
+  <div class="overlay" aria-hidden="true"></div>
   <main class="wrap">
     <div class="logo">
       <img src="/logo-wordmark.svg" alt="Spontany">
@@ -122,7 +124,7 @@
 
     <div class="slides" id="slides">
       <!-- Step 1: Intro -->
-      <section class="slide active" data-step="1" data-name="intro">
+      <section class="slide active" data-step="1" data-name="intro" data-bg="310a29_08a3251094d042afa599e6f6ce314706~mv2.avif">
         <div class="eyebrow">A note from the founder</div>
         <h1>Why we built Spontany.</h1>
         <p class="intro">Short version: I got divorced, spent years staring at calendars, and realized the hardest part wasn't custody — it was coordinating a life around it.</p>
@@ -130,7 +132,7 @@
       </section>
 
       <!-- Step 2: Who it's for -->
-      <section class="slide" data-step="2" data-name="audience">
+      <section class="slide" data-step="2" data-name="audience" data-bg="Elena35.jpg">
         <h2>Who it's for</h2>
         <p>Divorced parents with kids aged 0–14.</p>
         <p>You've got a custody schedule, and half your mental energy goes to texting "do you have the kids that weekend?"</p>
@@ -195,6 +197,19 @@
       var backBtn = document.getElementById('back-btn');
       var stepCount = document.getElementById('step-count');
 
+      var bgLayers = [document.getElementById('bg-a'), document.getElementById('bg-b')];
+      var bgActive = 0;
+      function setBackdrop(url) {
+        var cur = bgLayers[bgActive];
+        if (!url) { cur.classList.remove('show'); return; }
+        var next = 1 - bgActive;
+        var nextEl = bgLayers[next];
+        nextEl.style.backgroundImage = "url('" + url + "')";
+        nextEl.classList.add('show');
+        cur.classList.remove('show');
+        bgActive = next;
+      }
+
       function render() {
         slides.forEach(function(s, i) { s.classList.toggle('active', i === current); });
         dots.forEach(function(d, i) {
@@ -211,6 +226,7 @@
         }
         var active = slides[current];
         if (active) active.scrollTop = 0;
+        setBackdrop(active && active.getAttribute('data-bg'));
       }
 
       function go(to) {
