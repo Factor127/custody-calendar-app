@@ -54,11 +54,17 @@
   .hero-area { padding-top: 42vh; }
   .hero-area h1, .hero-area .sub { text-shadow: 0 2px 14px rgba(0,0,0,0.55); }
 
-  /* Desktop: cap image height so it doesn't dominate, keep content readable */
+  /* Desktop: show the full image centered (not cropped). Constrain both
+     width AND height to preserve the 3:2 aspect, and let the base #0a0a0a
+     show through as black gutters on either side. */
   @media (min-width: 768px) {
     .backdrop::before {
       aspect-ratio: auto;
       height: min(58vh, 520px);
+      width: calc(min(58vh, 520px) * 1.5);
+      max-width: 100vw;
+      left: 50%; right: auto;
+      transform: translateX(-50%);
     }
     .backdrop::after {
       top: calc(min(58vh, 520px) - 80px);
