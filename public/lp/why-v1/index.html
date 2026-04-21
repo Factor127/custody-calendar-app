@@ -71,7 +71,7 @@
     color: #c4d630; text-transform: uppercase; letter-spacing: 0.8px;
   }
   .eyebrow { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 10px; letter-spacing: 0.4px; }
-  .slide-icon { color: #c4d630; width: 88px; height: auto; display: block; margin: 4px 0 18px; }
+  .slide-icon { color: #c4d630; width: 112px; height: auto; display: block; margin: 4px 0 18px; }
   p { color: rgba(255,255,255,0.85); font-size: 16px; margin-bottom: 14px; }
   p.intro { color: rgba(255,255,255,0.7); font-size: 17px; }
   ul { padding-left: 20px; color: rgba(255,255,255,0.85); font-size: 16px; }
@@ -141,23 +141,33 @@
 
       <!-- Step 3: Why it's free -->
       <section class="slide" data-step="3" data-name="why_free">
-        <svg class="slide-icon" viewBox="0 0 100 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 26h14"/>
-          <path d="M4 38h14"/>
-          <path d="M18 22c0-3 2-5 5-5h8c3 0 5 2 5 5v20c0 3-2 5-5 5h-8c-3 0-5-2-5-5z"/>
-          <path d="M26 20v24"/>
-          <path d="M32 24v16"/>
-          <path d="M96 26H82"/>
-          <path d="M96 38H82"/>
-          <path d="M82 22c0-3-2-5-5-5h-8c-3 0-5 2-5 5v20c0 3 2 5 5 5h8c3 0 5-2 5-5z"/>
-          <path d="M74 20v24"/>
-          <path d="M68 24v16"/>
-          <path d="M44 10l-3-5"/>
-          <path d="M50 7v-5"/>
-          <path d="M56 10l3-5"/>
-          <path d="M44 54l-3 5"/>
-          <path d="M50 57v5"/>
-          <path d="M56 54l3 5"/>
+        <svg class="slide-icon" viewBox="0 0 160 80" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- left arm -->
+          <path d="M6 40h34"/>
+          <!-- left fist -->
+          <circle cx="60" cy="40" r="20"/>
+          <!-- left knuckle bumps (curled fingers visible on top) -->
+          <path d="M50 23a3 3 0 0 1 6 0"/>
+          <path d="M56 20a3 3 0 0 1 6 0"/>
+          <path d="M62 19a3 3 0 0 1 6 0"/>
+          <path d="M68 20a3 3 0 0 1 6 0"/>
+          <!-- right arm -->
+          <path d="M154 40h-34"/>
+          <!-- right fist -->
+          <circle cx="100" cy="40" r="20"/>
+          <!-- right knuckle bumps -->
+          <path d="M110 23a3 3 0 0 0-6 0"/>
+          <path d="M104 20a3 3 0 0 0-6 0"/>
+          <path d="M98 19a3 3 0 0 0-6 0"/>
+          <path d="M92 20a3 3 0 0 0-6 0"/>
+          <!-- impact burst top -->
+          <path d="M80 10V2"/>
+          <path d="M68 14l-6-7"/>
+          <path d="M92 14l6-7"/>
+          <!-- impact burst bottom -->
+          <path d="M80 70v8"/>
+          <path d="M68 66l-6 7"/>
+          <path d="M92 66l6 7"/>
         </svg>
         <h2>Why it's free</h2>
         <p>Because the best things in life are free! …nah, just kidding.</p>
