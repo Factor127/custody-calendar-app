@@ -32,13 +32,39 @@
   }
   .cta:active { transform: scale(0.98); }
   .mini { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 14px; }
-  .proof {
-    margin-top: 56px; padding: 20px; background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
-    color: rgba(255,255,255,0.75); font-size: 14px;
+
+  /* Visual — annotated app screenshot */
+  .viz {
+    margin-top: 44px;
+    /* Break out of the 480px wrap so the wide annotated image can breathe */
+    margin-left: -20px; margin-right: -20px;
   }
-  .proof b { color: #c4d630; }
-  .spacer { height: 60px; }
+  .viz img { display: block; width: 100%; height: auto; }
+  .viz-cap {
+    margin: 0 20px 14px; font-size: 12px; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 0.8px; text-align: center;
+  }
+
+  /* What happens next */
+  .next-up { margin-top: 40px; }
+  .next-up h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.5); margin-bottom: 14px; font-weight: 700; }
+  .next-up ul { list-style: none; padding: 0; }
+  .next-up li {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-top: 1px solid rgba(255,255,255,0.06); font-size: 15px; color: rgba(255,255,255,0.85);
+  }
+  .next-up li:last-child { border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .next-up .n { color: #c4d630; font-weight: 700; min-width: 18px; }
+
+  .proof {
+    margin-top: 36px; padding: 18px 20px; background: rgba(196,214,48,0.06);
+    border: 1px solid rgba(196,214,48,0.15); border-radius: 14px;
+    color: rgba(255,255,255,0.8); font-size: 14px; font-style: italic;
+  }
+  .proof b { color: #c4d630; font-style: normal; }
+
+  .cta-row { margin-top: 36px; text-align: center; }
+  .cta-row .mini { margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -47,27 +73,47 @@
       <img src="/logo-wordmark.svg" alt="Spontany">
     </div>
 
-    <h1>You got your <em>time back</em>.<br>Now sync it with the people you love.</h1>
-    <p class="sub">Free time is only free if someone you care about is free too. Spontany quietly lines up your custody schedule with your partner, your friends, your kid-free nights.</p>
+    <h1>Divorced and got your <em>time back</em>?<br>Now sync it with the people you love.</h1>
+    <p class="sub">Free time is great when there's someone meaningful to spend it with. Spontany quietly lines up your custody schedule with your partner, your friends &amp; your kid-free nights.</p>
 
     <a href="#" class="cta" id="primary-cta">See how it lines up →</a>
     <p class="mini">Free. Private. No app download.</p>
+
+    <div class="viz">
+      <div class="viz-cap">Your whole month, at a glance.</div>
+      <img src="/lp/timeback-v1/assets/killer-features.png" alt="Spontany calendar showing custody days, kid-free nights, and who's free when" loading="lazy">
+    </div>
+
+    <div class="next-up">
+      <h3>What happens when you join</h3>
+      <ul>
+        <li><span class="n">1.</span><span>Mark your custody days in under a minute — no back-and-forth needed.</span></li>
+        <li><span class="n">2.</span><span>Invite one person. Your partner, a friend, your sister. They see overlap, not details.</span></li>
+        <li><span class="n">3.</span><span>Get a quiet nudge when a free night lines up — before someone else books it.</span></li>
+      </ul>
+    </div>
 
     <div class="proof">
       <b>Beta users</b> check their shared schedule <b>4× a week</b> before making plans — because knowing beats asking.
     </div>
 
-    <div class="spacer"></div>
+    <div class="cta-row">
+      <a href="#" class="cta" id="secondary-cta">Get early access →</a>
+      <p class="mini">One email when your spot opens. No spam.</p>
+    </div>
   </main>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       window.LP && LP.init({ id: 'timeback-v1', type: 'hero', totalSteps: 0 });
-      var cta = document.getElementById('primary-cta');
-      cta.addEventListener('click', function(e) {
-        e.preventDefault();
-        window.LP && LP.ctaClick({ button: 'primary' });
-        window.LP && LP.goToSignup('hero');
+      ['primary-cta','secondary-cta'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.LP && LP.ctaClick({ button: id === 'primary-cta' ? 'primary' : 'secondary' });
+          window.LP && LP.goToSignup(id === 'primary-cta' ? 'hero' : 'bottom');
+        });
       });
     });
   </script>
