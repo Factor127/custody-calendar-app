@@ -80,8 +80,11 @@
   .result ul.overlap-list { list-style: none; padding: 0; margin: 20px 0; }
   .result ul.overlap-list li {
     padding: 12px 14px; background: rgba(196,214,48,0.08); border: 1px solid rgba(196,214,48,0.2);
-    border-radius: 10px; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #c4d630;
+    border-radius: 10px; margin-bottom: 8px;
   }
+  .result .opp-date  { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #c4d630; text-transform: uppercase; margin-bottom: 4px; }
+  .result .opp-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+  .result .opp-meta  { font-size: 12px; color: rgba(255,255,255,0.55); }
 </style>
 </head>
 <body>
@@ -106,14 +109,42 @@
 
   <script>
     // Step content is a single-file mini-SPA. Each step calls LP.step().
-    // Demo uses a 14-day grid (2 weeks).
+    // Demo uses a 14-day grid (2 weeks) starting from today.
     var state = { step: 1, youDays: new Set(), themDays: new Set() };
 
-    var dows = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var MONTH     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // Build 14 real dates starting today
+    var dates = (function() {
+      var arr = [];
+      var d0 = new Date();
+      d0.setHours(0,0,0,0);
+      for (var i = 0; i < 14; i++) {
+        var d = new Date(d0);
+        d.setDate(d0.getDate() + i);
+        arr.push(d);
+      }
+      return arr;
+    })();
+
+    // Header DOWs start from today's weekday so columns align
+    var headerDows = (function() {
+      var arr = [];
+      var start = dates[0].getDay();
+      for (var i = 0; i < 7; i++) arr.push(DOW_SHORT[(start + i) % 7]);
+      return arr;
+    })();
+
+    function fmtLong(d)  { return DOW_SHORT[d.getDay()] + ', ' + MONTH[d.getMonth()] + ' ' + d.getDate(); }
+    function fmtShort(d) { return DOW_SHORT[d.getDay()] + ' ' + MONTH[d.getMonth()] + ' ' + d.getDate(); }
+
+    // Opportunities fetched from DB (see loadOpps below)
+    var opportunities = [];
 
     function daysGrid(selectedSet, partnerSet, onToggle) {
       var html = '<div class="calendar">';
-      dows.forEach(function(d) { html += '<div class="dow">' + d + '</div>'; });
+      headerDows.forEach(function(d) { html += '<div class="dow">' + d + '</div>'; });
       for (var i = 0; i < 14; i++) {
         var classes = 'day';
         var you   = selectedSet.has(i);
@@ -121,10 +152,30 @@
         if (you && them) classes += ' overlap';
         else if (you)    classes += ' selected';
         else if (them)   classes += ' partner';
-        html += '<div class="' + classes + '" data-idx="' + i + '">' + (i + 1) + '</div>';
+        html += '<div class="' + classes + '" data-idx="' + i + '">' + dates[i].getDate() + '</div>';
       }
       html += '</div>';
       return html;
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function loadOpps() {
+      return fetch('/api/public/opportunities')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data && Array.isArray(data.opportunities)) {
+            // Shuffle so demo feels fresh each run
+            opportunities = data.opportunities.slice().sort(function() { return Math.random() - 0.5; });
+            // If already showing results, re-render to pull in opps
+            if (state.step === 3) render();
+          }
+        })
+        .catch(function() { /* fallback handled in render */ });
     }
 
     function render() {
@@ -193,12 +244,25 @@
       } else {
         var overlap = [];
         state.youDays.forEach(function(d) { if (state.themDays.has(d)) overlap.push(d); });
-        var yourFree = state.youDays.size;
-        var theirFree = state.themDays.size;
-        var bothFree  = overlap.length;
+        var bothFree = overlap.length;
 
-        var msgs = overlap.sort(function(a,b){return a-b;}).slice(0,5).map(function(d){
-          return '<li>Day ' + (d + 1) + ' — both free</li>';
+        var sortedOverlap = overlap.sort(function(a,b){return a-b;}).slice(0,5);
+        var msgs = sortedOverlap.map(function(d, i) {
+          var date = dates[d];
+          var opp  = opportunities.length ? opportunities[i % opportunities.length] : null;
+          var dateStr = fmtLong(date);
+          if (opp) {
+            var meta = [];
+            if (opp.location_name) meta.push(opp.location_name);
+            if (opp.category)      meta.push(opp.category);
+            return '<li>' +
+              '<div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
+              '<div class="opp-title">' + escapeHtml(opp.title) + '</div>' +
+              (meta.length ? '<div class="opp-meta">' + escapeHtml(meta.join(' · ')) + '</div>' : '') +
+            '</li>';
+          }
+          return '<li><div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
+                 '<div class="opp-meta">Both free</div></li>';
         }).join('');
 
         card.innerHTML =
@@ -206,7 +270,7 @@
           '<div class="step-label">STEP 3 OF 3</div>' +
           '<h2>Your answer:</h2>' +
           '<div class="big">' + bothFree + ' night' + (bothFree === 1 ? '' : 's') + '</div>' +
-          '<div class="lil">where you\'re both actually free in the next 2 weeks.</div>' +
+          '<div class="lil">where you\'re both actually free — and something to do.</div>' +
           (msgs ? '<ul class="overlap-list">' + msgs + '</ul>' : '<p style="color:rgba(255,255,255,0.5);">No overlap yet. Try again, or sync with someone real.</p>') +
           '<button class="next" id="signup">Get my real calendar →</button>' +
           '<button class="back" id="back3">← Try different days</button>' +
@@ -225,6 +289,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       window.LP && LP.init({ id: 'friends-demo-v1', type: 'demo', totalSteps: 3 });
       window.LP && LP.step(1, 'your_days');
+      loadOpps();
       render();
     });
   </script>
