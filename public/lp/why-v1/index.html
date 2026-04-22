@@ -66,6 +66,14 @@
   }
   .eyebrow { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 10px; letter-spacing: 0.4px; }
   .slide-icon { color: #c4d630; width: 112px; height: auto; display: block; margin: 4px auto 18px; }
+  .features {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin: 4px 0 20px;
+  }
+  .features .feature {
+    width: 100%; height: auto; display: block;
+    border-radius: 12px; background: rgba(255,255,255,0.02);
+  }
   p { color: rgba(255,255,255,0.85); font-size: 16px; margin-bottom: 14px; }
   p.intro { color: rgba(255,255,255,0.7); font-size: 17px; }
   ul { padding-left: 20px; color: rgba(255,255,255,0.85); font-size: 16px; }
@@ -119,8 +127,11 @@
         <img class="slide-hero" src="310a29_08a3251094d042afa599e6f6ce314706~mv2.avif" alt="" aria-hidden="true">
         <div class="eyebrow">A note from the founder</div>
         <h1>Why we built Spontany.</h1>
-        <p class="intro">Short version: I got divorced, spent years staring at calendars, and realized the hardest part wasn't custody - it was coordinating a life around it.</p>
-        <p class="intro">So I built the thing I wished existed.</p>
+        <p class="intro">Short version: before I got divorced no one told me the real reason you shouldn't do it...</p>
+        <p class="intro">it's not the loneliness,<br>not the changes<br>or the financials....</p>
+        <p class="intro"><strong>it's THE ADMIN!!!</strong></p>
+        <p class="intro">and when I started dating divorcees...it was admin X 4 homes schedules.</p>
+        <p class="intro">So I built the thing I wished existed, and now I'd like to make your life better.</p>
       </section>
 
       <!-- Step 2: Who it's for -->
@@ -128,7 +139,7 @@
         <img class="slide-hero" src="Elena35.jpg" alt="" aria-hidden="true">
         <h2>Who it's for</h2>
         <p>Divorced parents with kids aged 0–14.</p>
-        <p>You've got a custody schedule, and half your mental energy goes to texting "do you have the kids that weekend?"</p>
+        <p>You've got a custody schedule, and often ask your romantic partner - "do you have the kids that weekend?"</p>
         <p>Spontany does that math once, quietly, and lets you both see the overlap.</p>
       </section>
 
@@ -147,26 +158,23 @@
         <img class="slide-icon" src="promise.svg" alt="" aria-hidden="true">
         <h2>How your privacy works</h2>
         <ul>
-          <li>Your schedule is visible only to people you explicitly invite.</li>
-          <li>You can revoke access any time - it's one tap.</li>
-          <li>We don't share, sell, or look at your data to show you ads.</li>
+          <li>Share your schedule only with people you explicitly invite.</li>
+          <li>Revoke access any time - it's one tap.</li>
           <li>If you delete your account, we delete your data. For real.</li>
         </ul>
       </section>
 
-      <!-- Step 5: What it won't do -->
-      <section class="slide" data-step="5" data-name="wont_do">
-        <h2>What it won't do</h2>
-        <p>Spontany won't fix your coparent relationship, won't solve your custody dispute, won't replace therapy.</p>
-        <p>It's a calendar overlap tool. A really good one - and one that's built for the shape your life actually has.</p>
-      </section>
-
-      <!-- Step 6: CTA -->
-      <section class="slide" data-step="6" data-name="cta">
+      <!-- Step 5: Features + CTA -->
+      <section class="slide" data-step="5" data-name="cta">
+        <h2>Here's what Spontany does</h2>
+        <div class="features">
+          <img class="feature" src="feature1.svg" alt="" aria-hidden="true">
+          <img class="feature" src="feature2.svg" alt="" aria-hidden="true">
+          <img class="feature" src="feature3.svg" alt="" aria-hidden="true">
+          <img class="feature" src="feature4.svg" alt="" aria-hidden="true">
+        </div>
         <div class="cta-block">
-          <h3>Want to try it?</h3>
-          <p>We're in gated beta. Drop your email - we'll text you when your spot opens.</p>
-          <button type="button" class="cta" id="primary-cta">Get on the list →</button>
+          <button type="button" class="cta" id="primary-cta">Give it a go?</button>
         </div>
         <p class="sign">- Ran, founder</p>
       </section>
