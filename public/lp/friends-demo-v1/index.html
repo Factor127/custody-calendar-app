@@ -58,9 +58,44 @@
     left: -80.4%; /* -(1558/4961) × 256% */
     top: -3.24%;  /* -(105/3508) × height-as-% of container */
   }
-  .intro-copy { text-align: center; margin-bottom: 6px; }
+  .intro-copy { text-align: center; margin: 6px 0; }
   .intro-copy h2 { margin-bottom: 8px; }
-  .intro-copy p { color: rgba(255,255,255,0.7); font-size: 14px; }
+  .intro-copy p { color: rgba(255,255,255,0.85); font-size: 15px; line-height: 1.45; }
+  .intro-copy p .accent { color: #c4d630; font-weight: 600; }
+
+  /* Mini input preview — decorative mini calendar, non-interactive */
+  .mini-preview {
+    display: block; width: 100%; max-width: 220px;
+    margin: 14px auto 18px; padding: 14px;
+    background: #0f0f0f; border: 1px solid #1f1f1f; border-radius: 12px;
+  }
+  .mini-preview .mini-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  }
+  .mini-preview .mini-grid .c {
+    aspect-ratio: 1; background: #1a1a1a; border: 1px solid #222;
+    border-radius: 4px;
+  }
+  .mini-preview .mini-grid .c.you     { background: #c4d630; border-color: #c4d630; }
+  .mini-preview .mini-grid .c.them    { background: #a78bfa; border-color: #a78bfa; }
+  .mini-preview .mini-grid .c.overlap { background: linear-gradient(135deg, #c4d630 50%, #a78bfa 50%); }
+  .mini-preview .mini-legend {
+    display: flex; gap: 12px; justify-content: center;
+    margin-top: 10px; font-size: 10px; color: rgba(255,255,255,0.55);
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  .mini-preview .mini-legend .sw {
+    display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    vertical-align: middle; margin-right: 4px;
+  }
+  .mini-preview .mini-legend .sw.you  { background: #c4d630; }
+  .mini-preview .mini-legend .sw.them { background: #a78bfa; }
+  .mini-preview .mini-legend .sw.both { background: linear-gradient(135deg, #c4d630 50%, #a78bfa 50%); }
+
+  .intro-arrow {
+    display: block; margin: 2px auto; width: 20px; text-align: center;
+    color: rgba(196,214,48,0.5); font-size: 20px; line-height: 1;
+  }
 
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 20px 0; }
   .day {
@@ -214,7 +249,7 @@
 
     <div class="hero">
       <h1>Two schedules.<br><em>One answer.</em></h1>
-      <p class="sub">30-second demo. See how it actually works.</p>
+      <p class="sub">Try Spontany custody match out.</p>
     </div>
 
     <div class="progress" id="progress">
@@ -319,19 +354,46 @@
         else if (i + 1 === state.step) b.classList.add('active');
       });
 
-      // ── Step 1: intro with invite preview ───────────────────────────────
+      // ── Step 1: intro with two-part walk-through ────────────────────────
       if (state.step === 1) {
+        // Decorative mini-calendar: preset "you" / "them" / "overlap" cells
+        // so visitors see the shape of the input before they do it themselves.
+        var miniCells = '';
+        var YOU = {0:1, 3:1, 6:1, 9:1, 12:1};
+        var THEM = {0:1, 1:1, 4:1, 9:1, 11:1};
+        for (var i = 0; i < 14; i++) {
+          var cls = 'c';
+          if (YOU[i] && THEM[i]) cls += ' overlap';
+          else if (YOU[i])       cls += ' you';
+          else if (THEM[i])      cls += ' them';
+          miniCells += '<div class="' + cls + '"></div>';
+        }
+
         card.innerHTML =
-          '<div class="step-label">STEP 1 OF ' + TOTAL_STEPS + '</div>' +
+          '<div class="step-label">HOW IT WORKS</div>' +
+          '<h2>Here\'s the idea.</h2>' +
+
           '<div class="intro-copy">' +
-            '<h2>This is what you\'ll send.</h2>' +
-            '<p>A Spontany night invite - already matched to a night you\'re both actually free.</p>' +
+            '<p>You put your <span class="accent">custody pattern</span> in. ' +
+            'They do theirs.</p>' +
           '</div>' +
-          '<div class="intro-img-wrap"><img src="invite.svg" alt="Spontany invite"></div>' +
+          '<div class="mini-preview">' +
+            '<div class="mini-grid">' + miniCells + '</div>' +
+            '<div class="mini-legend">' +
+              '<span><span class="sw you"></span>You</span>' +
+              '<span><span class="sw them"></span>Them</span>' +
+              '<span><span class="sw both"></span>Match</span>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="intro-arrow">↓</div>' +
+
           '<div class="intro-copy">' +
-            '<p>Next: we find those nights in 30 seconds.</p>' +
+            '<p>…and you\'ll see your <span class="accent">match</span>.</p>' +
           '</div>' +
-          '<button class="next" id="go0">Show me how →</button>';
+          '<div class="intro-img-wrap"><img src="invite.svg" alt="Spontany invite preview"></div>' +
+
+          '<button class="next" id="go0">Try it →</button>';
 
         document.getElementById('go0').addEventListener('click', function() {
           window.LP && LP.step(2, 'your_days');
