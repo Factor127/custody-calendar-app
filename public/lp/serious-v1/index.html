@@ -113,7 +113,21 @@
   .sms-bubble .url { color: #7dd3fc; }
 
   .picker-card h3, .copy-card h3, .phone-card h3 {
-    font-size: 18px; margin-bottom: 14px; line-height: 1.2;
+    font-size: 18px; margin-bottom: 8px; line-height: 1.2;
+  }
+  .copy-sub {
+    font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 14px; line-height: 1.45;
+  }
+  .next-step {
+    margin: 20px 0 4px; padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .next-step-label {
+    font-size: 12px; color: #a78bfa; font-weight: 700; letter-spacing: 0.8px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .next-step-sub {
+    font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.45;
   }
   .picker-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
@@ -253,18 +267,24 @@
     </div>
 
     <div class="copy-card" id="copy-card" hidden>
-      <h3>Copy and paste it to him</h3>
+      <h3>Link ready — paste it to him</h3>
+      <p class="copy-sub">Drop into iMessage, WhatsApp, wherever feels natural.</p>
       <div class="copy-row">
         <input type="text" id="share-link" readonly>
         <button type="button" id="copy-btn" class="copy-btn">Copy</button>
       </div>
-      <a href="#" id="copy-continue" class="cta">Now do yours →</a>
+      <div class="next-step">
+        <div class="next-step-label">Your turn ↓</div>
+        <p class="next-step-sub">We need both of your nights to find the overlap.</p>
+      </div>
+      <a href="#" id="copy-continue" class="cta">To get a match, fill in your free nights →</a>
     </div>
 
     <div class="phone-card" id="phone-card" hidden>
       <h3>We'll text him for you</h3>
       <label for="his_phone">His mobile</label>
       <input id="his_phone" type="tel" placeholder="+1 214 555 0123" autocomplete="tel">
+      <p class="next-step-sub" style="margin-top:14px;">After we text him, you'll fill in your free nights so we can find the overlap.</p>
       <button type="button" id="phone-send" class="cta">Send the text →</button>
     </div>
 
