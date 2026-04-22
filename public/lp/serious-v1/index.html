@@ -87,6 +87,18 @@
     border: 1px solid rgba(167,139,250,0.3); border-radius: 16px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
+  .name-question {
+    display: block; font-size: 20px; line-height: 1.25; font-weight: 700;
+    color: #fff; margin: 4px 0 14px;
+    font-family: inherit;
+  }
+  .name-question em { color: #a78bfa; font-style: normal; font-weight: 800; }
+  #your_name {
+    width: 100%; padding: 14px 16px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 16px;
+    font-family: inherit; box-sizing: border-box;
+  }
+  #your_name:focus { outline: 0; border-color: #a78bfa; }
 
   .preview-label {
     font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 700;
@@ -249,7 +261,7 @@
 
     <div class="form-card" id="form-card">
       <form id="share-form">
-        <label for="your_name">Make it personal — what's your name?</label>
+        <label for="your_name" class="name-question">Make it personal — <em>what's your name?</em></label>
         <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" autocomplete="given-name" required>
 
         <div class="preview-label">He'll see this:</div>
