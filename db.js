@@ -1,4 +1,4 @@
-// Uses Node.js 22+ built-in SQLite — no native compilation needed
+// Uses Node.js 22+ built-in SQLite - no native compilation needed
 const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
@@ -80,7 +80,7 @@ try { db.exec('ALTER TABLE connections ADD COLUMN requester_share_until TEXT'); 
 try { db.exec('ALTER TABLE connections ADD COLUMN target_share_until TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE connections ADD COLUMN requester_duration_days INTEGER'); } catch(e) { /* already exists */ }
 // Backfill connections.relationship_type from the invite that was used to join.
-// Only runs on connections still at the default 'coparent' value — never overwrites
+// Only runs on connections still at the default 'coparent' value - never overwrites
 // a relationship_type that was manually set (e.g. changed via the badge toggle).
 try {
   db.exec(`
@@ -326,7 +326,7 @@ try { db.exec('CREATE INDEX idx_ae_event ON analytics_events(event)'); } catch(e
 try { db.exec('CREATE INDEX idx_ae_time  ON analytics_events(created_at)'); } catch(e) {}
 try { db.exec('CREATE INDEX idx_ae_sid   ON analytics_events(session_id)'); } catch(e) {}
 
-// Analytics archive — permanent history that survives dashboard resets
+// Analytics archive - permanent history that survives dashboard resets
 db.exec(`CREATE TABLE IF NOT EXISTS analytics_archive (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id    TEXT,
@@ -338,7 +338,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS analytics_archive (
   archived_at TEXT DEFAULT (datetime('now'))
 )`);
 
-// ── LP signups (separate from existing waitlist/users — captures pre-commitment intent) ─
+// ── LP signups (separate from existing waitlist/users - captures pre-commitment intent) ─
 db.exec(`CREATE TABLE IF NOT EXISTS lp_signups (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id   TEXT,
@@ -887,7 +887,7 @@ function generateDaysFromPattern(pattern, startDate, endDate) {
       });
     }
   }
-  // 'custom' — days entered manually, no auto-generation
+  // 'custom' - days entered manually, no auto-generation
 
   return days;
 }

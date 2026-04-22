@@ -16,7 +16,7 @@ function getResend() {
 
 const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭', entertainment:'🎬', coffee:'☕', drinks:'🍷', restaurants:'🍽', walks:'🌳', events:'🎫', sports:'⚽', outdoors:'🌳', wellness:'🧘', education:'📚', community:'👥' };
 
-// POST /api/match/create  — Person A submits their schedule
+// POST /api/match/create  - Person A submits their schedule
 // If partner_schedule is also provided (manual entry path), auto-complete the match
 router.post('/match/create', (req, res) => {
   const { name, email, phone, schedule, partner_schedule, utm_source, utm_medium, utm_campaign, utm_content, referrer, device } = req.body;
@@ -45,9 +45,9 @@ router.post('/match/create', (req, res) => {
   res.json({ token, match_url: `/match/${token}` });
 });
 
-// ── GET /api/match/suggestions — context-aware opportunities per day ─────────
+// ── GET /api/match/suggestions - context-aware opportunities per day ─────────
 // Weekend days get events, walks, sports, restaurants; weekday evenings get
-// coffee, drinks, restaurants — with a shuffle so each day feels different.
+// coffee, drinks, restaurants - with a shuffle so each day feels different.
 const WEEKEND_DAYS = new Set(['fri','sat','sun']);
 const WEEKEND_CATS = new Set(['events','restaurants','walks','sports','entertainment','music','arts','outdoors']);
 const WEEKDAY_CATS = new Set(['coffee','drinks','restaurants','nightlife','food','entertainment']);
@@ -114,7 +114,7 @@ router.get('/match/suggestions', (req, res) => {
   res.json({ suggestions });
 });
 
-// GET /api/match/suggestions/search?q= — public text search for match invite sheet
+// GET /api/match/suggestions/search?q= - public text search for match invite sheet
 router.get('/match/suggestions/search', (req, res) => {
   const q = (req.query.q || '').trim();
   if (!q || q.length < 2) return res.json({ results: [] });
@@ -142,7 +142,7 @@ router.get('/match/suggestions/search', (req, res) => {
   }
 });
 
-// GET /api/match/:token  — status + person A name (safe to expose)
+// GET /api/match/:token  - status + person A name (safe to expose)
 router.get('/match/:token', (req, res) => {
   const row = db.prepare('SELECT * FROM match_requests WHERE token = ?').get(req.params.token);
   if (!row) return res.status(404).json({ error: 'Match not found' });
@@ -163,7 +163,7 @@ router.get('/match/:token', (req, res) => {
   res.json(resp);
 });
 
-// POST /api/match/:token/complete  — Person B submits their schedule
+// POST /api/match/:token/complete  - Person B submits their schedule
 router.post('/match/:token/complete', async (req, res) => {
   const { name, email, phone, schedule } = req.body;
   const { token } = req.params;
@@ -215,7 +215,7 @@ router.post('/match/:token/complete', async (req, res) => {
   res.json({ status: 'completed' });
 });
 
-// ── POST /api/match/invite — create a date invite (no auth required) ────────
+// ── POST /api/match/invite - create a date invite (no auth required) ────────
 router.post('/match/invite', (req, res) => {
   const { sender_name, sender_email, recipient_name, opportunity_id,
           opportunity_title, opportunity_vibe, date_label, message, match_token } = req.body;
@@ -236,7 +236,7 @@ router.post('/match/invite', (req, res) => {
   res.json({ invite_token: token, invite_url: `/date/${token}` });
 });
 
-// ── GET /api/match/invite/:token — fetch invite data (public) ───────────────
+// ── GET /api/match/invite/:token - fetch invite data (public) ───────────────
 router.get('/match/invite/:token', (req, res) => {
   const row = db.prepare('SELECT * FROM match_invites WHERE token = ?').get(req.params.token);
   if (!row) return res.status(404).json({ error: 'Invite not found' });
@@ -252,7 +252,7 @@ router.get('/match/invite/:token', (req, res) => {
   });
 });
 
-// ── POST /api/match/invite/:token/respond — recipient responds (public) ─────
+// ── POST /api/match/invite/:token/respond - recipient responds (public) ─────
 router.post('/match/invite/:token/respond', async (req, res) => {
   const { response, message } = req.body;
   if (!response || !['in', 'not_this_time'].includes(response)) {

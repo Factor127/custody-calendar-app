@@ -220,7 +220,7 @@ ADS.forEach(ad => {
   }
 
   wrapper.innerHTML = `
-    <div class="ad-label">${ad.label} — ${ad.gender}</div>
+    <div class="ad-label">${ad.label} - ${ad.gender}</div>
     <div class="ad-sublabel">"${ad.hookName}"</div>
     <div class="ad-canvas ${ad.hook}" id="canvas-${ad.id}">
       <img class="ad-photo" id="photo-${ad.id}" src="" alt="" style="display:none;">

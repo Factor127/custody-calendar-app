@@ -21,7 +21,7 @@ function computeSendAt(choice, tzOffsetMin) {
     case 'tonight_9pm': {
       localTarget.setHours(21, 0, 0, 0);
       if (localTarget <= localNow) {
-        // Too late for tonight — push to tomorrow 9am instead of next-day 9pm
+        // Too late for tonight - push to tomorrow 9am instead of next-day 9pm
         localTarget.setDate(localTarget.getDate() + 1);
         localTarget.setHours(9, 0, 0, 0);
       }
@@ -136,7 +136,7 @@ router.post('/nudge/webhook', express.urlencoded({ extended: false }), (req, res
         WHERE phone = ? AND status = 'scheduled'
       `).run(from);
     }
-    // Twilio auto-sends its own confirmation — empty TwiML keeps our reply out of the way
+    // Twilio auto-sends its own confirmation - empty TwiML keeps our reply out of the way
     reply = '';
   } else if (HELP_WORDS.includes(body)) {
     reply = 'Spontany: questions? Email hello@spontany.io. Reply STOP to opt out.';
@@ -180,7 +180,7 @@ async function processDueNudges() {
 
     const name = n.first_name ? n.first_name + ', ' : '';
     const body = truncate(
-      `${name}here's your Spontany nudge — see how your schedule lines up: https://spontany.io/match?utm_source=nudge&utm_content=${encodeURIComponent(n.variant || 'lp')}  Reply STOP to opt out.`,
+      `${name}here's your Spontany nudge - see how your schedule lines up: https://spontany.io/match?utm_source=nudge&utm_content=${encodeURIComponent(n.variant || 'lp')}  Reply STOP to opt out.`,
       MAX_BODY_LEN * 2 // allow 2 segments max
     );
 

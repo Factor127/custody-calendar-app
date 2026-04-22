@@ -726,7 +726,7 @@ html, body {
       const prev = history[history.length - 1];
 
       // If going back from a belief, undo that disagree if applicable
-      // (simplified: just go back, disagreeCount stays — acceptable for mockup)
+      // (simplified: just go back, disagreeCount stays - acceptable for mockup)
 
       showSlide(prev);
     }
@@ -747,7 +747,7 @@ html, body {
 
     // Only trigger on clear vertical swipe (not horizontal)
     if (dy > 60 && dx < 80) {
-      // Swipe up — could auto-advance on hook screen
+      // Swipe up - could auto-advance on hook screen
       if (currentStep === 0) {
         window.goTo(1);
       }

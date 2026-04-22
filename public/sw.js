@@ -40,7 +40,7 @@ self.addEventListener('fetch', event => {
   // Only handle same-origin GET requests
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // API calls: always network-only — never cache auth/data responses
+  // API calls: always network-only - never cache auth/data responses
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
 
   // HTML navigation: network-first, fall back to cached page
@@ -124,7 +124,7 @@ self.addEventListener('notificationclick', event => {
           try { await appWindow.navigate(fullTarget); } catch(e) {}
           return;
         }
-        // No existing window — open a new one (always works on notification click gesture)
+        // No existing window - open a new one (always works on notification click gesture)
         return clients.openWindow(fullTarget);
       })
   );

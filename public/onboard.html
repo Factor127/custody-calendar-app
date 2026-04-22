@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Spontany — Set Up Your Profile</title>
+  <title>Spontany - Set Up Your Profile</title>
+  <meta property="og:title" content="Spontany - Set Up Your Profile">
+  <meta property="og:description" content="Hey! Join me on Spontany so we can see when we're both free to hang out. Takes 1 minute.">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:type" content="website">
 
   <!-- Meta Pixel Code -->
   <script>
@@ -325,7 +329,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
       <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">Friendships need<br>face-to-face time</div>
-    <div class="intro-sub">Real connection happens in person — coffee, walks, just being there.</div>
+    <div class="intro-sub">Real connection happens in person - coffee, walks, just being there.</div>
   </div>
   <!-- Slide 2: Problem -->
   <div class="intro-slide" id="isl-2">
@@ -389,7 +393,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
           <label class="field-label" for="user-email">Email address <span style="color:#e53935;">*</span></label>
           <input id="user-email" class="field-input" type="email" placeholder="you@example.com"
                  autocomplete="email" autocapitalize="none" oninput="checkStep1Ready()">
-          <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Used to log back in — never shared.</p>
+          <p style="font-size:11px;color:var(--muted);margin:4px 0 0;">Used to log back in - never shared.</p>
         </div>
 
         <div class="field-group">
@@ -452,15 +456,15 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
         <div style="text-align:left;max-width:320px;margin:0 auto 32px;">
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
             <div style="font-size:20px;flex-shrink:0;margin-top:1px;">📅</div>
-            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">Your situation shapes your free time — <strong style="color:var(--lime);">knowing it helps us build your calendar automatically.</strong></p>
+            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">Your situation shapes your free time - <strong style="color:var(--lime);">knowing it helps us build your calendar automatically.</strong></p>
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
             <div style="font-size:20px;flex-shrink:0;margin-top:1px;">🎯</div>
-            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">You'll get <strong style="color:var(--lime);">invites that fit your actual schedule</strong> — no more guessing, no more back-and-forth.</p>
+            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">You'll get <strong style="color:var(--lime);">invites that fit your actual schedule</strong> - no more guessing, no more back-and-forth.</p>
           </div>
           <div style="display:flex;align-items:flex-start;gap:12px;">
             <div style="font-size:20px;flex-shrink:0;margin-top:1px;">🔒</div>
-            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">This info is <strong style="color:var(--lime);">only used to set up your calendar.</strong> Friends see when you're free — never why.</p>
+            <p style="font-size:13px;color:var(--text);line-height:1.6;margin:0;">This info is <strong style="color:var(--lime);">only used to set up your calendar.</strong> Friends see when you're free - never why.</p>
           </div>
         </div>
 
@@ -496,16 +500,16 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
       </div>
     </div>
 
-    <!-- Step mirror: invite mode — is schedule a mirror of the inviter's? -->
+    <!-- Step mirror: invite mode - is schedule a mirror of the inviter's? -->
     <div class="wizard-step" id="step-mirror">
       <div class="wizard-title">Is your custody schedule a mirror image of <strong id="mirror-owner-name">your co-parent</strong>'s?</div>
       <p class="wizard-sub">For example, if they have the kids Mon–Wed, you have them Thu–Sun.</p>
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
         <button class="btn btn-primary" style="justify-content:center;" onclick="chooseMirror(true)">
-          Yes — it's the opposite of theirs
+          Yes - it's the opposite of theirs
         </button>
         <button class="btn btn-outline" style="justify-content:center;" onclick="chooseMirror(false)">
-          No — let me set my own schedule
+          No - let me set my own schedule
         </button>
       </div>
       <div class="wizard-nav" style="margin-top:16px;">
@@ -598,7 +602,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
           <div class="ts-handle" id="ts-h-end"></div>
         </div>
       </div>
-      <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip — I'll set this up later</span>
+      <span class="ts-skip-link" onclick="skipWorkSchedule()">Skip - I'll set this up later</span>
       <div class="wizard-nav" style="margin-top:18px;">
         <button class="btn btn-outline btn-sm" onclick="workBack()">← Back</button>
         <button class="btn btn-primary" onclick="saveAndFinish()">Finish →</button>
@@ -652,7 +656,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
           </div>
         </div>
         <div id="inv-panel-friend" class="inv-panel" style="display:none;">
-          <p class="inv-panel-desc">A close friend — see when you're both free together.</p>
+          <p class="inv-panel-desc">A close friend - see when you're both free together.</p>
           <div id="inv-url-friend" class="inv-url-box">Generating…</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
             <a id="inv-wa-friend" href="#" target="_blank" rel="noopener" class="wa-send-btn">
@@ -668,7 +672,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
         Open my calendar →
       </button>
       <p id="done-footnote" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">
-        Your schedule is private — only people you approve can see it.
+        Your schedule is private - only people you approve can see it.
       </p>
     </div>
 
@@ -900,7 +904,7 @@ function personalNext() {
       goStep('parent');
     }
   } else {
-    // Not divorced — skip custody entirely, go to work schedule
+    // Not divorced - skip custody entirely, go to work schedule
     isParent = false;
     goStep('work');
   }
@@ -927,7 +931,7 @@ function parentBack() {
 }
 
 function parentNext() {
-  // Only separated/divorced parents have custody — everyone else skips
+  // Only separated/divorced parents have custody - everyone else skips
   const hasCustodySplit = isParent && relStatus === 'separated';
   if (hasCustodySplit) { ensureWeekInit(); goStep(2); }
   else                 goStep('work');
@@ -1065,7 +1069,7 @@ function renderReviewCalendar() {
   }
   html += `<p class="text-muted" style="font-size:12px;margin-top:4px;">
     <span style="display:inline-block;width:10px;height:10px;background:var(--r);border:1px solid var(--r-border);border-radius:2px;margin-right:4px;"></span>Your days &nbsp;
-    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid var(--z-border);border-radius:2px;margin-right:4px;"></span>Co-parent's days — tap any day to flip it.
+    <span style="display:inline-block;width:10px;height:10px;background:var(--z);border:1px solid var(--z-border);border-radius:2px;margin-right:4px;"></span>Co-parent's days - tap any day to flip it.
   </p>`;
   document.getElementById('review-calendar').innerHTML = html;
 }
@@ -1221,7 +1225,7 @@ async function saveAndFinish() {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    alert(err.error || 'Setup failed — please try again');
+    alert(err.error || 'Setup failed - please try again');
     return;
   }
 
@@ -1239,7 +1243,7 @@ async function renderDoneScreen() {
   if (MODE === 'invite') {
     document.getElementById('done-title').textContent = "You're in! 🎉";
     document.getElementById('done-sub').textContent   = `Finding days you and ${ownerName} are both free…`;
-    document.getElementById('done-footnote').textContent = 'Your schedule is private — only people you approve can see it.';
+    document.getElementById('done-footnote').textContent = 'Your schedule is private - only people you approve can see it.';
     await renderOverlapSection();
   } else {
     document.getElementById('done-title').textContent = 'Your calendar is ready!';
@@ -1301,7 +1305,7 @@ async function renderOverlapSection() {
 
     document.getElementById('done-sub').textContent = `Pick a day and make it happen.`;
   } catch(e) {
-    container.innerHTML = `<p style="font-size:12px;color:#1967d2;margin:0;">Couldn't load overlaps right now — check back in the app.</p>`;
+    container.innerHTML = `<p style="font-size:12px;color:#1967d2;margin:0;">Couldn't load overlaps right now - check back in the app.</p>`;
   }
 }
 
@@ -1362,7 +1366,7 @@ async function generateInviteLinks(token) {
   const msgs = {
     coparent: u => `Hi! I'm using Spontany to coordinate our custody schedule and find time to connect.${freeSnippet} Set up your side here: ${u}`,
     partner:  u => `Hey! I'm using Spontany to find when we're both free at the same time.${freeSnippet} Connect your schedule here: ${u}`,
-    friend:   u => `Hey!${freeSnippet} I use Spontany to find when friends are free — join so we can see our overlap: ${u}`
+    friend:   u => `Hey!${freeSnippet} I use Spontany to find when friends are free - join so we can see our overlap: ${u}`
   };
   for (const type of ['coparent','partner','friend']) {
     try {
@@ -1409,7 +1413,7 @@ function goToCalendar() {
 // ── Invite validation ──────────────────────────────────────────────────────────
 async function validateInvite() {
   if (!INVITE_TOKEN || INVITE_TOKEN === 'undefined') {
-    showWizardError('Missing invite token — the link may be broken.');
+    showWizardError('Missing invite token - the link may be broken.');
     return;
   }
   try {
@@ -1449,7 +1453,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById('user-name');
       if (el) { el.value = GOOGLE_NAME; checkStep1Ready(); }
     }
-    // Hide email field — already verified via magic link
+    // Hide email field - already verified via magic link
     document.getElementById('email-group').style.display = 'none';
     // Generic welcome intro
     document.getElementById('isl-0').innerHTML = `

@@ -178,7 +178,7 @@ router.get('/api/share/:token/report', (req, res) => {
   const dayTags = [...new Set(overlap.map(dayKey))];
   let opps = [];
   try {
-    // Prefer opportunities with images, but don't require them — fall back to
+    // Prefer opportunities with images, but don't require them - fall back to
     // category-emoji thumbnails client-side when image_url is missing.
     opps = db.prepare(`
       SELECT id, title, category, tags, location_name, price_tier, image_url, source_url,
@@ -210,7 +210,7 @@ router.get('/api/share/:token/report', (req, res) => {
   });
 });
 
-// ── Page routes — serve the share-flow HTML pages ────────────────────────
+// ── Page routes - serve the share-flow HTML pages ────────────────────────
 router.get('/share/:token/me', (req, res, next) => {
   if (!getMatch(req.params.token)) return next();
   res.sendFile(path.join(__dirname, '..', 'public', 'share', 'input-a.html'));

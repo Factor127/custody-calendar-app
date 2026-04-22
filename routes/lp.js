@@ -7,7 +7,7 @@ const router  = express.Router();
 const { db }  = require('../db');
 const { sendEmail } = require('../utils/email');
 
-// LP registry — single source of truth for the A/B test.
+// LP registry - single source of truth for the A/B test.
 // Keep in sync with AB_VARIANTS in server.js (which reads from here).
 const LPs = [
   { id: 'timeback-v1',     type: 'hero',          label: 'You got your time back',     active: true,  file: 'public/lp/timeback-v1/index.html' },
@@ -19,7 +19,7 @@ const LPs = [
 function getActiveLPs() { return LPs.filter(lp => lp.active); }
 function findLP(id)     { return LPs.find(lp => lp.id === id); }
 
-// ── GET /lp/_signup — shared signup landing after CTA ─────────────────────
+// ── GET /lp/_signup - shared signup landing after CTA ─────────────────────
 // Must come BEFORE /lp/:id so the param route doesn't swallow it.
 router.get('/lp/_signup', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'lp', '_shared', 'signup.html'));
@@ -54,7 +54,7 @@ sessionStorage.setItem('sa_variant','${lp.id}');
   res.send(html);
 });
 
-// ── LP preview index — list all LPs with preview links + live stats ───────
+// ── LP preview index - list all LPs with preview links + live stats ───────
 router.get('/lp', (req, res) => {
   const rows = LPs.map(lp => {
     const stats = db.prepare(`
@@ -71,7 +71,7 @@ router.get('/lp', (req, res) => {
 
   res.set('Content-Type', 'text/html');
   res.send(`<!doctype html>
-<html><head><meta charset="utf-8"><title>LP Index — Spontany</title>
+<html><head><meta charset="utf-8"><title>LP Index - Spontany</title>
 <style>
   body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 40px; }
   h1 { margin: 0 0 24px; font-size: 22px; }
@@ -88,20 +88,20 @@ router.get('/lp', (req, res) => {
   .pill.explainer{ background: #2a1f38; color: #c4b5fd; }
   .pill.teaser-share { background: #381a2a; color: #fda4af; }
 </style></head><body>
-<h1>Spontany LP test — active: ${getActiveLPs().length}/${LPs.length}</h1>
+<h1>Spontany LP test - active: ${getActiveLPs().length}/${LPs.length}</h1>
 <table>
 <thead><tr><th>ID</th><th>Label</th><th>Type</th><th>Views</th><th>CTA%</th><th>Signup%</th><th>Nudges</th><th>Preview</th></tr></thead>
 <tbody>
 ${rows.map(r => {
-  const ctr     = r.views > 0 ? ((r.cta_clicks / r.views) * 100).toFixed(1) : '—';
-  const convert = r.views > 0 ? ((r.signups / r.views) * 100).toFixed(1) : '—';
+  const ctr     = r.views > 0 ? ((r.cta_clicks / r.views) * 100).toFixed(1) : '-';
+  const convert = r.views > 0 ? ((r.signups / r.views) * 100).toFixed(1) : '-';
   return `<tr class="${r.active ? '' : 'inactive'}">
     <td><code>${r.id}</code></td>
     <td>${r.label}</td>
     <td><span class="pill ${r.type}">${r.type}</span></td>
     <td>${r.views || 0}</td>
-    <td>${ctr}${ctr !== '—' ? '%' : ''}</td>
-    <td>${convert}${convert !== '—' ? '%' : ''}</td>
+    <td>${ctr}${ctr !== '-' ? '%' : ''}</td>
+    <td>${convert}${convert !== '-' ? '%' : ''}</td>
     <td>${r.nudges || 0}</td>
     <td><a href="/lp/${r.id}" target="_blank">open →</a></td>
   </tr>`;
@@ -111,7 +111,7 @@ ${rows.map(r => {
 });
 
 // ── POST /api/lp/signup ───────────────────────────────────────────────────
-// Unified signup endpoint — captures email + name, logs variant, funnels
+// Unified signup endpoint - captures email + name, logs variant, funnels
 // into the existing waitlist flow so approval/onboarding stays consistent.
 router.post('/api/lp/signup', async (req, res) => {
   const b = req.body || {};

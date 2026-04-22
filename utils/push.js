@@ -2,7 +2,7 @@
 const webpush = require('web-push');
 const { q } = require('../db');
 
-// VAPID keys — set via Railway env vars
+// VAPID keys - set via Railway env vars
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
 const VAPID_EMAIL   = process.env.VAPID_EMAIL || 'mailto:info@spontany.club';
@@ -10,7 +10,7 @@ const VAPID_EMAIL   = process.env.VAPID_EMAIL || 'mailto:info@spontany.club';
 if (VAPID_PUBLIC && VAPID_PRIVATE) {
   webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC, VAPID_PRIVATE);
 } else {
-  console.warn('[push] VAPID keys not set — push notifications disabled');
+  console.warn('[push] VAPID keys not set - push notifications disabled');
 }
 
 /**
@@ -42,7 +42,7 @@ async function sendPush(userId, payload) {
       };
       return webpush.sendNotification(pushSub, message)
         .catch(err => {
-          // 410 Gone = subscription expired/unsubscribed — clean it up
+          // 410 Gone = subscription expired/unsubscribed - clean it up
           if (err.statusCode === 410) {
             q.deletePushSub.run(sub.endpoint, userId);
           } else {

@@ -51,7 +51,7 @@ function computeReputationLabels(stats) {
   return [...new Set(labels)].slice(0, 3);
 }
 
-// ── GET /api/contributions/impact — full impact dashboard ─────────────────────
+// ── GET /api/contributions/impact - full impact dashboard ─────────────────────
 router.get('/contributions/impact', (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   try {
@@ -66,7 +66,7 @@ router.get('/contributions/impact', (req, res) => {
   }
 });
 
-// ── POST /api/contributions/event — track view or save ───────────────────────
+// ── POST /api/contributions/event - track view or save ───────────────────────
 router.post('/contributions/event', (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   const { opportunity_id, event_type } = req.body;
@@ -79,7 +79,7 @@ router.post('/contributions/event', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── GET /api/contributions/wins/new?since=ISO — unread wins badge count ───────
+// ── GET /api/contributions/wins/new?since=ISO - unread wins badge count ───────
 router.get('/contributions/wins/new', (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   const since = req.query.since || new Date(Date.now() - 7 * 86400000).toISOString();

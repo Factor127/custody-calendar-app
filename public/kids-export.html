@@ -247,7 +247,7 @@ function toDateStr(d) {
 
 (async function init() {
   if (!MY_TOKEN) {
-    document.getElementById('calendar-container').textContent = 'Missing token — open from your calendar.';
+    document.getElementById('calendar-container').textContent = 'Missing token - open from your calendar.';
     return;
   }
 
@@ -266,7 +266,7 @@ function toDateStr(d) {
   // Fetch user info
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
   if (!meRes.ok) {
-    document.getElementById('calendar-container').textContent = 'Could not load user — check your token.';
+    document.getElementById('calendar-container').textContent = 'Could not load user - check your token.';
     return;
   }
   const me = await meRes.json();
@@ -300,7 +300,7 @@ function renderMonth() {
 
   const monthName = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   document.getElementById('month-title').textContent = monthName;
-  document.title = `${myName} — ${monthName}`;
+  document.title = `${myName} - ${monthName}`;
 
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const firstDow = new Date(y, m, 1).getDay();

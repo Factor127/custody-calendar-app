@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Spontany — Get early access</title>
+<title>Spontany - Get early access</title>
 <link rel="icon" href="/logo3.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -54,7 +54,7 @@
 
     <div id="form-view">
       <h1>You're almost in.</h1>
-      <p class="sub">Drop your email — we'll send early access as spots open.</p>
+      <p class="sub">Drop your email - we'll send early access as spots open.</p>
 
       <form id="signup-form">
         <label for="first_name">First name <span style="opacity:0.4">(optional)</span></label>
@@ -83,7 +83,7 @@
     if (variant) sessionStorage.setItem('sa_variant', variant);
 
     window.LP && LP.init({ id: variant || 'signup', type: 'signup', totalSteps: 0 });
-    // Fire signup_view separately — decisive metric
+    // Fire signup_view separately - decisive metric
     if (typeof sa === 'function') sa('signup_view', { variant: variant, src: params.get('src') || 'cta' });
 
     document.getElementById('signup-form').addEventListener('submit', function(e) {

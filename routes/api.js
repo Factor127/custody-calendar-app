@@ -43,7 +43,7 @@ function requireOwner(req, res) {
 
 // ── First-time setup ──────────────────────────────────────────────────────────
 
-// POST /api/users/setup — create owner account
+// POST /api/users/setup - create owner account
 // Multi-tenant: any email can set up their own account (no single-owner constraint).
 // Requires a valid magic token (proof of email ownership from /api/auth/request flow).
 router.post('/users/setup', (req, res) => {
@@ -95,14 +95,14 @@ router.post('/users/setup', (req, res) => {
 
   res.json({ token, message: 'Owner created. Save your personal URL.' });
 
-  // Kick off welcome email sequence (fire-and-forget — non-blocking)
+  // Kick off welcome email sequence (fire-and-forget - non-blocking)
   const newUser = q.getUserById.get(id);
   if (newUser) startSequence(newUser).catch(e => console.error('[seq] Email 1 error:', e.message));
 });
 
 // ── Pattern & calendar generation ─────────────────────────────────────────────
 
-// POST /api/pattern/generate — preview generated days without saving
+// POST /api/pattern/generate - preview generated days without saving
 router.post('/pattern/generate', (req, res) => {
   const { pattern_type, pattern_data, anchor_date } = req.body;
   if (!pattern_type) return res.status(400).json({ error: 'pattern_type required' });
@@ -117,7 +117,7 @@ router.post('/pattern/generate', (req, res) => {
   res.json({ days, start, end });
 });
 
-// POST /api/users/register — complete partner onboarding
+// POST /api/users/register - complete partner onboarding
 router.post('/users/register', (req, res) => {
   const { invite_token, name, email, pattern_type, pattern_data, anchor_date, days,
           age, relationship_status, city, city_place_id, work_schedule, photo } = req.body;
@@ -132,7 +132,7 @@ router.post('/users/register', (req, res) => {
     return res.status(410).json({ error: 'Invite expired' });
   }
 
-  // Email is required — it's the recovery mechanism for the partner account
+  // Email is required - it's the recovery mechanism for the partner account
   if (!email || !email.trim().includes('@')) {
     return res.status(400).json({ error: 'Email address is required to create your account.' });
   }
@@ -202,7 +202,7 @@ router.post('/users/register', (req, res) => {
 
 // ── Calendar data ─────────────────────────────────────────────────────────────
 
-// GET /api/calendar/owner?token= — partner fetches their co-parent's calendar
+// GET /api/calendar/owner?token= - partner fetches their co-parent's calendar
 // MUST be declared before /calendar/:userId or Express will treat 'owner' as a userId param
 // Multi-tenant: finds the owner via the partner's connection (not global getOwner)
 router.get('/calendar/owner', (req, res) => {
@@ -229,7 +229,7 @@ router.get('/calendar/owner', (req, res) => {
   res.json({ days: days.map(parseTags), approved_until: live.approved_until, user: { name: owner.name, id: owner.id } });
 });
 
-// GET /api/calendar/:userId?token= — get calendar days for a user
+// GET /api/calendar/:userId?token= - get calendar days for a user
 // If requester is the user themselves → full data
 // If requester is approved partner viewing owner → owner's days only (no partner layer)
 router.get('/calendar/:userId', (req, res) => {
@@ -275,7 +275,7 @@ router.get('/calendar/:userId', (req, res) => {
   });
 });
 
-// POST /api/calendar/save — bulk save days for the calling user
+// POST /api/calendar/save - bulk save days for the calling user
 router.post('/calendar/save', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -289,7 +289,7 @@ router.post('/calendar/save', (req, res) => {
 
 // ── Invites ───────────────────────────────────────────────────────────────────
 
-// POST /api/invites/generate — any authenticated user generates an invite link
+// POST /api/invites/generate - any authenticated user generates an invite link
 // Owners can invite co-parents or partners; partners can invite their own partner.
 router.post('/invites/generate', (req, res) => {
   const user = requireToken(req, res);
@@ -307,7 +307,7 @@ router.post('/invites/generate', (req, res) => {
   res.json({ invite_url: `${BASE_URL}/invite/${token}`, token, relationship_type: relType });
 });
 
-// GET /api/invites/:token — validate an invite token (used by onboarding page)
+// GET /api/invites/:token - validate an invite token (used by onboarding page)
 router.get('/invites/:token', (req, res) => {
   const token = req.params.token;
   console.log(`[invite-validate] token="${token}"`);
@@ -321,7 +321,7 @@ router.get('/invites/:token', (req, res) => {
     return res.status(409).json({ error: 'Invite already used', used: true });
   }
   const owner = q.getUserById.get(invite.created_by);
-  console.log(`[invite-validate] OK — owner="${owner?.name}", relType="${invite.relationship_type}"`);
+  console.log(`[invite-validate] OK - owner="${owner?.name}", relType="${invite.relationship_type}"`);
   res.json({
     valid:             true,
     owner_name:        owner?.name || 'your partner',
@@ -331,7 +331,7 @@ router.get('/invites/:token', (req, res) => {
 
 // ── Connections ───────────────────────────────────────────────────────────────
 
-// POST /api/connections/request — partner requests to view owner's calendar
+// POST /api/connections/request - partner requests to view owner's calendar
 // Multi-tenant: finds the specific owner this partner was invited by (via invite.created_by)
 router.post('/connections/request', (req, res) => {
   const partner = requireToken(req, res);
@@ -368,7 +368,7 @@ router.post('/connections/request', (req, res) => {
   sendSMSToUser(owner.id, `${partner.name} wants to connect with you on Spontany. Open the app to respond.`, { event: 'connection-request' });
 });
 
-// GET /api/connections/status?token= — partner polls their connection status
+// GET /api/connections/status?token= - partner polls their connection status
 router.get('/connections/status', (req, res) => {
   const partner = requireToken(req, res);
   if (!partner) return;
@@ -389,7 +389,7 @@ router.get('/connections/status', (req, res) => {
   });
 });
 
-// GET /api/connections/pending?token= — owner sees pending requests
+// GET /api/connections/pending?token= - owner sees pending requests
 router.get('/connections/pending', (req, res) => {
   const owner = requireOwner(req, res);
   if (!owner) return;
@@ -398,7 +398,7 @@ router.get('/connections/pending', (req, res) => {
   res.json({ pending });
 });
 
-// GET /api/connections/all?token= — any authenticated user sees all their connections (both sides)
+// GET /api/connections/all?token= - any authenticated user sees all their connections (both sides)
 router.get('/connections/all', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -419,7 +419,7 @@ router.get('/connections/all', (req, res) => {
   res.json({ connections: live });
 });
 
-// POST /api/connections/approve — the targeted user approves a connection request
+// POST /api/connections/approve - the targeted user approves a connection request
 router.post('/connections/approve', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -452,7 +452,7 @@ router.post('/connections/approve', (req, res) => {
   sendSMSToUser(conn.requester_id, `${user.name} approved your connection on Spontany! You can now see each other's availability.`, { event: 'connection-approved' });
 });
 
-// POST /api/connections/reject — either party can disconnect
+// POST /api/connections/reject - either party can disconnect
 router.post('/connections/reject', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -466,7 +466,7 @@ router.post('/connections/reject', (req, res) => {
   res.json({ status: 'rejected' });
 });
 
-// DELETE /api/connections/:id — permanently remove a rejected/expired connection
+// DELETE /api/connections/:id - permanently remove a rejected/expired connection
 router.delete('/connections/:id', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -481,7 +481,7 @@ router.delete('/connections/:id', (req, res) => {
   res.json({ deleted: true });
 });
 
-// POST /api/connections/auto-renew — connection target toggles auto-renew
+// POST /api/connections/auto-renew - connection target toggles auto-renew
 router.post('/connections/auto-renew', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -495,7 +495,7 @@ router.post('/connections/auto-renew', (req, res) => {
   res.json({ auto_renew: Boolean(auto_renew) });
 });
 
-// PUT /api/connections/:id/my-share — either party updates how long they share THEIR calendar
+// PUT /api/connections/:id/my-share - either party updates how long they share THEIR calendar
 router.put('/connections/:id/my-share', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -516,14 +516,14 @@ router.put('/connections/:id/my-share', (req, res) => {
   if (conn.requester_id === user.id) {
     q.setRequesterShare.run(newUntilStr, days, conn.id);
   } else {
-    // Target updating their own share — also update approved_until for backward compat
+    // Target updating their own share - also update approved_until for backward compat
     q.setTargetShare.run(newUntilStr, days, newUntilStr, conn.id);
   }
 
   res.json({ ok: true, my_share_until: newUntilStr });
 });
 
-// GET /api/connections/:id/coparent-mobile — get co-parent's mobile for WhatsApp
+// GET /api/connections/:id/coparent-mobile - get co-parent's mobile for WhatsApp
 router.get('/connections/:id/coparent-mobile', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -537,7 +537,7 @@ router.get('/connections/:id/coparent-mobile', (req, res) => {
   res.json({ mobile: other?.mobile || null });
 });
 
-// PUT /api/connections/:id/rerequest — partner re-requests access with a preferred duration
+// PUT /api/connections/:id/rerequest - partner re-requests access with a preferred duration
 router.put('/connections/:id/rerequest', (req, res) => {
   const partner = requireToken(req, res);
   if (!partner) return;
@@ -554,7 +554,7 @@ router.put('/connections/:id/rerequest', (req, res) => {
   res.json({ ok: true, status: 'pending' });
 });
 
-// PUT /api/connections/:id/role — owner changes the relationship type label
+// PUT /api/connections/:id/role - owner changes the relationship type label
 router.put('/connections/:id/role', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -575,7 +575,7 @@ router.put('/connections/:id/role', (req, res) => {
 
 // ── Suggestions (co-parent proposes schedule change to owner) ─────────────────
 
-// POST /api/suggestions — any connected user submits a proposed schedule change to the other
+// POST /api/suggestions - any connected user submits a proposed schedule change to the other
 router.post('/suggestions', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -585,7 +585,7 @@ router.post('/suggestions', (req, res) => {
     return res.status(400).json({ error: 'changes must be a non-empty array' });
   }
 
-  // Find the approved connection — works for both partner (as requester) and owner (as target)
+  // Find the approved connection - works for both partner (as requester) and owner (as target)
   let conn = q.getConnectionByRequester.get(me.id);
   if (!conn || conn.status !== 'approved') {
     // Owner role: look for any approved connection where they are the target
@@ -605,7 +605,7 @@ router.post('/suggestions', (req, res) => {
   res.json({ id, status: 'pending' });
 });
 
-// GET /api/suggestions/pending — any authenticated user sees suggestions sent to them
+// GET /api/suggestions/pending - any authenticated user sees suggestions sent to them
 router.get('/suggestions/pending', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -616,7 +616,7 @@ router.get('/suggestions/pending', (req, res) => {
   });
 });
 
-// POST /api/suggestions/:id/approve — recipient approves; changes applied to both calendars
+// POST /api/suggestions/:id/approve - recipient approves; changes applied to both calendars
 router.post('/suggestions/:id/approve', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -628,7 +628,7 @@ router.post('/suggestions/:id/approve', (req, res) => {
 
   const changes = JSON.parse(s.changes);
 
-  // Apply each change — proposed_owner is always from the sender's (from_user_id) perspective
+  // Apply each change - proposed_owner is always from the sender's (from_user_id) perspective
   db.exec('BEGIN');
   try {
     for (const c of changes) {
@@ -650,7 +650,7 @@ router.post('/suggestions/:id/approve', (req, res) => {
   res.json({ status: 'approved', applied: changes.length });
 });
 
-// POST /api/suggestions/:id/reject — recipient declines suggestion
+// POST /api/suggestions/:id/reject - recipient declines suggestion
 router.post('/suggestions/:id/reject', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -666,7 +666,7 @@ router.post('/suggestions/:id/reject', (req, res) => {
 
 // ── Import existing HTML backup ───────────────────────────────────────────────
 
-// POST /api/import/html?token= — owner uploads backup HTML, we parse + seed DB
+// POST /api/import/html?token= - owner uploads backup HTML, we parse + seed DB
 router.post('/import/html', upload.single('file'), (req, res) => {
   const owner = requireOwner(req, res);
   if (!owner) return;
@@ -746,14 +746,14 @@ function parseHtmlBackup(html) {
 
 // ── Owner info ────────────────────────────────────────────────────────────────
 
-// GET /api/me?token= — get current user info
+// GET /api/me?token= - get current user info
 router.get('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
   res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null, work_schedule: user.work_schedule || null, photo: user.photo || null });
 });
 
-// PUT /api/me — update profile (name, mobile, coparent_name, work_schedule)
+// PUT /api/me - update profile (name, mobile, coparent_name, work_schedule)
 router.put('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -782,7 +782,7 @@ router.put('/me', (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/ical/import — fetch an iCal URL server-side and return event dates
+// POST /api/ical/import - fetch an iCal URL server-side and return event dates
 router.post('/ical/import', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -796,10 +796,10 @@ router.post('/ical/import', async (req, res) => {
     if (!r.ok) return res.status(502).json({ error: `Could not fetch calendar (HTTP ${r.status})` });
     text = await r.text();
   } catch (e) {
-    return res.status(502).json({ error: 'Could not reach that URL — check it is public and correct' });
+    return res.status(502).json({ error: 'Could not reach that URL - check it is public and correct' });
   }
 
-  // Minimal iCal parser — extract DTSTART dates from VEVENT blocks
+  // Minimal iCal parser - extract DTSTART dates from VEVENT blocks
   const today = new Date();
   const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 90);
   const todayStr = today.toISOString().slice(0, 10);
@@ -923,7 +923,7 @@ router.post('/cron/weekly-digest', async (req, res) => {
   <p style="font-size:17px;font-weight:700;margin:0 0 8px;">Hey ${user.name} 👋</p>
   <p style="font-size:14px;color:#555;margin:0 0 20px;line-height:1.5;">
     You have some upcoming free time that overlaps with people you know.<br>
-    Don't let the window slip — make a plan while there's still time.
+    Don't let the window slip - make a plan while there's still time.
   </p>
 
   <div style="background:#fff8f0;border:1.5px solid #ffcc80;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
@@ -943,7 +943,7 @@ router.post('/cron/weekly-digest', async (req, res) => {
 
     const bodyText = `Hey ${user.name},\n\nYou have upcoming free time overlapping with:\n${overlapText}\n\nPlan something: ${calUrl}`;
 
-    await sendEmail({ to: user.email, subject: `🗓 You have free time coming up — don't miss it`, bodyText, html });
+    await sendEmail({ to: user.email, subject: `🗓 You have free time coming up - don't miss it`, bodyText, html });
     sent++;
   }
 
@@ -958,7 +958,7 @@ function parseTags(row) {
 
 // ── Custody Pattern ───────────────────────────────────────────────────────────
 
-// GET /api/pattern — return current custody pattern for the logged-in user
+// GET /api/pattern - return current custody pattern for the logged-in user
 router.get('/pattern', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -966,7 +966,7 @@ router.get('/pattern', (req, res) => {
   res.json({ pattern: pattern || null });
 });
 
-// PUT /api/pattern — save pattern and regenerate calendar days
+// PUT /api/pattern - save pattern and regenerate calendar days
 router.put('/pattern', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
@@ -994,7 +994,7 @@ router.put('/pattern', (req, res) => {
 
 // ── Activities ────────────────────────────────────────────────────────────
 
-// POST /api/activities — create an activity suggestion
+// POST /api/activities - create an activity suggestion
 router.post('/activities', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1017,7 +1017,7 @@ router.post('/activities', (req, res) => {
   res.json({ id, status: 'pending' });
 });
 
-// GET /api/activities — get all activities for current user
+// GET /api/activities - get all activities for current user
 router.get('/activities', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1025,7 +1025,7 @@ router.get('/activities', (req, res) => {
   res.json({ activities: activities.map(a => ({ ...a, dates: JSON.parse(a.dates) })) });
 });
 
-// GET /api/activities/partner-mobile — get partner's mobile for activity WhatsApp
+// GET /api/activities/partner-mobile - get partner's mobile for activity WhatsApp
 // (declared before /:id routes to avoid being captured by the param pattern)
 router.get('/activities/partner-mobile', (req, res) => {
   const me = requireToken(req, res);
@@ -1036,7 +1036,7 @@ router.get('/activities/partner-mobile', (req, res) => {
     AND (requester_id = ? OR target_id = ?)
     LIMIT 1
   `).get(me.id, me.id);
-  // Own partner_phone always takes priority (most reliable — user entered it themselves)
+  // Own partner_phone always takes priority (most reliable - user entered it themselves)
   if (me.partner_phone) return res.json({ mobile: me.partner_phone });
   if (!conn) return res.json({ mobile: null });
   const otherId = conn.requester_id === me.id ? conn.target_id : conn.requester_id;
@@ -1062,7 +1062,7 @@ router.post('/activities/:id/accept', async (req, res) => {
     const activity = { ...a, dates };
     const icsContent = buildInvite({ activity, fromUser, toUser });
     const dateLabel  = dates.length === 1 ? dates[0] : `${dates[0]} + ${dates.length - 1} more day${dates.length > 2 ? 's' : ''}`;
-    const subject    = `📅 ${a.title} — ${dateLabel}`;
+    const subject    = `📅 ${a.title} - ${dateLabel}`;
 
     if (fromUser?.email) {
       sendCalendarInvite({
@@ -1099,7 +1099,7 @@ router.post('/activities/:id/decline', (req, res) => {
   res.json({ status: 'declined' });
 });
 
-// POST /api/activities/:id/redate — suggest different dates (declines current, creates new from other direction)
+// POST /api/activities/:id/redate - suggest different dates (declines current, creates new from other direction)
 router.post('/activities/:id/redate', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1119,7 +1119,7 @@ router.post('/activities/:id/redate', (req, res) => {
   res.json({ id: newId, status: 'pending' });
 });
 
-// DELETE /api/activities/:id — delete for both parties
+// DELETE /api/activities/:id - delete for both parties
 router.delete('/activities/:id', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1147,7 +1147,7 @@ router.delete('/activities/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/calendar.ics?token= — iCal subscribe feed (custody days)
+// GET /api/calendar.ics?token= - iCal subscribe feed (custody days)
 // Paste this URL into Apple Calendar / Outlook / Google Calendar once to get a live feed
 router.get('/calendar.ics', (req, res) => {
   const user = requireToken(req, res);
@@ -1163,7 +1163,7 @@ router.get('/calendar.ics', (req, res) => {
   res.send(icsContent);
 });
 
-// POST /api/calendar/notify-change — save changed days and notify co-parent by email
+// POST /api/calendar/notify-change - save changed days and notify co-parent by email
 router.post('/calendar/notify-change', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1200,9 +1200,9 @@ router.post('/calendar/notify-change', async (req, res) => {
   res.json({ ok: true, notified: !!other?.email });
 });
 
-// ── RSVP (public — rsvp_token is the credential) ──────────────────────────
+// ── RSVP (public - rsvp_token is the credential) ──────────────────────────
 
-// GET /api/rsvp/:token — fetch event details for RSVP landing page
+// GET /api/rsvp/:token - fetch event details for RSVP landing page
 router.get('/rsvp/:token', (req, res) => {
   const inv = q.getInviteeByRsvpToken.get(req.params.token);
   if (!inv) return res.status(404).json({ error: 'not found' });
@@ -1219,7 +1219,7 @@ router.get('/rsvp/:token', (req, res) => {
   });
 });
 
-// POST /api/rsvp/:token — submit accept/decline
+// POST /api/rsvp/:token - submit accept/decline
 router.post('/rsvp/:token', (req, res) => {
   const { status, note } = req.body;
   if (!['accepted', 'declined'].includes(status)) {
@@ -1236,7 +1236,7 @@ router.post('/rsvp/:token', (req, res) => {
   res.json({ ok: true, inviterName: inv.inviter_name });
 });
 
-// PATCH /api/rsvp/:token — update outing details via rsvp token (public, no auth)
+// PATCH /api/rsvp/:token - update outing details via rsvp token (public, no auth)
 // Allows invitees to fill in missing event details when RSVPing
 router.patch('/rsvp/:token', (req, res) => {
   const inv = q.getInviteeByRsvpToken.get(req.params.token);
@@ -1245,7 +1245,7 @@ router.patch('/rsvp/:token', (req, res) => {
   if (!outing) return res.status(404).json({ error: 'not found' });
 
   const { venue, event_time, venue_address } = req.body;
-  // Update with latest values — treat as corrections
+  // Update with latest values - treat as corrections
   q.updateOutingFull.run(
     outing.title || null,
     venue !== undefined ? (venue || null) : (outing.venue || null),
@@ -1259,7 +1259,7 @@ router.patch('/rsvp/:token', (req, res) => {
 
 // ── Outings ───────────────────────────────────────────────────────────────
 
-// POST /api/outings — create a new outing with invitees
+// POST /api/outings - create a new outing with invitees
 router.post('/outings', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1287,7 +1287,7 @@ router.post('/outings', (req, res) => {
     try {
       const planId = uuidv4();
       q.createPlan.run(planId, me.id, date, opportunity_id, null);
-    } catch(e) { /* plan may already exist for this date+opp — not critical */ }
+    } catch(e) { /* plan may already exist for this date+opp - not critical */ }
   }
 
   // Also create plans for any invitees who are registered app users
@@ -1328,7 +1328,7 @@ router.post('/outings', (req, res) => {
   }
 });
 
-// GET /api/outings — list my outings with invitees
+// GET /api/outings - list my outings with invitees
 router.get('/outings', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1338,7 +1338,7 @@ router.get('/outings', (req, res) => {
   res.json({ outings: result });
 });
 
-// GET /api/outings/incoming — outings where I am an invitee (partner sees plans sent to them)
+// GET /api/outings/incoming - outings where I am an invitee (partner sees plans sent to them)
 router.get('/outings/incoming', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1351,7 +1351,7 @@ router.get('/outings/incoming', (req, res) => {
   res.json({ outings: result });
 });
 
-// PUT /api/outings/:id/invitees/:inviteeId — update one invitee's status
+// PUT /api/outings/:id/invitees/:inviteeId - update one invitee's status
 // Allowed if: you are the outing creator (can update any invitee)
 //          OR you are the invitee updating your own record
 router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
@@ -1392,7 +1392,7 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
   }
 });
 
-// GET /api/overlap — mutual free days between me and each approved connection
+// GET /api/overlap - mutual free days between me and each approved connection
 // "Free" = not a work day AND not a day I have the kids
 router.get('/overlap', (req, res) => {
   const me = requireToken(req, res);
@@ -1441,7 +1441,7 @@ router.get('/overlap', (req, res) => {
   res.json({ overlap, my_free_count: myFreeDays.length });
 });
 
-// GET /api/places/cities — public city autocomplete (no auth — used during onboarding)
+// GET /api/places/cities - public city autocomplete (no auth - used during onboarding)
 // Only returns (cities) type results, so exposure is minimal.
 router.get('/places/cities', async (req, res) => {
   const input = (req.query.q || '').trim();
@@ -1467,7 +1467,7 @@ router.get('/places/cities', async (req, res) => {
   }
 });
 
-// GET /api/places/autocomplete — proxy to Google Places API (keeps key server-side)
+// GET /api/places/autocomplete - proxy to Google Places API (keeps key server-side)
 router.get('/places/autocomplete', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1583,7 +1583,7 @@ function _venueUtcOffset(text) {
   return null;
 }
 
-// GET /api/unfurl?url=... — extract title/date/description from any pasted link
+// GET /api/unfurl?url=... - extract title/date/description from any pasted link
 router.get('/unfurl', async (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   const url = (req.query.url || '').trim();
@@ -1606,7 +1606,7 @@ router.get('/unfurl', async (req, res) => {
     const resp = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(8000) });
     const html = await resp.text();
 
-    // Pull + decode a meta tag value — handles both attribute orders
+    // Pull + decode a meta tag value - handles both attribute orders
     const meta = (prop) => {
       const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"'<>]{1,600})["']`, 'i');
       const re2 = new RegExp(`<meta[^>]+content=["']([^"'<>]{1,600})["'][^>]+(?:property|name)=["']${prop}["']`, 'i');
@@ -1634,7 +1634,7 @@ router.get('/unfurl', async (req, res) => {
     }
     // Extract time from structured datetime before truncating to date-only
     if (date && date.length >= 16) {
-      // ISO datetime like "2026-04-13T20:00:00" — extract HH:MM
+      // ISO datetime like "2026-04-13T20:00:00" - extract HH:MM
       const tMatch = date.match(/T(\d{2}):(\d{2})/);
       if (tMatch) time = `${tMatch[1]}:${tMatch[2]}`;
     }
@@ -1734,12 +1734,12 @@ router.get('/unfurl', async (req, res) => {
             .replace(/\s{2,}/g, ' ')
             .trim()
             .slice(0, 2000);
-          const claudePrompt = `Extract event details from this ticketing page. The page may be a JavaScript SPA so the HTML content is sparse — use the URL structure and any text you can find.
+          const claudePrompt = `Extract event details from this ticketing page. The page may be a JavaScript SPA so the HTML content is sparse - use the URL structure and any text you can find.
 
 URL: ${url}
 Page title: ${title || '(none)'}
 Site: ${siteName || '(unknown)'}
-Page text: ${bodyText || '(empty — SPA)'}
+Page text: ${bodyText || '(empty - SPA)'}
 
 Return ONLY valid JSON:
 {
@@ -1752,7 +1752,7 @@ Return ONLY valid JSON:
 Rules:
 - The current year is ${new Date().getFullYear()}.
 - For Israeli sites (.co.il), dates in DD/MM format are day/month.
-- If the URL has a presentationId or prsntId parameter, this is a specific showtime — try to identify which one.
+- If the URL has a presentationId or prsntId parameter, this is a specific showtime - try to identify which one.
 - If you cannot determine the date/time, set them to null but still extract the title.
 - Do NOT invent data you're not confident about.`;
 
@@ -1795,7 +1795,7 @@ Rules:
     if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });
     res.json({ title, description, image, siteName, date, time: timeDisplay, url });
   } catch (err) {
-    // ── Fetch failed (blocked, timeout, etc.) — try Claude with URL-only ──
+    // ── Fetch failed (blocked, timeout, etc.) - try Claude with URL-only ──
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (apiKey) {
       try {
@@ -1851,7 +1851,7 @@ Rules:
   }
 });
 
-// PUT /api/outings/:id — update outing details (title, venue, time, etc.)
+// PUT /api/outings/:id - update outing details (title, venue, time, etc.)
 // Creator can update anything; invitees can fill in missing details
 router.put('/outings/:id', (req, res) => {
   const me = requireToken(req, res);
@@ -1908,7 +1908,7 @@ router.put('/outings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/outings/:id/detail — full outing detail with invitees + chat
+// GET /api/outings/:id/detail - full outing detail with invitees + chat
 router.get('/outings/:id/detail', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1923,7 +1923,7 @@ router.get('/outings/:id/detail', (req, res) => {
   const myInvitee  = invitees.find(i => i.user_id === me.id);
   if (!isCreator && !myInvitee) return res.status(403).json({ error: 'Not authorized' });
 
-  // Get messages — non-creators only see public messages + their own private ones
+  // Get messages - non-creators only see public messages + their own private ones
   const allMsgs = q.getOutingMessages.all(req.params.id);
   const messages = isCreator
     ? allMsgs
@@ -1961,7 +1961,7 @@ router.get('/outings/:id/detail', (req, res) => {
   });
 });
 
-// POST /api/outings/:id/messages — post a chat message
+// POST /api/outings/:id/messages - post a chat message
 router.post('/outings/:id/messages', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -1999,7 +1999,7 @@ router.post('/outings/:id/messages', (req, res) => {
   res.json({ ok: true, message: { id: msgId, sender_id: me.id, sender_name: me.name, message: message.trim(), is_private: !!isPriv, message_type: 'chat', created_at: new Date().toISOString() } });
 });
 
-// POST /api/outings/:id/rsvp — invitee responds (confirmed/maybe/declined/ignored)
+// POST /api/outings/:id/rsvp - invitee responds (confirmed/maybe/declined/ignored)
 router.post('/outings/:id/rsvp', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -2032,7 +2032,7 @@ router.post('/outings/:id/rsvp', (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/outings/:id/suggest — invitee suggests a different time/place
+// POST /api/outings/:id/suggest - invitee suggests a different time/place
 router.post('/outings/:id/suggest', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -2069,7 +2069,7 @@ router.post('/outings/:id/suggest', (req, res) => {
   res.json({ ok: true, suggestion_id: suggId });
 });
 
-// POST /api/outings/:id/suggestions/:suggId/accept — creator accepts a suggestion
+// POST /api/outings/:id/suggestions/:suggId/accept - creator accepts a suggestion
 router.post('/outings/:id/suggestions/:suggId/accept', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -2111,7 +2111,7 @@ router.post('/outings/:id/suggestions/:suggId/accept', (req, res) => {
   res.json({ ok: true });
 });
 
-// DELETE /api/outings/:id — cancel/delete an outing (creator only)
+// DELETE /api/outings/:id - cancel/delete an outing (creator only)
 router.delete('/outings/:id', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -2140,7 +2140,7 @@ router.delete('/outings/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/outings/:id/invitee-rsvp-tokens — returns rsvp_token per invitee (creator only)
+// GET /api/outings/:id/invitee-rsvp-tokens - returns rsvp_token per invitee (creator only)
 // Used to build per-person RSVP links in WhatsApp messages without exposing access_tokens
 router.get('/outings/:id/invitee-rsvp-tokens', (req, res) => {
   const me = requireToken(req, res);
@@ -2172,7 +2172,7 @@ router.get('/connections/:id/preferences', (req, res) => {
   });
 });
 
-// GET /api/preferences — all prefs for the authed user (bulk, for client-side use)
+// GET /api/preferences - all prefs for the authed user (bulk, for client-side use)
 router.get('/preferences', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -2205,7 +2205,7 @@ router.post('/connections/:id/preferences', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── GET /api/contacts/google/matches — fetch Google contacts + match to users ──
+// ── GET /api/contacts/google/matches - fetch Google contacts + match to users ──
 router.get('/contacts/google/matches', async (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -2287,7 +2287,7 @@ router.get('/contacts/google/matches', async (req, res) => {
   res.json({ matches, total_contacts: allPhones.length });
 });
 
-// ── GET /api/users/find-by-phone — look up a registered user by phone number ──
+// ── GET /api/users/find-by-phone - look up a registered user by phone number ──
 // Returns a safe public profile only. Never returns token, email, or sensitive fields.
 router.get('/users/find-by-phone', (req, res) => {
   const me = requireToken(req, res);
@@ -2313,7 +2313,7 @@ router.get('/users/find-by-phone', (req, res) => {
   });
 });
 
-// ── GET /api/users/search?q= — search users by name or email ──
+// ── GET /api/users/search?q= - search users by name or email ──
 // Returns safe public profiles only. Never returns token, email, or sensitive fields.
 router.get('/users/search', (req, res) => {
   const me = requireToken(req, res);
@@ -2344,7 +2344,7 @@ router.get('/users/search', (req, res) => {
   res.json({ users });
 });
 
-// ── POST /api/connections/request-friend — send a friend connection request ──
+// ── POST /api/connections/request-friend - send a friend connection request ──
 // Unlike /connections/request (partner-only), any user can send a friend request.
 router.post('/connections/request-friend', (req, res) => {
   const me = requireToken(req, res);
@@ -2378,7 +2378,7 @@ router.post('/connections/request-friend', (req, res) => {
   sendSMSToUser(target.id, `${me.name} wants to connect with you on Spontany. Open the app to respond.`, { event: 'friend-request' });
 });
 
-// ── POST /api/users/rotate-token — generate a new access token for the caller ──
+// ── POST /api/users/rotate-token - generate a new access token for the caller ──
 // Old token immediately stops working. User must update their bookmarked URL.
 router.post('/users/rotate-token', (req, res) => {
   const me = requireToken(req, res);

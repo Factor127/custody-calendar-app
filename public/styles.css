@@ -9,8 +9,8 @@
   --z-border: #a8c0f0;
   --partner: #fce4ec;
   --partner-border: #f48fb1;
-  --partner-self: #27a085;  /* teal — partner has kids */
-  --partner-free: #1a73e8;  /* blue — partner is free */
+  --partner-self: #27a085;  /* teal - partner has kids */
+  --partner-free: #1a73e8;  /* blue - partner is free */
   --text: #202124;
   --muted: #5f6368;
   --tagbg: #fff3cd;
@@ -38,7 +38,7 @@ body {
   background: #fff;
 }
 
-/* Browsers don't inherit font into form controls by default — force it */
+/* Browsers don't inherit font into form controls by default - force it */
 button, input, textarea, select {
   font-family: inherit;
   font-size: inherit;

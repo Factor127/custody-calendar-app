@@ -12,16 +12,16 @@ router.get('/admin', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
-// Login page — served by server.js directly, skip here to avoid conflicts
+// Login page - served by server.js directly, skip here to avoid conflicts
 
-// First-time setup page — now served by the unified onboard.html
-// Multi-tenant: any verified email can set up — requires ?magic= from auth flow
+// First-time setup page - now served by the unified onboard.html
+// Multi-tenant: any verified email can set up - requires ?magic= from auth flow
 router.get('/setup', (req, res) => {
   if (!req.query.magic) return res.redirect('/login');
   res.sendFile(path.join(PUBLIC, 'onboard.html'));
 });
 
-// Unified calendar — works for all authenticated users
+// Unified calendar - works for all authenticated users
 router.get('/calendar', (req, res) => {
   const token = req.query.token;
   // Preserve deep-link params (e.g. openEvent) through login redirect
@@ -62,11 +62,11 @@ router.get('/invite/:token', (req, res) => {
     return res.status(404).send('<h2>This invite link is invalid or has expired.</h2><p>Ask your partner to generate a new one.</p>');
   }
   if (invite.used_by) {
-    // Invite already used — never expose the registered user's token to whoever is clicking.
+    // Invite already used - never expose the registered user's token to whoever is clicking.
     // The legitimate partner should log in via their saved URL or the magic-link flow.
     return res.status(410).send(`<!DOCTYPE html><html><head><meta charset="UTF-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
-      <title>Invite already used — Spontany</title>
+      <title>Invite already used - Spontany</title>
       <style>
         body{margin:0;background:#0a0a0a;color:#eeeef8;font-family:-apple-system,sans-serif;
              display:flex;align-items:center;justify-content:center;min-height:100vh;}
@@ -94,14 +94,14 @@ router.get('/kids-export', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'kids-export.html'));
 });
 
-// Legacy partner route — redirect to unified calendar
+// Legacy partner route - redirect to unified calendar
 router.get('/partner', (req, res) => {
   const token = req.query.token;
   if (!token) return res.redirect('/login');
   return res.redirect(token ? `/calendar?token=${token}` : '/login');
 });
 
-// RSVP landing page — no auth required, rsvp_token in URL
+// RSVP landing page - no auth required, rsvp_token in URL
 router.get('/rsvp/:token', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'rsvp.html'));
 });
@@ -121,7 +121,7 @@ router.get('/terms-of-service', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'terms-of-service.html'));
 });
 
-// Match tool — public, no auth required. Token is read client-side from URL.
+// Match tool - public, no auth required. Token is read client-side from URL.
 router.get('/match', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'match.html'));
 });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spontany Match — User Journey Flowchart</title>
+<title>Spontany Match - User Journey Flowchart</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -279,7 +279,7 @@
 <body>
 
 <div class="page-header">
-  <h1>⚡ Spontany Match — User Journey Flowchart</h1>
+  <h1>⚡ Spontany Match - User Journey Flowchart</h1>
   <p>All paths through the match tool, from entry to conversion or exit</p>
 </div>
 
@@ -296,11 +296,11 @@
 <div class="canvas">
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- PATH 1: PERSON A — MANUAL ENTRY                        -->
+<!-- PATH 1: PERSON A - MANUAL ENTRY                        -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="path-card">
   <div class="path-card-title" style="color:#c9b3f5;">
-    Path 1: Person A — Manual Entry
+    Path 1: Person A - Manual Entry
     <span class="tag tag-purple">Fastest path</span>
   </div>
   <div class="path-card-sub">User enters both schedules themselves → instant result</div>
@@ -353,11 +353,11 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- PATH 2: PERSON A — SEND LINK (WAITING)                 -->
+<!-- PATH 2: PERSON A - SEND LINK (WAITING)                 -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="path-card">
   <div class="path-card-title" style="color:#60a5fa;">
-    Path 2: Person A — Send Link
+    Path 2: Person A - Send Link
     <span class="tag tag-blue">Waiting path</span>
   </div>
   <div class="path-card-sub">User shares link with partner → waits for them to fill in → gets notified</div>
@@ -392,7 +392,7 @@
     <div class="arrow">→</div>
     <div class="node node-screen">
       <div class="node-title">✍️ Signup</div>
-      <div class="node-sub">"One last thing" — name + email for notifications</div>
+      <div class="node-sub">"One last thing" - name + email for notifications</div>
       <div class="node-id">screen-signup-wait</div>
     </div>
     <div class="arrow">→</div>
@@ -455,11 +455,11 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- PATH 3: PERSON B — RECEIVING LINK                      -->
+<!-- PATH 3: PERSON B - RECEIVING LINK                      -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="path-card">
   <div class="path-card-title" style="color:#f97316;">
-    Path 3: Person B — Received Link
+    Path 3: Person B - Received Link
     <span class="tag tag-orange">Inbound</span>
   </div>
   <div class="path-card-sub">Partner arrives via /match/:token → enters their schedule → both see result</div>
@@ -573,7 +573,7 @@
     Path 4: Date Invite Recipient
     <span class="tag tag-green">External page</span>
   </div>
-  <div class="path-card-sub">Someone received a date idea via /date/:token — separate HTML page</div>
+  <div class="path-card-sub">Someone received a date idea via /date/:token - separate HTML page</div>
 
   <div class="flow-row">
     <div class="node node-external">
@@ -603,7 +603,7 @@
     <div class="flow-row">
       <div class="node node-api">
         <div class="node-title">POST /invite/:token/respond</div>
-        <div class="node-sub">response: "in" — email sent to sender</div>
+        <div class="node-sub">response: "in" - email sent to sender</div>
       </div>
       <div class="arrow">→</div>
       <div class="node node-external">
@@ -640,7 +640,7 @@
       <div class="arrow">→</div>
       <div class="node node-api">
         <div class="node-title">POST /invite/:token/respond</div>
-        <div class="node-sub">response: "not_this_time" — email sent to sender</div>
+        <div class="node-sub">response: "not_this_time" - email sent to sender</div>
       </div>
       <div class="arrow">→</div>
       <div class="node node-external">
@@ -657,14 +657,14 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<!-- RESULT PAGE — ALL EXIT PATHS                           -->
+<!-- RESULT PAGE - ALL EXIT PATHS                           -->
 <!-- ═══════════════════════════════════════════════════════ -->
 <div class="path-card">
   <div class="path-card-title" style="color:#e2e2e2;">
-    Result Page — All Actions & Exits
+    Result Page - All Actions & Exits
     <span class="tag tag-yellow">Conversion hub</span>
   </div>
-  <div class="path-card-sub">Where all paths converge — screen-result is the main conversion point</div>
+  <div class="path-card-sub">Where all paths converge - screen-result is the main conversion point</div>
 
   <div style="display:flex;gap:24px;flex-wrap:wrap;">
 
@@ -732,7 +732,7 @@
         </div>
         <div class="node node-action" style="max-width:100%;width:100%;">
           <div class="node-title">🔗 Invite to Match</div>
-          <div class="node-sub">Viral loop — share /match link with new person</div>
+          <div class="node-sub">Viral loop - share /match link with new person</div>
         </div>
 
         <div style="border:1.5px solid rgba(52,211,153,0.3);border-radius:14px;padding:14px;background:rgba(52,211,153,0.04);">

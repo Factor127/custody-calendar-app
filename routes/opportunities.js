@@ -28,10 +28,10 @@ async function _fetchImageForOpportunity(oppId, url) {
     if (img) {
       db.db.prepare('UPDATE opportunities SET image_url = ? WHERE id = ? AND image_url IS NULL').run(img, oppId);
     }
-  } catch(e) { /* ignore — best-effort */ }
+  } catch(e) { /* ignore - best-effort */ }
 }
 
-// ── Auth helper (local copy — requireToken not exported from api.js) ──────
+// ── Auth helper (local copy - requireToken not exported from api.js) ──────
 function requireToken(req, res) {
   const token = req.query.token || req.body?.token;
   if (!token) { res.status(401).json({ error: 'Missing token' }); return null; }
@@ -40,7 +40,7 @@ function requireToken(req, res) {
   return user;
 }
 
-// ── GET /api/opportunities/search?q= — text search internal DB ───────────
+// ── GET /api/opportunities/search?q= - text search internal DB ───────────
 router.get('/opportunities/search', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const q = (req.query.q || '').trim();
@@ -49,7 +49,7 @@ router.get('/opportunities/search', (req, res) => {
   res.json({ results: rows.map(o => ({ ...o, tags: JSON.parse(o.tags || '[]') })) });
 });
 
-// ── GET /api/places/autocomplete?q= — Google Places proxy ────────────────
+// ── GET /api/places/autocomplete?q= - Google Places proxy ────────────────
 router.get('/places/autocomplete', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const q = (req.query.q || '').trim();
@@ -74,7 +74,7 @@ router.get('/places/autocomplete', async (req, res) => {
   }
 });
 
-// ── GET /api/opportunities/matches — personalized matches ─────────────────
+// ── GET /api/opportunities/matches - personalized matches ─────────────────
 router.get('/opportunities/matches', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { category, type, limit = 20 } = req.query;
@@ -87,7 +87,7 @@ router.get('/opportunities/matches', async (req, res) => {
   }
 });
 
-// ── GET /api/opportunities — browse all public opportunities ──────────────
+// ── GET /api/opportunities - browse all public opportunities ──────────────
 router.get('/opportunities', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { category, type } = req.query;
@@ -100,7 +100,7 @@ router.get('/opportunities', (req, res) => {
   }
 });
 
-// ── POST /api/opportunities/direct — save a venue/event directly (no URL fetch) ──
+// ── POST /api/opportunities/direct - save a venue/event directly (no URL fetch) ──
 // Used when a user picks a Google Places result or types a plain venue name
 router.post('/opportunities/direct', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
@@ -149,7 +149,7 @@ router.post('/opportunities/direct', (req, res) => {
   }
 });
 
-// ── POST /api/opportunities/submit — submit a URL ─────────────────────────
+// ── POST /api/opportunities/submit - submit a URL ─────────────────────────
 router.post('/opportunities/submit', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { url, share_to_community, contributor_note } = req.body;
@@ -171,7 +171,7 @@ router.post('/opportunities/submit', async (req, res) => {
   }
 });
 
-// ── POST /api/opportunities/:id/share — share a private opp to community ──
+// ── POST /api/opportunities/:id/share - share a private opp to community ──
 router.post('/opportunities/:id/share', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const opp = db.getOpportunityById(req.params.id);
@@ -181,7 +181,7 @@ router.post('/opportunities/:id/share', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── GET /api/opportunities/:id — fetch single opportunity ────────────────
+// ── GET /api/opportunities/:id - fetch single opportunity ────────────────
 router.get('/opportunities/:id', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const opp  = db.getOpportunityById(req.params.id);
@@ -189,7 +189,7 @@ router.get('/opportunities/:id', (req, res) => {
   res.json({ ...opp, tags: JSON.parse(opp.tags || '[]') });
 });
 
-// ── PUT /api/opportunities/:id — edit an opportunity ──────────────────────
+// ── PUT /api/opportunities/:id - edit an opportunity ──────────────────────
 router.put('/opportunities/:id', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { id } = req.params;
@@ -217,14 +217,14 @@ router.put('/opportunities/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── GET /api/opportunities/submissions — user's submissions ───────────────
+// ── GET /api/opportunities/submissions - user's submissions ───────────────
 router.get('/opportunities/submissions', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const subs = db.getSubmissionsByUser(user.id);
   res.json({ submissions: subs.map(s => ({ ...s, parsed_data: s.parsed_data ? JSON.parse(s.parsed_data) : null })) });
 });
 
-// ── POST /api/opportunities/sync — trigger API sync (admin) ──────────────
+// ── POST /api/opportunities/sync - trigger API sync (admin) ──────────────
 router.post('/opportunities/sync', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { source = 'ticketmaster', city, query } = req.body;
@@ -239,7 +239,7 @@ router.post('/opportunities/sync', async (req, res) => {
   }
 });
 
-// ── DELETE /api/opportunities/:id — remove an opportunity ────────────────
+// ── DELETE /api/opportunities/:id - remove an opportunity ────────────────
 router.delete('/opportunities/:id', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const result = db.deleteOpportunity(req.params.id, user.id);
@@ -247,7 +247,7 @@ router.delete('/opportunities/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── POST /api/plans — save a plan for a date ──────────────────────────────
+// ── POST /api/plans - save a plan for a date ──────────────────────────────
 router.post('/plans', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { date, opportunity_id, note } = req.body;
@@ -263,14 +263,14 @@ router.post('/plans', (req, res) => {
   res.json({ ok: true, plan_id: id });
 });
 
-// ── DELETE /api/plans/:id — remove a plan ────────────────────────────────
+// ── DELETE /api/plans/:id - remove a plan ────────────────────────────────
 router.delete('/plans/:id', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   db.deletePlan(req.params.id, user.id);
   res.json({ ok: true });
 });
 
-// ── GET /api/plans — plans for a date range ───────────────────────────────
+// ── GET /api/plans - plans for a date range ───────────────────────────────
 router.get('/plans', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const { from, to } = req.query;
@@ -279,7 +279,7 @@ router.get('/plans', (req, res) => {
   res.json({ plans });
 });
 
-// ── GET /api/plans/dates — date → count map (for calendar dots) ───────────
+// ── GET /api/plans/dates - date → count map (for calendar dots) ───────────
 router.get('/plans/dates', (req, res) => {
   const user = requireToken(req, res); if (!user) return;
   const rows = db.getPlansDateCounts(user.id);

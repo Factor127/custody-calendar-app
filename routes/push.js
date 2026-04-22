@@ -13,13 +13,13 @@ function requireToken(req, res) {
   return user;
 }
 
-// GET /api/push/vapid-public — client needs this to subscribe
+// GET /api/push/vapid-public - client needs this to subscribe
 router.get('/push/vapid-public', (req, res) => {
   if (!VAPID_PUBLIC) return res.status(503).json({ error: 'push not configured' });
   res.json({ key: VAPID_PUBLIC });
 });
 
-// POST /api/push/subscribe — save a push subscription
+// POST /api/push/subscribe - save a push subscription
 router.post('/push/subscribe', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
@@ -33,7 +33,7 @@ router.post('/push/subscribe', (req, res) => {
   res.json({ ok: true });
 });
 
-// DELETE /api/push/subscribe — remove a push subscription
+// DELETE /api/push/subscribe - remove a push subscription
 router.delete('/push/subscribe', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;

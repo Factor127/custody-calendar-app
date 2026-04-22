@@ -47,14 +47,14 @@ function toE164(raw, defaultCountry = '+1') {
  * Send an SMS. Returns { ok, sid?, error? }.
  * Legacy callers that ignore the return value continue to work.
  *
- * @param {string} to       — E.164 phone number (e.g. "+14155551234")
- * @param {string} message  — SMS body
- * @param {{ event?: string, userId?: string }} ctx — optional context for logging
+ * @param {string} to       - E.164 phone number (e.g. "+14155551234")
+ * @param {string} message  - SMS body
+ * @param {{ event?: string, userId?: string }} ctx - optional context for logging
  */
 async function sendSMS(to, message, ctx = {}) {
   const client = getClient();
   if (!client || !FROM_NUMBER()) {
-    console.log('[sms] Twilio not configured — skipping SMS to', to?.slice(-4));
+    console.log('[sms] Twilio not configured - skipping SMS to', to?.slice(-4));
     return { ok: false, error: 'not_configured' };
   }
 

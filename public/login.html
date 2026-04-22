@@ -146,7 +146,7 @@ input::placeholder { color:var(--muted); }
       <img src="/logo.svg" alt="Spontany" width="64" height="64" style="border-radius:16px;">
     </div>
     <h1 class="app-name" style="color:#eeeef8;font-weight:900;letter-spacing:-0.02em;">SPONTANY</h1>
-    <p class="app-tag">Finds your moments — before they slip away.</p>
+    <p class="app-tag">Finds your moments - before they slip away.</p>
 
     <!-- ── Auto-login spinner ── -->
     <div id="loading-state">
@@ -157,7 +157,7 @@ input::placeholder { color:var(--muted); }
     <!-- ── Login form ── -->
     <div id="form-state">
 
-      <!-- Google SSO — primary option -->
+      <!-- Google SSO - primary option -->
       <a href="/auth/google" class="btn"
          style="width:100%;justify-content:center;padding:12px;font-size:15px;gap:10px;text-decoration:none;margin-bottom:4px;background:#1a1a1a;color:var(--text);border:1.5px solid rgba(226,226,226,0.15);border-radius:10px;">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -190,7 +190,7 @@ input::placeholder { color:var(--muted); }
         Send me a login link →
       </button>
 
-      <p class="hint">No password needed — we'll email you a one-click link.</p>
+      <p class="hint">No password needed - we'll email you a one-click link.</p>
 
       <div class="error-box" id="error-box"></div>
     </div>
@@ -251,7 +251,7 @@ async function requestLink() {
       btn.textContent = 'Send me a login link →';
     }
   } catch(e) {
-    showError('Network error — please check your connection and try again.');
+    showError('Network error - please check your connection and try again.');
     btn.disabled = false;
     btn.textContent = 'Send me a login link →';
   }
@@ -287,10 +287,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Show error if redirected back from Google with an error
   const urlError = new URLSearchParams(location.search).get('error');
   if (urlError === 'google_denied') showError('Google sign-in was cancelled.');
-  else if (urlError === 'google_failed') showError('Google sign-in failed — please try again or use a magic link.');
+  else if (urlError === 'google_failed') showError('Google sign-in failed - please try again or use a magic link.');
 
   const saved = localStorage.getItem('myToken');
-  if (!saved) return; // no saved session — show form normally
+  if (!saved) return; // no saved session - show form normally
 
   // Show spinner while we verify
   document.getElementById('form-state').style.display = 'none';
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const res = await fetch(`/api/me?token=${saved}`);
     if (res.ok) {
       const user = await res.json();
-      // Valid token — redirect to the right calendar (preserve deep-link params)
+      // Valid token - redirect to the right calendar (preserve deep-link params)
       const _nextParam = new URLSearchParams(window.location.search).get('next');
       const basePath = user.role === 'owner' ? '/calendar' : '/partner';
       if (_nextParam) {
@@ -312,9 +312,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return;
     }
-  } catch(e) { /* network error — fall through */ }
+  } catch(e) { /* network error - fall through */ }
 
-  // Token invalid/expired — clear it and show the form
+  // Token invalid/expired - clear it and show the form
   localStorage.removeItem('myToken');
   localStorage.removeItem('myRole');
   document.getElementById('loading-state').style.display = 'none';

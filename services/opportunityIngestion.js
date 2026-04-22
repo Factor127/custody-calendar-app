@@ -15,7 +15,7 @@ const CHIP_TO_CAT = {
 
 // ── Guess type from signals ───────────────────────────────────────────────
 function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
-  // 1. JSON-LD @type — most reliable signal
+  // 1. JSON-LD @type - most reliable signal
   if (jsonLdType) {
     const t = jsonLdType.toLowerCase();
     if (/restaurant|food|cafe|coffee|bar|pub|nightclub|lodging|localbusiness/.test(t)) return 'venue';
@@ -34,7 +34,7 @@ function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
   // 4. URL path contains event patterns (e.g. /events/123, /tickets/, /e/abc)
   if (/\/events?\/|\/tickets?\/|\/shows?\/|\/gigs?\/|\/concerts?\//.test(path)) return 'event';
 
-  // 5. Content keyword signals — title + desc only (not URL, to avoid false matches on domain names)
+  // 5. Content keyword signals - title + desc only (not URL, to avoid false matches on domain names)
   const text = `${title} ${desc}`.toLowerCase();
   if (/restaurant|cafe|coffee|bistro|\bbar\b|\bpub\b|nightclub|lounge|rooftop|eatery|diner/.test(text)) return 'venue';
   if (/festival|concert|\bgig\b|\bshow\b|party|happening|exhibition|class|workshop|\blive\b|tickets?/.test(text)) return 'event';
@@ -50,7 +50,7 @@ function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
 function extractMetadata(html, url) {
   const get = (pattern) => { const m = html.match(pattern); return m ? m[1] : null; };
 
-  // JSON-LD — handle both Event and Venue/Business types
+  // JSON-LD - handle both Event and Venue/Business types
   let jsonLd = null;
   let jsonLdType = null;
   const ldMatch = html.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
@@ -104,7 +104,7 @@ function extractMetadata(html, url) {
   const appleTouchIcon = get(/<link[^>]+rel="apple-touch-icon"[^>]+href="([^"]+)"/i);
   const largeImg = get(/<img[^>]+src="(https?:\/\/[^"]+(?:\.jpg|\.jpeg|\.png|\.webp)[^"]*)"/i);
 
-  // Resolve relative image URL to absolute — try multiple sources
+  // Resolve relative image URL to absolute - try multiple sources
   let imageUrl = ogImage || twitterImage || jsonLdImage || largeImg || appleTouchIcon || null;
   if (imageUrl && !imageUrl.startsWith('http')) {
     try { imageUrl = new URL(imageUrl, url).href; } catch(e) { imageUrl = null; }
@@ -158,7 +158,7 @@ async function enrichWithClaude(rawMeta, htmlSnippet) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   try {
-    // Strip tags so Claude gets dense readable text — much better date detection
+    // Strip tags so Claude gets dense readable text - much better date detection
     const pageText = htmlToText(htmlSnippet).slice(0, 3000);
     const prompt = `Extract structured event/venue data from this web page content and return ONLY valid JSON with these exact fields:
 {

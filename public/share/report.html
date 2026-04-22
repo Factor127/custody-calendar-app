@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Spontany — Your overlap</title>
+<title>Spontany - Your overlap</title>
 <link rel="icon" href="/logo3.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/sa.js"></script>
@@ -219,7 +219,7 @@
     var pollCount  = 0;
     var POLL_INTERVAL_MS = 5000;
     var POLL_MAX_COUNT   = 60; // 5 minutes total
-    var rendered = null; // 'waiting' | 'report' — so we only re-render on transition
+    var rendered = null; // 'waiting' | 'report' - so we only re-render on transition
 
     function loadAndRender() {
       return fetch('/api/share/' + TOKEN + '/status').then(function(r){return r.json();}).then(function(s) {

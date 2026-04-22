@@ -680,16 +680,18 @@
     <!-- Hero -->
     <h1 class="splash-headline" style="margin-top:24px;">Stop playing<br><em>calendar Tetris.</em></h1>
     <p class="splash-sub">Two custody schedules. One answer. See if your free nights actually line up.</p>
-    <button class="btn-primary" onclick="splashCTA()">Check your match &rarr;</button>
-    <p class="splash-fine">Free. Private. No signup required.</p>
 
-    <!-- Phone mockup -->
+    <!-- Phone mockup - shown BEFORE the CTA so users see the product, then click -->
     <div class="phone-mockup">
       <div class="phone-notch"></div>
       <div class="phone-screen">
-        <img src="/hero-screenshot.png" alt="Spontany Match — tap your custody days" loading="lazy">
+        <img src="/hero-screenshot.png" alt="Spontany Match - tap your custody days" loading="lazy">
       </div>
     </div>
+
+    <!-- Primary CTA -->
+    <button class="btn-primary" onclick="splashCTA()">See your match in 30 seconds</button>
+    <p class="splash-fine">Free. Private. No signup required.</p>
 
     <!-- Social proof -->
     <div class="social-proof">
@@ -712,46 +714,11 @@
       </div>
     </div>
 
-    <!-- Testimonials -->
-    <div class="splash-testimonials">
-      <div class="splash-testimonial-label">From real users</div>
-
-      <div class="splash-testimonial">
-        <div class="splash-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <div class="splash-testimonial-quote">"Stop playing Calendar Tetris."</div>
-        <div class="splash-testimonial-body">Dating as a single mom is already hard enough. Spontany showed us right away that our schedules actually work together. It's the first thing I check now before I catch feelings.</div>
-        <div class="splash-testimonial-author">
-          <img src="/testimonials-elena.jpg" alt="Elena" class="splash-testimonial-avatar">
-          <span class="splash-testimonial-name">Elena, 31</span>
-        </div>
-      </div>
-
-      <div class="splash-testimonial">
-        <div class="splash-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <div class="splash-testimonial-quote">"Get the answer without the 'Serious' talk."</div>
-        <div class="splash-testimonial-body">I really liked her, but it felt way too heavy to talk custody rotations on date two. Sending a Spontany link felt like a fun compatibility check rather than a deposition. Knowing we had 8 nights a month in common took the pressure off immediately.</div>
-        <div class="splash-testimonial-author">
-          <img src="/testimonials-david.jpg" alt="David" class="splash-testimonial-avatar">
-          <span class="splash-testimonial-name">David, 42</span>
-        </div>
-      </div>
-
-      <div class="splash-testimonial">
-        <div class="splash-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-        <div class="splash-testimonial-quote">"I didn't have to share everything."</div>
-        <div class="splash-testimonial-body">I'm private about my kids' schedule, so a 'shared calendar' sounded like a nightmare. But Spontany just shows how many nights overlap. We planned a night out without her seeing my whole custody breakdown.</div>
-        <div class="splash-testimonial-author">
-          <img src="/testimonials-jason.jpg" alt="Jason" class="splash-testimonial-avatar">
-          <span class="splash-testimonial-name">Jason, 32</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Bottom CTA -->
     <div class="splash-bottom-cta">
       <h2>Ready to find out?</h2>
       <p>It takes 30 seconds and your schedule stays private.</p>
-      <button class="btn-primary" onclick="splashCTA()">Check your match &rarr;</button>
+      <button class="btn-primary" onclick="splashCTA()">See your match in 30 seconds</button>
     </div>
 
     <!-- Footer -->
@@ -770,7 +737,7 @@
   <div class="screen" id="screen-your-schedule">
     <div class="screen-header">
       <p class="screen-context" id="scheduleContext" style="display:none;font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;">
-        Check if your custody schedules match — takes 30 seconds
+        Check if your custody schedules match - takes 30 seconds
       </p>
       <div class="screen-title">Your custody days</div>
       <div class="screen-sub">Tap the days your kids are with you across both weeks.</div>
@@ -818,7 +785,7 @@
         <div>
           <div class="fork-badge">Instant results</div>
           <div class="fork-label">I have a rough idea</div>
-          <div class="fork-sub">Enter what you know — a rough guess works great.</div>
+          <div class="fork-sub">Enter what you know - a rough guess works great.</div>
         </div>
       </div>
       <div class="fork-card" onclick="go('send-link')">
@@ -831,7 +798,7 @@
     </div>
 
     <div style="padding:10px 14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:10px;font-size:12px;color:rgba(226,226,226,0.6);line-height:1.5;">
-      <span style="margin-right:4px;">🔒</span> Neither of you will see each other's exact schedule — just your match type and how many days overlap.
+      <span style="margin-right:4px;">🔒</span> Neither of you will see each other's exact schedule - just your match type and how many days overlap.
     </div>
 
     <div class="nav-row">
@@ -1014,7 +981,7 @@
 
     <!-- Privacy note -->
     <div style="padding:10px 14px;margin:20px 0 0;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:10px;font-size:12px;color:rgba(226,226,226,0.5);line-height:1.5;text-align:center;">
-      <span style="margin-right:4px;">🔒</span> Neither of you can see each other's exact schedule — just the match type and overlap count.
+      <span style="margin-right:4px;">🔒</span> Neither of you can see each other's exact schedule - just the match type and overlap count.
     </div>
 
     <!-- 3 date suggestions -->
@@ -1162,7 +1129,7 @@ function go(screen) {
     if (screen === 'result') fbq('trackCustom', 'MatchCompleted');
   }
 
-  // First-party analytics — every screen transition
+  // First-party analytics - every screen transition
   if (typeof sa !== 'undefined') sa('match_' + screen.replace(/-/g, '_'));
   if (typeof sa !== 'undefined') sa('screen_view', { screen: screen });
 
@@ -1194,7 +1161,7 @@ function initPicker(who) {
     headsEl.innerHTML = DAY_ABBR.map(d => `<div class="week-picker-head">${d}</div>`).join('');
   }
   renderCells(who, 1);
-  // Default to 2-week view — most custody patterns are biweekly
+  // Default to 2-week view - most custody patterns are biweekly
   if (!state[who].twoWeek) expandWeeks(who);
 }
 
@@ -1331,7 +1298,7 @@ async function submitCollectInfo() {
       matchToken = data.token;
       matchShareUrl = window.location.origin + data.match_url;
     }
-  } catch(e) { /* non-critical — result still shows */ }
+  } catch(e) { /* non-critical - result still shows */ }
 
   weekStartDate = weekStartDate || getNextFullWeekStart();
   showResult();
@@ -1367,7 +1334,7 @@ async function showResult() {
         matchToken = data.token;
         matchShareUrl = window.location.origin + data.match_url;
       }
-    } catch(e) { /* non-critical — result still shows */ }
+    } catch(e) { /* non-critical - result still shows */ }
   }
 
   const days = computeOverlap();
@@ -1427,7 +1394,7 @@ async function showResult() {
   const weekendsPerMonth = Math.round(weekendOverlap / days.length * 30);
   let overlapText = '';
   if (totalPct === 0) {
-    overlapText = "Your schedules don't overlap right now. But that doesn't mean there's no room — sometimes all it takes is one good night.";
+    overlapText = "Your schedules don't overlap right now. But that doesn't mean there's no room - sometimes all it takes is one good night.";
   } else if (weekdaysPerMonth > 0 && weekendsPerMonth > 0) {
     overlapText = `You get roughly <strong>${weekdaysPerMonth} weekday evening${weekdaysPerMonth > 1 ? 's' : ''}</strong> and <strong>${weekendsPerMonth} weekend day${weekendsPerMonth > 1 ? 's' : ''}</strong> a month when you're both free.`;
   } else if (weekdaysPerMonth > 0) {
@@ -1437,7 +1404,7 @@ async function showResult() {
   }
   document.getElementById('result-overlap-text').innerHTML = overlapText;
 
-  // Build carousel — user's card is prominent
+  // Build carousel - user's card is prominent
   const track = document.getElementById('match-carousel-track');
   track.innerHTML = ALL_TYPES.map((t, i) => {
     const isUser = t.id === matchTypeId;
@@ -1505,7 +1472,7 @@ async function showResult() {
   const top3 = upcoming.slice(0, 3);
 
   if (top3.length === 0) {
-    dateCardsEl.innerHTML = '<div style="text-align:center;font-size:13px;color:var(--muted);padding:20px 0;">No overlapping dates found in the next few weeks — but your rhythm type still tells you a lot about how this could work.</div>';
+    dateCardsEl.innerHTML = '<div style="text-align:center;font-size:13px;color:var(--muted);padding:20px 0;">No overlapping dates found in the next few weeks - but your rhythm type still tells you a lot about how this could work.</div>';
   } else {
     dateCardsEl.innerHTML = top3.map(d => {
       const dt = new Date(d.date + 'T12:00:00');
@@ -1514,7 +1481,7 @@ async function showResult() {
       const s1 = realSuggestions[dow]?.[0] || null;
 
       if (!s1) {
-        // No opportunity — show date-only card
+        // No opportunity - show date-only card
         return `<div onclick="openInviteFromCard(this)" data-date-label="${dateLabel} evening" data-opp='${JSON.stringify({icon:"✨",title:"Plan something",vibe:"You\\'re both free"}).replace(/'/g, '&#39;')}'
           style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--overlap-bg);border:1.5px solid var(--overlap-border);border-radius:14px;cursor:pointer;transition:transform 0.1s,box-shadow 0.15s;">
           <div style="text-align:center;min-width:48px;">
@@ -1730,7 +1697,7 @@ function openInviteSheet(el) {
 
 function _openInviteSheetUI() {
   const opp = _inviteOpp;
-  const isGeneric = !opp.id; // no real opportunity — show search
+  const isGeneric = !opp.id; // no real opportunity - show search
   document.getElementById('invite-sheet-date').textContent = _inviteDate;
 
   const oppEl = document.getElementById('invite-sheet-opp');
@@ -1852,7 +1819,7 @@ function closeInviteSheet() {
 }
 
 function scrollToRhythm() {
-  // Legacy — no longer used (calendar grid removed)
+  // Legacy - no longer used (calendar grid removed)
 }
 
 let _lastChipIdx = -1;
@@ -2016,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof sa !== 'undefined') sa('match_splash');
   if (typeof sa === 'function') sa('lp_view');
 
-  // Meta ad traffic — show full splash to gather behavior data
+  // Meta ad traffic - show full splash to gather behavior data
   // (splash skip disabled while we collect scroll/engagement metrics)
 
   // ── Behavior tracking ──────────────────────────────────────────────────

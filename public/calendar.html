@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
   <style>
-/* ══ Kinetic Architecture — Obsidian + Lime ══════════════════════════════ */
+/* ══ Kinetic Architecture - Obsidian + Lime ══════════════════════════════ */
 :root {
   --lime:      #e6f952;
   --lime-dim:  #aec013;
@@ -118,7 +118,7 @@ body {
 .month-heading .month-year { color: var(--accent); }
 .month-year-accent { color: var(--accent); }
 
-/* ── Calendar container — kill all white backgrounds from styles.css ── */
+/* ── Calendar container - kill all white backgrounds from styles.css ── */
 .cal-section { padding: 0 12px; }
 .calendar-container { background: transparent !important; gap: 0 !important; overflow: hidden; }
 .calendar-container.day-mode { overflow: visible; }
@@ -158,17 +158,17 @@ th {
 
 /* Ownership fills */
 td.r {
-  background: rgba(124,92,191,0.22) !important;   /* purple — R's custody days (has kids) */
+  background: rgba(124,92,191,0.22) !important;   /* purple - R's custody days (has kids) */
   border-color: rgba(167,139,250,0.18) !important;
 }
 td.z {
-  background: rgba(230,249,82,0.12) !important;   /* lime/yellow — free days (no kids) */
+  background: rgba(230,249,82,0.12) !important;   /* lime/yellow - free days (no kids) */
   border-color: rgba(230,249,82,0.22) !important;
 }
 td.bothfree { box-shadow: inset 0 0 0 1.5px var(--lime) !important; }
 body.hide-frames td.bothfree { box-shadow: none !important; }
 
-/* Today — lime ring + lime circle */
+/* Today - lime ring + lime circle */
 td.today {
   box-shadow: inset 0 0 0 1.5px rgba(230,249,82,0.70) !important;
 }
@@ -302,7 +302,7 @@ td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(255,115,81,0.6) !import
 .sugg-highlight { border-left-color: var(--lime) !important; background: rgba(230,249,82,0.08) !important; }
 .partner-pill { background: rgba(230,249,82,0.10) !important; border-color: rgba(230,249,82,0.30) !important; color: var(--lime) !important; }
 
-/* Modals — obsidian glass */
+/* Modals - obsidian glass */
 .modal {
   background: rgba(14,14,14,0.88) !important;
   backdrop-filter: blur(32px) !important; -webkit-backdrop-filter: blur(32px) !important;
@@ -485,7 +485,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Mobile overrides ────────────────────────────────────────────────── */
     @media (max-width:520px) {
-      /* Day cells — shorter so more fits on screen */
+      /* Day cells - shorter so more fits on screen */
       td { height: 72px !important; padding: 7px 7px 5px !important; }
       /* Strip-view day cards */
       .day-card      { padding:8px 3px 7px; min-height:72px; border-radius:9px; }
@@ -502,7 +502,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       /* Legend: hide balance+swatches, keep the free-days toggle */
       .custody-balance-bar { display: none !important; }
       .cal-show-bar { justify-content: center; padding: 8px 16px; }
-      /* CTG cards — more compact */
+      /* CTG cards - more compact */
       .ctg-card { width: 160px; }
       .ctg-img  { height: 80px; font-size: 22px; }
       .ctg-body { padding: 10px 10px 9px; }
@@ -1250,7 +1250,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .fab-backdrop.open { opacity: 1; pointer-events: auto; }
 
-    /* ── Daily carousel view — absolute-positioned cards ────────────── */
+    /* ── Daily carousel view - absolute-positioned cards ────────────── */
     .day-carousel {
       position: relative; height: 420px; overflow: visible;
       padding: 0; margin: 0 auto;
@@ -1286,7 +1286,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       position: relative; width: 100%; height: 100%;
     }
 
-    /* ── Day cards — absolutely positioned from center ──────────────── */
+    /* ── Day cards - absolutely positioned from center ──────────────── */
     .day-card {
       position: absolute; top: 50%; border-radius: 24px; overflow: hidden;
       cursor: pointer;
@@ -1296,7 +1296,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       will-change: transform, opacity;
     }
 
-    /* Center — hero card, responsive width */
+    /* Center - hero card, responsive width */
     .day-card.pos-0 {
       width: calc(100vw - 120px); max-width: 480px;
       height: 340px;
@@ -1315,7 +1315,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       .day-card.pos-0 { width: calc(100vw - 160px); height: 380px; }
     }
 
-    /* Side neighbours — peek out from behind center */
+    /* Side neighbours - peek out from behind center */
     .day-card.pos-n1 {
       width: 50px; height: 260px;
       left: 4px; transform: translateY(-50%);
@@ -1328,7 +1328,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .day-card.pos-n1:hover, .day-card.pos-1:hover { opacity: 0.7; cursor: pointer; }
 
-    /* Far neighbours — barely visible on edges */
+    /* Far neighbours - barely visible on edges */
     .day-card.pos-n2 {
       width: 20px; height: 200px;
       left: 0; transform: translateY(-50%);
@@ -1340,7 +1340,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       opacity: 0.15; filter: brightness(0.3) saturate(0.4) blur(2px); z-index: 2;
     }
 
-    /* Exiting — collapses to nothing */
+    /* Exiting - collapses to nothing */
     .day-card.pos-exit {
       width: 0; height: 0; opacity: 0; padding: 0; border-width: 0;
       left: 50%; transform: translate(-50%, -50%) scale(0.3);
@@ -1348,7 +1348,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       transition: all .45s cubic-bezier(.32,.72,.18,1);
     }
 
-    /* Custody colours — strong fills matching monthly view */
+    /* Custody colours - strong fills matching monthly view */
     .day-card.r { background: linear-gradient(160deg, rgba(124,92,191,0.6) 0%, rgba(90,60,160,0.4) 100%); border-color: rgba(124,92,191,0.5); }
     .day-card.z { background: linear-gradient(160deg, rgba(180,210,60,0.3) 0%, rgba(230,249,82,0.15) 100%); border-color: rgba(230,249,82,0.3); }
     .day-card.pos-0.r { border-color: rgba(167,139,250,0.7); box-shadow: 0 0 60px rgba(124,92,191,0.2), 0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3); }
@@ -1424,7 +1424,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .day-card .plan-dot  { position: relative; z-index: 3; }
     .day-card .cell-pending-ring { z-index: 3; }
 
-    /* Custody status pill — only visible on center card */
+    /* Custody status pill - only visible on center card */
     .day-card-custody {
       position: absolute; bottom: 60px; left: 0; right: 0; text-align: center; z-index: 4;
       pointer-events: none; transition: opacity .3s ease;
@@ -1898,7 +1898,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
     .sc-close-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); padding:4px 8px; line-height:1; }
 
-    /* TOP — What? search strip */
+    /* TOP - What? search strip */
     .sc-top { padding:10px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
     .sc-top-row { display:flex; align-items:center; gap:8px; }
     .sc-top-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); white-space:nowrap; }
@@ -1927,10 +1927,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-what-title { font-size:12px; font-weight:600; color:var(--text); }
     .sc-what-opts { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
 
-    /* MIDDLE — Who + When side by side */
+    /* MIDDLE - Who + When side by side */
     .sc-middle { display:flex; flex-direction:column; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; }
 
-    /* WHO row — horizontal scrollable below calendar */
+    /* WHO row - horizontal scrollable below calendar */
     .sc-who-col { flex-shrink:0; border-top:1px solid var(--border); overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:8px 10px; display:flex; flex-direction:row; align-items:flex-start; gap:10px; scrollbar-width:none; }
     .sc-who-col::-webkit-scrollbar { display:none; }
     .sc-col-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:2px 0; flex-shrink:0; white-space:nowrap; align-self:center; }
@@ -1943,7 +1943,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-who-chip.selected .sc-who-check { display:flex; }
     .sc-who-name { font-size:10px; color:var(--text); text-align:center; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* WHEN col — full width mini calendar */
+    /* WHEN col - full width mini calendar */
     .sc-when-col { flex-shrink:0; padding:10px 8px; display:flex; flex-direction:column; }
     .sc-cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-shrink:0; }
     .sc-cal-month-label { font-size:12px; font-weight:700; color:var(--text); }
@@ -1952,10 +1952,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; width:100%; align-content:start; }
     .sc-cal-dow { font-size:8px; font-weight:700; text-transform:uppercase; color:var(--muted); text-align:center; padding-bottom:4px; }
     .sc-cal-day { aspect-ratio:1; min-width:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; color:var(--muted); border-radius:6px; cursor:default; transition:background .12s, box-shadow .12s, outline .12s; position:relative; overflow:hidden; }
-    /* I'm free — orange frame, no dot */
+    /* I'm free - orange frame, no dot */
     .sc-cal-day.free { color:var(--text); font-weight:600; cursor:pointer; outline:1.5px solid rgba(230,249,82,0.5); outline-offset:-1px; }
     .sc-cal-day.free:hover { background:rgba(230,249,82,0.10); }
-    /* Selected — glow + pulse, no solid fill */
+    /* Selected - glow + pulse, no solid fill */
     @keyframes sc-day-pulse {
       0%,100% { box-shadow:0 0 0 2px rgba(230,249,82,0.7), 0 0 10px rgba(230,249,82,0.30); }
       50%      { box-shadow:0 0 0 4px rgba(230,249,82,0.2), 0 0 22px rgba(230,249,82,0.55); }
@@ -1984,7 +1984,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-clash-bar { background:rgba(251,191,36,0.12); border:1px solid #fbbf24; border-radius:8px; padding:6px 10px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; flex-shrink:0; }
     .sc-clash-action { background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
 
-    /* BOTTOM — summary + confirm */
+    /* BOTTOM - summary + confirm */
     .sc-bottom { padding:10px 12px 14px; border-top:1px solid var(--border); flex-shrink:0; }
     .sc-confirm-btn { width:100%; padding:13px 16px; background:var(--accent); border:none; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-family:inherit; transition:opacity .15s; }
     .sc-confirm-btn:hover { opacity:0.88; }
@@ -1996,7 +1996,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-confirm-btn.save-later-mode .sc-confirm-summary { color:var(--text); }
     .sc-confirm-btn.save-later-mode .sc-confirm-summary.empty { color:var(--muted); }
     .sc-confirm-btn.save-later-mode .sc-confirm-tick { background:rgba(230,249,82,0.12); color:var(--lime); }
-    /* Review sheet — same sizing rules as sc-sheet */
+    /* Review sheet - same sizing rules as sc-sheet */
     .sc-review-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,0);
       z-index:960; pointer-events:none;
@@ -2085,7 +2085,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 <div id="splash">
   <img src="/logo3.svg" style="width:80px;height:80px;margin-bottom:16px;" alt="">
   <div style="font-size:28px;font-weight:900;color:#0a0a0a;letter-spacing:-0.04em;font-family:'Plus Jakarta Sans',system-ui,sans-serif;">SPONTANY</div>
-  <div class="splash-tag" style="color:rgba(14,14,14,0.60);">Finds your moments—<br>before they slip away.</div>
+  <div class="splash-tag" style="color:rgba(14,14,14,0.60);">Finds your moments-<br>before they slip away.</div>
 </div>
 
 <div id="app-frame">
@@ -2176,7 +2176,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <h2>Connection Request</h2>
     <p><strong id="modal-requester-name">Someone</strong> wants to view your custody schedule.</p>
     <p id="modal-requested-duration" class="text-muted" style="font-size:12px;margin:-8px 0 8px;display:none;">
-      They'd like access for <strong id="modal-duration-label">—</strong>.
+      They'd like access for <strong id="modal-duration-label">-</strong>.
     </p>
 
     <div class="field-group">
@@ -2291,7 +2291,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <p style="font-size:13px;color:var(--muted);margin:10px 0 6px;">
       Select the days you want to change on the calendar, then send the suggestion to your co-parent for approval.
     </p>
-    <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">Want to explain why? (optional — your co-parent will see this)</p>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">Want to explain why? (optional - your co-parent will see this)</p>
     <textarea id="suggest-reason-text" placeholder="e.g. I have a work trip that week and need to swap days…" style="width:100%;height:90px;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;"></textarea>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
       <button class="btn btn-outline" onclick="closeSuggestReason()">Cancel</button>
@@ -2330,7 +2330,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   <div class="act-modal-box">
     <strong style="font-size:17px;">✨ Suggest an Activity</strong>
     <div id="act-match-note" style="display:none;background:#fff3e0;border-radius:6px;padding:8px 12px;font-size:12px;color:#e65100;margin-bottom:4px;">
-      ⚠️ One of you may have the kids this day — still fine to plan something!
+      ⚠️ One of you may have the kids this day - still fine to plan something!
     </div>
     <p style="font-size:13px;color:var(--muted);margin:8px 0 16px;">
       Suggest something to do together on your free day(s)!
@@ -2464,7 +2464,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
           <button onclick="_scSkipTime()" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">All day</button>
         </div>
       </div>
-      <!-- WHO — horizontal scrollable row -->
+      <!-- WHO - horizontal scrollable row -->
       <div class="sc-who-col">
         <div class="sc-col-label">Who?</div>
         <div id="sc-who-row" style="display:flex;gap:10px;align-items:flex-start;">
@@ -2528,8 +2528,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </section>
 
 <footer class="brand-footer" style="border-top:1px solid var(--border);margin-top:24px;">
-  <p style="color:var(--muted);font-size:11px;">Spontany — finds your moments before they slip away.</p>
-  <p style="color:var(--muted);font-size:11px;">Questions? <a href="mailto:info@Spontany.club" style="color:var(--muted)">info@Spontany.club</a> · <a href="/privacy" style="color:var(--muted)">Privacy Policy</a></p>
+  <p style="color:var(--muted);font-size:11px;">Spontany - finds your moments before they slip away.</p>
+  <p style="color:var(--muted);font-size:11px;">Questions? <a href="mailto:info@spontany.io" style="color:var(--muted)">info@spontany.io</a> · <a href="/privacy" style="color:var(--muted)">Privacy Policy</a></p>
 </footer>
 
 <script>
@@ -2543,7 +2543,7 @@ let myWorkSchedule = { type: 'none' };
 let myCoparentPhone = null;
 let partnerMobile = null;
 
-// Connections — unified (both sides)
+// Connections - unified (both sides)
 let allConnections = [];
 let connPrefs = {};  // { [connection_id]: { activity_types, confidence, skipped_at } }
 let prefInterstitialConnId   = null;
@@ -2593,7 +2593,7 @@ let socialConnections = []; // [{id, name, initial, photo, color, type, days:{}}
 const FRIEND_COLORS = ['#ff7043','#9c27b0','#ff9800','#43a047','#e91e63','#1565c0'];
 let friendColorIndex = 0;
 
-// Avatar helper — returns an HTML string for a social connection avatar
+// Avatar helper - returns an HTML string for a social connection avatar
 function scAvatar(sc, size = 20, extraStyle = '') {
   const s = `width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;${extraStyle}`;
   if (sc.photo) {
@@ -2628,7 +2628,7 @@ function isWorkBlock(date) {
   return false;
 }
 
-// Returns true if the WHOLE day is a work day (ignoring hours — used for day-level free/busy).
+// Returns true if the WHOLE day is a work day (ignoring hours - used for day-level free/busy).
 // Hours are informational for now (future: partial-day free slots).
 function isWorkDay(date) { return isWorkBlock(date); }
 
@@ -2681,7 +2681,7 @@ function renderStrip() {
       ? `<div style="font-size:8px;font-weight:700;color:#e65100;margin-top:1px;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px;">${actOnDay.title}</div>`
       : '';
 
-    // Bubble cluster — 1 face + count
+    // Bubble cluster - 1 face + count
     const bubbleHtml = freePeople.length
       ? `<div class="bubble-cluster">
            ${scAvatar(freePeople[0], 16, 'border:1.5px solid var(--bg);')}
@@ -2754,7 +2754,7 @@ function nextMonth() {
   const THRESHOLD = 48;    // px minimum swipe to commit navigation
   const MAX_VERT  = 80;    // px vertical drift before cancelling
   const DRAG_LOCK = 12;    // px horizontal movement before we lock to drag
-  const DAMPING   = 0.55;  // resistance factor — drag feels heavier past threshold
+  const DAMPING   = 0.55;  // resistance factor - drag feels heavier past threshold
 
   function _isOverlayOpen() {
     const sheet = document.getElementById('day-sheet');
@@ -2828,7 +2828,7 @@ function nextMonth() {
     if (_cancelled || Math.abs(dy) > MAX_VERT) { _resetTrackPos(); return; }
 
     if (calendarViewMode === 'day') {
-      // Reset track transform — the navigation functions handle the animation
+      // Reset track transform - the navigation functions handle the animation
       _resetTrackPos();
 
       if (Math.abs(dx) >= THRESHOLD && !_carouselAnimating) {
@@ -3035,7 +3035,7 @@ function renderConnectionsList() {
 
   if (allConnections.length === 0 && pendingSuggestions.length === 0) {
     const friendMsg = encodeURIComponent(
-      `I've been using Spontany to organize custody scheduling — it really helps with co-parenting. It's free: ${window.location.origin}`
+      `I've been using Spontany to organize custody scheduling - it really helps with co-parenting. It's free: ${window.location.origin}`
     );
     container.innerHTML = `
       <p style="margin:0 0 12px;font-size:13px;color:var(--muted);">Invite your co-parent or partner to get started.</p>
@@ -3145,7 +3145,7 @@ async function loadPartnerOverlay() {
 // A day is "my free day" if: I don't have kids (calendarDays[date] !== 'self')
 //   AND it's not a work day (based on MY_WORK_SCHEDULE).
 function renderTogetherCard() {
-  // Temporarily hidden — remove this return to restore
+  // Temporarily hidden - remove this return to restore
   return;
   const section = document.getElementById('coordinate-section');
   const scroll  = document.getElementById('coordinate-scroll');
@@ -3233,7 +3233,7 @@ async function quickPlanOuting(date, userId, name) {
     body: JSON.stringify({ date, message: `Let's do something on ${date}!`, invitees: [{ user_id: userId, name }] })
   });
   if (res.ok) { showToast(`✓ Plan suggested to ${name}!`); await loadOutings(); }
-  else showToast('Could not create plan — try again');
+  else showToast('Could not create plan - try again');
 }
 
 // ── Load social calendars (partner + friends) for the strip ───────────────
@@ -3407,7 +3407,7 @@ function renderCalendar() {
     );
     const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
-    // Plan dot — purple bar if this date has a saved plan
+    // Plan dot - purple bar if this date has a saved plan
     const planDot = planDates[dateStr] ? '<span class="plan-dot"></span>' : '';
 
     // Event image: first outing on this day that has an image_url
@@ -3521,7 +3521,7 @@ function showCellHover(event, dateStr) {
     ${plansSection}
     ${emptyLine}`;
 
-  // Smart positioning — avoid viewport edges
+  // Smart positioning - avoid viewport edges
   const td  = event.currentTarget;
   const rect = td.getBoundingClientRect();
   const vw = window.innerWidth, vh = window.innerHeight;
@@ -3566,7 +3566,7 @@ function handleDayClick(cell) {
   if (suggestMode) { toggleSuggestDay(cell, date); return; }
   if (editMode === 'holiday') { cycleTag(cell, date); return; }
 
-  // Normal mode — open the day sheet
+  // Normal mode - open the day sheet
   openDaySheet(date);
 }
 
@@ -3725,7 +3725,7 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
   // ── Section 4: Start something ────────────────────────────────────────────
   html += `<div class="dss-heading">Start something</div>`;
 
-  // Who's free: show avatar row — hovering expands to show names, clicking opens crafter with that person
+  // Who's free: show avatar row - hovering expands to show names, clicking opens crafter with that person
   if (alsoFree.length > 0) {
     html += `<div class="dss-free-row" title="Tap a person to plan with them">`;
     html += alsoFree.map(c => {
@@ -3777,14 +3777,14 @@ async function removePlan(planId, dateStr) {
       renderDaySheetBody(dateStr, isFree, alsoFree, data2.plans || []);
     } catch(e2) { renderDaySheetBody(dateStr, isFree, alsoFree, []); }
   } catch(e) {
-    showToast('Could not remove — try again');
+    showToast('Could not remove - try again');
   }
 }
 
 async function cancelOuting(outingId, dateStr) {
   if (!confirm('Cancel this plan? This can\'t be undone.')) return;
 
-  // Remove from every local array immediately — no re-fetch that can race
+  // Remove from every local array immediately - no re-fetch that can race
   myOutings         = myOutings.filter(o => o.id !== outingId);
   myIncomingOutings = myIncomingOutings.filter(o => o.id !== outingId);
   if (dateStr && outingsByDate[dateStr]) {
@@ -3802,7 +3802,7 @@ async function cancelOuting(outingId, dateStr) {
   updateBnBadges();
   showToast('Plan cancelled');
 
-  // Fire DELETE — no await/re-sync so nothing can race and restore the item
+  // Fire DELETE - no await/re-sync so nothing can race and restore the item
   fetch(`/api/outings/${outingId}?token=${MY_TOKEN}`, { method: 'DELETE' });
 }
 
@@ -3898,7 +3898,7 @@ function renderEventPane(data) {
     html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
   }
 
-  // Event details — date, time, venue
+  // Event details - date, time, venue
   html += `<div style="padding:14px 16px 6px;">`;
   if (outing.date) {
     const _d = new Date(outing.date + 'T12:00:00');
@@ -3945,7 +3945,7 @@ function renderEventPane(data) {
     html += `</div>`;
   }
 
-  // Add to calendar button — shown to everyone when there's a date
+  // Add to calendar button - shown to everyone when there's a date
   if (outing.date) {
     // Store enriched outing for calendar export (avoids JSON-in-HTML attribute issues)
     window._calExportOuting = { ...outing, _invitees: invitees || [], _sourceUrl: outing.source_url || null };
@@ -3963,7 +3963,7 @@ function renderEventPane(data) {
     </div>`;
   }
 
-  // Suggest changes (invitees — non-creator participants)
+  // Suggest changes (invitees - non-creator participants)
   if (!is_creator) {
     html += `<div id="ep-suggest-toggle" style="padding:0 16px 8px;">
       <button onclick="toggleEPSuggest()" style="background:none;border:1px solid rgba(230,249,82,0.28);border-radius:10px;padding:8px 14px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;">Suggest a change ✏️</button>
@@ -4063,7 +4063,7 @@ async function saveOutingEdit(outingId) {
     showToast('Plan updated');
     await openEventPane(outingId);
   } catch(e) {
-    showToast('Could not save — try again');
+    showToast('Could not save - try again');
   }
 }
 
@@ -4076,7 +4076,7 @@ async function cancelOuting(outingId) {
     closeDaySheet();
     await loadOutings();
   } catch(e) {
-    showToast('Could not cancel — try again');
+    showToast('Could not cancel - try again');
   }
 }
 
@@ -4103,7 +4103,7 @@ async function acceptSuggestion(outingId, suggId) {
   try {
     const res = await fetch(`/api/outings/${outingId}/suggestions/${suggId}/accept?token=${MY_TOKEN}`, { method: 'POST' });
     if (!res.ok) throw new Error();
-    showToast('Suggestion accepted — plan updated');
+    showToast('Suggestion accepted - plan updated');
     await openEventPane(outingId);
   } catch(e) {
     showToast('Could not accept suggestion');
@@ -4211,7 +4211,7 @@ function renderInvitePane(data, inviteeRecordId) {
     </div>
   </div>`;
 
-  // RSVP action buttons — dim non-selected if already responded
+  // RSVP action buttons - dim non-selected if already responded
   const _rsvpDim = (s) => currentStatus !== 'pending' && currentStatus !== s
     ? 'opacity:0.35;' : '';
   const _rsvpActive = (s) => currentStatus === s
@@ -4334,7 +4334,7 @@ function toggleSuggestSection() {
 function addOutingToCalendar(outing) {
   const title = outing.title || outing.venue || outing.message || 'Spontany Plan';
 
-  // Build start datetime — parse event_time if present, else use noon
+  // Build start datetime - parse event_time if present, else use noon
   let dtStart, dtEnd;
   const dateStr = outing.date; // YYYY-MM-DD
   if (outing.event_time) {
@@ -4586,7 +4586,7 @@ async function submitRsvp(outingId, inviteeId, status, note) {
     const toastMsg = status === 'confirmed' ? "You're in! ✓" : status === 'maybe' ? 'Marked as maybe' : status === 'declined' ? 'Declined' : 'Invite removed';
     showToast(toastMsg);
 
-    // For decisive actions (confirmed / declined / ignored) — close the sheet immediately
+    // For decisive actions (confirmed / declined / ignored) - close the sheet immediately
     const closeAfter = ['confirmed', 'declined', 'ignored'].includes(status);
     if (closeAfter) {
       closeDaySheet();
@@ -4594,7 +4594,7 @@ async function submitRsvp(outingId, inviteeId, status, note) {
       return;
     }
 
-    // For "maybe" — update button states in-place so user can still re-RSVP
+    // For "maybe" - update button states in-place so user can still re-RSVP
     const row = document.getElementById('rsvp-btn-row');
     if (row) {
       row.querySelectorAll('[data-rsvp]').forEach(btn => {
@@ -4619,7 +4619,7 @@ async function submitRsvp(outingId, inviteeId, status, note) {
     if (rsvpArea) rsvpArea.style.display = '';
     await loadOutings();
   } catch(e) {
-    showToast('Could not update — try again');
+    showToast('Could not update - try again');
   }
 }
 
@@ -4915,7 +4915,7 @@ function calculateCustodyDays() {
 
 }
 
-// ── Autosave — fires immediately on every change ───────────────────────────
+// ── Autosave - fires immediately on every change ───────────────────────────
 async function autoSaveDay(date) {
   const d = calendarDays[date];
   if (!d) return;
@@ -4925,7 +4925,7 @@ async function autoSaveDay(date) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ days: [{ date, owner: d.owner, tags: d.tags || [] }] })
     });
-  } catch(e) { /* silent — user never has to think about saving */ }
+  } catch(e) { /* silent - user never has to think about saving */ }
 }
 
 // ── Import HTML backup ────────────────────────────────────────────────────
@@ -4974,7 +4974,7 @@ function selectInviteType(type) {
     document.getElementById('invite-btn-friend').style.cssText = isFriend ? 'flex:1;min-width:80px;justify-content:center;' : 'flex:1;min-width:80px;justify-content:center;';
   }
   document.getElementById('invite-type-desc').textContent = isPartner
-    ? 'They set up their own custody calendar and you\'ll both see when you\'re both free — your "next time I see you" view.'
+    ? 'They set up their own custody calendar and you\'ll both see when you\'re both free - your "next time I see you" view.'
     : isFriend
     ? 'They\'ll join your social calendar so you can see when you\'re both free to hang out.'
     : 'They\'ll set up their custody schedule and you\'ll both see when the kids are with each of you.';
@@ -4995,7 +4995,7 @@ async function generateInvite() {
     const data = await res.json();
 
     if (!res.ok || !data.invite_url) {
-      alert(data.error || 'Failed to generate invite link — please try again.');
+      alert(data.error || 'Failed to generate invite link - please try again.');
       btn.textContent = 'Generate link →';
       btn.disabled = false;
       return;
@@ -5007,10 +5007,10 @@ async function generateInvite() {
 
     const waText = encodeURIComponent(
       isPartner
-        ? `Hi! I'm using Spontany to manage my custody schedule — it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
+        ? `Hi! I'm using Spontany to manage my custody schedule - it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
         : isFriend
         ? `Hey! Join me on Spontany so we can see when we're both free to hang out. Takes 1 minute: ${data.invite_url}`
-        : `Hi! I'm using Spontany to manage our custody schedule — makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`
+        : `Hi! I'm using Spontany to manage our custody schedule - makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`
     );
     document.getElementById('whatsapp-btn').href = `https://wa.me/?text=${waText}`;
     document.getElementById('invite-link-desc').textContent = isPartner
@@ -5023,7 +5023,7 @@ async function generateInvite() {
     document.getElementById('invite-link-section').style.display = 'block';
 
   } catch (err) {
-    alert('Network error — please check your connection and try again.');
+    alert('Network error - please check your connection and try again.');
     btn.textContent = 'Generate link →';
     btn.disabled = false;
   }
@@ -5233,7 +5233,7 @@ async function copyIcalUrl() {
   const url = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
   try {
     await navigator.clipboard.writeText(url);
-    showToast('✓ Calendar URL copied — paste it into Apple/Google Calendar');
+    showToast('✓ Calendar URL copied - paste it into Apple/Google Calendar');
   } catch {
     prompt('Copy this URL:', url);
   }
@@ -5349,7 +5349,7 @@ function startHolidayEdit() {
 function openSuggestFlow() {
   document.getElementById('edit-dropdown').style.display = 'none';
   if (!coparentConn) {
-    showToast('No co-parent connected — invite them first');
+    showToast('No co-parent connected - invite them first');
     setTimeout(() => { openInviteModal(); selectInviteType('coparent'); }, 500);
     return;
   }
@@ -5602,7 +5602,7 @@ async function respondToIncomingOuting(outingId, inviteeRecordId, status) {
   });
   if (res.ok) {
     await loadOutings();
-    showToast(status === 'accepted' ? "🎉 You're in! They'll see your yes." : "Got it — declined.");
+    showToast(status === 'accepted' ? "🎉 You're in! They'll see your yes." : "Got it - declined.");
   }
 }
 
@@ -5697,7 +5697,7 @@ async function venueAcInput(outingId, val) {
         drop.innerHTML = '<div class="venue-ac-spinner">No results</div>';
         return;
       }
-      // Store predictions by index — avoids embedding arbitrary strings in HTML attributes
+      // Store predictions by index - avoids embedding arbitrary strings in HTML attributes
       _venueAcPredictions[outingId] = data.predictions;
       drop.innerHTML = data.predictions.map((p, i) => `
         <div class="venue-ac-item" data-outing="${outingId}" data-idx="${i}">
@@ -6035,7 +6035,7 @@ function showToast(msg) {
   </div>
 </div>
 
-<!-- calendar is now inline — modal removed -->
+<!-- calendar is now inline - modal removed -->
 
 <!-- ── Day management sheet ── -->
 <div id="day-sheet" onclick="closeDaySheet(event)">
@@ -6177,7 +6177,7 @@ function showToast(msg) {
           <span class="ss-choice-icon">🔗</span>
           <div class="ss-choice-text">
             <div class="ss-choice-title">Got a link to an event?</div>
-            <div class="ss-choice-sub">Paste it — we'll pull the date, time &amp; location</div>
+            <div class="ss-choice-sub">Paste it - we'll pull the date, time &amp; location</div>
           </div>
           <span class="ss-choice-arrow">›</span>
         </button>
@@ -6193,17 +6193,17 @@ function showToast(msg) {
           <span class="ss-choice-icon">👤</span>
           <div class="ss-choice-text">
             <div class="ss-choice-title">Got someone in mind?</div>
-            <div class="ss-choice-sub">Pick who first — we'll sort the details after</div>
+            <div class="ss-choice-sub">Pick who first - we'll sort the details after</div>
           </div>
           <span class="ss-choice-arrow">›</span>
         </button>
       </div>
-      <button class="ss-choice-skip" onclick="ssChoose('skip')">Not sure yet — start from scratch →</button>
+      <button class="ss-choice-skip" onclick="ssChoose('skip')">Not sure yet - start from scratch →</button>
     </div>
 
     <!-- ── Page 1: Link analysis ── -->
     <div class="ss-page" id="ss-page-link">
-      <p class="ss-link-sub">Paste any event URL — Eventbrite, Facebook, a venue site, anything.<br>We'll extract the details automatically.</p>
+      <p class="ss-link-sub">Paste any event URL - Eventbrite, Facebook, a venue site, anything.<br>We'll extract the details automatically.</p>
       <textarea id="ss-link-input" class="ss-link-textarea" placeholder="https://…"></textarea>
       <div id="ss-link-status" class="ss-link-status"></div>
       <div id="ss-link-preview" style="display:none"></div>
@@ -6339,7 +6339,7 @@ function showToast(msg) {
   <button class="bn-item bn-fab" id="bn-fab-btn" onclick="openSmartCrafter()">
     <div class="bn-fab-inner"><img src="/icons/logo-fab.svg" alt="Spontany" class="bn-fab-logo"></div>
   </button>
-  <button class="bn-item" id="bn-pulse" onclick="showToast('My Pulse — coming soon')">
+  <button class="bn-item" id="bn-pulse" onclick="showToast('My Pulse - coming soon')">
     <img src="/icons/pulse.svg" alt="Pulse" class="bn-svg-icon">
     <span class="bn-label">Pulse</span>
   </button>
@@ -6781,7 +6781,7 @@ function openPlanWizard(prefillDate) {
   _ssUpdateWhoLabel();
   _ssRebuildDateList();
 
-  // Start on landing page (unless prefill date given — skip straight to main)
+  // Start on landing page (unless prefill date given - skip straight to main)
   if (prefillDate) {
     ssGoTo('main', '✨ Start something');
   } else {
@@ -6840,7 +6840,7 @@ function ssChoose(type) {
     }, 100);
 
   } else {
-    // skip — straight to blank form
+    // skip - straight to blank form
     ssGoTo('main', '✨ Start something');
   }
 }
@@ -6874,7 +6874,7 @@ async function ssAnalyzeLink() {
 
     // Show extracted preview
     _ssShowLinkPreview(draft);
-    _ssSetLinkStatus('success', data.duplicate ? '✓ Already in your library — details loaded' : '✓ Details extracted');
+    _ssSetLinkStatus('success', data.duplicate ? '✓ Already in your library - details loaded' : '✓ Details extracted');
 
     // Show community prompt for new (non-duplicate) opportunities
     const ssCommunityPrompt = document.getElementById('ss-community-prompt');
@@ -6913,7 +6913,7 @@ async function ssAnalyzeLink() {
     }
 
   } catch(e) {
-    _ssSetLinkStatus('error', '✗ ' + (e.message || 'Could not read that link — try another URL'));
+    _ssSetLinkStatus('error', '✗ ' + (e.message || 'Could not read that link - try another URL'));
     if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
   }
 }
@@ -7018,7 +7018,7 @@ function _ssRebuildWhoDropdown() {
   }
   // Groups stub
   html += `<div class="ss-who-group-label" style="margin-top:4px;">Groups</div>
-    <div style="padding:8px 14px 10px;font-size:13px;color:var(--muted);">No groups yet — <button class="fab-action-note-cta" onclick="event.stopPropagation();closePlanWizard();fabGroupClick()">create one →</button></div>`;
+    <div style="padding:8px 14px 10px;font-size:13px;color:var(--muted);">No groups yet - <button class="fab-action-note-cta" onclick="event.stopPropagation();closePlanWizard();fabGroupClick()">create one →</button></div>`;
   dd.innerHTML = html;
 }
 
@@ -7130,9 +7130,9 @@ function selectSSDate(date, el) {
   _ssRebuildWhoDropdown(); // refresh free/busy badges
 }
 
-// ── What / linked event — autocomplete ───────────────────────────────────────
+// ── What / linked event - autocomplete ───────────────────────────────────────
 let _ssAcTimer = null;
-let _ssAcPlaces = [];   // stores latest Places predictions by index — avoids embedding strings in HTML attrs
+let _ssAcPlaces = [];   // stores latest Places predictions by index - avoids embedding strings in HTML attrs
 let _ssPregenOutingId  = null;  // pre-generated before review so RSVP URLs can be included in WhatsApp messages
 let _ssPregenInvitees  = [];    // [{ contactId, rsvpToken }]
 
@@ -7164,7 +7164,7 @@ async function ssAcSearch(q) {
   const internal    = internalRes.status === 'fulfilled' ? (internalRes.value.results || []) : [];
   const predictions = placesRes.status  === 'fulfilled' ? (placesRes.value.predictions  || []) : [];
 
-  // Store places by index — safe for any characters including Hebrew
+  // Store places by index - safe for any characters including Hebrew
   _ssAcPlaces = predictions;
 
   let html = '';
@@ -7227,7 +7227,7 @@ function ssAcSelectPlace(idx) {
   const address = p.address || '';
   const placeId = p.place_id || null;
 
-  // Fill the text input and create a minimal linked card (no DB entry yet — created on send)
+  // Fill the text input and create a minimal linked card (no DB entry yet - created on send)
   const wi = document.getElementById('ss-what-input');
   if (wi) wi.value = name;
   _ssLinkedOpp = { id: null, title: name, type: 'venue', source_url: null,
@@ -7374,7 +7374,7 @@ async function openSSReview() {
     loadOutings();
     if (dateStr && opportunityId) loadPlanDots();
   } catch(e) { console.error('Outing save error:', e); }
-  // ── Outing is now in DB — render WhatsApp buttons ──────────────────────
+  // ── Outing is now in DB - render WhatsApp buttons ──────────────────────
 
   // Build hrefs separately so they are NEVER passed through innerHTML HTML parsing.
   // (innerHTML decodes/re-encodes href attribute values which can corrupt encoded URLs)
@@ -7393,7 +7393,7 @@ async function openSSReview() {
       ? `https://wa.me/${num}?text=${encodeURIComponent(msg)}`
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     _waHrefs.push(waHref);
-    // Use data-wa-i index only — href is set via DOM after innerHTML (avoids HTML-attribute corruption)
+    // Use data-wa-i index only - href is set via DOM after innerHTML (avoids HTML-attribute corruption)
     const safeName    = c.other_name.replace(/&/g,'&amp;').replace(/</g,'&lt;');
     const safePreview = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
     peopleHtml += `<div class="ss-person-row">
@@ -7403,7 +7403,7 @@ async function openSSReview() {
     <div class="ss-msg-preview">${safePreview}</div>`;
   }
   document.getElementById('ss-review-body').innerHTML = summaryHtml + peopleHtml;
-  // Assign hrefs via DOM property — this is the only safe way to set complex encoded URLs
+  // Assign hrefs via DOM property - this is the only safe way to set complex encoded URLs
   document.querySelectorAll('#ss-review-body .ss-wa-btn[data-wa-i]').forEach(a => {
     a.href = _waHrefs[parseInt(a.dataset.waI)];
   });
@@ -7734,7 +7734,7 @@ let _oppActionTitle = '';
 let _oppPickedDate = null;
 
 function oppCardClick(oppId, sourceUrl, title) {
-  // Track view event (fire-and-forget — non-critical)
+  // Track view event (fire-and-forget - non-critical)
   fetch(`/api/contributions/event?token=${MY_TOKEN}`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ opportunity_id: oppId, event_type: 'viewed' })
@@ -7825,7 +7825,7 @@ async function confirmOppDate() {
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'Confirm date';
-    showToast('Could not save plan — try again');
+    showToast('Could not save plan - try again');
   }
 }
 
@@ -7837,7 +7837,7 @@ async function deleteOpportunity(e, oppId) {
     _browseMatches = _browseMatches.filter(o => o.id !== oppId);
     renderBrowseMatches();
   } catch(e) {
-    showToast('Could not remove — try again');
+    showToast('Could not remove - try again');
   }
 }
 
@@ -7863,7 +7863,7 @@ async function submitBrowseUrl() {
     if (!res.ok) throw new Error(data.error || 'Failed');
 
     if (data.duplicate) {
-      status.textContent = '✓ Already in the system — added to your list';
+      status.textContent = '✓ Already in the system - added to your list';
       input.value = '';
       await loadBrowseMatches();
       setTimeout(() => { status.textContent = ''; }, 4000);
@@ -7983,7 +7983,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
     }));
   }
 
-  // Assign colours — reuse existing socialConnections colours if available
+  // Assign colours - reuse existing socialConnections colours if available
   _sc.data.who.forEach((w, i) => {
     const existing = socialConnections.find(sc => sc.id === w.id);
     _sc.colors[w.id] = existing?.color || _SC_COLOR_PALETTE[i % _SC_COLOR_PALETTE.length];
@@ -8004,7 +8004,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   renderSCWhen();
   renderSCWhat();
 
-  // Restore saved outing state — pre-fill WHAT and show unfurl card
+  // Restore saved outing state - pre-fill WHAT and show unfurl card
   if (prefillSaved) {
     _sc.savedOutingId = prefillSaved.id;
     const title = prefillSaved.message || 'Saved event';
@@ -8064,14 +8064,14 @@ function _scBestDate() {
     return _sc.data.myFreeDays[0] || null;
   }
 
-  // Tier 1 — 100% of selected connections free, within next 14 days
+  // Tier 1 - 100% of selected connections free, within next 14 days
   for (const d of _sc.data.myFreeDays) {
     if (!inRange(d, 0, 14)) continue;
     const allFree = withData.every(id => (_sc.data.connFreeDays[id] || []).includes(d));
     if (allFree) return d;
   }
 
-  // Tier 2 — at least partial overlap within next 14 days (best coverage first)
+  // Tier 2 - at least partial overlap within next 14 days (best coverage first)
   let bestPartial = null, bestCount = 0;
   for (const d of _sc.data.myFreeDays) {
     if (!inRange(d, 0, 14)) continue;
@@ -8080,14 +8080,14 @@ function _scBestDate() {
   }
   if (bestPartial) return bestPartial;
 
-  // Tier 3 — 100% of selected connections free, days 15–60
+  // Tier 3 - 100% of selected connections free, days 15–60
   for (const d of _sc.data.myFreeDays) {
     if (!inRange(d, 15, 60)) continue;
     const allFree = withData.every(id => (_sc.data.connFreeDays[id] || []).includes(d));
     if (allFree) return d;
   }
 
-  // Fallback — first free day regardless
+  // Fallback - first free day regardless
   return _sc.data.myFreeDays[0] || null;
 }
 
@@ -8140,7 +8140,7 @@ function renderSCWho() {
 
   if (!all.length) {
     row.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:4px 0;">
-      No connections yet — <a href="#" onclick="bnTab('connections');closeSC();return false;"
+      No connections yet - <a href="#" onclick="bnTab('connections');closeSC();return false;"
         style="color:var(--accent);">add people</a> first.
     </p>`;
     return;
@@ -8200,7 +8200,7 @@ function scExpandWho() {
   renderSCWho();
 }
 
-// ── WHEN — mini calendar ──────────────────────────────────────────────────────
+// ── WHEN - mini calendar ──────────────────────────────────────────────────────
 
 let _scCalYear = null, _scCalMonth = null;
 
@@ -8479,11 +8479,11 @@ async function _scUnfurlUrl(url) {
         <div class="sc-what-unfurl-meta">${data.siteName || new URL(url).hostname}${dateApplied ? ` · 📅 ${dateMain}` : ''}${timeBadge}</div>
       </div>
       <span class="sc-what-unfurl-close" onclick="_scClearUnfurl()">✕</span>
-    </div>${missingHints.length ? `<div style="padding:6px 4px 2px;font-size:12px;color:var(--orange);">⚠ Couldn't detect the ${missingHints.join(' or ')} — please pick ${missingHints.includes('date') ? 'a date on the calendar' : ''}${missingHints.length === 2 ? ' and ' : ''}${missingHints.includes('time') && !missingHints.includes('date') ? 'a time' : missingHints.includes('time') ? 'set the time' : ''} below</div>` : ''}`;
+    </div>${missingHints.length ? `<div style="padding:6px 4px 2px;font-size:12px;color:var(--orange);">⚠ Couldn't detect the ${missingHints.join(' or ')} - please pick ${missingHints.includes('date') ? 'a date on the calendar' : ''}${missingHints.length === 2 ? ' and ' : ''}${missingHints.includes('time') && !missingHints.includes('date') ? 'a time' : missingHints.includes('time') ? 'set the time' : ''} below</div>` : ''}`;
 
     renderSCSummary();
   } catch(e) {
-    box.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:6px 0;">Could not read link — saved as-is.</div>`;
+    box.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:6px 0;">Could not read link - saved as-is.</div>`;
   } finally {
     inp?.classList.remove('loading');
   }
@@ -8810,7 +8810,7 @@ function renderSCReview() {
   const selected = _sc.data.who.filter(w => _sc.selWho.has(w.id) && !_sc.removed.has(w.id));
   const soft = _scIsSoftInvite();
 
-  // Stage 1: Review only — no WhatsApp
+  // Stage 1: Review only - no WhatsApp
   body.innerHTML = `
     <div class="sc-review-summary">
       ${_sc.selWhat?.unfurled?.image ? `<img src="${_sc.selWhat.unfurled.image}" style="width:100%;border-radius:10px;margin-bottom:12px;max-height:140px;object-fit:cover;" onerror="this.remove();">` : ''}
@@ -8818,7 +8818,7 @@ function renderSCReview() {
         ${whatText || 'Hangout'}
       </div>
       <div class="sc-review-summary-line" style="text-align:center;">📅 <strong>${dateMain}</strong>${_sc.selTime ? ` · 🕐 ${_sc.selTime}` : ''}</div>
-      ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">No fixed date — soft invite</div>` : ''}
+      ${soft ? `<div class="sc-review-summary-line" style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center;">No fixed date - soft invite</div>` : ''}
       ${_sc.selWhat?.url ? `<div style="text-align:center;margin-top:8px;"><a href="${_sc.selWhat.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid rgba(230,249,82,0.28);border-radius:10px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;text-decoration:none;font-family:inherit;">🔗 Link to event</a></div>` : ''}
     </div>
     <div style="margin:16px 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Inviting</div>
@@ -8851,12 +8851,12 @@ function renderSCWhatsApp() {
   const eventLink = eventUrl ? `\n\n🔗 ${eventUrl}` : '';
   const groupRsvpNote = _sc.pregenOutingId ? `\n\nRSVP via Spontany: ${window.location.origin}/calendar?openEvent=${_sc.pregenOutingId}` : '';
   const groupMsg = (soft
-    ? `hey ${names}! thinking about getting together${whatText ? ` — ${whatText}` : ''} sometime, anyone up for it?`
-    : `hey ${names}! ${whatText ? whatText + ' — ' : ''}${dateMain}? who's in?`) + eventLink + groupRsvpNote;
+    ? `hey ${names}! thinking about getting together${whatText ? ` - ${whatText}` : ''} sometime, anyone up for it?`
+    : `hey ${names}! ${whatText ? whatText + ' - ' : ''}${dateMain}? who's in?`) + eventLink + groupRsvpNote;
   const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
 
   const personData = selected.map(w => {
-    // Build RSVP/event deep link — prefer per-invitee rsvp_token, fall back to general event link
+    // Build RSVP/event deep link - prefer per-invitee rsvp_token, fall back to general event link
     let rsvpLink = '';
     const rsvpToken = _sc.rsvpTokens?.[w.userId];
     if (_sc.pregenOutingId && rsvpToken) {
@@ -8918,9 +8918,9 @@ function _scIsSoftInvite() {
 
 function _scPersonMsg(w, whatText, dateMain, soft) {
   const first = w.name.split(' ')[0];
-  if (soft) return `hey ${first}! thinking about doing something${whatText ? ` — ${whatText}` : ''} sometime, you up for it?`;
+  if (soft) return `hey ${first}! thinking about doing something${whatText ? ` - ${whatText}` : ''} sometime, you up for it?`;
   return whatText
-    ? `hey ${first}! ${whatText} — ${dateMain}? you in?`
+    ? `hey ${first}! ${whatText} - ${dateMain}? you in?`
     : `hey ${first}! up for doing something on ${dateMain}?`;
 }
 
@@ -9033,7 +9033,7 @@ function updateBnBadges() {
   const cb = document.getElementById('bn-conn-badge');
   if (cb) { cb.textContent = connPending; cb.classList.toggle('hidden', connPending === 0); }
 
-  // Plans badge — count outings with pending invitees (sent or received)
+  // Plans badge - count outings with pending invitees (sent or received)
   const plansPending = (myOutings || []).reduce((n, o) => {
     return n + ((o.invitees || []).some(i => i.status === 'pending') ? 1 : 0);
   }, 0) + (myIncomingOutings || []).filter(o => o.my_invitee_status === 'pending').length;
@@ -9072,12 +9072,12 @@ if ('serviceWorker' in navigator) {
         const targetParams = new URL(url).searchParams;
         const eventId = targetParams.get('openEvent');
         if (eventId && typeof openEventPaneDirect === 'function') {
-          // Already on calendar page — open the event pane directly, no reload
+          // Already on calendar page - open the event pane directly, no reload
           openEventPaneDirect(eventId);
           return;
         }
       } catch(e) {}
-      // Different page or no openEvent param — navigate normally
+      // Different page or no openEvent param - navigate normally
       if (url !== location.href) location.href = url;
     }
   });

@@ -1,4 +1,4 @@
-// sa.js — Spontany first-party analytics (lightweight, no dependencies)
+// sa.js - Spontany first-party analytics (lightweight, no dependencies)
 (function() {
   var SID_KEY = 'sa_sid';
   var sid = sessionStorage.getItem(SID_KEY);
@@ -33,7 +33,7 @@
   var token = params.get('token') || '';
   try { token = token || localStorage.getItem('myToken') || ''; } catch(e) {}
 
-  // Get role (person_a or person_b) — set by match.html
+  // Get role (person_a or person_b) - set by match.html
   function getRole() {
     return sessionStorage.getItem('sa_role') || 'person_a';
   }

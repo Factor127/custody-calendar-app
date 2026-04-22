@@ -391,12 +391,12 @@ function esc(s) {
 }
 
 function fmtDate(s) {
-  if (!s) return '—';
+  if (!s) return '-';
   return new Date(s).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
 }
 
 function fmtEventTime(s) {
-  if (!s) return '<span class="muted">—</span>';
+  if (!s) return '<span class="muted">-</span>';
   try {
     const d = new Date(s);
     // If time component is midnight exactly, show date only
@@ -498,7 +498,7 @@ function renderOpps() {
 
   document.getElementById('opp-rows').innerHTML = filtered.map(o => {
     const confCls  = o.confidence_score >= 0.8 ? 'conf-high' : o.confidence_score >= 0.5 ? 'conf-mid' : 'conf-low';
-    const confVal  = o.confidence_score != null ? (o.confidence_score * 100).toFixed(0) + '%' : '—';
+    const confVal  = o.confidence_score != null ? (o.confidence_score * 100).toFixed(0) + '%' : '-';
     const priceCls = o.price_tier === 'free' ? 'b-free' : o.price_tier ? 'b-paid' : 'b-none';
 
     const views   = o.view_count   || 0;
@@ -514,7 +514,7 @@ function renderOpps() {
 
     return `<tr>
       <td>
-        <strong style="font-size:13px;">${esc(o.title || '—')}</strong>
+        <strong style="font-size:13px;">${esc(o.title || '-')}</strong>
         ${o.source_url ? `<br><a class="url-link" href="${esc(o.source_url)}" target="_blank">${esc(o.source_url.replace(/https?:\/\/(www\.)?/,'').slice(0,50))}…</a>` : ''}
       </td>
       <td>
@@ -527,15 +527,15 @@ function renderOpps() {
       <td>
         <select class="inline-sel" onchange="updateOpp('${o.id}','category',this.value)">
           ${['','food & drink','music','arts','sports','outdoors','nightlife','family','wellness','culture','community']
-            .map(c => `<option value="${c}" ${o.category===c?'selected':''}>${c||'—'}</option>`).join('')}
+            .map(c => `<option value="${c}" ${o.category===c?'selected':''}>${c||'-'}</option>`).join('')}
         </select>
       </td>
-      <td class="muted" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.location_name||'—')}</td>
+      <td class="muted" style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.location_name||'-')}</td>
       <td>${fmtEventTime(o.start_time)}</td>
-      <td><span class="badge ${priceCls}">${esc(o.price_tier||'—')}</span></td>
+      <td><span class="badge ${priceCls}">${esc(o.price_tier||'-')}</span></td>
       <td>${engHtml}</td>
       <td><span class="${confCls}">${confVal}</span></td>
-      <td class="muted">${esc(o.submitter_name||'—')}</td>
+      <td class="muted">${esc(o.submitter_name||'-')}</td>
       <td class="muted" style="white-space:nowrap;">${fmtDate(o.created_at)}</td>
       <td><button class="btn-del" onclick="deleteOpp('${o.id}')">Delete</button></td>
     </tr>`;
@@ -608,7 +608,7 @@ function renderSubs() {
         ${pd.price_tier    ? ` · ${esc(pd.price_tier)}` : ''}
         ${(pd.tags||[]).length ? `<br>${pd.tags.map(t=>`<span class="tag-pill">${esc(t)}</span>`).join('')}` : ''}
         ${pd.description   ? `<br><span class="muted" style="font-size:10px;">${esc(pd.description.slice(0,120))}…</span>` : ''}
-      </div>` : `<span class="muted">—</span>`;
+      </div>` : `<span class="muted">-</span>`;
 
     const urlDisplay = (s.url||'').replace(/https?:\/\/(www\.)?/,'').slice(0,60);
 
@@ -616,9 +616,9 @@ function renderSubs() {
       <td style="max-width:200px;word-break:break-all;">
         <a class="url-link" href="${esc(s.url||'')}" target="_blank">${esc(urlDisplay)}</a>
       </td>
-      <td><span class="badge ${statusCls}">${esc(s.status||'—')}</span></td>
+      <td><span class="badge ${statusCls}">${esc(s.status||'-')}</span></td>
       <td>${parsedHtml}</td>
-      <td class="muted">${esc(s.submitter_name||'—')}</td>
+      <td class="muted">${esc(s.submitter_name||'-')}</td>
       <td class="muted" style="white-space:nowrap;">${fmtDate(s.created_at)}</td>
       <td><button class="btn-del" onclick="deleteSub('${s.id}')">Delete</button></td>
     </tr>`;
@@ -685,11 +685,11 @@ async function loadUsers() {
     const outcomes = u.outcome_count || 0;
     const outcomesCell = outcomes > 0
       ? `<span class="outcome-star">★ ${outcomes}</span>`
-      : `<span class="muted">—</span>`;
+      : `<span class="muted">-</span>`;
 
     return `<tr>
       <td><strong>${esc(u.name)}</strong></td>
-      <td class="muted">${esc(u.email || '—')}</td>
+      <td class="muted">${esc(u.email || '-')}</td>
       <td>${roleCell}</td>
       <td><span class="badge ${connBadge}">${esc(u.conn_status || 'none')}</span></td>
       <td class="muted">${u.day_count}</td>
@@ -754,7 +754,7 @@ async function loadAnalytics() {
 
     // LP funnel (new canonical table)
     const lpf = d.lpFunnel || [];
-    const pct = (n, d) => d > 0 ? Math.round(n / d * 100) + '%' : '—';
+    const pct = (n, d) => d > 0 ? Math.round(n / d * 100) + '%' : '-';
     document.getElementById('lp-funnel-rows').innerHTML = lpf.length === 0
       ? '<tr><td colspan="10" class="empty">No LP data yet.</td></tr>'
       : lpf.map(r => `<tr class="${r.active ? '' : 'lp-inactive'}">
@@ -840,7 +840,7 @@ async function loadAnalytics() {
       : d.sources.map(r => `<tr><td>${esc(r.source)}</td><td>${r.sessions}</td></tr>`).join('');
 
     // Timing
-    const ms2s = v => v != null ? (v/1000).toFixed(1) : '—';
+    const ms2s = v => v != null ? (v/1000).toFixed(1) : '-';
     document.getElementById('timing-rows').innerHTML = (d.timing||[]).length === 0
       ? '<tr><td colspan="5" class="empty">No data yet.</td></tr>'
       : d.timing.map(r => `<tr>
@@ -925,7 +925,7 @@ function renderWaitlist() {
     <td><strong>${esc(w.email)}</strong></td>
     <td><span class="badge ${w.status === 'approved' ? 'b-approved' : 'b-pending'}">${esc(w.status)}</span></td>
     <td class="muted" style="white-space:nowrap;">${fmtDate(w.created_at)}</td>
-    <td class="muted" style="white-space:nowrap;">${w.approved_at ? fmtDate(w.approved_at) : '—'}</td>
+    <td class="muted" style="white-space:nowrap;">${w.approved_at ? fmtDate(w.approved_at) : '-'}</td>
     <td>${w.status === 'pending' ? `<button class="btn btn-primary" onclick="approveWaitlist(${w.id},'${esc(w.email)}')">Approve</button>` : ''}</td>
   </tr>`).join('');
 }

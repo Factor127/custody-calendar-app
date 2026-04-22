@@ -40,7 +40,7 @@ app.get(['/match', '/match.html'], (req, res) => {
   serveVariant(req, res, variant);
 });
 
-// Serve static files — HTML never cached so deploys are instant
+// Serve static files - HTML never cached so deploys are instant
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res, filePath) {
     if (filePath.endsWith('.html')) {
@@ -161,9 +161,9 @@ app.put('/api/admin/waitlist/:id/approve', async (req, res) => {
     subject: "You're in! Welcome to Spontany",
     html: `<div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;background:#0a0a0a;color:#ffffff;padding:40px;border-radius:12px;">
       <h1 style="font-size:24px;margin:0 0 16px;">You're off the waitlist!</h1>
-      <p style="color:rgba(255,255,255,0.7);line-height:1.6;margin:0 0 24px;">Great news — your early access to Spontany is ready. Click below to get started.</p>
+      <p style="color:rgba(255,255,255,0.7);line-height:1.6;margin:0 0 24px;">Great news - your early access to Spontany is ready. Click below to get started.</p>
       <a href="${accessLink}" style="display:inline-block;background:#c4d630;color:#1a1a1a;padding:14px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;">Get early access &rarr;</a>
-      <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:32px;">Spontany — finds your moments before they slip away.</p>
+      <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:32px;">Spontany - finds your moments before they slip away.</p>
     </div>`,
     bodyText: `You're off the waitlist! Visit ${accessLink} to get started.`
   });
@@ -186,7 +186,7 @@ function assignVariant(cookies, query) {
   const active = AB_VARIANTS.filter(v => v.active);
   if (active.length === 0) return AB_VARIANTS[0]; // fallback
 
-  // Query param override (e.g. /?variant=lp1-match) — used for cross-variant links
+  // Query param override (e.g. /?variant=lp1-match) - used for cross-variant links
   if (query.variant) {
     const forced = active.find(v => v.id === query.variant);
     if (forced) return forced;
@@ -237,7 +237,7 @@ function serveVariant(req, res, variant) {
   res.cookie('sa_variant', variant.id, { maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
 
   // Auto-inject tracking before </head>
-  // Wrap sa() to always include variant — works even with old cached sa.js
+  // Wrap sa() to always include variant - works even with old cached sa.js
   const lpType = variant.lpType || '';
   const variantScript = `<script>
 sessionStorage.setItem('sa_variant','${variant.id}');
@@ -338,7 +338,7 @@ app.get('/api/email/unsubscribe', (req, res) => {
     <body><div class="box"><h1>Unsubscribed.</h1><p>You won't receive further emails from us.</p></div></body></html>`);
 });
 
-// ── PWA icon PNGs — generated from icon-source.png via sharp ─────────────────
+// ── PWA icon PNGs - generated from icon-source.png via sharp ─────────────────
 const _iconCache = {};
 app.get('/icon-:size.png', async (req, res) => {
   const size = parseInt(req.params.size);

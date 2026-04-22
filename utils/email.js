@@ -14,11 +14,11 @@ const FROM = () => process.env.FROM_EMAIL || 'Spontany <noreply@spontany.app>';
 
 /**
  * Send a calendar invite (.ics attachment) via Resend.
- * Fire-and-forget safe — logs errors but doesn't throw.
+ * Fire-and-forget safe - logs errors but doesn't throw.
  */
 async function sendCalendarInvite({ to, subject, bodyText, icsContent, method = 'REQUEST' }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log('[email] RESEND_API_KEY not set — skipping invite to', to);
+    console.log('[email] RESEND_API_KEY not set - skipping invite to', to);
     return;
   }
   try {
@@ -44,7 +44,7 @@ async function sendCalendarInvite({ to, subject, bodyText, icsContent, method = 
  */
 async function sendEmail({ to, subject, bodyText, html, from, replyTo }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log('[email] RESEND_API_KEY not set — skipping email to', to);
+    console.log('[email] RESEND_API_KEY not set - skipping email to', to);
     return;
   }
   try {

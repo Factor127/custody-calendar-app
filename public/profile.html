@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Profile — Spontany</title>
+  <title>My Profile - Spontany</title>
 
   <!-- Meta Pixel Code -->
   <script>
@@ -159,13 +159,13 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
     <div class="field-group">
       <label class="field-label" for="profile-coparent-phone">Co-parent's WhatsApp number <span style="color:var(--muted);font-weight:400;">(for schedule change notifications)</span></label>
       <input id="profile-coparent-phone" class="field-input" type="tel" placeholder="+972 50 000 0000" autocomplete="tel">
-      <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Used when you suggest custody changes — opens WhatsApp with a pre-written message.</p>
+      <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Used when you suggest custody changes - opens WhatsApp with a pre-written message.</p>
     </div>
 
     <div class="field-group">
       <label class="field-label" for="profile-partner-phone">Partner's WhatsApp number <span style="color:var(--muted);font-weight:400;">(for activity plans)</span></label>
       <input id="profile-partner-phone" class="field-input" type="tel" placeholder="+972 50 000 0000" autocomplete="tel">
-      <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Used when you suggest an activity together — opens WhatsApp with a pre-written message.</p>
+      <p style="font-size:12px;color:var(--muted);margin:5px 0 0;">Used when you suggest an activity together - opens WhatsApp with a pre-written message.</p>
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
@@ -186,7 +186,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <div class="section-card" id="schedule-card">
     <div class="section-title">My weekly custody schedule</div>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">
-      Set your recurring pattern. This fills your calendar automatically — you can still edit individual days manually.
+      Set your recurring pattern. This fills your calendar automatically - you can still edit individual days manually.
     </p>
 
     <!-- Pattern type tabs -->
@@ -239,7 +239,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
 
       <div style="margin-top:16px;">
         <label class="field-label" style="font-size:12px;">
-          Reference Monday — the Monday that starts your Week A:
+          Reference Monday - the Monday that starts your Week A:
         </label>
         <input id="anchor-date" type="date" class="field-input" style="max-width:200px;">
       </div>
@@ -254,7 +254,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <div class="section-card">
     <div class="section-title">⏰ My work schedule</div>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">
-      Helps Spontany know when you're actually free — not just kid-free.
+      Helps Spontany know when you're actually free - not just kid-free.
     </p>
     <div style="display:flex;flex-direction:column;gap:8px;" id="work-type-group">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border-radius:9px;border:1.5px solid var(--border);transition:border-color .15s;" onclick="selectWorkType('none',this)">
@@ -430,10 +430,10 @@ async function saveSchedule() {
   btn.disabled = false;
 
   if (res.ok) {
-    showToast('✓ Schedule saved — calendar updated');
+    showToast('✓ Schedule saved - calendar updated');
   } else {
     const err = await res.json().catch(() => ({}));
-    showToast(err.error || 'Save failed — please try again');
+    showToast(err.error || 'Save failed - please try again');
   }
 }
 
@@ -511,7 +511,7 @@ async function importIcal() {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    statusEl.textContent = '⚠ ' + (err.error || 'Could not fetch that URL — check it and try again');
+    statusEl.textContent = '⚠ ' + (err.error || 'Could not fetch that URL - check it and try again');
     statusEl.style.color = '#c62828';
     return;
   }
@@ -525,12 +525,12 @@ async function importIcal() {
   });
 
   if (saveRes.ok) {
-    statusEl.textContent = `✓ Imported ${count} event days over the next 90 days — those days are now marked as busy.`;
+    statusEl.textContent = `✓ Imported ${count} event days over the next 90 days - those days are now marked as busy.`;
     statusEl.style.color = '#2e7d32';
     workScheduleType = 'ical';
-    showToast(`✓ Calendar imported — ${count} busy days set`);
+    showToast(`✓ Calendar imported - ${count} busy days set`);
   } else {
-    statusEl.textContent = 'Import fetched but failed to save — try again';
+    statusEl.textContent = 'Import fetched but failed to save - try again';
     statusEl.style.color = '#c62828';
   }
 }
@@ -579,7 +579,7 @@ async function saveProfile() {
     body: JSON.stringify({ name, mobile: mobile || null, coparent_name: coparent_name || null, coparent_phone: coparent_phone || null, partner_phone: partner_phone || null })
   });
   if (res.ok) showToast('✓ Profile saved');
-  else alert('Save failed — please try again');
+  else alert('Save failed - please try again');
 }
 
 function goBack() {
@@ -596,7 +596,7 @@ function signOut() {
 async function rotateToken() {
   if (!confirm('This will invalidate your current link. You\'ll be redirected to your new one. Continue?')) return;
   const res = await fetch(`/api/users/rotate-token?token=${MY_TOKEN}`, { method: 'POST' });
-  if (!res.ok) { alert('Failed — please try again'); return; }
+  if (!res.ok) { alert('Failed - please try again'); return; }
   const { token } = await res.json();
   localStorage.setItem('myToken', token);
   const calUrl = userRole === 'owner' ? `/calendar?token=${token}` : `/partner?token=${token}`;

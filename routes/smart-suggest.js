@@ -74,7 +74,7 @@ router.get('/smart-suggest', (req, res) => {
     .all(me.id, me.id, me.id, me.id, me.id, me.id)   // 6 params: 4 CASE WHENs + 2 WHERE
     .filter(c => c.status === 'approved');
 
-  // WHO — scored and ranked
+  // WHO - scored and ranked
   const who = allConns.map(conn => {
     const relType  = conn.relationship_type || 'friend';
     const relWeight = relType === 'friend' ? 1.0 : relType === 'partner' ? 0.8 : 0.2;

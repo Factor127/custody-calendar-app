@@ -6,7 +6,7 @@ function requireAdmin(req, res) {
   const token = req.query.token || req.headers['x-admin-token'];
   const adminToken = process.env.ADMIN_TOKEN;
   if (!adminToken) {
-    res.status(503).json({ error: 'Admin not configured — set ADMIN_TOKEN env var' });
+    res.status(503).json({ error: 'Admin not configured - set ADMIN_TOKEN env var' });
     return false;
   }
   if (!token || token !== adminToken) {
@@ -16,7 +16,7 @@ function requireAdmin(req, res) {
   return true;
 }
 
-// GET /api/admin/users — all users with basic stats
+// GET /api/admin/users - all users with basic stats
 router.get('/admin/users', (req, res) => {
   if (!requireAdmin(req, res)) return;
 
@@ -48,7 +48,7 @@ router.get('/admin/users', (req, res) => {
   res.json({ users });
 });
 
-// PUT /api/admin/connections/:id/role — admin changes a connection's relationship label
+// PUT /api/admin/connections/:id/role - admin changes a connection's relationship label
 router.put('/admin/connections/:id/role', (req, res) => {
   if (!requireAdmin(req, res)) return;
 
@@ -68,7 +68,7 @@ router.put('/admin/connections/:id/role', (req, res) => {
 
 // ── Opportunities ─────────────────────────────────────────────────────────
 
-// GET /api/admin/opportunities — all opportunities with submitter name
+// GET /api/admin/opportunities - all opportunities with submitter name
 router.get('/admin/opportunities', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const opps = db.prepare(`
@@ -80,7 +80,7 @@ router.get('/admin/opportunities', (req, res) => {
   res.json({ opportunities: opps });
 });
 
-// PUT /api/admin/opportunities/:id — update type / category / visibility / title
+// PUT /api/admin/opportunities/:id - update type / category / visibility / title
 router.put('/admin/opportunities/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const { id } = req.params;
@@ -101,7 +101,7 @@ router.put('/admin/opportunities/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// DELETE /api/admin/opportunities/:id — hard delete any opportunity
+// DELETE /api/admin/opportunities/:id - hard delete any opportunity
 router.delete('/admin/opportunities/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const result = db.prepare('DELETE FROM opportunities WHERE id = ?').run(req.params.id);
@@ -113,7 +113,7 @@ router.delete('/admin/opportunities/:id', (req, res) => {
 
 // ── Submissions ────────────────────────────────────────────────────────────
 
-// GET /api/admin/submissions — all URL submissions with submitter name
+// GET /api/admin/submissions - all URL submissions with submitter name
 router.get('/admin/submissions', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const subs = db.prepare(`
@@ -128,7 +128,7 @@ router.get('/admin/submissions', (req, res) => {
   })) });
 });
 
-// DELETE /api/admin/submissions/:id — remove a submission record
+// DELETE /api/admin/submissions/:id - remove a submission record
 router.delete('/admin/submissions/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const result = db.prepare('DELETE FROM opportunity_submissions WHERE id = ?').run(req.params.id);
@@ -138,7 +138,7 @@ router.delete('/admin/submissions/:id', (req, res) => {
 
 // ── Stats ──────────────────────────────────────────────────────────────────
 
-// GET /api/admin/stats — aggregate counts + engagement totals
+// GET /api/admin/stats - aggregate counts + engagement totals
 router.get('/admin/stats', (req, res) => {
   if (!requireAdmin(req, res)) return;
   const oppCount    = db.prepare('SELECT COUNT(*) AS c FROM opportunities').get().c;
@@ -173,7 +173,7 @@ router.get('/admin/stats', (req, res) => {
 
 // ── Users ──────────────────────────────────────────────────────────────────
 
-// DELETE /api/admin/users/:id — delete user + all their data (cascade)
+// DELETE /api/admin/users/:id - delete user + all their data (cascade)
 router.delete('/admin/users/:id', (req, res) => {
   if (!requireAdmin(req, res)) return;
 

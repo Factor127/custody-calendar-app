@@ -39,7 +39,7 @@ router.post('/auth/request', async (req, res) => {
   const normalEmail = email.trim().toLowerCase();
   const user = q.getUserByEmail.get(normalEmail);
 
-  // Save UTM attribution on user record (first touch wins — don't overwrite)
+  // Save UTM attribution on user record (first touch wins - don't overwrite)
   if (user && utm_source && !user.utm_source) {
     try {
       db.prepare('UPDATE users SET utm_source=?, utm_medium=?, utm_campaign=?, utm_content=?, referrer=? WHERE id=?')
@@ -62,12 +62,12 @@ router.post('/auth/request', async (req, res) => {
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#202124;">
       <img src="${(process.env.BASE_URL||'')+'/icon-192.png'}" width="48" height="48" alt="Spontany" style="border-radius:12px;display:block;margin:0 0 10px;">
       <h1 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#0a0a0a;">Spontany</h1>
-      <p style="color:#5f6368;margin:0 0 28px;font-size:14px;">Finds your moments — before they slip away.</p>
+      <p style="color:#5f6368;margin:0 0 28px;font-size:14px;">Finds your moments - before they slip away.</p>
 
       <p style="margin:0 0 20px;">
         ${isNew
           ? 'Someone (hopefully you!) asked to set up a Spontany custody calendar with this email address.'
-          : 'Click below to log in to your custody calendar — no password needed.'}
+          : 'Click below to log in to your custody calendar - no password needed.'}
       </p>
 
       <a href="${verifyUrl}"
@@ -93,7 +93,7 @@ router.post('/auth/request', async (req, res) => {
     }
   } else {
     // Dev/local fallback: print the link to the server console
-    console.log(`\n📧 MAGIC LINK (email not configured — copy this into your browser):`);
+    console.log(`\n📧 MAGIC LINK (email not configured - copy this into your browser):`);
     console.log(`   ${verifyUrl}\n`);
   }
 
@@ -124,14 +124,14 @@ router.get('/auth/verify/:token', (req, res) => {
   }
 
   if (!link.user_id) {
-    // New email — pass the magic token to setup; DON'T mark used yet.
+    // New email - pass the magic token to setup; DON'T mark used yet.
     // It will be consumed by POST /api/users/setup when the user completes the wizard.
     return res.redirect(
       `/setup?magic=${req.params.token}&email=${encodeURIComponent(link.email)}`
     );
   }
 
-  // Existing user — mark link used and issue a fresh session token
+  // Existing user - mark link used and issue a fresh session token
   q.useMagicLink.run(req.params.token);
   const newToken = uuidv4();
   q.updateUserToken.run(newToken, link.user_id);
@@ -283,7 +283,7 @@ router.get('/auth/google/callback', async (req, res) => {
       );
     }
 
-    // 4. Brand-new user — send to setup with google context pre-filled
+    // 4. Brand-new user - send to setup with google context pre-filled
     //    We store a one-time magic link so setup can claim it
     const linkToken  = uuidv4();
     const expiresAt  = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min

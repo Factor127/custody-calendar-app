@@ -15,7 +15,7 @@ function userCategories(userId) {
   return [...cats];
 }
 
-// User's free days (next 60) — simplified: no kids + not a work day
+// User's free days (next 60) - simplified: no kids + not a work day
 function userFreeDays(userId) {
   const today = new Date(); today.setHours(0,0,0,0);
   const end   = new Date(today); end.setDate(today.getDate() + 60);
@@ -44,7 +44,7 @@ function matchScore(opp, userCats, freeDays) {
     score += 0.40;
     reasons.push(`matches your ${opp.category} interest`);
   } else if (userCats.length === 0) {
-    // No prefs set yet — show everything with lower base score
+    // No prefs set yet - show everything with lower base score
     score += 0.15;
   }
 
@@ -63,7 +63,7 @@ function matchScore(opp, userCats, freeDays) {
       reasons.push("you're free that day");
     }
   } else {
-    // Venue / activity template — always potentially relevant
+    // Venue / activity template - always potentially relevant
     score += 0.10;
   }
 

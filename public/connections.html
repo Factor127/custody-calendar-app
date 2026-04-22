@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Connections — Spontany</title>
+  <title>Connections - Spontany</title>
 
   <!-- Meta Pixel Code -->
   <script>
@@ -461,7 +461,7 @@ input::placeholder { color:var(--muted); }
       <div class="group-name">The Family Hub</div>
       <div class="group-desc">Central coordination for all co-parenting schedules and household logistics.</div>
       <div class="group-members" id="group-members-row">
-        <div class="group-member-count" style="margin-left:0;">—</div>
+        <div class="group-member-count" style="margin-left:0;">-</div>
       </div>
     </div>
     <div class="group-card">
@@ -832,7 +832,7 @@ function checkShowPrefCard() {
   showPrefCard(target.id, target.other_name);
 }
 
-// ── Activity preferences (Entry A — post-approval) ────────────────────────
+// ── Activity preferences (Entry A - post-approval) ────────────────────────
 function showPrefCard(connId, name) {
   prefCardConnId    = connId;
   selectedPrefChips = new Set();
@@ -880,7 +880,7 @@ async function savePrefCard() {
     document.getElementById('pref-card').classList.remove('visible');
     showToast(chips.length ? '✓ Preferences saved' : '✓ Saved');
   } else {
-    showToast('Failed to save — try again');
+    showToast('Failed to save - try again');
   }
 }
 
@@ -918,7 +918,7 @@ async function loadGoogleMatches() {
         if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         return;
       }
-      status.textContent = data.message || 'Something went wrong — try again.';
+      status.textContent = data.message || 'Something went wrong - try again.';
       if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
       return;
     }
@@ -929,7 +929,7 @@ async function loadGoogleMatches() {
 
     renderGoogleMatches(matches, total_contacts);
   } catch (e) {
-    status.textContent = 'Could not reach the server — try again.';
+    status.textContent = 'Could not reach the server - try again.';
     if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
 }
@@ -946,7 +946,7 @@ function renderGoogleMatches(matches, totalContacts) {
     document.getElementById('google-import-status').style.display = 'block';
     document.getElementById('google-import-status').textContent =
       totalContacts
-        ? `Scanned ${totalContacts} contacts — none are on Spontany yet.`
+        ? `Scanned ${totalContacts} contacts - none are on Spontany yet.`
         : 'No matches found in your Google contacts.';
     return;
   }
@@ -1016,7 +1016,7 @@ async function findByPhone() {
           <span style="font-size:22px;">🔍</span>
           <div>
             <div style="font-size:13px;color:var(--text);">Not on Spontany yet</div>
-            <a href="https://wa.me/${raw.replace(/\D/g,'')}?text=${encodeURIComponent('Hey! I use Spontany to coordinate plans — join me: ' + window.location.origin)}"
+            <a href="https://wa.me/${raw.replace(/\D/g,'')}?text=${encodeURIComponent('Hey! I use Spontany to coordinate plans - join me: ' + window.location.origin)}"
                target="_blank"
                style="font-size:12px;color:#25d366;font-weight:600;text-decoration:none;">
               📲 Invite via WhatsApp
@@ -1052,7 +1052,7 @@ async function findByPhone() {
         ${actionHtml}
       </div>`;
   } catch(e) {
-    res.innerHTML = '<span style="color:var(--muted);font-size:13px;">Something went wrong — try again.</span>';
+    res.innerHTML = '<span style="color:var(--muted);font-size:13px;">Something went wrong - try again.</span>';
   }
 }
 
@@ -1121,7 +1121,7 @@ async function doNameSearch(q) {
       </div>`;
     }).join('');
   } catch(e) {
-    box.innerHTML = '<span style="color:var(--muted);font-size:13px;">Search failed — try again.</span>';
+    box.innerHTML = '<span style="color:var(--muted);font-size:13px;">Search failed - try again.</span>';
   }
 }
 
@@ -1198,7 +1198,7 @@ async function ppConnect() {
     if (q.length >= 2) doNameSearch(q);
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = 'Connect'; }
-    showToast('Could not send request — try again');
+    showToast('Could not send request - try again');
   }
 }
 
@@ -1311,7 +1311,7 @@ async function removeConnection(connId) {
   allConnections = allConnections.filter(c => c.id !== connId);
   renderConnectionsList();
   fetch(`/api/connections/${connId}?token=${MY_TOKEN}`, { method: 'DELETE' })
-    .then(r => { if (!r.ok) showToast('Failed to remove — try again'); });
+    .then(r => { if (!r.ok) showToast('Failed to remove - try again'); });
   showToast('Connection removed');
 }
 
@@ -1387,10 +1387,10 @@ async function selectInviteType(type) {
     document.getElementById('invite-link-input').value = data.invite_url;
     document.getElementById('invite-link-section').style.display = 'block';
     const waMsg = type === 'partner'
-      ? `Hi! I'm using Spontany to manage my custody schedule — it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
+      ? `Hi! I'm using Spontany to manage my custody schedule - it also shows us when we're both free. Set up your side here (takes 1 minute): ${data.invite_url}`
       : type === 'friend'
       ? `Hey! Join me on Spontany so we can see when we're both free to hang out. Takes 1 minute: ${data.invite_url}`
-      : `Hi! I'm using Spontany to manage our custody schedule — makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`;
+      : `Hi! I'm using Spontany to manage our custody schedule - makes planning so much easier. Set up your side here (1 minute): ${data.invite_url}`;
     document.getElementById('connections-whatsapp-btn').href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
   } else { showToast('Failed to generate invite link'); }
 }
@@ -1404,7 +1404,7 @@ async function copyInviteLink() {
 // ── iCal ─────────────────────────────────────────────────────────────────
 async function copyIcalUrl() {
   const url = `${location.origin}/api/calendar.ics?token=${MY_TOKEN}`;
-  try { await navigator.clipboard.writeText(url); showToast('✓ Calendar URL copied — paste into Apple/Google Calendar'); }
+  try { await navigator.clipboard.writeText(url); showToast('✓ Calendar URL copied - paste into Apple/Google Calendar'); }
   catch { prompt('Copy this URL:', url); }
 }
 
@@ -1429,7 +1429,7 @@ async function init() {
     const status = document.getElementById('google-import-status');
     status.style.display = 'block';
     status.style.color   = '#f87171';
-    status.textContent   = 'Google contacts access was denied or failed — try again.';
+    status.textContent   = 'Google contacts access was denied or failed - try again.';
     // Clean URL without reloading
     const clean = new URL(location.href);
     clean.searchParams.delete('contacts_error');

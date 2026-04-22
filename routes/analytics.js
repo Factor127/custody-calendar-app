@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const { db, q } = require('../db');
 
-// POST /api/sa — lightweight event ingestion (no auth required for match flow)
+// POST /api/sa - lightweight event ingestion (no auth required for match flow)
 router.post('/sa', (req, res) => {
   const { event, props, page, session_id, token } = req.body;
   if (!event || typeof event !== 'string') return res.status(400).end();
@@ -26,7 +26,7 @@ router.post('/sa', (req, res) => {
   res.status(204).end();
 });
 
-// GET /api/admin/analytics — campaign funnel dashboard data
+// GET /api/admin/analytics - campaign funnel dashboard data
 router.get('/admin/analytics', (req, res) => {
   const adminToken = process.env.ADMIN_TOKEN;
   if (!adminToken || req.query.token !== adminToken) return res.status(403).end();
@@ -136,7 +136,7 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY visitors DESC
   `).all();
 
-  // 10. A/B variant funnel (legacy events — kept for historical compatibility)
+  // 10. A/B variant funnel (legacy events - kept for historical compatibility)
   const variantFunnel = db.prepare(`
     SELECT
       json_extract(props, '$.variant') AS variant,
@@ -152,7 +152,7 @@ router.get('/admin/analytics', (req, res) => {
     GROUP BY variant
   `).all();
 
-  // 11. LP framework funnel — the new canonical metrics.
+  // 11. LP framework funnel - the new canonical metrics.
   // Pulls LP metadata (label, type) from routes/lp.js so the UI can show
   // type pills + fair comparisons.
   let lpFunnel = [];
@@ -192,7 +192,7 @@ router.get('/admin/analytics', (req, res) => {
   res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel, lpFunnel, nudgeStatus });
 });
 
-// DELETE /api/admin/analytics — archive then reset analytics data
+// DELETE /api/admin/analytics - archive then reset analytics data
 router.delete('/admin/analytics', (req, res) => {
   const adminToken = process.env.ADMIN_TOKEN;
   if (!adminToken || req.query.token !== adminToken) return res.status(403).end();

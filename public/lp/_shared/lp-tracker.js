@@ -1,4 +1,4 @@
-// LP SDK — injected into every landing page variant.
+// LP SDK - injected into every landing page variant.
 // Requires /sa.js to be loaded first (sets up window.sa()).
 //
 // LP authors use exactly 4 calls:
@@ -115,7 +115,7 @@
     var form       = document.getElementById('lp-nudge-form');
     var thanks     = document.getElementById('lp-nudge-thanks');
 
-    // Floating CTA visibility — reveal after 30% scroll
+    // Floating CTA visibility - reveal after 30% scroll
     function onScroll() {
       var pct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
       if (pct > 0.25) floatBtn.classList.add('visible');
@@ -222,7 +222,7 @@
         '<button type="submit">Nudge me</button>',
         '<p class="fine">By tapping, you consent to one SMS from Spontany at the time you chose. Msg&amp;data rates may apply. Reply STOP to opt out.</p>',
       '</form>',
-      '<div id="lp-nudge-thanks" style="display:none;">Got it — we\'ll text you. 📲</div>',
+      '<div id="lp-nudge-thanks" style="display:none;">Got it - we\'ll text you. 📲</div>',
     '</aside>',
   ].join('');
 
