@@ -81,27 +81,117 @@
   h1 em { color: #a78bfa; font-style: normal; }
   .sub { font-size: 17px; color: rgba(255,255,255,0.65); margin-bottom: 32px; }
 
-  .form-card {
-    margin-top: 32px; padding: 24px;
+  .form-card, .picker-card, .copy-card, .phone-card {
+    margin-top: 24px; padding: 22px;
     background: linear-gradient(to bottom, rgba(20, 15, 30, 0.95), rgba(15, 15, 22, 0.95));
     border: 1px solid rgba(167,139,250,0.3); border-radius: 16px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
-  .step-list {
-    list-style: none; padding: 0; margin: 0 0 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 18px;
+
+  .preview-label {
+    font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 700;
+    letter-spacing: 0.6px; text-transform: uppercase;
+    margin: 18px 0 6px;
   }
-  .step-list li {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 6px 0; font-size: 14px; color: rgba(255,255,255,0.75);
+  .sms-bubble {
+    padding: 14px 16px; background: #2b2b30; color: #fff;
+    border-radius: 16px 16px 16px 4px; font-size: 14px; line-height: 1.45;
+    position: relative; word-break: break-word;
   }
-  .step-list .num {
-    flex: 0 0 22px; height: 22px; margin-top: 1px; border-radius: 50%;
-    background: #a78bfa; color: #0a0a0a; font-weight: 800; font-size: 12px;
-    display: inline-flex; align-items: center; justify-content: center;
+  .sms-bubble .url { color: #7dd3fc; }
+
+  .picker-card h3, .copy-card h3, .phone-card h3 {
+    font-size: 18px; margin-bottom: 14px; line-height: 1.2;
   }
-  .step-list .txt { flex: 1; line-height: 1.45; }
-  .step-list strong { color: #fff; font-weight: 700; }
+  .picker-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+  }
+  .picker-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 16px 8px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+    color: #fff; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    text-decoration: none; min-height: 78px;
+  }
+  .picker-btn:hover { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.4); }
+  .picker-btn:active { transform: scale(0.98); }
+  .picker-btn .icon { font-size: 22px; line-height: 1; }
+  .picker-btn.disabled { opacity: 0.35; pointer-events: none; }
+  .picker-btn .hint { font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 500; }
+
+  .ghost-btn {
+    background: transparent; border: 0; color: rgba(255,255,255,0.5);
+    font-family: inherit; font-size: 13px; padding: 6px; cursor: pointer;
+    margin-top: 4px;
+  }
+  .ghost-btn:hover { color: rgba(255,255,255,0.8); }
+
+  .phone-card label { display: block; font-size: 13px; color: rgba(255,255,255,0.65); margin: 14px 0 6px; }
+  .phone-card input {
+    width: 100%; padding: 13px 14px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 15px;
+    font-family: inherit; box-sizing: border-box;
+  }
+
+  .copy-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .copy-row input {
+    flex: 1; padding: 12px 14px; background: #1a1a1a; color: #fff;
+    border: 1px solid #2a2a2a; border-radius: 10px; font-size: 12px;
+    font-family: ui-monospace, Menlo, monospace; min-width: 0;
+  }
+  .copy-btn {
+    padding: 12px 18px; background: rgba(167,139,250,0.15); color: #fff;
+    border: 1px solid rgba(167,139,250,0.5); border-radius: 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+  }
+  .copy-btn:active { transform: scale(0.98); }
+
+  /* Result preview teaser */
+  .result-teaser {
+    margin-top: 32px; padding: 20px; text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .teaser-label {
+    font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 600;
+    letter-spacing: 0.4px; margin-bottom: 12px;
+  }
+  .mock-report {
+    padding: 18px 16px; background: #111; border: 1px solid #1f1f1f;
+    border-radius: 14px; position: relative; overflow: hidden;
+    opacity: 0.85;
+  }
+  .mock-report::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(10,10,10,0.6) 100%);
+    pointer-events: none;
+  }
+  .mock-headline { margin-bottom: 12px; }
+  .mock-big {
+    font-size: 42px; font-weight: 800; color: #a78bfa; line-height: 1;
+  }
+  .mock-lil {
+    font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 4px;
+    letter-spacing: 0.3px;
+  }
+  .mock-chips { display: flex; gap: 6px; justify-content: center; margin: 14px 0; }
+  .mock-chip {
+    padding: 8px 10px; background: rgba(196,214,48,0.1);
+    border: 1px solid rgba(196,214,48,0.3); border-radius: 8px;
+    color: #c4d630; font-weight: 600; font-size: 12px;
+  }
+  .mock-chip span {
+    display: block; font-size: 9px; opacity: 0.7; letter-spacing: 0.4px;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .mock-venue-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px;
+  }
+  .mock-venue {
+    aspect-ratio: 3/2; background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(196,214,48,0.1));
+    border-radius: 8px;
+  }
   label { display: block; margin: 12px 0 6px; font-size: 13px; color: rgba(255,255,255,0.7); }
   input[type="text"], input[type="tel"] {
     width: 100%; padding: 13px 14px; background: #1a1a1a; color: #fff;
@@ -154,145 +244,297 @@
 
     <section class="hero-area">
       <h1>Let him <em>show</em> he's serious.</h1>
-      <p class="sub">Stop playing detective with his schedule. Send him a link. He fills in his custody weekends. You both see when you're actually free.</p>
+      <p class="sub">Send him a link to fill in his custody weekends. See when you're actually free.</p>
     </section>
 
     <div class="form-card" id="form-card">
-      <ol class="step-list">
-        <li><span class="num">1</span><span class="txt"><strong>You mark your kid-free nights.</strong> 30 seconds, no signup.</span></li>
-        <li><span class="num">2</span><span class="txt"><strong>He taps his on a link.</strong> No app, no account.</span></li>
-        <li><span class="num">3</span><span class="txt"><strong>We text you when the overlap is ready.</strong> With venue picks.</span></li>
-      </ol>
-
       <form id="share-form">
-        <label for="your_name">Your first name</label>
-        <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" required>
+        <label for="your_name">Make it personal — what's your name?</label>
+        <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" autocomplete="given-name" required>
 
-        <label for="his_phone">His mobile <span style="opacity:0.5;font-weight:400;">(only if you want us to text him)</span></label>
-        <input id="his_phone" name="his_phone" type="tel" placeholder="+1 214 555 0123">
+        <div class="preview-label">He'll see this:</div>
+        <div class="sms-bubble" id="sms-preview" aria-live="polite"></div>
 
-        <button class="cta" type="submit">Text him the link →</button>
-        <a href="#" class="alt-link" id="copy-mode-link">Or get a link to send yourself →</a>
-        <p class="fine">One text from Spontany. Reply STOP to opt out. No signup on either side.</p>
+        <button class="cta" type="button" id="send-it-btn">Send it →</button>
       </form>
     </div>
 
-    <div class="thanks" id="thanks" style="display:none;">
-      <h3>On its way.</h3>
-      <p style="color:rgba(255,255,255,0.6);" id="thanks-body">Let's get your side done — takes 30 seconds.</p>
-      <a href="#" id="continue-link" class="cta">Continue →</a>
+    <div class="picker-card" id="picker-card" hidden>
+      <h3>Where should we send it to?</h3>
+      <div class="picker-grid" id="picker-grid"></div>
+      <button type="button" id="picker-back" class="ghost-btn">← back</button>
     </div>
 
-    <div class="copy-card" id="copy-card" style="display:none;">
-      <h3>Here's your link</h3>
-      <p style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:16px;">Paste into iMessage, WhatsApp, wherever feels natural.</p>
+    <div class="copy-card" id="copy-card" hidden>
+      <h3>Copy and paste it to him</h3>
       <div class="copy-row">
         <input type="text" id="share-link" readonly>
-        <button type="button" id="copy-btn" class="cta" style="width:auto;padding:14px 20px;margin:0;">Copy</button>
+        <button type="button" id="copy-btn" class="copy-btn">Copy</button>
       </div>
       <a href="#" id="copy-continue" class="cta">Now do yours →</a>
     </div>
 
-    <p class="mini">Prefer to just check your own schedule? <a href="#" id="secondary-cta" style="color:#c4d630;">Do a quick demo →</a></p>
+    <div class="phone-card" id="phone-card" hidden>
+      <h3>We'll text him for you</h3>
+      <label for="his_phone">His mobile</label>
+      <input id="his_phone" type="tel" placeholder="+1 214 555 0123" autocomplete="tel">
+      <button type="button" id="phone-send" class="cta">Send the text →</button>
+    </div>
+
+    <div class="result-teaser" id="result-teaser">
+      <div class="teaser-label">What you'll see once he fills his in ↓</div>
+      <div class="mock-report" aria-hidden="true">
+        <div class="mock-headline">
+          <div class="mock-big">3</div>
+          <div class="mock-lil">nights you're both free</div>
+        </div>
+        <div class="mock-chips">
+          <div class="mock-chip"><span>FRI</span>Apr 24</div>
+          <div class="mock-chip"><span>SAT</span>Apr 25</div>
+          <div class="mock-chip"><span>THU</span>May 1</div>
+        </div>
+        <div class="mock-venue-row">
+          <div class="mock-venue"></div>
+          <div class="mock-venue"></div>
+          <div class="mock-venue"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       window.LP && LP.init({ id: 'serious-v1', type: 'teaser-share', totalSteps: 0 });
 
-      var form       = document.getElementById('share-form');
-      var formCard   = document.getElementById('form-card');
-      var thanksView = document.getElementById('thanks');
-      var copyView   = document.getElementById('copy-card');
+      var form        = document.getElementById('share-form');
+      var formCard    = document.getElementById('form-card');
+      var pickerCard  = document.getElementById('picker-card');
+      var pickerGrid  = document.getElementById('picker-grid');
+      var copyCard    = document.getElementById('copy-card');
+      var phoneCard   = document.getElementById('phone-card');
+      var nameInput   = document.getElementById('your_name');
+      var preview     = document.getElementById('sms-preview');
+      var sendBtn     = document.getElementById('send-it-btn');
 
+      // ── Device detection ─────────────────────────────────────────────────
+      var ua = navigator.userAgent || '';
+      var isIOS     = /iPhone|iPad|iPod/i.test(ua);
+      var isAndroid = /Android/i.test(ua);
+      var isMobile  = isIOS || isAndroid || /Mobile/i.test(ua);
+      var canShare  = typeof navigator.share === 'function';
+
+      // ── Live SMS preview ────────────────────────────────────────────────
+      // We use a placeholder URL until share is created; then swap to the
+      // real token URL in the picker phase.
+      var liveToken = null;
+      function currentShareUrl() {
+        if (liveToken) return location.origin + '/share/' + liveToken;
+        return location.origin + '/share/xxxxxxxx';
+      }
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function(c) {
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+      }
+      function buildMessage(name) {
+        var n = (name && name.trim()) || 'Your friend';
+        return n + ' wants to see when you two are both free. Tap to pick your kid-free nights (no signup): ' + currentShareUrl();
+      }
+      function renderPreview() {
+        var name = nameInput.value.trim();
+        var text = buildMessage(name);
+        var url  = currentShareUrl();
+        // Wrap the URL in a span so it visually pops in the bubble
+        var html = esc(text).replace(esc(url), '<span class="url">' + esc(url) + '</span>');
+        preview.innerHTML = html;
+      }
+      nameInput.addEventListener('input', renderPreview);
+      renderPreview();
+
+      // ── Utils ────────────────────────────────────────────────────────────
       function utmPayload() {
-        var utm = {};
+        var u = {};
         ['utm_source','utm_medium','utm_campaign','utm_content'].forEach(function(k) {
           var v = sessionStorage.getItem(k);
-          if (v) utm[k] = v;
+          if (v) u[k] = v;
         });
-        return utm;
+        return u;
       }
 
-      function createShare(mode) {
-        var yourName = form.your_name.value.trim();
-        var phone    = form.his_phone.value.trim();
+      function createShare(mode, phone) {
+        var yourName = nameInput.value.trim();
+        if (!yourName) { nameInput.focus(); return Promise.reject('missing_name'); }
 
-        // Name is always required; phone is only required in text mode.
-        if (!yourName) { form.your_name.focus(); return Promise.reject('missing_name'); }
-        if (mode === 'text' && !phone) {
-          form.his_phone.setAttribute('required', 'required');
-          form.reportValidity();
-          form.his_phone.removeAttribute('required');
-          return Promise.reject('missing_phone');
-        }
-
-        window.LP && LP.ctaClick({ button: 'share', mode: mode });
+        window.LP && LP.ctaClick({ button: 'send-it', mode: mode });
         if (typeof sa === 'function') sa('share_open', { lp_type: 'teaser-share', mode: mode });
 
-        var utm = utmPayload();
+        var u = utmPayload();
         return fetch('/api/share/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             person_a_name: yourName,
-            person_b_phone: phone || undefined, // omit if empty (copy mode)
-            mode: mode, // 'text' | 'copy'
+            person_b_phone: phone || undefined,
+            mode: mode,
             variant: 'serious-v1',
             session_id: sessionStorage.getItem('sa_sid'),
-            utm_source:   utm.utm_source,
-            utm_campaign: utm.utm_campaign,
-            utm_content:  utm.utm_content,
+            utm_source:   u.utm_source,
+            utm_campaign: u.utm_campaign,
+            utm_content:  u.utm_content,
           }),
         }).then(function(r) { return r.json().then(function(j) { return { ok: r.ok, body: j }; }); });
       }
 
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        var btn = form.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.textContent = 'Sending…';
-
-        createShare('text').then(function(res) {
-          if (res.ok && res.body.token) {
-            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', mode: 'text' });
-            // Move A to her own calendar input, preserving the share token
-            window.location.href = '/share/' + res.body.token + '/me';
-          } else {
-            btn.disabled = false;
-            btn.textContent = 'Try again';
-          }
-        }, function() {
-          btn.disabled = false;
-          btn.textContent = 'Text him the link →';
+      function show(which) {
+        [formCard, pickerCard, copyCard, phoneCard].forEach(function(el) {
+          el.hidden = (el !== which);
         });
-      });
+      }
 
-      document.getElementById('copy-mode-link').addEventListener('click', function(e) {
-        e.preventDefault();
-        createShare('copy').then(function(res) {
-          if (res.ok && res.body.token) {
-            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', mode: 'copy' });
-            formCard.style.display = 'none';
-            copyView.style.display = 'block';
-            var link = location.origin + '/share/' + res.body.token;
-            document.getElementById('share-link').value = link;
-            document.getElementById('copy-continue').href = '/share/' + res.body.token + '/me';
-          }
-        }, function() { /* missing_name already focused field */ });
-      });
+      // ── Channel definitions ─────────────────────────────────────────────
+      function channelDefs() {
+        return {
+          imessage: {
+            label: 'iMessage', icon: '💬', hint: isIOS ? '' : 'iPhone',
+            available: isIOS || isAndroid, // sms: works on both iOS and Android
+            open: function(url) {
+              var body = buildMessage(nameInput.value.trim());
+              // iOS uses &, Android uses ?
+              var sep  = isIOS ? '&' : '?';
+              location.href = 'sms:' + sep + 'body=' + encodeURIComponent(body);
+            },
+          },
+          whatsapp: {
+            label: 'WhatsApp', icon: '🟢', hint: '',
+            available: true,
+            open: function(url) {
+              var body = buildMessage(nameInput.value.trim());
+              window.open('https://wa.me/?text=' + encodeURIComponent(body), '_blank');
+            },
+          },
+          messenger: {
+            label: 'Messenger', icon: '💭', hint: '',
+            available: true,
+            open: function(url) {
+              var body = buildMessage(nameInput.value.trim());
+              if (canShare) {
+                navigator.share({ text: body, url: url }).catch(function(){});
+              } else {
+                // Desktop fallback: copy + open messenger.com
+                copyToClipboard(body);
+                window.open('https://www.messenger.com/', '_blank');
+              }
+            },
+          },
+          copy: {
+            label: 'Copy link', icon: '🔗', hint: '',
+            available: true,
+            open: function(url) { showCopy(url); },
+          },
+          phone: {
+            label: 'Enter his #', icon: '📞', hint: '',
+            available: true,
+            open: function() { show(phoneCard); document.getElementById('his_phone').focus(); },
+          },
+        };
+      }
 
-      document.getElementById('copy-btn').addEventListener('click', function() {
-        var input = document.getElementById('share-link');
-        input.select();
+      function orderForDevice() {
+        if (isIOS)     return ['imessage', 'whatsapp', 'messenger', 'copy', 'phone'];
+        if (isAndroid) return ['whatsapp', 'messenger', 'imessage', 'copy', 'phone'];
+        return ['whatsapp', 'copy', 'phone', 'messenger', 'imessage'];
+      }
+
+      function renderPicker(token) {
+        var url  = location.origin + '/share/' + token;
+        var defs = channelDefs();
+        pickerGrid.innerHTML = '';
+
+        orderForDevice().forEach(function(key) {
+          var d = defs[key];
+          if (!d) return;
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'picker-btn' + (d.available ? '' : ' disabled');
+          btn.innerHTML =
+            '<span class="icon">' + d.icon + '</span>' +
+            '<span>' + d.label + '</span>' +
+            (d.hint ? '<span class="hint">' + d.hint + '</span>' : '');
+          btn.addEventListener('click', function() {
+            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', channel: key });
+            d.open(url);
+            // After channel click, A continues to her own calendar — unless she
+            // picked "phone" (which needs the phone input form first).
+            if (key !== 'phone' && key !== 'copy') {
+              setTimeout(function() {
+                window.location.href = '/share/' + token + '/me';
+              }, 900);
+            }
+          });
+          pickerGrid.appendChild(btn);
+        });
+      }
+
+      // ── Copy-link flow ───────────────────────────────────────────────────
+      function showCopy(url) {
+        document.getElementById('share-link').value = url;
+        document.getElementById('copy-continue').href = url + '/me';
+        show(copyCard);
+      }
+      function copyToClipboard(text) {
         try {
-          navigator.clipboard.writeText(input.value);
-        } catch(err) {
-          document.execCommand('copy');
+          navigator.clipboard.writeText(text);
+        } catch (e) {
+          var i = document.createElement('input');
+          i.value = text; document.body.appendChild(i);
+          i.select(); document.execCommand('copy'); document.body.removeChild(i);
         }
+      }
+      document.getElementById('copy-btn').addEventListener('click', function() {
+        copyToClipboard(document.getElementById('share-link').value);
         this.textContent = 'Copied ✓';
         var self = this;
         setTimeout(function() { self.textContent = 'Copy'; }, 2000);
+      });
+
+      // ── Phone-entry flow ─────────────────────────────────────────────────
+      document.getElementById('phone-send').addEventListener('click', function() {
+        var phone = document.getElementById('his_phone').value.trim();
+        if (!phone) { document.getElementById('his_phone').focus(); return; }
+        var btn = this;
+        btn.disabled = true; btn.textContent = 'Sending…';
+        createShare('text', phone).then(function(res) {
+          if (res.ok && res.body.token) {
+            if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', channel: 'twilio' });
+            window.location.href = '/share/' + res.body.token + '/me';
+          } else {
+            btn.disabled = false; btn.textContent = 'Try again';
+          }
+        }, function() {
+          btn.disabled = false; btn.textContent = 'Send the text →';
+        });
+      });
+
+      // ── "Send it" → create share, reveal picker ─────────────────────────
+      sendBtn.addEventListener('click', function() {
+        sendBtn.disabled = true; sendBtn.textContent = 'Setting up…';
+        createShare('copy').then(function(res) {
+          if (res.ok && res.body.token) {
+            liveToken = res.body.token;
+            renderPreview(); // update bubble with real URL
+            renderPicker(res.body.token);
+            show(pickerCard);
+          } else {
+            sendBtn.disabled = false; sendBtn.textContent = 'Send it →';
+          }
+        }, function() {
+          sendBtn.disabled = false; sendBtn.textContent = 'Send it →';
+        });
+      });
+
+      document.getElementById('picker-back').addEventListener('click', function() {
+        show(formCard);
+        sendBtn.disabled = false; sendBtn.textContent = 'Send it →';
       });
     });
   </script>
