@@ -16,19 +16,17 @@
     background: #0a0a0a; color: #fff; min-height: 100vh; line-height: 1.5;
   }
   .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 140px; }
-  .logo { margin-bottom: 36px; }
+  .logo { margin-bottom: 28px; }
   .logo img { height: 30px; width: auto; display: block; }
 
   /* Hero */
-  .hero { text-align: center; margin-bottom: 36px; }
+  .hero { text-align: center; margin-bottom: 28px; }
   h1 { font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
   h1 em { color: #c4d630; font-style: normal; }
   .sub { font-size: 16px; color: rgba(255,255,255,0.65); }
 
   /* Progress bar */
-  .progress {
-    display: flex; gap: 6px; margin-bottom: 24px;
-  }
+  .progress { display: flex; gap: 6px; margin-bottom: 24px; }
   .progress .bar {
     flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
   }
@@ -43,6 +41,26 @@
   .step-label { color: #c4d630; font-size: 12px; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 8px; }
   .step-card h2 { font-size: 22px; margin-bottom: 6px; }
   .step-card p.instr { color: rgba(255,255,255,0.55); font-size: 14px; margin-bottom: 20px; }
+
+  /* Intro (step 0) — invite.svg has viewBox 4961×3508 with the portrait
+     invite embedded at x=1558,y=105,w=1938,h=3247. We crop to the portrait
+     with an overflow:hidden wrapper and scale/offset the SVG to fit. */
+  .intro-img-wrap {
+    display: block; width: 100%; max-width: 260px; margin: 10px auto 18px;
+    aspect-ratio: 1938 / 3247;
+    position: relative; overflow: hidden;
+    border-radius: 14px;
+  }
+  .intro-img-wrap img {
+    position: absolute;
+    width: 256%;  /* 4961 / 1938 = 2.56 */
+    height: auto;
+    left: -80.4%; /* -(1558/4961) × 256% */
+    top: -3.24%;  /* -(105/3508) × height-as-% of container */
+  }
+  .intro-copy { text-align: center; margin-bottom: 6px; }
+  .intro-copy h2 { margin-bottom: 8px; }
+  .intro-copy p { color: rgba(255,255,255,0.7); font-size: 14px; }
 
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 20px 0; }
   .day {
@@ -74,17 +92,118 @@
   }
 
   /* Result */
-  .result h2 { font-size: 26px; }
-  .result .big { font-size: 40px; font-weight: 800; color: #c4d630; margin: 16px 0 4px; }
-  .result .lil { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 24px; }
-  .result ul.overlap-list { list-style: none; padding: 0; margin: 20px 0; }
-  .result ul.overlap-list li {
-    padding: 12px 14px; background: rgba(196,214,48,0.08); border: 1px solid rgba(196,214,48,0.2);
-    border-radius: 10px; margin-bottom: 8px;
+  .result h2 { font-size: 26px; margin-bottom: 4px; }
+  .pattern {
+    background: rgba(196,214,48,0.06); border: 1px solid rgba(196,214,48,0.18);
+    border-radius: 12px; padding: 16px 18px; margin: 16px 0 8px;
   }
-  .result .opp-date  { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #c4d630; text-transform: uppercase; margin-bottom: 4px; }
-  .result .opp-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-  .result .opp-meta  { font-size: 12px; color: rgba(255,255,255,0.55); }
+  .pattern .pat-lead { font-size: 13px; color: rgba(255,255,255,0.55); margin-bottom: 8px; }
+  .pattern .pat-stats { display: flex; gap: 18px; margin-bottom: 8px; flex-wrap: wrap; }
+  .pattern .pat-stat .num { font-size: 28px; font-weight: 800; color: #c4d630; line-height: 1; }
+  .pattern .pat-stat .lbl { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .pattern .pat-note { font-size: 12px; color: rgba(255,255,255,0.45); font-style: italic; }
+
+  .suggest-head { margin-top: 22px; margin-bottom: 10px; }
+  .suggest-head h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+  .suggest-head p  { font-size: 13px; color: rgba(255,255,255,0.55); }
+
+  .result ul.overlap-list { list-style: none; padding: 0; margin: 4px 0 8px; }
+  .result ul.overlap-list li {
+    padding: 14px 14px; background: #161616; border: 1px solid #242424;
+    border-radius: 12px; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.12s, transform 0.08s;
+    position: relative;
+  }
+  .result ul.overlap-list li:hover    { border-color: #c4d630; }
+  .result ul.overlap-list li:active   { transform: scale(0.99); }
+  .result ul.overlap-list li::after   {
+    content: '→'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    color: rgba(196,214,48,0.6); font-size: 18px; font-weight: 700;
+  }
+  .result .opp-date  { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #c4d630; text-transform: uppercase; margin-bottom: 4px; }
+  .result .opp-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; padding-right: 24px; }
+  .result .opp-meta  { font-size: 12px; color: rgba(255,255,255,0.55); padding-right: 24px; }
+
+  /* Invite modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 40px 16px; overflow-y: auto; z-index: 100;
+  }
+  .modal-backdrop.open { display: flex; }
+  .invite-card {
+    width: 100%; max-width: 380px; background: #0e0e12;
+    border: 1px solid #23232a; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .invite-head {
+    background: linear-gradient(135deg, #1a1530 0%, #0e0e12 100%);
+    padding: 20px 22px 18px; border-bottom: 1px solid #23232a;
+  }
+  .invite-from {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: rgba(255,255,255,0.45); margin-bottom: 4px;
+  }
+  .invite-from strong { color: #c4d630; font-weight: 700; }
+  .invite-head h3 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: #fff;
+    margin-bottom: 6px;
+  }
+  .invite-head .invite-tagline { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+  .invite-body { padding: 20px 22px; }
+  .invite-row {
+    display: flex; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid #1c1c22;
+  }
+  .invite-row:last-child { border-bottom: 0; }
+  .invite-row .ico {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(196,214,48,0.1); color: #c4d630;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; flex-shrink: 0;
+  }
+  .invite-row .lbl {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.4); margin-bottom: 2px;
+  }
+  .invite-row .val { font-size: 14px; font-weight: 600; color: #fff; }
+  .invite-row .val-sub { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  .invite-actions {
+    display: flex; gap: 8px; padding: 14px 22px 18px;
+    border-top: 1px solid #1c1c22;
+  }
+  .invite-btn {
+    flex: 1; padding: 12px; border-radius: 999px; font-weight: 700;
+    font-size: 13px; font-family: inherit; cursor: not-allowed;
+    border: 1px solid #2a2a2a; background: transparent; color: rgba(255,255,255,0.4);
+  }
+  .invite-btn.primary {
+    background: rgba(196,214,48,0.15); color: rgba(196,214,48,0.5);
+    border-color: rgba(196,214,48,0.2);
+  }
+
+  .mock-note {
+    margin: 16px 0 14px; padding: 14px 16px;
+    background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 12px; font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.5;
+  }
+  .mock-note strong { color: #a78bfa; }
+  .modal-cta  {
+    display: block; width: 100%; margin-top: 6px; padding: 14px;
+    background: #c4d630; color: #0a0a0a; border: 0; border-radius: 999px;
+    font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit;
+    text-align: center; text-decoration: none;
+  }
+  .modal-close {
+    display: block; width: 100%; margin-top: 8px;
+    background: transparent; color: rgba(255,255,255,0.5); border: 0;
+    padding: 10px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .modal-wrap {
+    width: 100%; max-width: 380px; display: flex; flex-direction: column;
+  }
 </style>
 </head>
 <body>
@@ -102,15 +221,30 @@
       <div class="bar"></div>
       <div class="bar"></div>
       <div class="bar"></div>
+      <div class="bar"></div>
     </div>
 
     <section class="step-card" id="step-card"></section>
   </main>
 
+  <!-- Mock invite modal -->
+  <div class="modal-backdrop" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-wrap">
+      <div class="invite-card" id="invite-card"></div>
+      <div class="mock-note">
+        <strong>This is a mockup.</strong> Real invites go out to your people, track replies,
+        and settle on a night automatically - but you need an account to send them.
+      </div>
+      <a href="#" class="modal-cta" id="modal-cta">Make this a real invite →</a>
+      <button class="modal-close" id="modal-close">← Back to suggestions</button>
+    </div>
+  </div>
+
   <script>
     // Step content is a single-file mini-SPA. Each step calls LP.step().
-    // Demo uses a 14-day grid (2 weeks) starting from today.
-    var state = { step: 1, youDays: new Set(), themDays: new Set() };
+    // Steps: 1=intro, 2=your days, 3=partner days, 4=result.
+    var TOTAL_STEPS = 4;
+    var state = { step: 1, youDays: new Set(), themDays: new Set(), lastOverlap: null };
 
     var DOW_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var MONTH     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -136,13 +270,13 @@
       return arr;
     })();
 
-    function fmtLong(d)  { return DOW_SHORT[d.getDay()] + ', ' + MONTH[d.getMonth()] + ' ' + d.getDate(); }
-    function fmtShort(d) { return DOW_SHORT[d.getDay()] + ' ' + MONTH[d.getMonth()] + ' ' + d.getDate(); }
+    function fmtLong(d) { return DOW_SHORT[d.getDay()] + ', ' + MONTH[d.getMonth()] + ' ' + d.getDate(); }
+    function isWeekend(d) { var g = d.getDay(); return g === 5 || g === 6 || g === 0; } // Fri/Sat/Sun treated as weekend
 
     // Opportunities fetched from DB (see loadOpps below)
     var opportunities = [];
 
-    function daysGrid(selectedSet, partnerSet, onToggle) {
+    function daysGrid(selectedSet, partnerSet) {
       var html = '<div class="calendar">';
       headerDows.forEach(function(d) { html += '<div class="dow">' + d + '</div>'; });
       for (var i = 0; i < 14; i++) {
@@ -169,13 +303,11 @@
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (data && Array.isArray(data.opportunities)) {
-            // Shuffle so demo feels fresh each run
             opportunities = data.opportunities.slice().sort(function() { return Math.random() - 0.5; });
-            // If already showing results, re-render to pull in opps
-            if (state.step === 3) render();
+            if (state.step === 4) render();
           }
         })
-        .catch(function() { /* fallback handled in render */ });
+        .catch(function() {});
     }
 
     function render() {
@@ -187,14 +319,35 @@
         else if (i + 1 === state.step) b.classList.add('active');
       });
 
+      // ── Step 1: intro with invite preview ───────────────────────────────
       if (state.step === 1) {
         card.innerHTML =
-          '<div class="step-label">STEP 1 OF 3</div>' +
+          '<div class="step-label">STEP 1 OF ' + TOTAL_STEPS + '</div>' +
+          '<div class="intro-copy">' +
+            '<h2>This is what you\'ll send.</h2>' +
+            '<p>A Spontany night invite - already matched to a night you\'re both actually free.</p>' +
+          '</div>' +
+          '<div class="intro-img-wrap"><img src="invite.svg" alt="Spontany invite"></div>' +
+          '<div class="intro-copy">' +
+            '<p>Next: we find those nights in 30 seconds.</p>' +
+          '</div>' +
+          '<button class="next" id="go0">Show me how →</button>';
+
+        document.getElementById('go0').addEventListener('click', function() {
+          window.LP && LP.step(2, 'your_days');
+          state.step = 2; render();
+        });
+
+      // ── Step 2: your days ────────────────────────────────────────────────
+      } else if (state.step === 2) {
+        card.innerHTML =
+          '<div class="step-label">STEP 2 OF ' + TOTAL_STEPS + '</div>' +
           '<h2>Tap your kid-free nights.</h2>' +
           '<p class="instr">Next 2 weeks. Just tap the evenings you don\'t have the kids.</p>' +
           daysGrid(state.youDays, null) +
           '<div class="legend"><span><span class="sw you"></span>You (free)</span></div>' +
-          '<button class="next" id="go1">Next →</button>';
+          '<button class="next" id="go1">Next →</button>' +
+          '<button class="back" id="back1">← Back</button>';
 
         card.querySelector('.calendar').addEventListener('click', function(e) {
           var d = e.target.closest('.day');
@@ -206,13 +359,17 @@
         });
         document.getElementById('go1').disabled = state.youDays.size === 0;
         document.getElementById('go1').addEventListener('click', function() {
-          window.LP && LP.step(2, 'partner_days');
-          state.step = 2; render();
+          window.LP && LP.step(3, 'partner_days');
+          state.step = 3; render();
+        });
+        document.getElementById('back1').addEventListener('click', function() {
+          state.step = 1; render();
         });
 
-      } else if (state.step === 2) {
+      // ── Step 3: partner days ─────────────────────────────────────────────
+      } else if (state.step === 3) {
         card.innerHTML =
-          '<div class="step-label">STEP 2 OF 3</div>' +
+          '<div class="step-label">STEP 3 OF ' + TOTAL_STEPS + '</div>' +
           '<h2>Now imagine your partner\'s.</h2>' +
           '<p class="instr">Tap the nights they\'re kid-free. We\'ll show you where they overlap.</p>' +
           daysGrid(state.themDays, state.youDays) +
@@ -235,19 +392,26 @@
         document.getElementById('go2').disabled = state.themDays.size === 0;
         document.getElementById('go2').addEventListener('click', function() {
           window.LP && LP.complete({ you_days: state.youDays.size, them_days: state.themDays.size });
-          state.step = 3; render();
+          state.step = 4; render();
         });
         document.getElementById('back2').addEventListener('click', function() {
-          state.step = 1; render();
+          state.step = 2; render();
         });
 
+      // ── Step 4: result (pattern + suggestions) ───────────────────────────
       } else {
         var overlap = [];
         state.youDays.forEach(function(d) { if (state.themDays.has(d)) overlap.push(d); });
-        var bothFree = overlap.length;
+        overlap.sort(function(a,b){return a-b;});
+        state.lastOverlap = overlap;
 
-        var sortedOverlap = overlap.sort(function(a,b){return a-b;}).slice(0,5);
-        var msgs = sortedOverlap.map(function(d, i) {
+        // Pattern math: 14-day sample → monthly projection (×2.17 ≈ 30/14)
+        var weekend = 0, weekday = 0;
+        overlap.forEach(function(idx) { if (isWeekend(dates[idx])) weekend++; else weekday++; });
+        var monthlyWeekend = Math.round(weekend * 30 / 14);
+        var monthlyWeekday = Math.round(weekday * 30 / 14);
+
+        var sugg = overlap.slice(0,5).map(function(d, i) {
           var date = dates[d];
           var opp  = opportunities.length ? opportunities[i % opportunities.length] : null;
           var dateStr = fmtLong(date);
@@ -255,42 +419,144 @@
             var meta = [];
             if (opp.location_name) meta.push(opp.location_name);
             if (opp.category)      meta.push(opp.category);
-            return '<li>' +
+            return '<li data-dayidx="' + d + '" data-oppidx="' + (i % opportunities.length) + '">' +
               '<div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
               '<div class="opp-title">' + escapeHtml(opp.title) + '</div>' +
               (meta.length ? '<div class="opp-meta">' + escapeHtml(meta.join(' · ')) + '</div>' : '') +
             '</li>';
           }
-          return '<li><div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
-                 '<div class="opp-meta">Both free</div></li>';
+          return '<li data-dayidx="' + d + '"><div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
+                 '<div class="opp-meta">Both free - pick what to do</div></li>';
         }).join('');
+
+        var patternHtml = '';
+        if (overlap.length) {
+          patternHtml =
+            '<div class="pattern">' +
+              '<div class="pat-lead">Your pattern, roughly:</div>' +
+              '<div class="pat-stats">' +
+                '<div class="pat-stat"><div class="num">~' + monthlyWeekend + '</div><div class="lbl">weekend night' + (monthlyWeekend === 1 ? '' : 's') + ' / mo</div></div>' +
+                '<div class="pat-stat"><div class="num">~' + monthlyWeekday + '</div><div class="lbl">weeknight' + (monthlyWeekday === 1 ? '' : 's') + ' / mo</div></div>' +
+              '</div>' +
+              '<div class="pat-note">Projected from your 2-week sample. More data = sharper picture.</div>' +
+            '</div>';
+        }
 
         card.innerHTML =
           '<div class="result">' +
-          '<div class="step-label">STEP 3 OF 3</div>' +
-          '<h2>Your answer:</h2>' +
-          '<div class="big">' + bothFree + ' night' + (bothFree === 1 ? '' : 's') + '</div>' +
-          '<div class="lil">where you\'re both actually free - and something to do.</div>' +
-          (msgs ? '<ul class="overlap-list">' + msgs + '</ul>' : '<p style="color:rgba(255,255,255,0.5);">No overlap yet. Try again, or sync with someone real.</p>') +
+          '<div class="step-label">STEP 4 OF ' + TOTAL_STEPS + '</div>' +
+          '<h2>Your pattern.</h2>' +
+          (overlap.length
+            ? patternHtml +
+              '<div class="suggest-head">' +
+                '<h3>Tap a night to see the invite.</h3>' +
+                '<p>Suggestions for your upcoming matching nights.</p>' +
+              '</div>' +
+              '<ul class="overlap-list">' + sugg + '</ul>'
+            : '<p style="color:rgba(255,255,255,0.55); margin:16px 0 24px;">No overlap in the next 2 weeks. Try different days, or sync with someone real - the pattern gets clearer with more data.</p>'
+          ) +
           '<button class="next" id="signup">Get my real calendar →</button>' +
           '<button class="back" id="back3">← Try different days</button>' +
           '</div>';
 
         document.getElementById('signup').addEventListener('click', function() {
-          window.LP && LP.ctaClick({ button: 'post-demo', overlap: bothFree });
+          window.LP && LP.ctaClick({ button: 'post-demo', overlap: overlap.length });
           window.LP && LP.goToSignup('post-demo');
         });
         document.getElementById('back3').addEventListener('click', function() {
-          state.step = 2; render();
+          state.step = 3; render();
         });
+
+        var list = card.querySelector('.overlap-list');
+        if (list) {
+          list.addEventListener('click', function(e) {
+            var li = e.target.closest('li');
+            if (!li) return;
+            var dIdx = parseInt(li.dataset.dayidx);
+            var oIdx = li.dataset.oppidx != null ? parseInt(li.dataset.oppidx) : -1;
+            openInvite(dIdx, oIdx);
+          });
+        }
       }
     }
 
+    function openInvite(dayIdx, oppIdx) {
+      var date = dates[dayIdx];
+      var opp  = (oppIdx >= 0 && opportunities[oppIdx]) ? opportunities[oppIdx] : null;
+      var titleText    = opp ? opp.title : 'A night out';
+      var locationText = opp && opp.location_name ? opp.location_name : 'You pick the spot';
+      var categoryText = opp && opp.category ? opp.category : null;
+
+      var metaLine = [];
+      if (categoryText) metaLine.push(categoryText);
+      if (opp && opp.price_tier) metaLine.push(opp.price_tier === 'low' ? '$' : opp.price_tier === 'mid' ? '$$' : opp.price_tier === 'high' ? '$$$' : opp.price_tier);
+
+      var card = document.getElementById('invite-card');
+      card.innerHTML =
+        '<div class="invite-head">' +
+          '<div class="invite-from">From <strong>You</strong> · via Spontany</div>' +
+          '<h3>You\'re invited.</h3>' +
+          '<div class="invite-tagline">A night we\'re both actually free.</div>' +
+        '</div>' +
+        '<div class="invite-body">' +
+          '<div class="invite-row">' +
+            '<div class="ico">📅</div>' +
+            '<div>' +
+              '<div class="lbl">When</div>' +
+              '<div class="val">' + escapeHtml(fmtLong(date)) + '</div>' +
+              '<div class="val-sub">Evening - both kid-free</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="invite-row">' +
+            '<div class="ico">📍</div>' +
+            '<div>' +
+              '<div class="lbl">What</div>' +
+              '<div class="val">' + escapeHtml(titleText) + '</div>' +
+              '<div class="val-sub">' + escapeHtml(locationText) + (metaLine.length ? ' · ' + escapeHtml(metaLine.join(' · ')) : '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="invite-row">' +
+            '<div class="ico">👤</div>' +
+            '<div>' +
+              '<div class="lbl">For</div>' +
+              '<div class="val">Your person</div>' +
+              '<div class="val-sub">They get a link - one tap to reply</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="invite-actions">' +
+          '<button class="invite-btn" disabled>Maybe</button>' +
+          '<button class="invite-btn primary" disabled>I\'m in</button>' +
+        '</div>';
+
+      window.LP && LP.event && LP.event('lp_invite_preview_open', {
+        day_idx: dayIdx, opp_title: opp ? opp.title : null
+      });
+
+      document.getElementById('modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeInvite() {
+      document.getElementById('modal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-      window.LP && LP.init({ id: 'friends-demo-v1', type: 'demo', totalSteps: 3 });
-      window.LP && LP.step(1, 'your_days');
+      window.LP && LP.init({ id: 'friends-demo-v1', type: 'demo', totalSteps: TOTAL_STEPS });
+      window.LP && LP.step(1, 'intro');
       loadOpps();
       render();
+
+      document.getElementById('modal-close').addEventListener('click', closeInvite);
+      document.getElementById('modal').addEventListener('click', function(e) {
+        if (e.target.id === 'modal') closeInvite();
+      });
+      document.getElementById('modal-cta').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.LP && LP.ctaClick({ button: 'invite-modal' });
+        window.LP && LP.goToSignup('invite-modal');
+      });
     });
   </script>
 </body>
