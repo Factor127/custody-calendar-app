@@ -33,15 +33,17 @@
   .cta:active { transform: scale(0.98); }
   .mini { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 14px; }
 
-  /* Visual — annotated app screenshot */
-  .viz {
+  /* Feature walk — 4 stacked annotated SVGs */
+  .features {
     margin-top: 44px;
-    /* Break out of the 480px wrap so the wide annotated image can breathe */
+    /* Break out of the 480px wrap so the wide feature SVGs can breathe */
     margin-left: -20px; margin-right: -20px;
   }
-  .viz img { display: block; width: 100%; height: auto; }
-  .viz-cap {
-    margin: 0 20px 14px; font-size: 12px; color: rgba(255,255,255,0.5);
+  .features figure { margin: 0; padding: 0; }
+  .features figure + figure { margin-top: 24px; }
+  .features img { display: block; width: 100%; height: auto; }
+  .features-cap {
+    margin: 0 20px 18px; font-size: 12px; color: rgba(255,255,255,0.5);
     text-transform: uppercase; letter-spacing: 0.8px; text-align: center;
   }
 
@@ -79,9 +81,12 @@
     <a href="#" class="cta" id="primary-cta">See how it lines up →</a>
     <p class="mini">Free. Private. No app download.</p>
 
-    <div class="viz">
-      <div class="viz-cap">Your whole month, at a glance.</div>
-      <img src="/lp/timeback-v1/assets/killer-features.png" alt="Spontany calendar showing custody days, kid-free nights, and who's free when" loading="lazy">
+    <div class="features">
+      <div class="features-cap">What you get.</div>
+      <figure><img src="/lp/timeback-v1/assets/feature1.svg" alt="Your whole month, at a glance" loading="lazy"></figure>
+      <figure><img src="/lp/timeback-v1/assets/feature2.svg" alt="See when friends are free" loading="lazy"></figure>
+      <figure><img src="/lp/timeback-v1/assets/feature3.svg" alt="Know who has the kids, when" loading="lazy"></figure>
+      <figure><img src="/lp/timeback-v1/assets/feature4.svg" alt="Turn gig links into invites in seconds" loading="lazy"></figure>
     </div>
 
     <div class="next-up">
