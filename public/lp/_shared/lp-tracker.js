@@ -69,11 +69,15 @@
         }
       });
 
-      // Inject shared components after DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectShared);
-      } else {
-        injectShared();
+      // Inject shared components after DOM is ready.
+      // Skip on the signup page — user is already registering, a floating
+      // "try it free" CTA is redundant/confusing there.
+      if (state.type !== 'signup') {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', injectShared);
+        } else {
+          injectShared();
+        }
       }
     },
 
@@ -257,7 +261,9 @@
 
   var SHARED_CSS = `
   #lp-float-cta {
-    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(120%);
+    position: fixed; left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(120%);
     padding: 14px 28px; border-radius: 999px; border: 0; cursor: pointer;
     background: #c4d630; color: #0a0a0a; font-weight: 700; font-size: 15px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.35); transition: transform 0.3s ease; z-index: 9999;
