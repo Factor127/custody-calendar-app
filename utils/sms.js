@@ -26,19 +26,44 @@ function isValidE164(raw) {
   return /^\+[1-9]\d{7,15}$/.test(String(raw).trim());
 }
 
+// Parse user-entered phone to E.164.
+// Rules (in order):
+//   1. "+CCxxx..." is used as-is (stripped of non-digits after +)
+//   2. 10 digits → US (+1xxxxxxxxxx)
+//   3. 11 digits starting with 1 → US (+1xxxxxxxxxx)
+//   4. 11+ digits without '+' → treat as international with CC missing plus
+//      sign (avoids the bug where e.g. "972544610627" was treated as a US
+//      number, producing the invalid +1972544610627).
+//   5. Leading 0 on 10+ digits looks like a local-format international
+//      number → can't guess CC, reject so the UI can prompt for '+CC…'.
 function toE164(raw, defaultCountry = '+1') {
   if (!raw) return null;
   const s = String(raw).trim();
+
+  // Already in E.164 with leading '+' — trust it (after sanitising)
   if (s.startsWith('+')) {
     const cleaned = '+' + s.slice(1).replace(/\D/g, '');
     return isValidE164(cleaned) ? cleaned : null;
   }
+
   const digits = s.replace(/\D/g, '');
   if (!digits) return null;
+
+  // Leading 0 is a local-format hint we can't safely disambiguate.
+  if (digits.startsWith('0')) return null;
+
+  // US heuristics
   if (defaultCountry === '+1') {
     if (digits.length === 11 && digits.startsWith('1')) return '+' + digits;
     if (digits.length === 10) return '+1' + digits;
+    // 11+ digits and doesn't start with 1 → user likely forgot the '+'
+    // on an international number. Treat the whole thing as E.164 without plus.
+    if (digits.length >= 11 && digits.length <= 15) {
+      const candidate = '+' + digits;
+      return isValidE164(candidate) ? candidate : null;
+    }
   }
+
   const guess = defaultCountry + digits;
   return isValidE164(guess) ? guess : null;
 }

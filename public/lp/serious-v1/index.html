@@ -166,6 +166,10 @@
     border: 1px solid #2a2a2a; border-radius: 10px; font-size: 15px;
     font-family: inherit; box-sizing: border-box;
   }
+  .phone-card input.invalid { border-color: #f87171; }
+  .phone-error {
+    margin-top: 8px; font-size: 12px; color: #fca5a5; line-height: 1.4;
+  }
 
   .copy-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .copy-row input {
@@ -304,8 +308,9 @@
 
     <div class="phone-card" id="phone-card" hidden>
       <h3>We'll text him for you</h3>
-      <label for="his_phone">His mobile</label>
+      <label for="his_phone">His mobile <span style="opacity:0.5;font-weight:400;">(include country code — e.g. +1 for US, +972 for IL)</span></label>
       <input id="his_phone" type="tel" placeholder="+1 214 555 0123" autocomplete="tel">
+      <p class="phone-error" id="phone-error" hidden></p>
       <p class="next-step-sub" style="margin-top:14px;">After we text him, you'll fill in your free nights so we can find the overlap.</p>
       <button type="button" id="phone-send" class="cta">Send the text →</button>
     </div>
@@ -514,9 +519,49 @@
       });
 
       // ── Phone-entry flow ─────────────────────────────────────────────────
+      // Client-side E.164 sanity check — mirrors the server's toE164 so we
+      // can flag obvious issues (missing country code, leading 0) without a
+      // roundtrip. Final validation still happens server-side.
+      function looksLikeValidPhone(raw) {
+        if (!raw) return false;
+        var s = String(raw).trim();
+        if (s[0] === '+') {
+          var d = '+' + s.slice(1).replace(/\D/g, '');
+          return /^\+[1-9]\d{7,15}$/.test(d);
+        }
+        var digits = s.replace(/\D/g, '');
+        if (!digits || digits[0] === '0') return false;
+        if (digits.length === 10) return true;                             // US 10
+        if (digits.length === 11 && digits[0] === '1') return true;        // US +1
+        if (digits.length >= 11 && digits.length <= 15) return true;       // Intl w/o +
+        return false;
+      }
+
+      function showPhoneError(msg) {
+        var err = document.getElementById('phone-error');
+        var input = document.getElementById('his_phone');
+        if (msg) { err.textContent = msg; err.hidden = false; input.classList.add('invalid'); }
+        else     { err.hidden = true; input.classList.remove('invalid'); }
+      }
+
+      document.getElementById('his_phone').addEventListener('input', function() {
+        if (!document.getElementById('phone-error').hidden) showPhoneError('');
+      });
+
       document.getElementById('phone-send').addEventListener('click', function() {
         var phone = document.getElementById('his_phone').value.trim();
-        if (!phone) { document.getElementById('his_phone').focus(); return; }
+        if (!phone) {
+          showPhoneError('Enter his mobile number.');
+          document.getElementById('his_phone').focus();
+          return;
+        }
+        if (!looksLikeValidPhone(phone)) {
+          showPhoneError('Please include the country code — e.g. +1 for US, +972 for Israel.');
+          document.getElementById('his_phone').focus();
+          return;
+        }
+        showPhoneError('');
+
         var btn = this;
         btn.disabled = true; btn.textContent = 'Sending…';
         createShare('text', phone).then(function(res) {
@@ -524,10 +569,16 @@
             if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', channel: 'twilio' });
             window.location.href = '/share/' + res.body.token + '/me';
           } else {
-            btn.disabled = false; btn.textContent = 'Try again';
+            btn.disabled = false; btn.textContent = 'Send the text →';
+            if (res.body && res.body.error === 'invalid_phone') {
+              showPhoneError('That number didn\'t look valid — try with country code (e.g. +1 214 555 0123).');
+            } else {
+              showPhoneError('Something went wrong. Try again in a moment.');
+            }
           }
         }, function() {
           btn.disabled = false; btn.textContent = 'Send the text →';
+          showPhoneError('Network hiccup. Try again?');
         });
       });
 
