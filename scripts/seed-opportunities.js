@@ -384,7 +384,248 @@ const spots = [
     tags: ['golf','food','drinks','casual'],
     location_name: 'Dallas (multiple locations)',
     price_tier: 'medium',
-    source_url: 'https://streetsbeatseats.com/fun-date-ideas-dallas/'
+    source_url: 'https://topgolf.com/us/dallas/'
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXPANSION BATCH (2026-04-22) — 25 new cool DFW venues
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // --- Coffee ---
+  {
+    title: 'Ascension Coffee',
+    type: 'venue',
+    category: 'coffee',
+    tags: ['coffee','wine','brunch','design district','photogenic'],
+    location_name: 'Design District / Highland Park Village, Dallas',
+    price_tier: 'low',
+    source_url: 'https://ascensioncoffee.com/'
+  },
+  {
+    title: 'La La Land Kind Cafe',
+    type: 'venue',
+    category: 'coffee',
+    tags: ['coffee','aesthetic','greenville','instagram','mission-driven'],
+    location_name: '5626 Bell Ave, Dallas',
+    price_tier: 'low',
+    source_url: 'https://www.lalalandkindcafe.com/'
+  },
+
+  // --- Drinks ---
+  {
+    title: 'Hide Dallas',
+    type: 'venue',
+    category: 'drinks',
+    tags: ['cocktails','award-winning','deep ellum','craft','dark'],
+    location_name: '2816 Elm St, Deep Ellum, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://hide.dallas/'
+  },
+  {
+    title: 'Parliament',
+    type: 'venue',
+    category: 'drinks',
+    tags: ['cocktails','extensive menu','uptown','lounge','date night'],
+    location_name: '2418 Allen St, Uptown, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://parliamentbar.com/'
+  },
+  {
+    title: 'The Pool Club at Virgin Hotels',
+    type: 'venue',
+    category: 'drinks',
+    tags: ['rooftop','pool','skyline','cocktails','arts district'],
+    location_name: 'Virgin Hotels Dallas, 1445 Turtle Creek Blvd',
+    price_tier: 'high',
+    source_url: 'https://virginhotels.com/dallas/drink-and-dine/the-pool-club/'
+  },
+  {
+    title: 'Dragonfly at Hotel ZaZa',
+    type: 'venue',
+    category: 'drinks',
+    tags: ['cocktails','hotel bar','romantic','uptown','patio'],
+    location_name: 'Hotel ZaZa, 2332 Leonard St, Dallas',
+    price_tier: 'high',
+    source_url: 'https://www.hotelzaza.com/dallas/dining/dragonfly-restaurant-dallas/'
+  },
+  {
+    title: 'Las Almas Rotas',
+    type: 'venue',
+    category: 'drinks',
+    tags: ['mezcal','tequila','agave','east dallas','unique'],
+    location_name: '3615 Parry Ave, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://www.lasalmasrotas.com/'
+  },
+
+  // --- Restaurants ---
+  {
+    title: 'Uchi Dallas',
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['japanese','sushi','omakase','uptown','upscale'],
+    location_name: '2817 Maple Ave, Uptown, Dallas',
+    price_tier: 'high',
+    source_url: 'https://uchidallas.com/'
+  },
+  {
+    title: "Nick & Sam's",
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['steakhouse','caviar service','uptown','clubby','upscale'],
+    location_name: '3008 Maple Ave, Uptown, Dallas',
+    price_tier: 'high',
+    source_url: 'https://www.nick-sams.com/'
+  },
+  {
+    title: 'The Charles',
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['italian','design district','sexy','trendy','cocktails'],
+    location_name: '1632 Market Center Blvd, Dallas',
+    price_tier: 'high',
+    source_url: 'https://thecharlesdallas.com/'
+  },
+  {
+    title: 'Petra and the Beast',
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['chef-driven','wild game','east dallas','james beard','intimate'],
+    location_name: '601 N Haskell Ave, Dallas',
+    price_tier: 'high',
+    source_url: 'https://www.petraandthebeast.com/'
+  },
+  {
+    title: 'Rise nº1 Soufflé',
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['french','soufflé','inwood village','cozy','unique'],
+    location_name: '5360 W Lovers Ln, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://risesouffle.com/'
+  },
+  {
+    title: 'Pecan Lodge',
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['bbq','brisket','deep ellum','iconic','casual'],
+    location_name: '2702 Main St, Deep Ellum, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://pecanlodge.com/'
+  },
+  {
+    title: 'Meridian',
+    type: 'venue',
+    category: 'restaurants',
+    tags: ['mexican american','james beard','casa linda','chef-driven','heritage'],
+    location_name: 'Casa Linda Plaza, 9725 Garland Rd, Dallas',
+    price_tier: 'high',
+    source_url: 'https://www.meridiandallas.com/'
+  },
+
+  // --- Walks ---
+  {
+    title: 'Trinity River Audubon Center',
+    type: 'venue',
+    category: 'walks',
+    tags: ['wetlands','nature','birds','trails','free'],
+    location_name: '6500 Great Trinity Forest Way, Dallas',
+    price_tier: 'low',
+    source_url: 'https://trinityriver.audubon.org/'
+  },
+  {
+    title: 'Arbor Hills Nature Preserve',
+    type: 'venue',
+    category: 'walks',
+    tags: ['hiking','views','plano','prairie','free'],
+    location_name: '6701 W Parker Rd, Plano',
+    price_tier: 'free',
+    source_url: 'https://www.plano.gov/Facilities/Facility/Details/Arbor-Hills-Nature-Preserve-11'
+  },
+  {
+    title: 'AT&T Discovery District',
+    type: 'venue',
+    category: 'walks',
+    tags: ['downtown','media wall','street food','interactive','free'],
+    location_name: '208 S Akard St, Downtown Dallas',
+    price_tier: 'free',
+    source_url: 'https://www.discoverydistrict.com/'
+  },
+
+  // --- Events ---
+  {
+    title: 'Nasher Sculpture Center',
+    type: 'venue',
+    category: 'events',
+    tags: ['art','sculpture','garden','arts district','date spot'],
+    location_name: '2001 Flora St, Arts District, Dallas',
+    price_tier: 'low',
+    source_url: 'https://nashersculpturecenter.org/'
+  },
+  {
+    title: 'Reunion Tower GeO-Deck',
+    type: 'venue',
+    category: 'events',
+    tags: ['observation deck','skyline','landmark','panoramic','downtown'],
+    location_name: '300 Reunion Blvd, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://www.reuniontower.com/geo-deck'
+  },
+  {
+    title: 'The Rustic',
+    type: 'venue',
+    category: 'events',
+    tags: ['live music','outdoor','food','uptown','pat green'],
+    location_name: '3656 Howell St, Uptown, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://therustic.com/dallas/'
+  },
+  {
+    title: 'Alamo Drafthouse Cinema',
+    type: 'venue',
+    category: 'events',
+    tags: ['dinner and movie','cinema','craft beer','dine-in','date night'],
+    location_name: '1005 S Lamar St, Cedars, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://drafthouse.com/dfw'
+  },
+
+  // --- Sports ---
+  {
+    title: 'Cidercade Dallas',
+    type: 'venue',
+    category: 'sports',
+    tags: ['arcade','cider','unlimited play','east dallas','fun'],
+    location_name: '2777 Irving Blvd, Dallas',
+    price_tier: 'low',
+    source_url: 'https://cidercade.com/dallas/'
+  },
+  {
+    title: 'Main Event',
+    type: 'venue',
+    category: 'sports',
+    tags: ['bowling','arcade','laser tag','food','casual'],
+    location_name: 'Multiple DFW locations',
+    price_tier: 'medium',
+    source_url: 'https://www.mainevent.com/'
+  },
+  {
+    title: 'Andretti Indoor Karting',
+    type: 'venue',
+    category: 'sports',
+    tags: ['go-karts','arcade','racing','grand prairie','thrill'],
+    location_name: '1201 N Watson Rd, Grand Prairie',
+    price_tier: 'medium',
+    source_url: 'https://andrettikarting.com/locations/grandprairie-texas/'
+  },
+  {
+    title: 'Dallas Stars at American Airlines Center',
+    type: 'event',
+    category: 'sports',
+    tags: ['hockey','nhl','arena','victory green','date night'],
+    location_name: '2500 Victory Ave, Dallas',
+    price_tier: 'medium',
+    source_url: 'https://www.nhl.com/stars'
   },
 ];
  
