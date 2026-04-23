@@ -627,10 +627,16 @@
               showPhoneError('Something went wrong. Try again in a moment.');
             }
           }
-        }, function() {
+        }, function(reason) {
           btn.disabled = false; btn.textContent = 'Send the text →';
-          if (typeof sa === 'function') sa('phone_submit_failed', { lp_type: 'teaser-share', error: 'network' });
-          showPhoneError('Network hiccup. Try again?');
+          // Client-side rejects (name cleared after entering phone flow) get
+          // their own label so "network" in the dashboard means real network.
+          var errLabel = reason === 'missing_name' ? 'missing_name' : 'network';
+          if (typeof sa === 'function') sa('phone_submit_failed', { lp_type: 'teaser-share', error: errLabel });
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_phone_submit']);
+          showPhoneError(errLabel === 'missing_name'
+            ? 'Please enter your name above first, then try again.'
+            : 'Network hiccup. Try again?');
         });
       });
 
