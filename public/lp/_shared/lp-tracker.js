@@ -24,6 +24,21 @@
     if (typeof window.sa === 'function') window.sa(evt, props || {});
   }
 
+  // Push to ContentSquare's command queue. Works whether CS is loaded yet
+  // or not — CS drains the _uxa array on load. Silently no-ops if CS is
+  // blocked (adblock). Safe to call with any number of commands.
+  function cs() {
+    if (!window._uxa) window._uxa = [];
+    for (var i = 0; i < arguments.length; i++) {
+      try { window._uxa.push(arguments[i]); } catch(e) {}
+    }
+  }
+
+  // Normalize strings for use in CS event names (CS prefers snake_case alnum).
+  function norm(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  }
+
   var LP = {
     init: function(opts) {
       opts = opts || {};
@@ -37,6 +52,11 @@
 
       sa('lp_view', { lp_type: state.type, total_steps: state.totalSteps });
 
+      // Attach variant + type as CS dynamic variables so every event,
+      // heatmap, and replay in this session can be filtered by LP.
+      cs(['trackDynamicVariable', { key: 'lp_id',   value: state.id }],
+         ['trackDynamicVariable', { key: 'lp_type', value: state.type }]);
+
       // Auto-fire demo_abandon on page unload if started but not completed
       window.addEventListener('beforeunload', function() {
         if (state.currentStep > 0 && state.currentStep < state.totalSteps) {
@@ -45,6 +65,7 @@
             total_steps: state.totalSteps,
             lp_type: state.type,
           });
+          cs(['trackPageEvent', 'lp_abandon_step_' + state.currentStep]);
         }
       });
 
@@ -59,6 +80,8 @@
     ctaClick: function(meta) {
       state.ctaClicked = true;
       sa('lp_cta_click', Object.assign({ lp_type: state.type }, meta || {}));
+      var btn = norm((meta && meta.button) || 'primary');
+      cs(['trackPageEvent', 'lp_cta_' + btn]);
     },
 
     step: function(index, name) {
@@ -69,6 +92,7 @@
         total_steps: state.totalSteps,
         lp_type: state.type,
       });
+      cs(['trackPageEvent', 'lp_step_' + index + (name ? '_' + norm(name) : '')]);
     },
 
     complete: function(meta) {
@@ -76,7 +100,12 @@
         total_steps: state.totalSteps,
         lp_type: state.type,
       }, meta || {}));
+      cs(['trackPageEvent', 'lp_complete']);
     },
+
+    // Expose the CS push helper for ad-hoc events (error states, sub-CTAs, etc).
+    // Signature mirrors _uxa.push: LP.cs(['trackPageEvent', 'name']).
+    cs: cs,
 
     // Navigate to shared signup, preserving variant + UTM
     goToSignup: function(source) {

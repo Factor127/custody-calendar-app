@@ -504,6 +504,7 @@
             (d.hint ? '<span class="hint">' + d.hint + '</span>' : '');
           btn.addEventListener('click', function() {
             window.LP && LP.step(4, 'channel_picked');
+            window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_channel_' + key]);
             if (typeof sa === 'function') sa('share_sent', { lp_type: 'teaser-share', channel: key });
             d.open(url);
             // After channel click, A continues to her own calendar - unless she
@@ -587,12 +588,14 @@
         var phone = document.getElementById('his_phone').value.trim();
         if (!phone) {
           if (typeof sa === 'function') sa('phone_validation_error', { lp_type: 'teaser-share', reason: 'empty' });
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_phone_empty']);
           showPhoneError('Enter his mobile number.');
           document.getElementById('his_phone').focus();
           return;
         }
         if (!looksLikeValidPhone(phone)) {
           if (typeof sa === 'function') sa('phone_validation_error', { lp_type: 'teaser-share', reason: 'format' });
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_phone_format']);
           showPhoneError('Please include the country code — e.g. +1 for US, +972 for Israel.');
           document.getElementById('his_phone').focus();
           return;
@@ -610,6 +613,7 @@
             btn.disabled = false; btn.textContent = 'Send the text →';
             var serverErr = (res.body && res.body.error) || 'unknown';
             if (typeof sa === 'function') sa('phone_submit_failed', { lp_type: 'teaser-share', error: serverErr });
+            window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_phone_submit']);
             if (serverErr === 'invalid_phone') {
               showPhoneError('That number didn\'t look valid — try with country code (e.g. +1 214 555 0123).');
             } else {
@@ -638,6 +642,7 @@
             sendBtn.disabled = false; sendBtn.textContent = 'Send it →';
             var err = (res.body && res.body.error) || ('http_' + (res && res.body ? 'body' : 'nobody'));
             if (typeof sa === 'function') sa('share_create_failed', { lp_type: 'teaser-share', error: err });
+            window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_share_create']);
           }
         }, function() {
           sendBtn.disabled = false; sendBtn.textContent = 'Send it →';
