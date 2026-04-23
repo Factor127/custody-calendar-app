@@ -86,6 +86,7 @@
     window.LP && LP.init({ id: variant || 'signup', type: 'signup', totalSteps: 0 });
     // Fire signup_view separately - decisive metric
     if (typeof sa === 'function') sa('signup_view', { variant: variant, src: params.get('src') || 'cta' });
+    window.LP && LP.cs && LP.cs(['trackPageEvent', 'signup_view']);
 
     document.getElementById('signup-form').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -120,6 +121,7 @@
       .then(function(res) {
         if (res.ok) {
           sa('signup_submit', { variant: variant, src: params.get('src') || 'cta' });
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'signup_submit']);
           document.getElementById('form-view').style.display   = 'none';
           document.getElementById('thanks-view').style.display = 'block';
         } else {
