@@ -384,13 +384,20 @@
         preview.innerHTML = html;
       }
       var _nameEngaged = false;
+      function updateSendBtnState() {
+        // Disable Send until the user has typed at least 2 chars. Prevents the
+        // "clicked before typing → misleading share_create_failed" race.
+        sendBtn.disabled = nameInput.value.trim().length < 2;
+      }
       nameInput.addEventListener('input', function() {
         renderPreview();
+        updateSendBtnState();
         if (!_nameEngaged && nameInput.value.trim().length >= 2) {
           _nameEngaged = true;
           window.LP && LP.step(2, 'name_engaged');
         }
       });
+      updateSendBtnState();
       renderPreview();
 
       // ── Utils ────────────────────────────────────────────────────────────
@@ -644,9 +651,14 @@
             if (typeof sa === 'function') sa('share_create_failed', { lp_type: 'teaser-share', error: err });
             window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_share_create']);
           }
-        }, function() {
+        }, function(reason) {
           sendBtn.disabled = false; sendBtn.textContent = 'Send it →';
-          if (typeof sa === 'function') sa('share_create_failed', { lp_type: 'teaser-share', error: 'network' });
+          updateSendBtnState();
+          // Client-side rejects (empty name) shouldn't pollute the server-
+          // failure metric — tag them explicitly.
+          var errLabel = reason === 'missing_name' ? 'missing_name' : 'network';
+          if (typeof sa === 'function') sa('share_create_failed', { lp_type: 'teaser-share', error: errLabel });
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'lp_error_share_create']);
         });
       });
 
