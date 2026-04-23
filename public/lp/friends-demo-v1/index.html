@@ -11,6 +11,9 @@
 <script src="/lp/_shared/lp-tracker.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* This demo has its own explicit CTAs on every step — suppress the shared
+     floating sign-up button auto-injected by lp-tracker.js. */
+  #lp-float-cta { display: none !important; }
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background: #0a0a0a; color: #fff; min-height: 100vh; line-height: 1.5;
