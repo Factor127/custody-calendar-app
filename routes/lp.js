@@ -72,6 +72,7 @@ router.get('/lp', (req, res) => {
   res.set('Content-Type', 'text/html');
   res.send(`<!doctype html>
 <html><head><meta charset="utf-8"><title>LP Index - Spontany</title>
+<script src="https://t.contentsquare.net/uxa/c6f898e9cb3d8.js"></script>
 <style>
   body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 40px; }
   h1 { margin: 0 0 24px; font-size: 22px; }
