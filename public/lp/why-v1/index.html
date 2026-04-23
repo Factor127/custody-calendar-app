@@ -66,6 +66,7 @@
   }
   .eyebrow { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 10px; letter-spacing: 0.4px; }
   .slide-icon { color: #c4d630; width: 112px; height: auto; display: block; margin: 4px auto 18px; }
+  .slide-icon ~ .slide-icon { margin-top: 32px; }
   .features {
     display: flex; flex-direction: column; gap: 14px;
     margin: 4px 0 20px;
@@ -143,8 +144,8 @@
         <p>Spontany does that math once, quietly, and lets you both see the overlap.</p>
       </section>
 
-      <!-- Step 3: Features + CTA -->
-      <section class="slide" data-step="3" data-name="cta">
+      <!-- Step 3: Features -->
+      <section class="slide" data-step="3" data-name="features">
         <h2>Here's what Spontany does</h2>
         <div class="features">
           <img class="feature" src="feature1.svg" alt="" aria-hidden="true">
@@ -152,24 +153,17 @@
           <img class="feature" src="feature3.svg" alt="" aria-hidden="true">
           <img class="feature" src="feature4.svg" alt="" aria-hidden="true">
         </div>
-        <div class="cta-block">
-          <button type="button" class="cta" id="primary-cta">Give it a go?</button>
-        </div>
-        <p class="sign">- Ran, founder</p>
       </section>
 
-      <!-- Step 4: Why it's free -->
-      <section class="slide" data-step="4" data-name="why_free">
+      <!-- Step 4: Why it's free + Privacy + CTA -->
+      <section class="slide" data-step="4" data-name="cta">
         <img class="slide-icon" src="fist-bump.svg" alt="" aria-hidden="true">
         <h2>Why it's free</h2>
         <p>Because the best things in life are free! …nah, just kidding.</p>
         <p>Simplifying life for divorcees like me is my core mission, so custody sync will stay free. Always.</p>
         <p>I'll try to make some wow features you might want to use and pay for later, but that's on me.</p>
         <p>So I hope you enjoy this thing I made ;)</p>
-      </section>
 
-      <!-- Step 5: Privacy -->
-      <section class="slide" data-step="5" data-name="privacy">
         <img class="slide-icon" src="promise.svg" alt="" aria-hidden="true">
         <h2>How your privacy works</h2>
         <ul>
@@ -177,6 +171,11 @@
           <li>Revoke access any time - it's one tap.</li>
           <li>If you delete your account, we delete your data. For real.</li>
         </ul>
+
+        <div class="cta-block">
+          <button type="button" class="cta" id="primary-cta">Give it a go?</button>
+        </div>
+        <p class="sign">- Ran, founder</p>
       </section>
     </div>
 
