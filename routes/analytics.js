@@ -189,7 +189,59 @@ router.get('/admin/analytics', (req, res) => {
     SELECT status, COUNT(*) AS cnt FROM nudges GROUP BY status
   `).all();
 
-  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel, lpFunnel, nudgeStatus });
+  // 13. LP step fall-through — per variant, unique sessions per demo_step.
+  // Answers "where do users drop?" for any LP with totalSteps > 0.
+  const lpSteps = db.prepare(`
+    SELECT
+      json_extract(props, '$.variant')    AS variant,
+      json_extract(props, '$.step_index') AS step_index,
+      json_extract(props, '$.step_name')  AS step_name,
+      COUNT(DISTINCT session_id)          AS sessions
+    FROM analytics_events
+    WHERE event = 'demo_step'
+      AND json_extract(props, '$.variant') IS NOT NULL
+    GROUP BY variant, step_index, step_name
+    ORDER BY variant, step_index
+  `).all();
+
+  // 14. LP diagnostics — per variant, counts of named non-funnel events.
+  // Anything not in the canonical funnel set, surfaced so you can see which
+  // sub-flows are engaged (copy_link_copied) or failing (phone_validation_error).
+  const CANONICAL = [
+    'lp_view', 'lp_cta_click', 'lp_cta_float_click',
+    'demo_step', 'demo_complete', 'demo_abandon',
+    'nudge_open', 'nudge_scheduled',
+    'signup_view', 'signup_submit',
+    'share_open', 'share_sent',
+  ];
+  const placeholders = CANONICAL.map(() => '?').join(',');
+  const lpDiagnostics = db.prepare(`
+    SELECT
+      json_extract(props, '$.variant') AS variant,
+      event,
+      COUNT(*)                         AS total,
+      COUNT(DISTINCT session_id)       AS sessions
+    FROM analytics_events
+    WHERE json_extract(props, '$.variant') IS NOT NULL
+      AND event NOT IN (${placeholders})
+    GROUP BY variant, event
+    ORDER BY variant, sessions DESC
+  `).all(...CANONICAL);
+
+  // 15. Abandon-by-step — where do users quit mid-funnel?
+  const lpAbandons = db.prepare(`
+    SELECT
+      json_extract(props, '$.variant')    AS variant,
+      json_extract(props, '$.step_index') AS step_index,
+      COUNT(DISTINCT session_id)          AS sessions
+    FROM analytics_events
+    WHERE event = 'demo_abandon'
+      AND json_extract(props, '$.variant') IS NOT NULL
+    GROUP BY variant, step_index
+    ORDER BY variant, step_index
+  `).all();
+
+  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel, lpFunnel, nudgeStatus, lpSteps, lpDiagnostics, lpAbandons });
 });
 
 // DELETE /api/admin/analytics - archive then reset analytics data

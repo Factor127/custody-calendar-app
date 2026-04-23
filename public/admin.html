@@ -264,6 +264,33 @@
     </table>
   </div>
 
+  <h3 style="font-size:14px;font-weight:700;margin:28px 0 10px;color:#111827;">LP Step Fall-Through</h3>
+  <style>
+    .lp-step-group { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:14px 16px; margin-bottom:12px; }
+    .lp-step-group h4 { font-size:13px; font-weight:700; color:#111827; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
+    .lp-step-group h4 .lp-pill { font-size:9px; padding:2px 6px; }
+    .lp-step-group h4 .lp-id-mini { font-family:ui-monospace,monospace; font-size:10px; color:#6b7280; font-weight:400; }
+    .step-bars { display:flex; flex-direction:column; gap:4px; margin:6px 0 4px; }
+    .step-bar-row { display:grid; grid-template-columns:140px 1fr 70px 70px; gap:10px; align-items:center; font-size:12px; }
+    .step-bar-row .lbl   { color:#374151; }
+    .step-bar-row .lbl .idx { display:inline-block; width:16px; color:#9ca3af; font-family:ui-monospace,monospace; }
+    .step-bar-row .bar   { height:8px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
+    .step-bar-row .fill  { height:100%; background:linear-gradient(90deg,#2563eb,#7c3aed); border-radius:4px; }
+    .step-bar-row .n     { text-align:right; color:#111827; font-weight:600; font-family:ui-monospace,monospace; font-size:11px; }
+    .step-bar-row .drop  { text-align:right; font-size:10px; font-family:ui-monospace,monospace; }
+    .step-bar-row .drop.ok   { color:#9ca3af; }
+    .step-bar-row .drop.warn { color:#d97706; }
+    .step-bar-row .drop.bad  { color:#dc2626; }
+    .step-diag { margin-top:8px; padding-top:8px; border-top:1px dashed #e5e7eb; }
+    .step-diag-title { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+    .diag-pill { display:inline-block; margin:2px 4px 2px 0; padding:3px 8px; border-radius:10px; background:#fff; border:1px solid #e5e7eb; font-size:11px; color:#374151; }
+    .diag-pill.err { border-color:#fca5a5; background:#fef2f2; color:#991b1b; }
+    .diag-pill strong { color:#111827; margin-left:4px; font-family:ui-monospace,monospace; }
+    .abandon-line { margin-top:6px; font-size:11px; color:#6b7280; }
+    .abandon-line strong { color:#dc2626; font-family:ui-monospace,monospace; }
+  </style>
+  <div id="lp-steps-body"><div class="empty" style="padding:14px;color:#6b7280;font-size:12px;">Loading…</div></div>
+
   <h3 style="font-size:14px;font-weight:700;margin:28px 0 10px;color:#111827;">Nudge Pipeline</h3>
   <div class="nudge-tiles" id="nudge-tiles"></div>
 
@@ -388,6 +415,80 @@ function showError(msg) {
 
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// LP step fall-through renderer. Bars are scaled against each LP's own step-1
+// sessions so you can eyeball the drop between adjacent steps at a glance.
+// Only LPs that emit any demo_step are rendered — hero-only pages skip.
+function renderLPSteps(lpFunnel, lpSteps, lpDiagnostics, lpAbandons) {
+  const host = document.getElementById('lp-steps-body');
+  if (!host) return;
+
+  const stepsByVariant = {};
+  lpSteps.forEach(r => { (stepsByVariant[r.variant] ||= []).push(r); });
+  const diagByVariant = {};
+  lpDiagnostics.forEach(r => { (diagByVariant[r.variant] ||= []).push(r); });
+  const abandonsByVariant = {};
+  lpAbandons.forEach(r => { (abandonsByVariant[r.variant] ||= []).push(r); });
+
+  const blocks = [];
+  lpFunnel.forEach(lp => {
+    const steps = (stepsByVariant[lp.id] || []).sort((a,b) => (a.step_index||0) - (b.step_index||0));
+    const diag  = diagByVariant[lp.id] || [];
+    const abandons = abandonsByVariant[lp.id] || [];
+    if (steps.length === 0 && diag.length === 0) return; // nothing to show for hero-only LPs
+
+    const base = steps[0] ? steps[0].sessions : 0;
+    const totalAbandon = abandons.reduce((s,r) => s + (r.sessions||0), 0);
+
+    const barsHtml = steps.length === 0
+      ? '<div style="font-size:11px;color:#9ca3af;padding:4px 0;">No step events yet.</div>'
+      : steps.map((s, i) => {
+          const pct = base > 0 ? Math.round(s.sessions / base * 100) : 0;
+          const prev = i > 0 ? steps[i-1].sessions : null;
+          let dropHtml = '<span class="drop ok">—</span>';
+          if (prev !== null && prev > 0) {
+            const dropPct = Math.round((prev - s.sessions) / prev * 100);
+            const cls = dropPct >= 50 ? 'bad' : dropPct >= 25 ? 'warn' : 'ok';
+            dropHtml = `<span class="drop ${cls}">${dropPct > 0 ? '-' + dropPct + '%' : '0%'}</span>`;
+          }
+          return `<div class="step-bar-row">
+            <div class="lbl"><span class="idx">${s.step_index}</span> ${esc(s.step_name || '')}</div>
+            <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+            <div class="n">${s.sessions}</div>
+            ${dropHtml}
+          </div>`;
+        }).join('');
+
+    const diagHtml = diag.length === 0 ? '' : `
+      <div class="step-diag">
+        <div class="step-diag-title">Diagnostics</div>
+        ${diag.map(d => {
+          const isErr = /_failed$|_error$/.test(d.event);
+          return `<span class="diag-pill ${isErr ? 'err' : ''}">${esc(d.event)} <strong>${d.sessions}</strong></span>`;
+        }).join('')}
+      </div>`;
+
+    const abandonHtml = totalAbandon === 0 ? '' :
+      `<div class="abandon-line">Abandoned mid-flow: <strong>${totalAbandon}</strong> session${totalAbandon === 1 ? '' : 's'} ${abandons.map(a => `(step ${a.step_index}: ${a.sessions})`).join(' ')}</div>`;
+
+    blocks.push(`
+      <div class="lp-step-group">
+        <h4>
+          <span class="lp-pill ${esc(lp.type || '')}">${esc(lp.type || '')}</span>
+          ${esc(lp.label || lp.id)}
+          <span class="lp-id-mini">${esc(lp.id)}</span>
+        </h4>
+        <div class="step-bars">${barsHtml}</div>
+        ${abandonHtml}
+        ${diagHtml}
+      </div>
+    `);
+  });
+
+  host.innerHTML = blocks.length === 0
+    ? '<div class="empty" style="padding:14px;color:#6b7280;font-size:12px;">No step data yet. LPs emit demo_step events as users progress.</div>'
+    : blocks.join('');
 }
 
 function fmtDate(s) {
@@ -772,6 +873,9 @@ async function loadAnalytics() {
           <td>${r.signups || 0}</td>
           <td><strong>${pct(r.signups, r.views)}</strong></td>
         </tr>`).join('');
+
+    // LP step fall-through panel — per-variant step bars + diagnostics + abandons
+    renderLPSteps(d.lpFunnel || [], d.lpSteps || [], d.lpDiagnostics || [], d.lpAbandons || []);
 
     // Nudge pipeline tiles
     const ns = d.nudgeStatus || [];

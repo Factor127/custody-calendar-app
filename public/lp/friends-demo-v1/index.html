@@ -147,10 +147,11 @@
 
   .result ul.overlap-list { list-style: none; padding: 0; margin: 4px 0 8px; }
   .result ul.overlap-list li {
-    padding: 14px 14px; background: #161616; border: 1px solid #242424;
+    padding: 12px 12px; background: #161616; border: 1px solid #242424;
     border-radius: 12px; margin-bottom: 10px;
     cursor: pointer; transition: border-color 0.12s, transform 0.08s;
     position: relative;
+    display: flex; gap: 12px; align-items: center;
   }
   .result ul.overlap-list li:hover    { border-color: #c4d630; }
   .result ul.overlap-list li:active   { transform: scale(0.99); }
@@ -158,9 +159,15 @@
     content: '→'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
     color: rgba(196,214,48,0.6); font-size: 18px; font-weight: 700;
   }
-  .result .opp-date  { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #c4d630; text-transform: uppercase; margin-bottom: 4px; }
-  .result .opp-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; padding-right: 24px; }
-  .result .opp-meta  { font-size: 12px; color: rgba(255,255,255,0.55); padding-right: 24px; }
+  .result .opp-thumb {
+    width: 56px; height: 56px; border-radius: 10px; flex-shrink: 0;
+    background: #0f0f0f center/cover no-repeat;
+    border: 1px solid #222;
+  }
+  .result .opp-body { flex: 1; min-width: 0; padding-right: 22px; }
+  .result .opp-date  { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #c4d630; text-transform: uppercase; margin-bottom: 3px; }
+  .result .opp-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .result .opp-meta  { font-size: 12px; color: rgba(255,255,255,0.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Invite modal */
   .modal-backdrop {
@@ -173,6 +180,10 @@
     width: 100%; max-width: 380px; background: #0e0e12;
     border: 1px solid #23232a; border-radius: 20px; overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .invite-hero-img {
+    width: 100%; aspect-ratio: 16 / 9; background: #0a0a0a center/cover no-repeat;
+    display: block;
   }
   .invite-head {
     background: linear-gradient(135deg, #1a1530 0%, #0e0e12 100%);
@@ -336,12 +347,26 @@
         .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
+    // Belt-and-suspenders client filter: even if the server region filter
+    // isn't live yet (deployed before this build), strip anything whose
+    // location_name looks non-DFW. Demo audience is Dallas-based divorcees.
+    var DALLAS_HINTS = ['dallas','dfw','fort worth','plano','irving','frisco',
+                        'mckinney','arlington','garland','mesquite','richardson',
+                        'grand prairie','addison','turtle creek','deep ellum',
+                        'uptown','highland park','trinity groves',' tx',',tx','texas'];
+    function isDallasArea(opp) {
+      var loc = ((opp && opp.location_name) || '').toLowerCase();
+      if (!loc) return false; // unknown → exclude to be safe
+      return DALLAS_HINTS.some(function(k) { return loc.indexOf(k) !== -1; });
+    }
+
     function loadOpps() {
-      return fetch('/api/public/opportunities')
+      return fetch('/api/public/opportunities?region=dallas')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (data && Array.isArray(data.opportunities)) {
-            opportunities = data.opportunities.slice().sort(function() { return Math.random() - 0.5; });
+            var filtered = data.opportunities.filter(isDallasArea);
+            opportunities = filtered.sort(function() { return Math.random() - 0.5; });
             if (state.step === 4) render();
           }
         })
@@ -484,14 +509,25 @@
             var meta = [];
             if (opp.location_name) meta.push(opp.location_name);
             if (opp.category)      meta.push(opp.category);
+            var thumbStyle = opp.image_url
+              ? ' style="background-image:url(\'' + escapeHtml(opp.image_url) + '\')"'
+              : '';
             return '<li data-dayidx="' + d + '" data-oppidx="' + (i % opportunities.length) + '">' +
-              '<div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
-              '<div class="opp-title">' + escapeHtml(opp.title) + '</div>' +
-              (meta.length ? '<div class="opp-meta">' + escapeHtml(meta.join(' · ')) + '</div>' : '') +
+              '<div class="opp-thumb"' + thumbStyle + '></div>' +
+              '<div class="opp-body">' +
+                '<div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
+                '<div class="opp-title">' + escapeHtml(opp.title) + '</div>' +
+                (meta.length ? '<div class="opp-meta">' + escapeHtml(meta.join(' · ')) + '</div>' : '') +
+              '</div>' +
             '</li>';
           }
-          return '<li data-dayidx="' + d + '"><div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
-                 '<div class="opp-meta">Both free - pick what to do</div></li>';
+          return '<li data-dayidx="' + d + '">' +
+            '<div class="opp-thumb"></div>' +
+            '<div class="opp-body">' +
+              '<div class="opp-date">' + escapeHtml(dateStr) + '</div>' +
+              '<div class="opp-meta">Both free - pick what to do</div>' +
+            '</div>' +
+          '</li>';
         }).join('');
 
         var patternHtml = '';
@@ -556,8 +592,13 @@
       if (categoryText) metaLine.push(categoryText);
       if (opp && opp.price_tier) metaLine.push(opp.price_tier === 'low' ? '$' : opp.price_tier === 'mid' ? '$$' : opp.price_tier === 'high' ? '$$$' : opp.price_tier);
 
+      var heroHtml = (opp && opp.image_url)
+        ? '<div class="invite-hero-img" style="background-image:url(\'' + escapeHtml(opp.image_url) + '\')"></div>'
+        : '';
+
       var card = document.getElementById('invite-card');
       card.innerHTML =
+        heroHtml +
         '<div class="invite-head">' +
           '<div class="invite-from">From <strong>You</strong> · via Spontany</div>' +
           '<h3>You\'re invited.</h3>' +
@@ -594,7 +635,7 @@
           '<button class="invite-btn primary" disabled>I\'m in</button>' +
         '</div>';
 
-      window.LP && LP.event && LP.event('lp_invite_preview_open', {
+      if (typeof sa === 'function') sa('lp_invite_preview_open', {
         day_idx: dayIdx, opp_title: opp ? opp.title : null
       });
 
