@@ -9,7 +9,7 @@
 
   // Collect UTMs from URL on first load, persist in sessionStorage
   var params = new URLSearchParams(location.search);
-  ['utm_source','utm_medium','utm_campaign','utm_content','fbclid'].forEach(function(k) {
+  ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','fbclid'].forEach(function(k) {
     var v = params.get(k);
     if (v) sessionStorage.setItem(k, v);
   });
@@ -40,7 +40,7 @@
 
   window.sa = function(event, extraProps) {
     var utmProps = {};
-    ['utm_source','utm_medium','utm_campaign','utm_content','fbclid'].forEach(function(k) {
+    ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','fbclid'].forEach(function(k) {
       var v = sessionStorage.getItem(k);
       if (v) utmProps[k] = v;
     });
