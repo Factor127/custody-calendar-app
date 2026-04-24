@@ -36,7 +36,7 @@ app.get(['/match', '/match.html'], (req, res) => {
   if (req.query.utm_source || req.query.utm_campaign) {
     res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
   }
-  const variant = assignVariant(cookies, req.query);
+  const variant = assignVariant(cookies, req.query, req);
   serveVariant(req, res, variant);
 });
 
@@ -57,10 +57,27 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 // Public opportunities endpoint (needed by A/B variant pages)
+// Optional ?region=dallas narrows to DFW-area location_name patterns so
+// demos aimed at the Dallas audience don't surface Israel-seeded venues
+// that the founder added while testing.
+const REGION_PATTERNS = {
+  dallas: ['Dallas','DFW','Fort Worth','Plano','Irving','Frisco','McKinney',
+           'Arlington','Garland','Mesquite','Richardson','Grand Prairie',
+           'Addison','Turtle Creek','Deep Ellum','Uptown','Highland Park',
+           'Trinity Groves',' TX',', TX','Texas'],
+};
 app.get('/api/public/opportunities', (req, res) => {
   const db = require('./db');
   try {
-    const rows = db.searchOpportunities({});
+    let rows = db.searchOpportunities({});
+    const region = String(req.query.region || '').toLowerCase();
+    const patterns = REGION_PATTERNS[region];
+    if (patterns) {
+      rows = rows.filter(o => {
+        const loc = o.location_name || '';
+        return patterns.some(p => loc.includes(p));
+      });
+    }
     const opps = rows.map(o => ({
       title: o.title,
       category: o.category,
@@ -69,6 +86,7 @@ app.get('/api/public/opportunities', (req, res) => {
       price_tier: o.price_tier,
       type: o.type,
       source_url: o.source_url || null,
+      image_url: o.image_url || null,
     }));
     res.json({ opportunities: opps });
   } catch(e) {
@@ -182,45 +200,57 @@ function parseCookies(req) {
   return out;
 }
 
-function assignVariant(cookies, query) {
+function assignVariant(cookies, query, req) {
   const active = AB_VARIANTS.filter(v => v.active);
   if (active.length === 0) return AB_VARIANTS[0]; // fallback
 
   // Query param override (e.g. /?variant=lp1-match) - used for cross-variant links
   if (query.variant) {
     const forced = active.find(v => v.id === query.variant);
-    if (forced) return forced;
+    if (forced) { recordAssignment(forced.id, req); return forced; }
   }
 
-  // Honor existing cookie if variant is still active
+  // Honor existing cookie if variant is still active (sticky per user)
   const existing = cookies.sa_variant;
   if (existing) {
     const match = active.find(v => v.id === existing);
-    if (match) return match;
+    if (match) return match; // don't re-record — sticky revisits aren't new assignments
   }
 
-  // Least-assigned balancing: count distinct sessions per variant
+  // Least-assigned balancing using the variant_assignments table, which is
+  // written server-side immediately (no client-event race).
+  let pick;
   try {
     const counts = _db.prepare(`
-      SELECT json_extract(props, '$.variant') AS variant, COUNT(DISTINCT session_id) AS cnt
-      FROM analytics_events
-      WHERE json_extract(props, '$.variant') IS NOT NULL
-      GROUP BY variant
+      SELECT variant, COUNT(*) AS cnt FROM variant_assignments GROUP BY variant
     `).all();
     const countMap = {};
     counts.forEach(r => { countMap[r.variant] = r.cnt; });
 
-    // Pick active variant with fewest sessions
-    let min = Infinity, pick = active[0];
+    let min = Infinity;
+    pick = active[0];
     for (const v of active) {
       const c = countMap[v.id] || 0;
       if (c < min) { min = c; pick = v; }
     }
-    return pick;
   } catch(e) {
-    // DB error fallback: random assignment
-    return active[Math.floor(Math.random() * active.length)];
+    pick = active[Math.floor(Math.random() * active.length)];
   }
+
+  recordAssignment(pick.id, req);
+  return pick;
+}
+
+// Record a fresh variant assignment. Fingerprint is a lightweight dedupe
+// hint (IP + UA hash) so repeat load tests from one box don't pollute counts
+// too badly — but it's intentionally non-authoritative, just best-effort.
+function recordAssignment(variantId, req) {
+  try {
+    const ip = (req && (req.headers['x-forwarded-for'] || req.ip)) || '';
+    const ua = (req && req.headers['user-agent']) || '';
+    const fp = require('crypto').createHash('sha1').update(ip + '|' + ua).digest('hex').slice(0, 16);
+    _db.prepare('INSERT INTO variant_assignments (variant, fingerprint) VALUES (?, ?)').run(variantId, fp);
+  } catch(e) { /* never block the request on a count-write failure */ }
 }
 
 function serveVariant(req, res, variant) {
@@ -264,37 +294,15 @@ window.__LP_TYPE='${lpType}';
 }
 
 app.get('/', (req, res) => {
-  const cookies = parseCookies(req);
-  let hasAccess = false;
-
-  // 1. Already has access cookie
-  if (cookies.sa_access === '1') {
-    hasAccess = true;
-  }
-
-  // 2. Came from waitlist approval email
-  if (!hasAccess && req.query.access) {
+  // Waitlist approval email (/?access=<token>) still sets the access cookie
+  // so downstream gated pages work; then we fall through to login.
+  if (req.query.access) {
     const row = _db.prepare("SELECT id FROM waitlist WHERE access_token = ? AND status = 'approved'").get(req.query.access);
     if (row) {
       res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-      hasAccess = true;
     }
   }
-
-  // 3. Has UTM params (came from ad campaign)
-  if (!hasAccess && (req.query.utm_source || req.query.utm_campaign)) {
-    res.cookie('sa_access', '1', { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-    hasAccess = true;
-  }
-
-  // 4. No access → serve waitlist page
-  if (!hasAccess) {
-    return res.sendFile(path.join(__dirname, 'public', 'waitlist.html'));
-  }
-
-  // 5. Assign A/B variant and serve
-  const variant = assignVariant(cookies, req.query);
-  serveVariant(req, res, variant);
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));

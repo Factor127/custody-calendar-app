@@ -352,6 +352,20 @@ db.exec(`CREATE TABLE IF NOT EXISTS lp_signups (
 )`);
 try { db.exec('CREATE INDEX idx_lp_signups_variant ON lp_signups(variant)'); } catch(e) {}
 
+// ── Variant assignments (A/B balancer source-of-truth) ──────────────────────
+// Written server-side the moment a variant is picked, so the balancer sees
+// the new count BEFORE the browser gets a chance to fire lp_view. Without
+// this, rapid concurrent visits all get the same variant until client events
+// catch up (a race that showed up as "only one LP renders" in manual tests).
+db.exec(`CREATE TABLE IF NOT EXISTS variant_assignments (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  variant     TEXT NOT NULL,
+  fingerprint TEXT,
+  assigned_at TEXT DEFAULT (datetime('now'))
+)`);
+try { db.exec('CREATE INDEX idx_va_variant ON variant_assignments(variant)'); } catch(e) {}
+try { db.exec('CREATE INDEX idx_va_fp ON variant_assignments(fingerprint)'); } catch(e) {}
+
 // ── Nudges (SMS + email reminders, user-requested from LP) ──────────────────
 db.exec(`CREATE TABLE IF NOT EXISTS nudges (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
