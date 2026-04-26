@@ -52,10 +52,10 @@ const OUTDOOR = [
   u('1511497584788-876760111969'),  // morning forest
 ];
 const EVENT = [
-  u('1520637836862-4d197d17c67a'),  // museum
+  u('1519741497674-611481863552'),  // park bench (verified — replaces broken museum ID)
   u('1507676184212-d03ab07a01bf'),  // skyline view
   u('1501386761578-eac5c94b800a'),  // concert crowd
-  u('1489599537094-a8bc5a0c1ee7'),  // cinema seats
+  u('1414235077428-338989a2e8c0'),  // dim interior (verified — replaces broken cinema ID)
   u('1533174072545-7a4b6ad7a6c3'),  // picnic setup
 ];
 const SPORTS = [
@@ -104,9 +104,12 @@ const OVERRIDES = {
   'Rise nº1 Soufflé':             RESTAURANT[6],
   'Pecan Lodge':                  RESTAURANT[7],
   'Meridian':                     RESTAURANT[2],
+  'Mercat':                       RESTAURANT[3],
 
   // ── Walks ─────────────────────────────────────────────────────────────
   'Cedar Ridge Preserve':         OUTDOOR[1],
+  'Katy Trail Evening Stroll':    OUTDOOR[0],
+  'AT&T Discovery District':      OUTDOOR[2],
 
   // ── Events ────────────────────────────────────────────────────────────
   'Gondola Ride on Lake Carolyn': EVENT[1],
@@ -118,6 +121,7 @@ const OVERRIDES = {
   // ── Sports ────────────────────────────────────────────────────────────
   'Paddle Boarding at White Rock Lake': SPORTS[3],
   'Main Event':                   SPORTS[4],
+  'Andretti Indoor Karting':      SPORTS[1],
 };
 
 const update = db.db.prepare('UPDATE opportunities SET image_url = ? WHERE title = ? AND image_url IS NULL');
