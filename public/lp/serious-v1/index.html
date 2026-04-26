@@ -278,7 +278,7 @@
     <div class="form-card" id="form-card">
       <form id="share-form">
         <label for="your_name" class="name-question">Make it personal - <em>what's your name?</em></label>
-        <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" autocomplete="given-name" required>
+        <input id="your_name" name="your_name" type="text" placeholder="Alex" maxlength="40" autocomplete="given-name" required class="cs-mask" data-cs-mask="true">
 
         <div class="preview-label">He'll see this:</div>
         <div class="sms-bubble" id="sms-preview" aria-live="polite"></div>
@@ -310,7 +310,7 @@
     <div class="phone-card" id="phone-card" hidden>
       <h3>We'll text him for you</h3>
       <label for="his_phone">His mobile <span style="opacity:0.5;font-weight:400;">(include country code — e.g. +1 for US, +972 for IL)</span></label>
-      <input id="his_phone" type="tel" placeholder="+1 214 555 0123" autocomplete="tel">
+      <input id="his_phone" type="tel" placeholder="+1 214 555 0123" autocomplete="tel" class="cs-mask" data-cs-mask="true">
       <p class="phone-error" id="phone-error" hidden></p>
       <p class="next-step-sub" style="margin-top:14px;">After we text him, you'll fill in your free nights so we can find the overlap.</p>
       <button type="button" id="phone-send" class="cta">Send the text →</button>

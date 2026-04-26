@@ -57,6 +57,15 @@
       cs(['trackDynamicVariable', { key: 'lp_id',   value: state.id }],
          ['trackDynamicVariable', { key: 'lp_type', value: state.type }]);
 
+      // Relax CS replay text masking so we can read marketing copy in
+      // replays. Form inputs (.cs-mask class on email/name/phone fields)
+      // stay masked. Multiple command names are pushed because CS's
+      // runtime API has changed across versions; unrecognized commands
+      // are no-ops, so this is safe to spray.
+      cs(['setReplayConfig', { maskTextContent: false, maskInputValues: true }],
+         ['setMaskingLevel',  'minimal'],
+         ['setRecordingState','enabled']);
+
       // Auto-fire demo_abandon on page unload if started but not completed
       window.addEventListener('beforeunload', function() {
         if (state.currentStep > 0 && state.currentStep < state.totalSteps) {
@@ -244,8 +253,8 @@
       '<h3>Not right now? We\'ll nudge you.</h3>',
       '<p class="sub">One text, at a time that works. Reply STOP anytime.</p>',
       '<form id="lp-nudge-form">',
-        '<label>First name<input name="first_name" type="text" placeholder="Alex" maxlength="40"></label>',
-        '<label>Mobile<input name="phone" type="tel" placeholder="+1 214 555 0123" required></label>',
+        '<label>First name<input name="first_name" type="text" placeholder="Alex" maxlength="40" class="cs-mask" data-cs-mask="true" autocomplete="given-name"></label>',
+        '<label>Mobile<input name="phone" type="tel" placeholder="+1 214 555 0123" required class="cs-mask" data-cs-mask="true" autocomplete="tel"></label>',
         '<fieldset>',
           '<legend>When?</legend>',
           '<label class="radio"><input type="radio" name="time_choice" value="tonight_9pm" required><span>Tonight, 9pm</span></label>',
