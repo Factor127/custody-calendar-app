@@ -347,11 +347,24 @@ db.exec(`CREATE TABLE IF NOT EXISTS lp_signups (
   email        TEXT,
   first_name   TEXT,
   utm_source   TEXT,
+  utm_medium   TEXT,
   utm_campaign TEXT,
   utm_content  TEXT,
+  utm_term     TEXT,
+  fbclid       TEXT,
+  ttclid       TEXT,
+  gclid        TEXT,
+  referrer     TEXT,
   created_at   TEXT DEFAULT (datetime('now'))
 )`);
 try { db.exec('CREATE INDEX idx_lp_signups_variant ON lp_signups(variant)'); } catch(e) {}
+
+// Idempotent column adds for tables created before the attribution expansion.
+// Each ALTER throws "duplicate column" if the col already exists — we swallow
+// that and move on, so deploys to existing DBs work without manual migration.
+['utm_medium','utm_term','fbclid','ttclid','gclid','referrer'].forEach(function(col) {
+  try { db.exec('ALTER TABLE lp_signups ADD COLUMN ' + col + ' TEXT'); } catch(e) {}
+});
 
 // ── Variant assignments (A/B balancer source-of-truth) ──────────────────────
 // Written server-side the moment a variant is picked, so the balancer sees

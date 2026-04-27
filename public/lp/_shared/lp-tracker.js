@@ -11,6 +11,23 @@
 (function() {
   'use strict';
 
+  // ──── Meta Pixel install (defensive; safe if already installed inline) ────
+  // The inline <head> snippet on each LP file is the primary install path —
+  // it puts the pixel in <head> for fastest fire. This block is the
+  // belt-and-suspenders fallback so any LP that forgets the inline snippet
+  // still gets tracked. The window flag (__SP_PIXEL_INIT) prevents the
+  // PageView from firing twice when both paths are present.
+  if (!window.fbq) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  }
+  if (!window.__SP_PIXEL_INIT) {
+    window.__SP_PIXEL_INIT = true;
+    try {
+      window.fbq('init', '2161239351358950');
+      window.fbq('track', 'PageView');
+    } catch(e) {}
+  }
+
   var state = {
     id: null,
     type: 'hero',
@@ -119,6 +136,24 @@
     // Expose the CS push helper for ad-hoc events (error states, sub-CTAs, etc).
     // Signature mirrors _uxa.push: LP.cs(['trackPageEvent', 'name']).
     cs: cs,
+
+    // Fire a Meta Pixel `Lead` event with UTM payload baked in. Mirrors the
+    // existing landing.html pattern. Call this on any meaningful conversion
+    // (signup_submit, share_create, etc.) so Meta can optimize for it.
+    lead: function(meta) {
+      if (typeof window.fbq !== 'function') return;
+      var utm = {};
+      ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(function(k) {
+        var v = sessionStorage.getItem(k); if (v) utm[k] = v;
+      });
+      try {
+        window.fbq('track', 'Lead', Object.assign(
+          { content_name: state.id || 'lp_signup', lp_type: state.type },
+          utm,
+          meta || {}
+        ));
+      } catch(e) {}
+    },
 
     // Navigate to shared signup, preserving variant + UTM
     goToSignup: function(source) {

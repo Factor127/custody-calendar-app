@@ -7,6 +7,24 @@
 <meta name="description" content="The honest story behind Spontany - why it's free, how your privacy works, and what we're actually trying to solve.">
 <link rel="icon" href="/logo3.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+if (!window.__SP_PIXEL_INIT) {
+  window.__SP_PIXEL_INIT = true;
+  fbq('init', '2161239351358950');
+  fbq('track', 'PageView');
+}
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
 <script src="/sa.js"></script>
 <script src="/lp/_shared/lp-tracker.js"></script>
 <style>

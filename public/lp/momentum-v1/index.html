@@ -1,0 +1,1382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Spontany — The end of "Are you free?"</title>
+<meta name="description" content="Stop playing calendar Sudoku. Spontany finds the hidden windows in your schedule and matches them with the people you actually want to see.">
+<link rel="icon" href="/logo3.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The end of &quot;Are you free?&quot; — Spontany">
+<meta property="og:description" content="One link. Zero back-and-forth. Total privacy.">
+<meta property="og:image" content="https://spontany.io/lp/momentum-v1/assets/hero-poster.jpg">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="1350">
+<meta property="og:url" content="https://spontany.io/lp/momentum-v1/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The end of &quot;Are you free?&quot; — Spontany">
+<meta name="twitter:description" content="One link. Zero back-and-forth. Total privacy.">
+<meta name="twitter:image" content="https://spontany.io/lp/momentum-v1/assets/hero-poster.jpg">
+<link rel="preload" as="image" href="/lp/momentum-v1/assets/hero-poster.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+if (!window.__SP_PIXEL_INIT) {
+  window.__SP_PIXEL_INIT = true;
+  fbq('init', '2161239351358950');
+  fbq('track', 'PageView');
+}
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+<script src="/sa.js"></script>
+<script src="/lp/_shared/lp-tracker.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0a;
+    --bg-soft: #111118;
+    --panel: rgba(20, 15, 30, 0.92);
+    --panel-edge: rgba(255,255,255,0.06);
+    --ink: #fff;
+    --ink-dim: rgba(255,255,255,0.62);
+    --ink-faint: rgba(255,255,255,0.38);
+    --purple: #a78bfa;
+    --purple-soft: rgba(167,139,250,0.18);
+    --gold: #fbbf24;
+    --gold-soft: rgba(251,191,36,0.18);
+    --gold-glow: 0 0 16px rgba(251,191,36,0.55), 0 0 32px rgba(251,191,36,0.25);
+    --green: #34d399;
+    --green-soft: rgba(52,211,153,0.18);
+    --green-glow: 0 0 14px rgba(52,211,153,0.5), 0 0 28px rgba(52,211,153,0.22);
+    --orange: #fb923c;
+    --orange-soft: rgba(251,146,60,0.18);
+    --orange-glow: 0 0 14px rgba(251,146,60,0.5), 0 0 28px rgba(251,146,60,0.22);
+    --work: rgba(140,148,170,0.32);
+    --work-edge: rgba(140,148,170,0.55);
+    --kids: rgba(52,211,153,0.32);
+    --kids-edge: rgba(52,211,153,0.7);
+    --protect: rgba(96,165,250,0.22);
+    --protect-edge: rgba(96,165,250,0.5);
+  }
+  html, body { background: var(--bg); }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh; min-height: 100dvh;
+    overflow-x: hidden;
+  }
+  img, svg, video { display: block; max-width: 100%; }
+
+  /* ───────────────────────────── HERO ───────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    min-height: 100dvh;
+    padding: 24px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: #050507;
+  }
+  .hero-bg video {
+    position: absolute; top: 50%; left: 50%;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    filter: saturate(1.05) contrast(1.02);
+    will-change: opacity;
+    opacity: 0;
+    transition: opacity 0.9s ease-in-out;
+  }
+  .hero-bg video.visible { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-bg video { display: none; }
+    .hero-bg { background:
+      linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.85) 100%),
+      url('/lp/momentum-v1/assets/hero-poster.jpg') center/cover no-repeat;
+    }
+  }
+  .hero-bg::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(10,10,10,0.35) 0%, rgba(10,10,10,0.25) 38%, rgba(10,10,10,0.7) 72%, var(--bg) 100%),
+      radial-gradient(80% 60% at 50% 30%, transparent 0%, rgba(10,10,10,0.55) 100%);
+  }
+  .hero-inner {
+    position: relative; z-index: 1;
+    max-width: 560px; margin: 0 auto;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .logo img { height: 28px; }
+  .hero-copy {
+    margin-top: auto;
+    padding-top: 60vh;
+  }
+  @media (min-width: 768px) {
+    .hero-copy { padding-top: 50vh; }
+  }
+  h1 {
+    font-size: clamp(40px, 8.4vw, 60px);
+    line-height: 1.02;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    margin-bottom: 18px;
+    text-shadow: 0 2px 24px rgba(0,0,0,0.7);
+  }
+  h1 .quote { color: var(--gold); font-style: italic; font-weight: 800; }
+  .sub {
+    font-size: clamp(16px, 4.2vw, 19px);
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 14px;
+    text-shadow: 0 1px 12px rgba(0,0,0,0.6);
+    max-width: 36ch;
+  }
+  .pitch {
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 28px;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .pitch span { color: var(--gold); }
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 17px 26px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1a1300;
+    border: 0; border-radius: 999px;
+    font-family: inherit; font-weight: 800; font-size: 16px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 10px 30px rgba(251,191,36,0.28), 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cta:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgba(251,191,36,0.4); }
+  .cta:active { transform: translateY(0) scale(0.98); }
+  .cta.full { width: 100%; }
+  .cta-arrow { transition: transform 0.2s ease; }
+  .cta:hover .cta-arrow { transform: translateX(3px); }
+  .cta-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .cta-ghost:hover { color: rgba(255,255,255,0.85); }
+
+  /* ───────────────────────────── SECTIONS ───────────────────────────── */
+  section.band {
+    padding: 88px 20px;
+    position: relative;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+  .eyebrow {
+    font-size: 11px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  h2 {
+    font-size: clamp(28px, 6vw, 38px);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 18px;
+  }
+  h2 em { color: var(--gold); font-style: normal; }
+  .section-sub {
+    font-size: 16px;
+    color: var(--ink-dim);
+    margin-bottom: 40px;
+    max-width: 44ch;
+  }
+
+  /* ───────────────────────────── MOMENTUM STRIP ───────────────────────────── */
+  .strip-frame {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 18px;
+    padding: 22px 18px 26px;
+    backdrop-filter: blur(8px);
+  }
+  .strip-frame + .strip-frame { margin-top: 14px; }
+  .strip-label {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-bottom: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .strip-label .layer-dot {
+    width: 10px; height: 10px; border-radius: 3px;
+    background: var(--work-edge);
+    flex-shrink: 0;
+  }
+  .strip-label.l-kids .layer-dot   { background: var(--kids-edge); }
+  .strip-label.l-protect .layer-dot{ background: var(--protect-edge); }
+  .strip-label.l-gold .layer-dot   {
+    background: var(--gold);
+    box-shadow: 0 0 10px rgba(251,191,36,0.7);
+  }
+  .strip-label .layer-name { font-weight: 700; color: var(--ink); }
+  .strip-label .layer-desc { color: var(--ink-faint); font-weight: 500; }
+  .strip {
+    display: grid;
+    grid-template-columns: 28px repeat(7, 1fr);
+    gap: 4px;
+    align-items: center;
+  }
+  .strip .day-label {
+    font-size: 10px; color: var(--ink-faint);
+    text-align: center; font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .strip .row-label {
+    font-size: 9px; color: var(--ink-faint);
+    font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: right; padding-right: 4px;
+  }
+  .strip .cell {
+    height: 22px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.6s ease;
+  }
+  /* Layer reveals — toggled by .stage-N classes on .strip-section. */
+  .strip-section .cell[data-l="work"]    { /* default empty */ }
+  .strip-section .cell[data-l="kids"]    { /* default empty */ }
+  .strip-section .cell[data-l="protect"] { /* default empty */ }
+  .strip-section .cell[data-l="gold"]    { /* default empty */ }
+
+  /* Reveal order: work → my time → kids → free nights.
+     Each stage adds its layer on top of the previous one. */
+  .strip-section.stage-1 .cell[data-l="work"] {
+    background: var(--work);
+    border-color: var(--work-edge);
+  }
+  .strip-section.stage-2 .cell[data-l="work"]    { background: var(--work);    border-color: var(--work-edge); }
+  .strip-section.stage-2 .cell[data-l="protect"] { background: var(--protect); border-color: var(--protect-edge); }
+
+  .strip-section.stage-3 .cell[data-l="work"]    { background: var(--work);    border-color: var(--work-edge); }
+  .strip-section.stage-3 .cell[data-l="protect"] { background: var(--protect); border-color: var(--protect-edge); }
+  .strip-section.stage-3 .cell[data-l="kids"]    {
+    background: var(--kids); border-color: var(--kids-edge);
+    box-shadow: var(--green-glow);
+  }
+
+  .strip-section.stage-4 .cell[data-l="work"]    { background: var(--work);    border-color: var(--work-edge); }
+  .strip-section.stage-4 .cell[data-l="protect"] { background: var(--protect); border-color: var(--protect-edge); }
+  .strip-section.stage-4 .cell[data-l="kids"]    {
+    background: var(--kids); border-color: var(--kids-edge);
+    box-shadow: var(--green-glow);
+  }
+  .strip-section.stage-4 .cell[data-l="gold"]    {
+    background: var(--gold);
+    border-color: var(--gold);
+    box-shadow: var(--gold-glow);
+  }
+
+  /* Use-case mini strips — all layers revealed; the relevant matchable
+     cells (gold for free nights, green for kid days) glow. */
+  .strip-mini .cell[data-l="work"]    { background: var(--work);    border-color: var(--work-edge); }
+  .strip-mini .cell[data-l="protect"] { background: var(--protect); border-color: var(--protect-edge); }
+  .strip-mini .cell[data-l="kids"]    {
+    background: var(--kids); border-color: var(--kids-edge);
+    box-shadow: var(--green-glow);
+  }
+  .strip-mini .cell[data-l="gold"]    {
+    background: var(--gold); border-color: var(--gold);
+    box-shadow: var(--gold-glow);
+  }
+
+  /* Layer reveal indicators (left of each row) */
+  .layer-stack {
+    display: flex; flex-direction: column; gap: 18px;
+    margin: 24px 0 0;
+  }
+  .layer {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+    opacity: 0.4;
+    transform: translateX(-6px);
+    transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.6s ease;
+  }
+  .strip-section.stage-1 .layer.l1,
+  .strip-section.stage-2 .layer.l1,
+  .strip-section.stage-2 .layer.l2,
+  .strip-section.stage-3 .layer.l1,
+  .strip-section.stage-3 .layer.l2,
+  .strip-section.stage-3 .layer.l3,
+  .strip-section.stage-4 .layer { opacity: 1; transform: translateX(0); }
+  .strip-section.stage-3 .layer.l3 { border-color: var(--green-soft); }
+  .strip-section.stage-4 .layer.l-result { border-color: var(--gold-soft); }
+  .layer .swatch {
+    width: 14px; height: 14px; border-radius: 4px;
+    flex-shrink: 0; margin-top: 3px;
+  }
+  .layer.l1 .swatch { background: var(--work-edge); }
+  .layer.l2 .swatch { background: var(--protect-edge); }
+  .layer.l3 .swatch {
+    background: var(--green);
+    box-shadow: 0 0 10px rgba(52,211,153,0.6);
+  }
+  .layer.l-result .swatch {
+    background: var(--gold);
+    box-shadow: 0 0 12px rgba(251,191,36,0.7);
+  }
+  .layer .text strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .layer .text span { font-size: 13px; color: var(--ink-dim); }
+
+  /* Bridge line — the punch line of the "Your social window" segment,
+     so it gets pull-quote treatment: large, white, centered, with breathing
+     room above and below. The "Gold Windows" callout stays inline gold. */
+  .strip-bridge {
+    margin: 40px auto 12px;
+    max-width: 22ch;
+    text-align: center;
+    font-size: clamp(22px, 5.4vw, 28px);
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+  }
+  .strip-bridge em {
+    font-style: normal;
+    color: var(--gold);
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  @media (min-width: 600px) {
+    .strip-bridge { max-width: 30ch; }
+  }
+
+  .strip-result {
+    margin-top: 24px;
+    padding: 26px 22px 22px;
+    background: linear-gradient(180deg, rgba(20,15,30,0.65) 0%, rgba(15,15,22,0.65) 100%);
+    border: 1px solid rgba(251,191,36,0.22);
+    border-radius: 16px;
+    text-align: center;
+  }
+  .strip-result strong {
+    display: block;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .strip-result strong em {
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 800;
+  }
+  .strip-result span {
+    display: block;
+    font-size: 14px;
+    color: var(--ink-dim);
+    line-height: 1.55;
+    max-width: 38ch;
+    margin: 0 auto;
+  }
+
+  /* Soft-suggestion card — deliberately NOT a "match found!" notification.
+     Calmer than the iOS-notification mock in the next section. Reads as a
+     quiet observation from a thoughtful friend, with a low-pressure action
+     that ends in a question, not a command. */
+  .soft-suggestion {
+    margin: 18px auto 0;
+    max-width: 360px;
+    padding: 16px 16px 14px 18px;
+    background: rgba(10,10,15,0.5);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .soft-suggestion::before {
+    /* subtle gold whisper-rule on the left edge */
+    content: '';
+    position: absolute;
+    left: 0; top: 14px; bottom: 14px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--gold) 0%, rgba(251,191,36,0) 100%);
+    border-radius: 999px;
+  }
+  .soft-suggestion-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .soft-suggestion-body {
+    font-size: 14px;
+    color: rgba(255,255,255,0.86);
+    line-height: 1.5;
+  }
+  .soft-suggestion-body em {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .soft-suggestion-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .soft-suggestion-action:hover {
+    color: var(--gold);
+  }
+
+  .privacy-note {
+    margin-top: 28px;
+    padding: 16px 18px;
+    background: rgba(167,139,250,0.06);
+    border: 1px solid rgba(167,139,250,0.18);
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    line-height: 1.55;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .privacy-note strong { color: var(--ink); display: block; margin-bottom: 2px; }
+  .privacy-note .lock { font-size: 16px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+
+  /* ───────────────────────────── USE CASES ───────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 4px;
+    border-radius: 999px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1;
+    padding: 11px 10px;
+    background: transparent;
+    color: var(--ink-dim);
+    border: 0;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .tab[aria-selected="true"] {
+    background: var(--ink);
+    color: #0a0a0a;
+  }
+  .tab:not([aria-selected="true"]):hover { color: var(--ink); }
+
+  .tab-panel { display: none; }
+  .tab-panel[data-active="true"] { display: block; animation: fadeUp 0.35s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .persona {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 18px;
+    padding: 24px 22px;
+  }
+  .persona .hook {
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+  .persona .hook em { color: var(--gold); font-style: normal; }
+  .persona .magic {
+    font-size: 14px;
+    color: var(--ink-dim);
+    margin-bottom: 18px;
+    line-height: 1.55;
+  }
+  .magic-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  /* ───────────────────────────── PERSONA PILLS ───────────────────────────── */
+  .persona-cycle {
+    display: inline-block;
+    position: relative;
+  }
+  .persona-cycle em {
+    font-style: italic;
+    font-weight: 800;
+    transition: opacity 0.18s ease;
+  }
+  .persona-cycle em[hidden] { display: none; }
+  .persona-cycle em[data-persona="friend"]   { color: var(--orange); }
+  .persona-cycle em[data-persona="parent"]   { color: var(--green); }
+  .persona-cycle em[data-persona="romantic"] { color: var(--gold); }
+
+  .persona-pills {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .ppill {
+    padding: 9px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ppill:hover { color: var(--ink); }
+  .ppill[aria-pressed="true"][data-persona="friend"] {
+    background: var(--orange-soft); color: var(--orange); border-color: var(--orange);
+  }
+  .ppill[aria-pressed="true"][data-persona="parent"] {
+    background: var(--green-soft); color: var(--green); border-color: var(--green);
+  }
+  .ppill[aria-pressed="true"][data-persona="romantic"] {
+    background: var(--gold-soft); color: var(--gold); border-color: var(--gold);
+  }
+
+  /* ───────────────────────────── OPPS RAIL ───────────────────────────── */
+  /* Horizontal scroller of real venues from /api/public/opportunities.
+     The full-bleed treatment lets cards extend past the wrap's max-width
+     so the scroll affordance is obvious on mobile. */
+  .opps-rail {
+    margin: 0 -20px 28px;
+    padding: 4px 0 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .opps-rail::-webkit-scrollbar { display: none; }
+  .opps-track {
+    display: flex;
+    gap: 12px;
+    padding: 0 20px;
+    width: max-content;
+  }
+  .opp-card {
+    flex: 0 0 220px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    overflow: hidden;
+    scroll-snap-align: start;
+    transition: transform 0.15s ease, border-color 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+  }
+  .opp-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(251,191,36,0.35);
+  }
+  .opp-card-img {
+    aspect-ratio: 4 / 3;
+    background: #1a1a22 center/cover no-repeat;
+    position: relative;
+  }
+  .opp-card-img::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.45) 100%);
+  }
+  .opp-card-price {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(10,10,10,0.7);
+    color: var(--gold);
+    font-size: 11px; font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 1;
+  }
+  .opp-card-body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+  .opp-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    /* Clamp to two lines so card heights stay even */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .opp-card-loc {
+    font-size: 11px;
+    color: var(--ink-faint);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .opp-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: auto;
+  }
+  .opp-card-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-dim);
+    background: rgba(255,255,255,0.05);
+    padding: 3px 7px;
+    border-radius: 5px;
+    letter-spacing: 0.01em;
+  }
+  /* Skeleton shimmer for first paint */
+  .opp-skeleton {
+    height: 240px;
+    background: linear-gradient(90deg, #15151c 0%, #1c1c25 50%, #15151c 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+    border: 0;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ───────────────────────────── INVITE CARD ───────────────────────────── */
+  .invite-stage {
+    margin-top: 28px;
+    padding: 28px 18px 32px;
+    background:
+      radial-gradient(60% 80% at 50% 0%, rgba(167,139,250,0.18) 0%, transparent 65%),
+      linear-gradient(180deg, rgba(20,15,30,0.6) 0%, rgba(10,10,15,0.6) 100%);
+    border: 1px solid rgba(167,139,250,0.18);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .phone {
+    max-width: 320px; margin: 0 auto;
+    background: #1a1a22;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 30px 60px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-status {
+    display: flex; justify-content: space-between;
+    padding: 10px 22px 6px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 600;
+  }
+  .invite-card {
+    margin: 14px 12px 18px;
+    padding: 16px 16px 14px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 18px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+  }
+  /* Banner image at the top of each invite card. Pulled out to the card
+     edges so it reads like a rich-notification preview. */
+  .invite-banner {
+    height: 110px;
+    margin: -16px -16px 12px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 18px 18px 0 0;
+    position: relative;
+  }
+  .invite-banner::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%);
+    border-radius: 18px 18px 0 0;
+  }
+  .invite-card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .invite-card-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #a78bfa 0%, #7c5cbf 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #0a0a0a;
+  }
+  .invite-card-app {
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: 0.01em;
+    flex: 1;
+  }
+  .invite-card-time {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+  }
+  .invite-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .invite-card-body {
+    font-size: 13px;
+    color: rgba(255,255,255,0.78);
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+  .invite-card-body .gold-bar,
+  .invite-card-body .green-bar {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+  }
+  .invite-card-body .gold-bar  { background: var(--gold-soft);   color: var(--gold); }
+  .invite-card-body .green-bar { background: var(--green-soft);  color: var(--green); }
+  .invite-card-body .orange-bar{ background: var(--orange-soft); color: var(--orange); }
+
+  /* Phone holds two invite cards stacked; only one is visible at a time.
+     Cross-fade is driven by toggling [hidden] in JS, layered with a
+     CSS opacity transition for smoothness. */
+  .phone .invite-card {
+    transition: opacity 0.5s ease;
+  }
+  .phone .invite-card[hidden] {
+    display: none;
+  }
+  .invite-card-actions {
+    display: flex; gap: 8px;
+  }
+  .invite-action {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .invite-action.yes {
+    background: var(--gold);
+    color: #1a1300;
+  }
+  .invite-action.yes-green {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--green);
+    color: #042f1f;
+  }
+  .invite-action.yes-orange {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--orange);
+    color: #1a0a00;
+  }
+  .invite-action.pass {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .invite-features {
+    margin-top: 28px;
+    display: grid;
+    gap: 10px;
+  }
+  .invite-feature {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  .invite-feature .check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: #1a1300;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .invite-feature strong { color: var(--ink); display: block; margin-bottom: 2px; font-weight: 700; font-size: 14px; }
+
+  /* ───────────────────────────── FINAL CTA ───────────────────────────── */
+  .closer {
+    text-align: center;
+    padding: 100px 20px 120px;
+    position: relative;
+    background:
+      radial-gradient(60% 100% at 50% 0%, rgba(251,191,36,0.06) 0%, transparent 60%),
+      var(--bg);
+  }
+  .closer h2 {
+    max-width: 16ch;
+    margin: 0 auto 16px;
+  }
+  .closer .closer-sub {
+    font-size: 16px;
+    color: var(--ink-dim);
+    max-width: 38ch;
+    margin: 0 auto 36px;
+    line-height: 1.55;
+  }
+  .closer .cta { padding: 19px 30px; font-size: 17px; }
+  .closer .legal {
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .closer .legal a { color: var(--ink-dim); text-decoration: underline; text-underline-offset: 2px; }
+
+  .footer-wordmark {
+    text-align: center;
+    padding: 0 20px 40px;
+    opacity: 0.4;
+  }
+  .footer-wordmark img { height: 18px; margin: 0 auto; }
+
+  /* Suppress the SDK-injected floating "Try it free" CTA — momentum-v1 has
+     two strong native CTAs (hero + footer) that already funnel into
+     /lp/_signup with proper src attribution. The float pill uses a different
+     accent color and overlaps the invite-card phone mock. */
+  #lp-float-cta { display: none !important; }
+
+  /* ───────────────────────────── TRANSITION GRADIENT ───────────────────────────── */
+  .hero-fade-out {
+    position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(10,10,10,0), var(--bg));
+    pointer-events: none;
+    z-index: 1;
+  }
+</style>
+<script src="https://t.contentsquare.net/uxa/c6f898e9cb3d8.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════ HERO ═══════════════════ -->
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <video class="v-a visible" autoplay muted playsinline preload="auto" poster="/lp/momentum-v1/assets/hero-poster.jpg">
+        <source src="/lp/momentum-v1/assets/hero-female.mp4" type="video/mp4">
+      </video>
+      <video class="v-b" muted playsinline preload="auto">
+        <source src="/lp/momentum-v1/assets/hero-male.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="hero-fade-out" aria-hidden="true"></div>
+
+    <div class="hero-inner">
+      <div class="logo">
+        <img src="/logo-wordmark.svg" alt="Spontany">
+      </div>
+
+      <div class="hero-copy">
+        <h1>The end of <span class="quote">"Are you free?"</span></h1>
+        <p class="sub">Stop playing calendar Sudoku. Spontany finds the hidden windows in your schedule and matches them with the people you actually want to see.</p>
+        <p class="pitch">One link · <span>Zero back-and-forth</span> · Total privacy</p>
+        <a href="/lp/_signup?variant=momentum-v1&src=hero" class="cta" id="cta-hero" data-cta="hero">
+          Create my Social Window
+          <span class="cta-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ MOMENTUM STRIP ═══════════════════ -->
+  <section class="band strip-section" id="momentum">
+    <div class="wrap">
+      <div class="eyebrow">Your social window</div>
+      <h2>The kids just left.<br>The night is <em>yours</em>.</h2>
+      <p class="section-sub">Your married friends are in "Dad mode." Your single friends have their kids this week. Asking around feels like reaching — so Netflix wins by default. Again.</p>
+
+      <p class="strip-bridge">Spontany doesn't just "match calendars." it finds the <em>Gold Windows</em> where lives actually overlap.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ REAL OPPORTUNITIES ═══════════════════ -->
+  <section class="band" style="padding-top: 30px;">
+    <div class="wrap">
+      <div class="eyebrow">Real opportunities</div>
+      <h2>Spontany finds overlap with a <span class="persona-cycle" id="persona-cycle"><em data-persona="friend">friend</em><em data-persona="parent" hidden>friend with kids</em><em data-persona="romantic" hidden>romantic partner</em></span>?<br>It'll suggest something you might like.</h2>
+      <p class="section-sub">Real Dallas spots, picked to fit the kind of plan you've got time for.</p>
+
+      <div class="persona-pills" id="persona-pills" role="tablist">
+        <button class="ppill" data-persona="friend"   aria-pressed="true"  role="tab">Friend</button>
+        <button class="ppill" data-persona="parent"   aria-pressed="false" role="tab">Friend with kids</button>
+        <button class="ppill" data-persona="romantic" aria-pressed="false" role="tab">Romantic partner</button>
+      </div>
+
+      <div class="opps-rail" id="opps-rail" aria-label="Real venue suggestions">
+        <div class="opps-track" id="opps-track">
+          <!-- cards rendered by JS based on selected persona -->
+          <div class="opp-card opp-skeleton"></div>
+          <div class="opp-card opp-skeleton"></div>
+          <div class="opp-card opp-skeleton"></div>
+          <div class="opp-card opp-skeleton"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ THE PLAN SHOULD FIND YOU ═══════════════════ -->
+  <section class="band" style="padding-top: 30px;">
+    <div class="wrap">
+      <div class="eyebrow">No reaching. Just momentum.</div>
+      <h2>The plan should find <em>you</em>.</h2>
+      <p class="section-sub">Quietly, in the background. Spontany finds the overlap, picks the spot, and floats the plan — to you and to them at the same time. Tap if it lands. Let it pass if it doesn't. The first move was never yours to make.</p>
+
+      <div class="invite-stage">
+        <div class="phone">
+          <div class="phone-status">
+            <span>9:41</span>
+            <span>· · ·</span>
+          </div>
+
+          <div class="invite-card invite-card-friend" data-state="friend">
+            <div class="invite-banner" data-img="friend"></div>
+            <div class="invite-card-header">
+              <div class="invite-card-icon">S</div>
+              <div class="invite-card-app">SPONTANY</div>
+              <div class="invite-card-time">now</div>
+            </div>
+            <div class="invite-card-title">Friend match — Friday.</div>
+            <div class="invite-card-body">Mike's free <span class="orange-bar">8:00 PM</span> — Granada Theater. Indie show, good seats left.</div>
+            <div class="invite-card-actions">
+              <button class="invite-action yes-orange" type="button">Yes, count me in</button>
+              <button class="invite-action pass" type="button">Pass</button>
+            </div>
+          </div>
+
+          <div class="invite-card invite-card-parent" data-state="parent" hidden>
+            <div class="invite-banner" data-img="parent"></div>
+            <div class="invite-card-header">
+              <div class="invite-card-icon">S</div>
+              <div class="invite-card-app">SPONTANY</div>
+              <div class="invite-card-time">now</div>
+            </div>
+            <div class="invite-card-title">Kid match — Saturday.</div>
+            <div class="invite-card-body">Sarah's free <span class="green-bar">11:00 AM</span> — Carpenter Park. Theo &amp; Emma can run around while you two grab coffee.</div>
+            <div class="invite-card-actions">
+              <button class="invite-action yes-green" type="button">Yes, we're in</button>
+              <button class="invite-action pass" type="button">Pass</button>
+            </div>
+          </div>
+
+          <div class="invite-card invite-card-romantic" data-state="romantic" hidden>
+            <div class="invite-banner" data-img="romantic"></div>
+            <div class="invite-card-header">
+              <div class="invite-card-icon">S</div>
+              <div class="invite-card-app">SPONTANY</div>
+              <div class="invite-card-time">now</div>
+            </div>
+            <div class="invite-card-title">You're both free — Tuesday.</div>
+            <div class="invite-card-body">Tuesday at <span class="gold-bar">8:00 PM</span> — Hide Dallas, halfway between you both.</div>
+            <div class="invite-card-actions">
+              <button class="invite-action yes" type="button">Yes, I'm in</button>
+              <button class="invite-action pass" type="button">Pass</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="invite-features">
+          <div class="invite-feature">
+            <div class="check">✓</div>
+            <div><strong>No calendar tetris</strong>The match comes pre-fitted to both of your free windows.</div>
+          </div>
+          <div class="invite-feature">
+            <div class="check">✓</div>
+            <div><strong>No "where should we go?"</strong>Spontany suggests the spot based on where you both are.</div>
+          </div>
+          <div class="invite-feature">
+            <div class="check">✓</div>
+            <div><strong>No awkward back-and-forth</strong>If they pass, the next match is already lined up.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FINAL CTA ═══════════════════ -->
+  <section class="closer">
+    <div class="wrap">
+      <div class="eyebrow">First trial</div>
+      <h2>Don't change your life.<br>Just <em>sync</em> your calendar.</h2>
+      <p class="closer-sub">Spontany isn't another social network to manage. It's the engine that makes your real-life socializing actually happen.</p>
+      <a href="/lp/_signup?variant=momentum-v1&src=footer" class="cta" id="cta-footer" data-cta="footer">
+        Sync my calendar &amp; invite a friend
+        <span class="cta-arrow">→</span>
+      </a>
+      <p class="legal">Free during early access. <a href="/privacy-policy.html">Privacy</a> · <a href="/terms-of-service.html">Terms</a></p>
+    </div>
+  </section>
+
+  <div class="footer-wordmark">
+    <img src="/logo-wordmark.svg" alt="Spontany">
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      window.LP && LP.init({ id: 'momentum-v1', type: 'hero', totalSteps: 0 });
+
+      // ── Momentum Strip — staged reveal on scroll-in ──────────────────────
+      var stripSection = document.getElementById('momentum');
+      var played = false;
+      function play() {
+        if (played) return;
+        played = true;
+        var stages = ['stage-1', 'stage-2', 'stage-3', 'stage-4'];
+        stages.forEach(function(c, i) {
+          setTimeout(function() {
+            // Replace previous stage class with current
+            stages.forEach(function(p) { stripSection.classList.remove(p); });
+            stripSection.classList.add(c);
+            window.LP && LP.cs && LP.cs(['trackPageEvent', 'momentum_' + c]);
+          }, 400 + i * 850);
+        });
+      }
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            if (e.isIntersecting && e.intersectionRatio > 0.2) play();
+          });
+        }, { threshold: [0.2] });
+        io.observe(stripSection);
+      } else {
+        // Fallback: just reveal everything immediately.
+        stripSection.classList.add('stage-4');
+      }
+
+      // ── CTAs ─────────────────────────────────────────────────────────────
+      ['cta-hero', 'cta-footer'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          var src = el.dataset.cta || 'cta';
+          window.LP && LP.ctaClick({ button: src });
+          window.LP && LP.goToSignup(src);
+        });
+      });
+
+      // ── Soft-suggestion CTA (the "wingman whisper" example) ──────────────
+      var softCta = document.getElementById('soft-suggestion-cta');
+      if (softCta) {
+        softCta.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'soft_suggestion_signal']);
+          // No real flow yet — just a visual "noted" state.
+          softCta.textContent = '✓ Noted — we\'ll line it up';
+          softCta.style.color = 'var(--gold)';
+        });
+      }
+
+      // ── Persona-driven opps rail (curated, image-matched) ────────────────
+      // The DB-driven approach showed mismatched stock photos (gym image on
+      // a kids waterpark, etc.). Switched to a hand-curated catalog with a
+      // verified Unsplash image per venue, grouped by persona. All venues
+      // are real Dallas spots; can be merged with /api/public/opportunities
+      // once that DB grows venue-specific image_url coverage.
+      function unsplash(id) { return 'https://images.unsplash.com/photo-' + id + '?w=720&auto=format&fit=crop&q=80'; }
+
+      var CATALOG = {
+        friend: [
+          { title: 'The Granada Theater',     loc: '3524 Greenville Ave, Dallas',   price: '$$',   tags: ['indie shows','live music'],   img: unsplash('1493676304819-0d7a8d026dcf') },
+          { title: 'House of Blues Dallas',   loc: '2200 N Lamar St, Victory Park', price: '$$',   tags: ['concerts','live music'],      img: unsplash('1492684223066-81342ee5ff30') },
+          { title: 'Klyde Warren Park',       loc: 'Downtown Dallas',               price: 'FREE', tags: ['food trucks','events'],       img: unsplash('1519741497674-611481863552') },
+          { title: 'White Rock Lake Loop',    loc: 'East Dallas',                   price: 'FREE', tags: ['9.3-mile trail','running'],   img: unsplash('1506905925346-21bda4d32df4') },
+          { title: 'Katy Trail',              loc: 'Uptown — Highland Park',        price: 'FREE', tags: ['running','biking'],           img: unsplash('1470071459604-3b5ec3a7fe05') },
+          { title: 'Trinity Forest Trails',   loc: 'South Dallas',                  price: 'FREE', tags: ['urban forest','hiking'],      img: unsplash('1511497584788-876760111969') },
+          { title: 'Lower Greenville Live',   loc: 'Greenville Ave, Dallas',        price: '$$',   tags: ['live music','bar crawl'],     img: unsplash('1470229722913-7c0e2dbbafd3') },
+          { title: 'Trinity Groves',          loc: 'West Dallas',                   price: '$$',   tags: ['walkable','restaurants'],     img: unsplash('1507676184212-d03ab07a01bf') },
+        ],
+        parent: [
+          { title: 'Six Flags Over Texas',         loc: 'Arlington',                price: '$$$', tags: ['theme park','classic'],        img: unsplash('1574629810360-7efbbe195018') },
+          { title: 'Six Flags Hurricane Harbor',   loc: 'Arlington',                price: '$$',  tags: ['waterpark','wave pool'],       img: unsplash('1531058020387-3be344556be6') },
+          { title: 'Bahama Beach Waterpark',       loc: '1895 Campfire Cir, Dallas',price: '$',   tags: ['waterpark','wave pool'],       img: unsplash('1429962714451-bb934ecdc4ec') },
+          { title: 'Fort Worth Zoo',               loc: '1989 Colonial Pkwy, Fort Worth', price: '$$', tags: ['zoo','top-rated'],        img: unsplash('1568393691622-c7ba131d63b4') },
+          { title: 'Sky Zone Trampoline Park',     loc: '4400 W Plano Pkwy, Plano', price: '$',   tags: ['trampoline','dodgeball'],      img: unsplash('1473163928189-364b2c4e1135') },
+          { title: 'Perot Museum',                 loc: '2201 N Field St, Arts District', price: '$$', tags: ['science','dinosaurs'],   img: unsplash('1503454537195-1dcabb73ffb9') },
+          { title: 'Galleria Ice Skating',         loc: '13350 Dallas Pkwy',        price: '$',   tags: ['ice skating','indoor'],        img: unsplash('1604326531570-2689ea7ae287') },
+          { title: 'Carpenter Park Plano',         loc: '6701 Coit Rd, Plano',      price: 'FREE',tags: ['playground','splash pad'],     img: unsplash('1471520201477-47a62a269a87') },
+        ],
+        romantic: [
+          { title: 'Uchi Dallas',           loc: '2817 Maple Ave, Uptown',          price: '$$$', tags: ['japanese','sushi'],          img: unsplash('1579871494447-9811cf80d66c') },
+          { title: 'Hide Dallas',           loc: '2816 Elm St, Deep Ellum',         price: '$$',  tags: ['cocktails','craft bar'],     img: unsplash('1536935338788-846bb9981813') },
+          { title: 'Parliament',            loc: '2418 Allen St, Uptown',           price: '$$',  tags: ['cocktails','date night'],    img: unsplash('1551024709-8f23befc6f87') },
+          { title: "Nick & Sam's",          loc: '3008 Maple Ave, Uptown',          price: '$$$', tags: ['steakhouse','iconic'],       img: unsplash('1424847651672-bf20a4b0982b') },
+          { title: 'Knife Restaurant',      loc: 'The Highland, Mockingbird Ln',    price: '$$$', tags: ['steak','date night'],        img: unsplash('1544025162-d76694265947') },
+          { title: 'Las Almas Rotas',       loc: 'Expo Park, East Dallas',          price: '$$',  tags: ['mezcal','intimate'],         img: unsplash('1551538827-9c037cb4f32a') },
+          { title: 'Petra and the Beast',   loc: '601 N Tyler St, East Dallas',     price: '$$$', tags: ['farm to table','romantic'],  img: unsplash('1414235077428-338989a2e8c0') },
+          { title: 'The Charles',           loc: 'Design District, Dallas',         price: '$$',  tags: ['italian','cocktails'],       img: unsplash('1517248135467-4c7edcad34c4') },
+        ],
+      };
+
+      // Banner images for the rotating invite cards. Each persona's invite
+      // shows a venue from its persona's catalog — so the picture matches
+      // both the persona AND the body copy.
+      var INVITE_BANNERS = {
+        friend:   CATALOG.friend[0].img,    // Granada Theater (concert)
+        parent:   CATALOG.parent[7].img,    // Carpenter Park (playground)
+        romantic: CATALOG.romantic[1].img,  // Hide Dallas (cocktails)
+      };
+
+      function escAttr(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+          .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+      function escText(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      var oppsTrack    = document.getElementById('opps-track');
+      var pillsRoot    = document.getElementById('persona-pills');
+      var personaCycle = document.getElementById('persona-cycle');
+      var currentPersona = 'friend';
+
+      function renderOppsForPersona(persona) {
+        if (!oppsTrack) return;
+        var venues = CATALOG[persona] || [];
+        oppsTrack.innerHTML = venues.map(function(v) {
+          var firstTwoTags = (v.tags || []).slice(0, 2);
+          return ''
+            + '<a class="opp-card" data-title="' + escAttr(v.title) + '" data-persona="' + persona + '">'
+            +   '<div class="opp-card-img" style="background-image:url(' + escAttr(v.img) + ');">'
+            +     (v.price ? '<span class="opp-card-price">' + escText(v.price) + '</span>' : '')
+            +   '</div>'
+            +   '<div class="opp-card-body">'
+            +     '<div class="opp-card-title">' + escText(v.title) + '</div>'
+            +     '<div class="opp-card-loc">' + escText(v.loc) + '</div>'
+            +     (firstTwoTags.length
+                    ? '<div class="opp-card-tags">'
+                      + firstTwoTags.map(function(t) { return '<span class="opp-card-tag">' + escText(t) + '</span>'; }).join('')
+                      + '</div>'
+                    : '')
+            +   '</div>'
+            + '</a>';
+        }).join('');
+
+        oppsTrack.querySelectorAll('.opp-card').forEach(function(el) {
+          el.addEventListener('click', function() {
+            window.LP && LP.cs && LP.cs(['trackPageEvent', 'opp_card_click_' + persona]);
+          });
+        });
+        // Reset rail scroll so persona switches start at the first card
+        var rail = document.getElementById('opps-rail');
+        if (rail) rail.scrollTo({ left: 0, behavior: 'auto' });
+      }
+
+      function setPersona(p, opts) {
+        if (p === currentPersona) return;
+        currentPersona = p;
+        if (pillsRoot) {
+          pillsRoot.querySelectorAll('.ppill').forEach(function(b) {
+            b.setAttribute('aria-pressed', b.dataset.persona === p ? 'true' : 'false');
+          });
+        }
+        if (personaCycle) {
+          personaCycle.querySelectorAll('em').forEach(function(em) {
+            em.hidden = em.dataset.persona !== p;
+          });
+        }
+        renderOppsForPersona(p);
+        window.LP && LP.cs && LP.cs(['trackPageEvent', 'persona_' + p + '_' + ((opts && opts.src) || 'auto')]);
+      }
+
+      var pillUserInteracted = false;
+      if (pillsRoot) {
+        pillsRoot.querySelectorAll('.ppill').forEach(function(b) {
+          b.addEventListener('click', function() {
+            pillUserInteracted = true;
+            setPersona(b.dataset.persona, { src: 'pill' });
+          });
+        });
+      }
+
+      // Initial render
+      renderOppsForPersona(currentPersona);
+
+      // Auto-rotate every 8s until the user clicks a pill
+      var personaOrder = ['friend','parent','romantic'];
+      var personaTimer = setInterval(function() {
+        if (pillUserInteracted) { clearInterval(personaTimer); return; }
+        var idx = personaOrder.indexOf(currentPersona);
+        var next = personaOrder[(idx + 1) % personaOrder.length];
+        setPersona(next, { src: 'auto' });
+      }, 8000);
+
+      // ── Invite cards: banner images + 3-state rotation ───────────────────
+      document.querySelectorAll('.invite-banner').forEach(function(b) {
+        var key = b.dataset.img;
+        if (INVITE_BANNERS[key]) b.style.backgroundImage = 'url(' + INVITE_BANNERS[key] + ')';
+      });
+
+      var inviteCards = {
+        friend:   document.querySelector('.invite-card-friend'),
+        parent:   document.querySelector('.invite-card-parent'),
+        romantic: document.querySelector('.invite-card-romantic'),
+      };
+      var inviteOrder   = ['friend','parent','romantic'];
+      var inviteShowing = 'friend';
+      var inviteTimer = setInterval(function() {
+        // Pause rotation if any Yes was tapped — user is engaged with one card
+        if (Object.keys(inviteCards).some(function(k) { return inviteCards[k] && inviteCards[k].dataset.acked; })) {
+          clearInterval(inviteTimer);
+          return;
+        }
+        var idx = inviteOrder.indexOf(inviteShowing);
+        var next = inviteOrder[(idx + 1) % inviteOrder.length];
+        Object.keys(inviteCards).forEach(function(k) {
+          if (inviteCards[k]) inviteCards[k].hidden = (k !== next);
+        });
+        inviteShowing = next;
+      }, 6000);
+
+      // ── Invite "Yes" buttons — tiny dopamine hit ─────────────────────────
+      function wireYes(btn, doneText, doneBg, card) {
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+          btn.textContent = doneText;
+          btn.style.background = doneBg;
+          if (card) card.dataset.acked = '1';
+          window.LP && LP.cs && LP.cs(['trackPageEvent', 'invite_demo_yes_' + (card && card.dataset.state || 'unknown')]);
+        });
+      }
+      wireYes(document.querySelector('.invite-action.yes'),        '✓ See you Tuesday',  '#86efac', inviteCards.romantic);
+      wireYes(document.querySelector('.invite-action.yes-green'),  '✓ See you Saturday', '#86efac', inviteCards.parent);
+      wireYes(document.querySelector('.invite-action.yes-orange'), '✓ See you Friday',   '#fdba74', inviteCards.friend);
+
+      // ── Hero video cycle: each clip plays exactly once, then crossfade ───
+      // Female (3.23s) and male (8s) loops at different durations would
+      // mismatch any CSS-keyframe timer, so the rotation is driven by the
+      // 'ended' event instead. Each video is reset to t=0 after fading out
+      // so the next showing always starts from frame 1.
+      (function setupHeroCycle() {
+        var va = document.querySelector('.hero-bg .v-a');
+        var vb = document.querySelector('.hero-bg .v-b');
+        if (!va || !vb) return;
+
+        var FADE_MS = 900; // matches the CSS transition
+
+        function safePlay(v) {
+          var p = v.play();
+          if (p && typeof p.catch === 'function') p.catch(function() {});
+        }
+
+        function crossfade(showVideo, hideVideo) {
+          showVideo.currentTime = 0;
+          safePlay(showVideo);
+          showVideo.classList.add('visible');
+          hideVideo.classList.remove('visible');
+          // Once the outgoing video is fully transparent, pause + rewind it
+          // so its next appearance starts from frame 1 again.
+          setTimeout(function() {
+            try { hideVideo.pause(); hideVideo.currentTime = 0; } catch(e) {}
+          }, FADE_MS);
+        }
+
+        va.addEventListener('ended', function() { crossfade(vb, va); });
+        vb.addEventListener('ended', function() { crossfade(va, vb); });
+
+        // A is autoplay+visible from markup; just guard against the browser
+        // blocking autoplay (rare with muted+playsinline) by retrying on
+        // first user interaction.
+        if (va.paused) {
+          var retry = function() { safePlay(va); };
+          ['scroll','pointerdown','touchstart'].forEach(function(ev) {
+            window.addEventListener(ev, retry, { once: true, passive: true });
+          });
+        }
+      })();
+    });
+  </script>
+</body>
+</html>

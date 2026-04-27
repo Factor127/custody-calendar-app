@@ -14,6 +14,7 @@ const LPs = [
   { id: 'friends-demo-v1', type: 'demo',          label: 'Align friends\' schedules',  active: true,  file: 'public/lp/friends-demo-v1/index.html' },
   { id: 'why-v1',          type: 'explainer',     label: 'Why Spontany exists',        active: true,  file: 'public/lp/why-v1/index.html' },
   { id: 'serious-v1',      type: 'teaser-share',  label: 'Let him show he\'s serious', active: true,  file: 'public/lp/serious-v1/index.html' },
+  { id: 'momentum-v1',     type: 'hero',          label: 'The end of "Are you free?"', active: true,  file: 'public/lp/momentum-v1/index.html' },
 ];
 
 function getActiveLPs() { return LPs.filter(lp => lp.active); }
@@ -40,7 +41,28 @@ router.get('/lp/:id', (req, res, next) => {
     return res.status(500).send('LP file missing');
   }
 
-  const inject = `<script>
+  // Meta Pixel — injected for the /lp/:id preview route. The same snippet
+  // also lives in each LP file's <head> for direct/static access; both are
+  // guarded by window.__SP_PIXEL_INIT so PageView only fires once.
+  const inject = `<!-- Meta Pixel (route-injected) -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+if (!window.__SP_PIXEL_INIT) {
+  window.__SP_PIXEL_INIT = true;
+  fbq('init', '2161239351358950');
+  fbq('track', 'PageView');
+}
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+<script>
 window.__LP_ID='${lp.id}';
 window.__LP_TYPE='${lp.type}';
 window.__LP_PREVIEW=true;
@@ -124,16 +146,25 @@ router.post('/api/lp/signup', async (req, res) => {
   // Track signup in dedicated table (survives analytics resets + has UTM attribution)
   try {
     db.prepare(`
-      INSERT INTO lp_signups (session_id, variant, email, first_name, utm_source, utm_campaign, utm_content)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lp_signups
+        (session_id, variant, email, first_name,
+         utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+         fbclid, ttclid, gclid, referrer)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       b.session_id || null,
       b.variant || null,
       email,
       first_name,
-      b.utm_source || null,
+      b.utm_source   || null,
+      b.utm_medium   || null,
       b.utm_campaign || null,
-      b.utm_content || null,
+      b.utm_content  || null,
+      b.utm_term     || null,
+      b.fbclid       || null,
+      b.ttclid       || null,
+      b.gclid        || null,
+      b.referrer     || null,
     );
   } catch(e) {
     console.error('[lp signup] insert failed:', e.message);
