@@ -10,10 +10,10 @@ const { sendEmail } = require('../utils/email');
 // LP registry - single source of truth for the A/B test.
 // Keep in sync with AB_VARIANTS in server.js (which reads from here).
 const LPs = [
-  { id: 'timeback-v1',     type: 'hero',          label: 'You got your time back',     active: true,  file: 'public/lp/timeback-v1/index.html' },
-  { id: 'friends-demo-v1', type: 'demo',          label: 'Align friends\' schedules',  active: true,  file: 'public/lp/friends-demo-v1/index.html' },
-  { id: 'why-v1',          type: 'explainer',     label: 'Why Spontany exists',        active: true,  file: 'public/lp/why-v1/index.html' },
-  { id: 'serious-v1',      type: 'teaser-share',  label: 'Let him show he\'s serious', active: true,  file: 'public/lp/serious-v1/index.html' },
+  { id: 'timeback-v1',     type: 'hero',          label: 'You got your time back',     active: false, file: 'public/lp/timeback-v1/index.html' },
+  { id: 'friends-demo-v1', type: 'demo',          label: 'Align friends\' schedules',  active: false, file: 'public/lp/friends-demo-v1/index.html' },
+  { id: 'why-v1',          type: 'explainer',     label: 'Why Spontany exists',        active: false, file: 'public/lp/why-v1/index.html' },
+  { id: 'serious-v1',      type: 'teaser-share',  label: 'Let him show he\'s serious', active: false, file: 'public/lp/serious-v1/index.html' },
   { id: 'momentum-v1',     type: 'hero',          label: 'The end of "Are you free?"', active: true,  file: 'public/lp/momentum-v1/index.html' },
 ];
 
