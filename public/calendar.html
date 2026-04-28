@@ -3946,23 +3946,33 @@ function renderEventPane(data) {
     html += `</div>`;
   }
 
-  // Add to calendar button - shown to everyone when there's a date
+  // Add to calendar / share buttons - shown to everyone (share works without a date too)
+  // Store enriched outing for calendar export and share (avoids JSON-in-HTML attribute issues)
+  window._calExportOuting = { ...outing, _invitees: invitees || [], _sourceUrl: outing.source_url || null };
+  html += `<div style="padding:2px 16px 10px;display:flex;flex-wrap:wrap;gap:8px;">`;
   if (outing.date) {
-    // Store enriched outing for calendar export (avoids JSON-in-HTML attribute issues)
-    window._calExportOuting = { ...outing, _invitees: invitees || [], _sourceUrl: outing.source_url || null };
-    html += `<div style="padding:2px 16px 10px;">
-      <button onclick="addOutingToCalendar(window._calExportOuting)"
-        style="background:none;border:1px solid rgba(230,249,82,0.25);border-radius:10px;
-               padding:8px 16px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
-               cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;
-               transition:border-color .15s,color .15s;"
-        onmouseover="this.style.borderColor='rgba(230,249,82,0.55)';this.style.color='#e6f952'"
-        onmouseout="this.style.borderColor='rgba(230,249,82,0.25)';this.style.color='rgba(230,249,82,0.75)'">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Add to my calendar
-      </button>
-    </div>`;
+    html += `<button onclick="addOutingToCalendar(window._calExportOuting)"
+      style="background:none;border:1px solid rgba(230,249,82,0.25);border-radius:10px;
+             padding:8px 14px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
+             cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;
+             transition:border-color .15s,color .15s;"
+      onmouseover="this.style.borderColor='rgba(230,249,82,0.55)';this.style.color='#e6f952'"
+      onmouseout="this.style.borderColor='rgba(230,249,82,0.25)';this.style.color='rgba(230,249,82,0.75)'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Add to my calendar
+    </button>`;
   }
+  html += `<button onclick="shareOuting(window._calExportOuting)"
+    style="background:none;border:1px solid rgba(230,249,82,0.25);border-radius:10px;
+           padding:8px 14px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
+           cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;
+           transition:border-color .15s,color .15s;"
+    onmouseover="this.style.borderColor='rgba(230,249,82,0.55)';this.style.color='#e6f952'"
+    onmouseout="this.style.borderColor='rgba(230,249,82,0.25)';this.style.color='rgba(230,249,82,0.75)'">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Share
+  </button>`;
+  html += `</div>`;
 
   // Suggest changes (invitees - non-creator participants)
   if (!is_creator) {
@@ -4173,12 +4183,20 @@ function renderInvitePane(data, inviteeRecordId) {
     html += `</div>`;
   }
 
-  // Link to event button
+  // Link + share row - share works whether or not the event has an external link
+  window._inviteShareOuting = { ...outing, _invitees: invitees || [] };
+  html += `<div style="padding:0 16px 6px;display:flex;flex-wrap:wrap;gap:8px;">`;
   if (outing.event_link) {
-    html += `<div style="padding:0 16px 6px;">
-      <a href="${outing.event_link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid rgba(230,249,82,0.28);border-radius:10px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;text-decoration:none;font-family:inherit;">🔗 Link to event</a>
-    </div>`;
+    html += `<a href="${outing.event_link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid rgba(230,249,82,0.28);border-radius:10px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;text-decoration:none;font-family:inherit;">🔗 Link to event</a>`;
   }
+  html += `<button onclick="shareOuting(window._inviteShareOuting)"
+    style="background:none;border:1px solid rgba(230,249,82,0.28);border-radius:10px;
+           padding:8px 14px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
+           cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Share
+  </button>`;
+  html += `</div>`;
 
   html += `</div>`;
 
@@ -5043,6 +5061,53 @@ function resetInviteModal() {
 function copyInviteUrl() {
   const url = document.getElementById('invite-url-display').textContent;
   navigator.clipboard.writeText(url).then(() => showToast('✓ Link copied!'));
+}
+
+// Share an outing's details (works for creators and invitees alike).
+// Uses native share sheet when available, otherwise copies a formatted summary to clipboard.
+async function shareOuting(outing) {
+  if (!outing) {
+    const cached = window._calExportOuting || window._inviteShareOuting;
+    if (cached) outing = cached;
+  }
+  if (!outing) { showToast('Nothing to share'); return; }
+
+  const title = outing.title || outing.venue || outing.message || 'Plan';
+  const lines = [title];
+  if (outing.date) {
+    try {
+      const _d = new Date(outing.date + 'T12:00:00');
+      lines.push('📅 ' + _d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
+    } catch(e) { lines.push('📅 ' + outing.date); }
+  }
+  if (outing.event_time) lines.push('🕐 ' + outing.event_time);
+  if (outing.venue) lines.push('📍 ' + outing.venue + (outing.venue_address ? ' — ' + outing.venue_address : ''));
+  else if (outing.venue_address) lines.push('📍 ' + outing.venue_address);
+
+  const eventUrl = outing.event_link || outing.source_url || null;
+  if (eventUrl) lines.push('🔗 ' + eventUrl);
+
+  const spontanyUrl = outing.id ? `${location.origin}/calendar?openEvent=${outing.id}` : null;
+  if (spontanyUrl) lines.push('See on Spontany: ' + spontanyUrl);
+
+  const text = lines.join('\n');
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'Spontany — ' + title, text, url: eventUrl || spontanyUrl || undefined });
+      return;
+    }
+  } catch(e) {
+    // user cancelled or share failed - fall through to copy
+    if (e && e.name === 'AbortError') return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✓ Event details copied');
+  } catch(e) {
+    prompt('Copy event details:', text);
+  }
 }
 
 // ── Connection approval ───────────────────────────────────────────────────

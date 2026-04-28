@@ -347,6 +347,40 @@ html, body {
   opacity: 0.6;
 }
 
+/* ---- FORWARD / SKIP BUTTON ---- */
+.fwd-btn {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  right: 20px;
+  z-index: 100;
+  height: 44px;
+  padding: 0 16px 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.fwd-btn.visible {
+  display: flex;
+}
+.fwd-btn:active {
+  transform: scale(0.96);
+  background: rgba(255,255,255,0.16);
+}
+.fwd-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* ---- SLIDE-SPECIFIC ---- */
 
 /* Hook slide */
@@ -524,6 +558,14 @@ html, body {
 <!-- Logo -->
 <div class="top-logo"><img src="/logo3.svg" alt="Spontany"></div>
 
+<!-- Forward / Skip -->
+<button class="fwd-btn" id="fwdBtn" aria-label="Skip ahead">
+  <span id="fwdLabel">Skip</span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</button>
+
 <!-- ============ SLIDES ============ -->
 <div class="slides-wrapper">
 
@@ -641,6 +683,8 @@ html, body {
 
   const progressFill = document.getElementById('progressFill');
   const backBtn = document.getElementById('backBtn');
+  const fwdBtn = document.getElementById('fwdBtn');
+  const fwdLabel = document.getElementById('fwdLabel');
 
   function updateProgress(step) {
     let pct = 0;
@@ -681,7 +725,33 @@ html, body {
     } else {
       backBtn.classList.add('visible');
     }
+
+    // Forward button visibility & label
+    if (step === 'reveal') {
+      fwdBtn.classList.remove('visible');
+    } else {
+      fwdBtn.classList.add('visible');
+      fwdLabel.textContent = (step === 0) ? 'Start' : 'Skip';
+    }
   }
+
+  // Public: advance to the next slide (treats belief slides as agreed)
+  window.nextStep = function() {
+    if (currentStep === 0) {
+      window.goTo(1);
+    } else if (currentStep === 1 || currentStep === 2 || currentStep === 3) {
+      const n = currentStep;
+      if (n < 3) {
+        history.push(n + 1);
+        showSlide(n + 1);
+      } else {
+        history.push('reveal');
+        showSlide('reveal');
+      }
+    } else if (currentStep === 'dq') {
+      window.goToReveal();
+    }
+  };
 
   // Public: navigate to a step
   window.goTo = function(step) {
@@ -744,21 +814,32 @@ html, body {
 
   document.addEventListener('touchend', function(e) {
     const dy = touchStartY - e.changedTouches[0].clientY;
-    const dx = Math.abs(touchStartX - e.changedTouches[0].clientX);
+    const dxRaw = touchStartX - e.changedTouches[0].clientX;
+    const absDx = Math.abs(dxRaw);
+    const absDy = Math.abs(dy);
 
-    // Only trigger on clear vertical swipe (not horizontal)
-    if (dy > 60 && dx < 80) {
-      // Swipe up - could auto-advance on hook screen
-      if (currentStep === 0) {
-        window.goTo(1);
-      }
+    // Swipe up OR swipe left -> advance forward (works on every slide)
+    if (dy > 60 && absDx < 80) {
+      window.nextStep();
+    } else if (dxRaw > 60 && absDy < 60) {
+      window.nextStep();
+    } else if (dxRaw < -60 && absDy < 60) {
+      // Swipe right -> back
+      backBtn.click();
     }
   }, { passive: true });
+
+  // Forward button click
+  fwdBtn.addEventListener('click', function() {
+    window.nextStep();
+  });
 
   // Keyboard support
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' || e.key === 'ArrowLeft') {
       backBtn.click();
+    } else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+      window.nextStep();
     }
   });
 
