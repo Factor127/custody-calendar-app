@@ -236,7 +236,12 @@
 
 <script>
 const params = new URLSearchParams(location.search);
-const MY_TOKEN = params.get('token');
+// Fall back to localStorage so back/forward nav doesn't lose auth and bounce
+// through /login. Match the pattern used by calendar/profile/connections.
+const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
+if (MY_TOKEN && !params.has('token')) {
+  try { history.replaceState(null, '', location.pathname + '?token=' + MY_TOKEN + (params.get('month') ? '&month=' + params.get('month') : '')); } catch(e) {}
+}
 
 let calendarDays = {};
 let myName = 'Me';

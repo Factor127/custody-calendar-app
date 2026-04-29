@@ -312,6 +312,11 @@ const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 let userRole = null;
 
 if (!MY_TOKEN) { window.location.href = '/login'; }
+else if (!params.has('token')) {
+  // Keep token in URL so back/forward navigation preserves auth state and
+  // doesn't bounce through /login.
+  try { history.replaceState(null, '', location.pathname + '?token=' + MY_TOKEN); } catch(e) {}
+}
 
 (async function init() {
   const res = await fetch(`/api/me?token=${MY_TOKEN}`);

@@ -156,14 +156,16 @@ th {
 .day-num { color: rgba(238,238,248,0.55); font-size: 13px; font-weight: 600; line-height: 1; }
 .label { color: var(--text); }
 
-/* Ownership fills */
+/* Ownership fills — opacities bumped (custody 0.22→0.34, free 0.12→0.22)
+   so the two are clearly distinguishable on the dark background and from
+   empty/no-data cells. */
 td.r {
-  background: rgba(124,92,191,0.22) !important;   /* purple - R's custody days (has kids) */
-  border-color: rgba(167,139,250,0.18) !important;
+  background: rgba(124,92,191,0.34) !important;   /* purple - R's custody days (has kids) */
+  border-color: rgba(167,139,250,0.40) !important;
 }
 td.z {
-  background: rgba(230,249,82,0.12) !important;   /* lime/yellow - free days (no kids) */
-  border-color: rgba(230,249,82,0.22) !important;
+  background: rgba(230,249,82,0.22) !important;   /* lime/yellow - free days (no kids) */
+  border-color: rgba(230,249,82,0.40) !important;
 }
 td.bothfree { box-shadow: inset 0 0 0 1.5px var(--lime) !important; }
 body.hide-frames td.bothfree { box-shadow: none !important; }
@@ -1675,6 +1677,19 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       background:rgba(230,249,82,0.14); color:var(--lime); white-space:nowrap;
     }
     .ss-avail-badge.full { background:rgba(34,197,94,0.18); color:#4ade80; }
+
+    /* Kids-day warning — used by both the SS date picker and the opp date picker
+       when the selected/extracted date lands on a custody (with-kids) day. */
+    .kids-day-warn {
+      display:flex; align-items:flex-start; gap:10px;
+      margin-top:10px; padding:10px 12px;
+      background:rgba(124,92,191,0.18);
+      border:1.5px solid rgba(167,139,250,0.45);
+      border-radius:10px;
+      font-size:12px; line-height:1.45; color:rgba(238,238,248,0.92);
+    }
+    .kids-day-warn .kdw-emoji { font-size:16px; line-height:1.2; flex-shrink:0; }
+    .kids-day-warn strong { color:#c8b6ff; font-weight:700; }
     .ss-date-avatars { display:flex; gap:-2px; align-items:center; flex-shrink:0; }
     .ss-date-avatar  { width:24px; height:24px; border-radius:50%; border:2px solid var(--surface);
                        display:flex; align-items:center; justify-content:center; font-size:10px;
@@ -2157,14 +2172,14 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
   <div class="cal-legend-bar" style="display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 12px 4px;flex-wrap:wrap;">
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
-      <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(124,92,191,0.35);flex-shrink:0;"></span> My custody
+      <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(124,92,191,0.46);flex-shrink:0;"></span> My custody
     </div>
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);">
-      <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(230,249,82,0.22);flex-shrink:0;"></span> Kid-free
+      <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(230,249,82,0.34);flex-shrink:0;"></span> Kid-free
     </div>
     <label id="both-free-pill" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--lime);cursor:pointer;user-select:none;padding:3px 9px 3px 6px;border:1px solid rgba(230,249,82,0.35);border-radius:20px;background:rgba(230,249,82,0.08);transition:opacity .15s,background .15s;">
       <input type="checkbox" id="toggle-frames" checked onchange="toggleClass('hide-frames',!this.checked)" style="display:none;">
-      <span id="both-free-swatch" style="display:inline-block;width:10px;height:10px;border-radius:2px;border:2px solid var(--lime);flex-shrink:0;box-sizing:border-box;background:rgba(230,249,82,0.25);"></span> Both free
+      <span id="both-free-swatch" style="display:inline-block;width:10px;height:10px;border-radius:2px;border:2px solid var(--lime);flex-shrink:0;box-sizing:border-box;background:rgba(230,249,82,0.25);"></span> Partner &amp; I match
     </label>
   </div>
 
@@ -2911,6 +2926,14 @@ function nextMonth() {
 // ── Init ──────────────────────────────────────────────────────────────────
 (async function init() {
   if (!MY_TOKEN) { window.location.href = '/'; return; }
+
+  // Make sure the visible URL carries the token so browser back/forward never
+  // lands on a tokenless URL that triggers the server's redirect-to-login.
+  // (PWA start_url is /calendar.html, magic-link returns can land tokenless,
+  // and some in-app navigations would otherwise leave the URL bare.)
+  if (!params.has('token')) {
+    try { history.replaceState(null, '', location.pathname + '?token=' + MY_TOKEN); } catch(e) {}
+  }
 
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
   if (!meRes.ok) { window.location.href = '/'; return; }
@@ -6125,6 +6148,13 @@ function showToast(msg) {
       <div class="pane-header">
         <button class="pane-back" onclick="dayPaneBack()">←</button>
         <div class="pane-title" id="event-pane-title">Event</div>
+        <!-- Share button — always visible so non-owners can forward event details -->
+        <button id="event-share-btn" title="Share" aria-label="Share event"
+                style="background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;"
+                onclick="shareOuting(window._calExportOuting || window._inviteShareOuting)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
         <button id="event-edit-btn" style="display:none;background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;" onclick="showEditForm()">Edit</button>
         <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
       </div>
@@ -6147,6 +6177,13 @@ function showToast(msg) {
       <div class="pane-header">
         <button class="pane-back" onclick="dayPaneBack()">←</button>
         <div class="pane-title">Invite</div>
+        <!-- Share button — invitees can forward the invite details to others -->
+        <button id="invite-share-btn" title="Share" aria-label="Share invite"
+                style="background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;"
+                onclick="shareOuting(window._inviteShareOuting || window._calExportOuting)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
         <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
       </div>
       <div id="invite-pane-body" style="overflow-y:auto;flex:1;"></div>
@@ -6218,6 +6255,8 @@ function showToast(msg) {
     <div style="padding:0 16px 16px; overflow-y:auto; max-height:55vh;">
       <div id="opp-date-list"></div>
     </div>
+    <!-- Warning shown when the picked date falls on a custody (kids) day -->
+    <div id="opp-kids-day-warn" class="kids-day-warn" style="display:none;margin:0 16px;"></div>
     <div style="padding:12px 16px 20px; border-top:1px solid rgba(255,255,255,0.07);">
       <button class="btn btn-primary" style="width:100%;padding:13px;" id="opp-confirm-date-btn" onclick="confirmOppDate()" disabled>Confirm date</button>
     </div>
@@ -6318,6 +6357,8 @@ function showToast(msg) {
         <div id="ss-when-section">
           <div class="ss-section-label">When <span class="ss-optional">optional</span></div>
           <div class="ss-date-list" id="ss-date-list"></div>
+          <!-- Warning shown when the picked date falls on a custody (kids) day -->
+          <div id="ss-kids-day-warn" class="kids-day-warn" style="display:none;"></div>
           <div class="ss-time-row" id="ss-time-row" style="display:none">
             <input type="time" class="ss-time-input" id="ss-time-input">
             <span class="ss-time-hint" id="ss-time-hint">add a time</span>
@@ -7185,6 +7226,10 @@ function _ssRebuildDateList() {
 
   const timeRow = document.getElementById('ss-time-row');
   if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
+
+  // Refresh kids-day warning whenever the list is rebuilt — covers link-prefill
+  // paths that set _ssSelectedDate without going through selectSSDate.
+  _renderKidsDayWarn('ss-kids-day-warn', _ssSelectedDate);
 }
 
 function selectSSDate(date, el) {
@@ -7194,6 +7239,28 @@ function selectSSDate(date, el) {
   const timeRow = document.getElementById('ss-time-row');
   if (timeRow) timeRow.style.display = _ssSelectedDate ? 'flex' : 'none';
   _ssRebuildWhoDropdown(); // refresh free/busy badges
+  _renderKidsDayWarn('ss-kids-day-warn', _ssSelectedDate);
+}
+
+// Show a "you're with the kids" warning when the picked date falls on a custody
+// day. Used by both the Start-Something date list and the opp-datepicker. The
+// goal is to surface the conflict early so the user doesn't accidentally book
+// over a kids day (which they may still want to do — we warn, not block).
+function _renderKidsDayWarn(elId, date) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const owner = date && (calendarDays || {})[date]?.owner;
+  if (!date || owner !== 'self') {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  let label = date;
+  try {
+    label = new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+  } catch(e) {}
+  el.innerHTML = `<span class="kdw-emoji">👶</span><div><strong>Heads up — you're with the kids on ${label}.</strong> Make sure this plan works around them, or pick a kid-free day.</div>`;
+  el.style.display = 'flex';
 }
 
 // ── What / linked event - autocomplete ───────────────────────────────────────
@@ -7852,6 +7919,7 @@ async function oppPlanThis() {
   _oppPickedDate = null;
   document.getElementById('opp-confirm-date-btn').disabled = true;
   document.getElementById('opp-datepicker-hint').textContent = `Plan: ${_oppActionTitle}`;
+  _renderKidsDayWarn('opp-kids-day-warn', null); // reset any stale warning
 
   const list = document.getElementById('opp-date-list');
   list.innerHTML = days.map(({ date, d }) => {
@@ -7871,6 +7939,7 @@ function pickOppDate(date, el) {
   document.querySelectorAll('.opp-date-row').forEach(r => r.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('opp-confirm-date-btn').disabled = false;
+  _renderKidsDayWarn('opp-kids-day-warn', date);
 }
 
 async function confirmOppDate() {

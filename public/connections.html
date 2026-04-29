@@ -606,8 +606,14 @@ input::placeholder { color:var(--muted); }
 
 <script>
 const params   = new URLSearchParams(location.search);
-const MY_TOKEN = params.get('token');
-if (!MY_TOKEN) location.replace('/');
+// Token preference: URL > localStorage. Falling back to localStorage prevents
+// back-nav from a sub-screen landing on a tokenless URL → /login redirect loop.
+const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
+if (!MY_TOKEN) { location.replace('/'); }
+else if (!params.has('token')) {
+  // Ensure URL carries the token so back/forward never strips it.
+  try { history.replaceState(null, '', location.pathname + '?token=' + MY_TOKEN); } catch(e) {}
+}
 
 let allConnections        = [];
 let connPrefs             = {};
