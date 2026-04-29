@@ -327,21 +327,48 @@ async function unfurlUrl(url, options = {}) {
   //   - parseTimeFromText on description / title
   //   - JSON-LD doorTime / startTime fields embedded in HTML
   //   - Body text patterns (doors/gates/show/Hebrew שעה/פתיחת)
+  //
+  // Body-text scanning runs against `htmlForBodyScan` rather than raw `html`:
+  // we strip <!-- comments -->, <script>, <style>, and <noscript> blocks first
+  // because Israeli ticket sites (zappa-club, eventim) inject build timestamps
+  // like `<!--29.04.2026 23:42:01:842 Generiert vom ...-->` that previously
+  // matched the year+time pattern below and produced ghost event times.
   if (!time) time = parseTimeFromText(description) || parseTimeFromText(title);
   if (!time) {
     const doorTime = html.match(/"(?:doorTime|startTime)"\s*:\s*"([^"]{3,20})"/i);
     if (doorTime) time = parseTimeFromText(doorTime[1]);
   }
   if (!time) {
+    const htmlForBodyScan = html
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, ' ');
+    // Phrases that indicate the matched time is NOT an event start —
+    // page-modification timestamps, build stamps, "last edited on …".
+    // Wikipedia: "This page was last edited on 7 April 2026, at 22:11".
+    // German build comments: "Generiert vom web-pdfe-e02".
+    const REJECT_CONTEXT = /last\s+(?:edited|modified|updated)|modified\s+on|updated\s+on|page\s+was|generiert|generated\s+(?:on|at|by)|built\s+at|copyright/i;
+    // The (?!:|\d) lookahead rejects `HH:MM:SS` and `HH:MMxx` so build
+    // timestamps with seconds/millis don't masquerade as event times.
     const bodyTimePatterns = [
-      /class="[^"]*time[^"]*"[^>]*>[^<]*?(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
-      /(?:20[2-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).{0,120}?[>•|\s](\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
-      /(?:שעה|פתיחת).{0,20}?(\d{1,2}:\d{2})/,
-      /(?:doors?|gates?|show|starts?|begins?).{0,30}?(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
+      /class="[^"]*time[^"]*"[^>]*>[^<]*?(\d{1,2}:\d{2}(?:\s*[AP]M)?)(?!:|\d)/i,
+      /(?:20[2-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).{0,120}?[>•|\s](\d{1,2}:\d{2}(?:\s*[AP]M)?)(?!:|\d)/i,
+      /(?:שעה|פתיחת).{0,20}?(\d{1,2}:\d{2})(?!:|\d)/,
+      /(?:doors?|gates?|show|starts?|begins?).{0,30}?(\d{1,2}:\d{2}(?:\s*[AP]M)?)(?!:|\d)/i,
     ];
     for (const pat of bodyTimePatterns) {
-      const m = html.match(pat);
-      if (m) { time = parseTimeFromText(m[1]); if (time) break; }
+      // Iterate matches so we can skip ones with rejection context and try
+      // the next occurrence rather than abandoning the whole pattern.
+      const gPat = new RegExp(pat.source, pat.flags.includes('g') ? pat.flags : pat.flags + 'g');
+      let m;
+      while ((m = gPat.exec(htmlForBodyScan)) !== null) {
+        const ctx = htmlForBodyScan.slice(Math.max(0, m.index - 80), m.index + m[0].length + 20);
+        if (REJECT_CONTEXT.test(ctx)) continue;
+        const t = parseTimeFromText(m[1]);
+        if (t) { time = t; break; }
+      }
+      if (time) break;
     }
   }
 
