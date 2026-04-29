@@ -1584,6 +1584,24 @@ function _venueUtcOffset(text) {
 }
 
 // GET /api/unfurl?url=... - extract title/date/description from any pasted link
+//
+// Thin wrapper around services/unfurl.js. Preserves the legacy response
+// shape that calendar.html consumes (title/description/image/siteName/date/
+// time/url) and adds new superset fields (venue/address/price/etc) alongside.
+//
+// Time is rendered in 12-hour format ("8:00 PM") for the calendar's text
+// input, which expects e.g. "7:30 PM" placeholder.
+const { unfurlUrl: sharedUnfurlUrl, parseTimeFromText } = require('../services/unfurl');
+
+function _format12hTime(hhmm) {
+  if (!hhmm) return null;
+  const [hh, mm] = hhmm.split(':').map(Number);
+  if (isNaN(hh) || isNaN(mm)) return null;
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+}
+
 router.get('/unfurl', async (req, res) => {
   const me = requireToken(req, res); if (!me) return;
   const url = (req.query.url || '').trim();
@@ -1592,217 +1610,58 @@ router.get('/unfurl', async (req, res) => {
   const clientOffsetMin = parseInt(req.query.co) || 0;
   if (!url.match(/^https?:\/\//i)) return res.status(400).json({ error: 'Invalid URL' });
 
-  // Facebook serves OG tags to its own crawler UA; force English descriptions
-  const isFacebook = /facebook\.com/i.test(url);
-  const headers = {
-    'User-Agent': isFacebook
-      ? 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
-      : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-  };
-
   try {
-    const resp = await fetch(url, { headers, redirect: 'follow', signal: AbortSignal.timeout(8000) });
-    const html = await resp.text();
-
-    // Pull + decode a meta tag value - handles both attribute orders
-    const meta = (prop) => {
-      const re1 = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"'<>]{1,600})["']`, 'i');
-      const re2 = new RegExp(`<meta[^>]+content=["']([^"'<>]{1,600})["'][^>]+(?:property|name)=["']${prop}["']`, 'i');
-      return _decodeEntities((html.match(re1) || html.match(re2))?.[1]?.trim() || null);
-    };
-
-    let title = meta('og:title') || meta('twitter:title')
-              || _decodeEntities(html.match(/<title[^>]*>([^<]{1,200})<\/title>/i)?.[1]?.trim() || null);
-    // Reject generic error/login pages
-    const tl = (title || '').toLowerCase();
-    if (tl === 'facebook' || tl === 'error' || tl.includes('log in') || tl.includes('sign in')) title = null;
-
-    const description = meta('og:description') || meta('description') || null;
-    const image       = meta('og:image') || meta('twitter:image') || null;
-    const siteName    = meta('og:site_name') || null;
-
-    // Date + Time: structured tags first → JSON-LD → natural-language in description/title → URL pattern
-    let date = meta('article:published_time') || meta('og:updated_time')
-             || meta('event:start_time') || meta('datePublished') || null;
-    let time = null; // extracted event time e.g. "20:00"
-    let textParsed = false; // true when date came from natural-language (venue local time, no tz info)
-    if (!date) {
-      const jld = html.match(/"startDate"\s*:\s*"([^"]{6,30})"/i);
-      if (jld) date = jld[1];
+    const r = await sharedUnfurlUrl(url, {
+      timeoutMs: 8000,
+      clientOffsetMin,
+      allowAiFallback: true,
+    });
+    if (!r.title && !r.date) {
+      return res.status(422).json({ error: 'Could not extract event details from this page' });
     }
-    // Extract time from structured datetime before truncating to date-only
-    if (date && date.length >= 16) {
-      // ISO datetime like "2026-04-13T20:00:00" - extract HH:MM
-      const tMatch = date.match(/T(\d{2}):(\d{2})/);
-      if (tMatch) time = `${tMatch[1]}:${tMatch[2]}`;
-    }
-    if (!date) { date = _parseDateFromText(description, url); if (date) textParsed = true; }
-    if (!date) { date = _parseDateFromText(title, url);       if (date) textParsed = true; }
-    if (!date) {
-      const m = url.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-      if (m) date = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
-    }
-    // Fallback: scan HTML for date in elements with date/event-related classes
-    // (e.g. hatarbut.co.il uses class="event-date-occurrence">16.04.26)
-    if (!date) {
-      const dateClassPatterns = [
-        /class="[^"]*(?:event-date|occurrence|eo-event)[^"]*"[^>]*>([^<]{4,30})/i,
-        /class="[^"]*\bdate\b[^"]*"[^>]*>([^<]{4,30})/i,
-      ];
-      for (const pat of dateClassPatterns) {
-        const m = html.match(pat);
-        if (m) {
-          date = _parseDateFromText(m[1], url);
-          if (date) { textParsed = true; break; }
-        }
-      }
-    }
-    // If no time found from structured data, try natural-language extraction
-    if (!time) time = _parseTimeFromText(description);
-    if (!time) time = _parseTimeFromText(title);
-    // Also try JSON-LD "doorTime" or "startTime" fields
-    if (!time) {
-      const doorTime = html.match(/"(?:doorTime|startTime)"\s*:\s*"([^"]{3,20})"/i);
-      if (doorTime) time = _parseTimeFromText(doorTime[1]);
-    }
-    // Fallback: scan page body for event-time patterns near date/event context
-    // Many SPAs server-render the event time in the HTML even when meta tags are empty
-    if (!time) {
-      // Look for time displayed near date-related elements (common in event pages)
-      const bodyTimePatterns = [
-        // Time in a span/div with class containing "time" (allow text before digits)
-        /class="[^"]*time[^"]*"[^>]*>[^<]*?(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
-        // Time near a date (allow HTML tags between date text and time, e.g. separate spans)
-        /(?:20[2-3]\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec).{0,120}?[>•|\s](\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
-        // Hebrew: שעה (hour) or פתיחת (opening) followed by time
-        /(?:שעה|פתיחת).{0,20}?(\d{1,2}:\d{2})/,
-        // Generic: "doors" or "gates" or "show" or "start" near a time
-        /(?:doors?|gates?|show|starts?|begins?).{0,30}?(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i,
-      ];
-      for (const pat of bodyTimePatterns) {
-        const m = html.match(pat);
-        if (m) { time = _parseTimeFromText(m[1]); if (time) break; }
-      }
-    }
-    if (date) {
-      const d = new Date(date);
-      date = isNaN(d) ? null : d.toISOString().slice(0, 10);
-    }
-
-    // Timezone correction for text-parsed dates (venue local time → client local date).
-    // e.g. "April 13" in NY is "April 14" for someone in Israel (UTC+3) since a
-    // typical 8 PM ET show is midnight UTC = 3 AM Israel time = April 14.
-    if (textParsed && date && clientOffsetMin !== 0) {
-      const venueOffsetHrs = _venueUtcOffset(description || title || '');
-      if (venueOffsetHrs !== null) {
-        // Compute UTC time of a typical 8 PM venue-local start
-        const localHour   = 20; // 8 PM assumed concert start
-        const utcHour     = localHour - venueOffsetHrs; // e.g. 20 -(-4) = 24 → next day 0:00
-        const extraDays   = Math.floor(utcHour / 24);
-        const utcHourMod  = utcHour % 24;
-        const utcDate     = new Date(date + 'T00:00:00Z');
-        utcDate.setUTCDate(utcDate.getUTCDate() + extraDays);
-        utcDate.setUTCHours(utcHourMod, 0, 0, 0);
-        // Shift UTC time by client offset to get client's local timestamp, then read date
-        const clientMs   = utcDate.getTime() + clientOffsetMin * 60 * 1000;
-        date = new Date(clientMs).toISOString().slice(0, 10);
-      }
-    }
-
-    // Format time for display (e.g. "20:00" → "8:00 PM")
-    let timeDisplay = null;
-    if (time) {
-      const [hh, mm] = time.split(':').map(Number);
-      const ampm = hh >= 12 ? 'PM' : 'AM';
-      const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
-      timeDisplay = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
-    }
-
-    // ── Claude AI fallback for SPA pages with no extractable content ──────
-    // If basic extraction yielded no date (or a generic/useless title), ask Claude
-    // to infer event details from the URL structure and whatever HTML is available.
-    if (!date || !title || (title && !date && !image)) {
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (apiKey) {
-        try {
-          const bodyText = html
-            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/\s{2,}/g, ' ')
-            .trim()
-            .slice(0, 2000);
-          const claudePrompt = `Extract event details from this ticketing page. The page may be a JavaScript SPA so the HTML content is sparse - use the URL structure and any text you can find.
-
-URL: ${url}
-Page title: ${title || '(none)'}
-Site: ${siteName || '(unknown)'}
-Page text: ${bodyText || '(empty - SPA)'}
-
-Return ONLY valid JSON:
-{
-  "title": "Event/artist name",
-  "date": "YYYY-MM-DD or null",
-  "time": "HH:MM (24h) or null",
-  "venue": "venue name or null"
-}
-
-Rules:
-- The current year is ${new Date().getFullYear()}.
-- For Israeli sites (.co.il), dates in DD/MM format are day/month.
-- If the URL has a presentationId or prsntId parameter, this is a specific showtime - try to identify which one.
-- If you cannot determine the date/time, set them to null but still extract the title.
-- Do NOT invent data you're not confident about.`;
-
-          const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 256, messages: [{ role: 'user', content: claudePrompt }] }),
-            signal: AbortSignal.timeout(8000)
-          });
-          if (claudeRes.ok) {
-            const cData = await claudeRes.json();
-            const cText = cData.content?.[0]?.text || '';
-            const cJson = cText.match(/\{[\s\S]+\}/);
-            if (cJson) {
-              const parsed = JSON.parse(cJson[0]);
-              if (parsed.title && !title) title = parsed.title;
-              if (parsed.title && title && /כרטיסים|tickets|comy|booking/i.test(title)) title = parsed.title; // replace generic site title
-              if (parsed.date && !date) {
-                date = parsed.date;
-                const d = new Date(date);
-                date = isNaN(d) ? null : d.toISOString().slice(0, 10);
-              }
-              if (parsed.time && !time) {
-                time = _parseTimeFromText(parsed.time) || parsed.time;
-                if (time && !timeDisplay) {
-                  const [hh, mm] = time.split(':').map(Number);
-                  if (!isNaN(hh)) {
-                    const ampm = hh >= 12 ? 'PM' : 'AM';
-                    const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
-                    timeDisplay = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
-                  }
-                }
-              }
-            }
-          }
-        } catch(e) { /* Claude fallback non-critical */ }
-      }
-    }
-
-    if (!title && !date) return res.status(422).json({ error: 'Could not extract event details from this page' });
-    res.json({ title, description, image, siteName, date, time: timeDisplay, url });
+    return res.json({
+      // ── Legacy fields that calendar.html depends on ──
+      title:       r.title,
+      description: r.description,
+      image:       r.image,
+      siteName:    r.site_name,
+      date:        r.date,
+      time:        _format12hTime(r.time),
+      url:         r.url,
+      // ── New superset fields (calendar.html ignores these for now) ──
+      venue:            r.location_name,
+      address:          r.location_address,
+      price:            r.price,
+      currency:         r.currency,
+      price_range:      r.price_range,
+      opening_hours:    r.opening_hours,
+      ticket_url:       r.ticket_url,
+      list_items:       r.list_items,
+      start_iso:        r.start_iso,
+      end_iso:          r.end_iso,
+      is_past:          r.is_past,
+      extraction_source: r.extraction_source,
+    });
   } catch (err) {
     // ── Fetch failed (blocked, timeout, etc.) - try Claude with URL-only ──
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (apiKey) {
-      try {
-        // Decode URL-encoded Hebrew slugs for Claude to read
-        let decodedUrl = url;
-        try { decodedUrl = decodeURIComponent(url); } catch(e) {}
-        const claudePrompt = `I cannot fetch this page (it blocks server requests), but I need to extract event details from the URL alone.
+    // The shared module's fetch is internal, so a network failure surfaces
+    // here. Last-ditch AI extraction from the URL slug alone.
+    return _unfurlFallbackFromUrl(url, res, err);
+  }
+});
+
+// (Legacy try-block content kept only for historical reference removed below.)
+// The old inline implementation was 270+ lines. Helper below preserves the
+// fetch-failure AI fallback that the shared module can't cover (since it owns
+// the fetch call internally).
+
+async function _unfurlFallbackFromUrl(url, res, err) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey) {
+    try {
+      let decodedUrl = url;
+      try { decodedUrl = decodeURIComponent(url); } catch(e) {}
+      const claudePrompt = `I cannot fetch this page (it blocks server requests), but I need to extract event details from the URL alone.
 
 URL: ${decodedUrl}
 
@@ -1815,41 +1674,40 @@ Rules:
 - If the URL has no date info, set date to null.
 - The current year is ${new Date().getFullYear()}.
 - Do NOT invent dates/times you cannot determine from the URL.`;
-
-        const cRes = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: claudePrompt }] }),
-          signal: AbortSignal.timeout(8000)
-        });
-        if (cRes.ok) {
-          const cData = await cRes.json();
-          const cText = cData.content?.[0]?.text || '';
-          const cJson = cText.match(/\{[\s\S]+\}/);
-          if (cJson) {
-            const parsed = JSON.parse(cJson[0]);
-            if (parsed.title) {
-              let fDate = parsed.date || null;
-              if (fDate) { const d = new Date(fDate); fDate = isNaN(d) ? null : d.toISOString().slice(0, 10); }
-              let fTime = null;
-              if (parsed.time) {
-                fTime = _parseTimeFromText(parsed.time);
-                if (fTime) {
-                  const [hh, mm] = fTime.split(':').map(Number);
-                  const ampm = hh >= 12 ? 'PM' : 'AM';
-                  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
-                  fTime = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
-                }
+      const cRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: claudePrompt }] }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (cRes.ok) {
+        const cData = await cRes.json();
+        const cText = cData.content?.[0]?.text || '';
+        const cJson = cText.match(/\{[\s\S]+\}/);
+        if (cJson) {
+          const parsed = JSON.parse(cJson[0]);
+          if (parsed.title) {
+            let fDate = parsed.date || null;
+            if (fDate) { const d = new Date(fDate); fDate = isNaN(d) ? null : d.toISOString().slice(0, 10); }
+            let fTime = null;
+            if (parsed.time) {
+              fTime = parseTimeFromText(parsed.time);
+              if (fTime) {
+                const [hh, mm] = fTime.split(':').map(Number);
+                const ampm = hh >= 12 ? 'PM' : 'AM';
+                const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+                fTime = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
               }
-              return res.json({ title: parsed.title, description: null, image: null, siteName: parsed.siteName || null, date: fDate, time: fTime, url });
             }
+            return res.json({ title: parsed.title, description: null, image: null, siteName: parsed.siteName || null, date: fDate, time: fTime, url });
           }
         }
-      } catch(e) { /* Claude fallback failed too */ }
-    }
-    res.status(500).json({ error: 'Could not fetch URL: ' + err.message });
+      }
+    } catch(e) { /* Claude fallback failed too */ }
   }
-});
+  return res.status(500).json({ error: 'Could not fetch URL: ' + err.message });
+}
+
 
 // PUT /api/outings/:id - update outing details (title, venue, time, etc.)
 // Creator can update anything; invitees can fill in missing details

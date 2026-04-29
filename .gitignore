@@ -3,3 +3,9 @@ data/
 *.db
 .env
 .DS_Store
+
+# Local-only: parser sandbox / paste-to-invite lab.
+# Stays on Ran's machine for testing & iterating on the shared parser
+# (services/unfurl.js). Never deployed.
+routes/sandbox.js
+public/sandbox.html

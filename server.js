@@ -126,6 +126,10 @@ const analyticsRouter      = require('./routes/analytics');
 const nudgeRouter          = require('./routes/nudge');
 const lpRouter             = require('./routes/lp');
 const shareRouter          = require('./routes/share');
+// routes/sandbox is local-only (gitignored). Optional require so prod doesn't
+// crash when the file isn't present — see .gitignore for why.
+let sandboxRouter = null;
+try { sandboxRouter = require('./routes/sandbox'); } catch(e) { /* not present in prod */ }
 app.use('/api', opportunitiesRouter);
 app.use('/api', contributionsRouter);
 app.use('/api', smartSuggestRouter);
@@ -133,6 +137,7 @@ app.use('/api', pushRouter);
 app.use('/api', matchRouter);
 app.use('/api', analyticsRouter);
 app.use('/api', nudgeRouter);
+if (sandboxRouter) app.use('/api', sandboxRouter);
 app.use('/', lpRouter);
 app.use('/', shareRouter);
 app.use('/', pagesRouter);

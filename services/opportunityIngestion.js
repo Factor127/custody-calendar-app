@@ -1,6 +1,7 @@
 'use strict';
 const { randomUUID } = require('crypto');
 const db = require('../db');
+const { unfurlUrl } = require('./unfurl');
 
 // ── Category mapping from activity chips to opportunity categories ─────────
 const CHIP_TO_CAT = {
@@ -15,10 +16,11 @@ const CHIP_TO_CAT = {
 
 // ── Guess type from signals ───────────────────────────────────────────────
 function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
-  // 1. JSON-LD @type - most reliable signal
+  // 1. JSON-LD @type - most reliable signal. May be a string or an array
+  // (e.g. museumofillusions returns ["LocalBusiness","Organization"]).
   if (jsonLdType) {
-    const t = jsonLdType.toLowerCase();
-    if (/restaurant|food|cafe|coffee|bar|pub|nightclub|lodging|localbusiness/.test(t)) return 'venue';
+    const t = (Array.isArray(jsonLdType) ? jsonLdType.join(' ') : String(jsonLdType)).toLowerCase();
+    if (/restaurant|food|cafe|coffee|bar|pub|nightclub|lodging|localbusiness|museum|park|attraction|place/.test(t)) return 'venue';
     if (/event|concert|festival|musicev|socialev/.test(t)) return 'event';
   }
 
@@ -46,204 +48,77 @@ function guessType(url, title, desc, hasSpecificTime, jsonLdType) {
   return 'event';
 }
 
-// ── Metadata extraction from HTML ─────────────────────────────────────────
-function extractMetadata(html, url) {
-  const get = (pattern) => { const m = html.match(pattern); return m ? m[1] : null; };
-
-  // JSON-LD - handle both Event and Venue/Business types
-  let jsonLd = null;
-  let jsonLdType = null;
-  const ldMatch = html.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
-  if (ldMatch) {
-    try {
-      const parsed = JSON.parse(ldMatch[1]);
-      const ev = Array.isArray(parsed) ? parsed[0] : parsed;
-      jsonLdType = ev['@type'] || null;
-      const isEvent   = /Event/.test(jsonLdType || '');
-      const isVenue   = /Restaurant|FoodEstablishment|CafeOrCoffeeShop|BarOrPub|NightClub|LocalBusiness|LodgingBusiness|Store/.test(jsonLdType || '');
-      if (isEvent || isVenue) {
-        jsonLd = {
-          title:        ev.name,
-          start_time:   ev.startDate || null,
-          end_time:     ev.endDate   || null,
-          location_name: isVenue
-            ? (ev.address?.streetAddress || ev.address?.addressLocality || null)
-            : (ev.location?.name || ev.location?.address?.streetAddress || null),
-          description:  ev.description || null,
-          price:        ev.offers?.price || null,
-          currency:     ev.offers?.priceCurrency || 'ILS'
-        };
-      }
-    } catch(e) {}
-  }
-
-  const ogTitle    = get(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/i)
-                  || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:title"/i);
-  const ogDesc     = get(/<meta[^>]+property="og:description"[^>]+content="([^"]+)"/i)
-                  || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:description"/i);
-  const ogImage    = get(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)
-                  || get(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i);
-  const metaTitle  = get(/<title[^>]*>([^<]+)<\/title>/i);
-  const metaDesc   = get(/<meta[^>]+name="description"[^>]+content="([^"]+)"/i);
-
-  // Fallback image sources: twitter:image, JSON-LD image, first large <img>, apple-touch-icon
-  const twitterImage = get(/<meta[^>]+name="twitter:image"[^>]+content="([^"]+)"/i)
-                    || get(/<meta[^>]+content="([^"]+)"[^>]+name="twitter:image"/i);
-  const jsonLdImage  = (() => {
-    if (!ldMatch) return null;
-    try {
-      const parsed = JSON.parse(ldMatch[1]);
-      const ev = Array.isArray(parsed) ? parsed[0] : parsed;
-      const img = ev.image;
-      if (typeof img === 'string') return img;
-      if (Array.isArray(img)) return img[0]?.url || img[0] || null;
-      if (img?.url) return img.url;
-    } catch(e) {}
-    return null;
-  })();
-  const appleTouchIcon = get(/<link[^>]+rel="apple-touch-icon"[^>]+href="([^"]+)"/i);
-  const largeImg = get(/<img[^>]+src="(https?:\/\/[^"]+(?:\.jpg|\.jpeg|\.png|\.webp)[^"]*)"/i);
-
-  // Resolve relative image URL to absolute - try multiple sources
-  let imageUrl = ogImage || twitterImage || jsonLdImage || largeImg || appleTouchIcon || null;
-  if (imageUrl && !imageUrl.startsWith('http')) {
-    try { imageUrl = new URL(imageUrl, url).href; } catch(e) { imageUrl = null; }
-  }
-
-  const title      = jsonLd?.title || ogTitle || metaTitle || 'Untitled';
-  const domain     = (() => { try { return new URL(url).hostname.replace(/^www\./,''); } catch(e) { return ''; } })();
-
-  return {
-    title:        title.trim().slice(0, 200),
-    description:  jsonLd?.description || ogDesc || metaDesc || '',
-    start_time:   jsonLd?.start_time  || null,
-    end_time:     jsonLd?.end_time    || null,
-    location_name:jsonLd?.location_name || null,
-    price_raw:    jsonLd?.price || null,
-    image_url:    imageUrl,
-    source_url:   url,
-    source_domain:domain,
-    jsonLdType,
-    confidence_score: jsonLd ? 0.80 : 0.40
-  };
-}
-
 // ── Price tier helper ─────────────────────────────────────────────────────
+// Returns 'free' | 'low' | 'medium' | 'high' | null. null means UNKNOWN —
+// distinct from 'free'. This matters because we don't want events with
+// unscrapable prices (e.g. selector.org.il hides them behind JS) to be
+// tagged as free; that would skew price filtering and discovery.
+//
+// 'free' is reserved for explicit zero (numeric 0 or string "0").
 function priceTier(priceVal) {
-  if (!priceVal || priceVal === '0' || priceVal === 0) return 'free';
-  const n = parseFloat(String(priceVal).replace(/[^0-9.]/g,''));
-  if (isNaN(n)) return 'low';
-  if (n === 0) return 'free';
-  if (n < 15)  return 'low';
-  if (n < 50)  return 'medium';
+  if (priceVal == null || priceVal === '') return null;          // unknown
+  if (priceVal === 0 || priceVal === '0') return 'free';         // explicit zero
+  const n = parseFloat(String(priceVal).replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return null;                                     // unparseable → unknown
+  if (n === 0)  return 'free';
+  if (n < 15)   return 'low';
+  if (n < 50)   return 'medium';
   return 'high';
 }
 
-// ── Strip HTML tags to extract dense readable text ────────────────────────
-function htmlToText(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-// ── Optional Claude enrichment via REST API ───────────────────────────────
-async function enrichWithClaude(rawMeta, htmlSnippet) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
-  try {
-    // Strip tags so Claude gets dense readable text - much better date detection
-    const pageText = htmlToText(htmlSnippet).slice(0, 3000);
-    const prompt = `Extract structured event/venue data from this web page content and return ONLY valid JSON with these exact fields:
-{
-  "title": string,
-  "type": "event" | "venue" | "activity_template",
-  "category": one of: music|food & drink|outdoors|sports|arts|nightlife|entertainment|wellness|education|community,
-  "tags": [string, ...],
-  "start_time": ISO8601 datetime or null,
-  "end_time": ISO8601 datetime or null,
-  "location_name": string or null,
-  "price_tier": "free"|"low"|"medium"|"high" or null
-}
-
-Rules:
-- If the page is for a specific event/concert/show, set type "event" and extract the date/time as start_time in ISO8601 (e.g. "2026-01-30T21:00:00"). The current year is 2026.
-- If the page is a venue, bar, restaurant, or club homepage, set type "venue" and start_time null.
-- For dates written as DD.MM or DD/MM (e.g. "30.1", "30/1"), parse as the nearest future date in 2026.
-- location_name should be the venue name or city, not a full address.
-
-Title hint: ${rawMeta.title}
-Description: ${(rawMeta.description || '').slice(0, 400)}
-Page text: ${pageText}`;
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 512,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const jsonMatch = text.match(/\{[\s\S]+\}/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch(e) {
-    return null;
-  }
-}
-
 // ── Main: fetch URL and return parsed opportunity draft ────────────────────
+//
+// Stage 3 migration: this used to do its own HTML extraction inline. Now it
+// delegates to services/unfurl.js (the shared parser also used by /api/unfurl
+// and the sandbox) and just maps the rich result into the opportunity draft
+// shape that the DB expects.
+//
+// What we still do here that unfurl.js doesn't:
+//   - Deterministic guessType (URL pattern + venue/event keywords)
+//   - guessCategory (music/food/sports/arts/etc.)
+//   - priceTier bucketing (free/low/medium/high)
+//
+// Why no separate Claude enrichment call: unfurl's `allowAiFallback: true`
+// already invokes Haiku for sparse SPA pages to fill missing title/date/time/
+// venue. Adding a second call here would be redundant and double-charge.
 async function fetchAndParse(url) {
-  let html = '';
+  let r;
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Spontany/1.0 (+https://spontany.club)' },
-      signal: AbortSignal.timeout(10000)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    html = await res.text();
-  } catch(e) {
+    r = await unfurlUrl(url, { timeoutMs: 10000, allowAiFallback: true });
+  } catch (e) {
     throw new Error(`Could not fetch URL: ${e.message}`);
   }
 
-  const raw = extractMetadata(html, url);
+  const title = (r.title || 'Untitled').slice(0, 200);
+  const desc  = r.description || '';
 
-  // Try Claude enrichment
-  const enriched = await enrichWithClaude(raw, html.slice(0, 8000));
+  // Confidence score based on which extraction tier gave us the data
+  const confidenceByTier = { 'json-ld': 0.85, 'next-data': 0.75, 'meta-only': 0.45 };
+  const confidence_score = confidenceByTier[r.extraction_source] ?? 0.5;
 
-  const result = {
-    title:         (enriched?.title  || raw.title).slice(0, 200),
-    type:           enriched?.type   || guessType(url, raw.title, raw.description, !!raw.start_time, raw.jsonLdType),
-    category:       enriched?.category || guessCategory(raw.title, raw.description),
-    tags:           enriched?.tags   || [],
-    start_time:     enriched?.start_time || raw.start_time || null,
-    end_time:       enriched?.end_time   || raw.end_time   || null,
-    location_name:  enriched?.location_name || raw.location_name || null,
-    location_lat:   null,
-    location_lng:   null,
-    price_tier:     enriched?.price_tier || priceTier(raw.price_raw),
-    image_url:      raw.image_url || null,
-    source_type:    'user_submitted',
-    source_domain:  raw.source_domain,
-    source_url:     url,
-    confidence_score: enriched ? 0.85 : raw.confidence_score
+  // Pick the best price source for tier bucketing. price_range[0] is the min
+  // (when chase succeeded); otherwise raw price string from JSON-LD/NEXT.
+  const priceForTier = (r.price_range && r.price_range.length) ? r.price_range[0] : r.price;
+
+  return {
+    title,
+    type:          guessType(url, title, desc, !!r.start_iso, r.json_ld_type),
+    category:      guessCategory(title, desc),
+    tags:          [],
+    start_time:    r.start_iso || null,
+    end_time:      r.end_iso   || null,
+    // Prefer combined "name, address" when both available so the DB row is
+    // self-contained; fall back to whichever side we got.
+    location_name: [r.location_name, r.location_address].filter(Boolean).join(', ') || null,
+    location_lat:  null,
+    location_lng:  null,
+    price_tier:    priceTier(priceForTier),
+    image_url:     r.image || null,
+    source_type:   'user_submitted',
+    source_domain: r.domain,
+    source_url:    r.url,
+    confidence_score,
   };
-
-  return result;
 }
 
 // ── Guess category from text ──────────────────────────────────────────────
