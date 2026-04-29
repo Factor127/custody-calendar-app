@@ -3895,6 +3895,8 @@ async function openEventPane(outingId) {
   document.getElementById('event-pane-title').textContent = 'Loading…';
   document.getElementById('event-pane-body').innerHTML = '<div style="padding:20px;text-align:center;color:rgba(238,238,248,0.4);font-size:13px;">Loading…</div>';
   document.getElementById('event-edit-btn').style.display = 'none';
+  // Reset the header link-share so a stale event's button state doesn't bleed in
+  const _slb = document.getElementById('event-share-link-btn'); if (_slb) _slb.style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'flex';
   document.getElementById('private-toggle-row').style.display = 'none';
 
@@ -3914,6 +3916,9 @@ function renderEventPane(data) {
   document.getElementById('event-pane-title').textContent = title;
   if (is_creator) document.getElementById('event-edit-btn').style.display = '';
   if (!is_creator) document.getElementById('private-toggle-row').style.display = '';
+  // Reveal the header "Link" share when an external URL is present; the body
+  // "Share" buttons cover the invite-summary case for everyone.
+  _setShareLinkBtn('event-share-link-btn', !!(outing.event_link || outing.source_url));
 
   let html = '';
 
@@ -4166,6 +4171,8 @@ function renderInvitePane(data, inviteeRecordId) {
   const myInvitee = invitees.find(i => i.id === inviteeRecordId);
   const currentStatus = myInvitee?.status || 'pending';
   const title = outing.title || outing.venue || outing.message || 'Invite';
+  // Reveal the header "Link" share only if the source event has a URL.
+  _setShareLinkBtn('invite-share-link-btn', !!(outing.event_link || outing.source_url));
   let html = '';
 
   // Image header
@@ -5084,6 +5091,42 @@ function resetInviteModal() {
 function copyInviteUrl() {
   const url = document.getElementById('invite-url-display').textContent;
   navigator.clipboard.writeText(url).then(() => showToast('✓ Link copied!'));
+}
+
+// Share JUST the external event link (not the invite summary). Used by the
+// "Link" button in the day-pane-event/day-pane-invite headers, which is only
+// shown when the outing actually has an event_link to share.
+async function shareEventLink(outing) {
+  if (!outing) {
+    outing = window._calExportOuting || window._inviteShareOuting || null;
+  }
+  const url = outing && (outing.event_link || outing.source_url);
+  if (!url) { showToast('No event link to share'); return; }
+
+  const title = (outing && (outing.title || outing.venue)) || 'Event';
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, url });
+      return;
+    }
+  } catch(e) {
+    if (e && e.name === 'AbortError') return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('✓ Event link copied');
+  } catch(e) {
+    prompt('Copy event link:', url);
+  }
+}
+
+// Show or hide a pane's "Link" share button based on whether the current
+// outing has an external link. Called from renderEventPane / renderInvitePane.
+function _setShareLinkBtn(btnId, hasLink) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.style.display = hasLink ? 'inline-flex' : 'none';
 }
 
 // Share an outing's details (works for creators and invitees alike).
@@ -6148,12 +6191,14 @@ function showToast(msg) {
       <div class="pane-header">
         <button class="pane-back" onclick="dayPaneBack()">←</button>
         <div class="pane-title" id="event-pane-title">Event</div>
-        <!-- Share button — always visible so non-owners can forward event details -->
-        <button id="event-share-btn" title="Share" aria-label="Share event"
-                style="background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;"
-                onclick="shareOuting(window._calExportOuting || window._inviteShareOuting)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share
+        <!-- Share-link button — only visible when the current event has an
+             external event_link. Shares JUST the URL, separate from the
+             "Share details" body buttons that share the full invite summary. -->
+        <button id="event-share-link-btn" title="Share event link" aria-label="Share event link"
+                style="display:none;background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;align-items:center;gap:6px;"
+                onclick="shareEventLink(window._calExportOuting || window._inviteShareOuting)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Link
         </button>
         <button id="event-edit-btn" style="display:none;background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;" onclick="showEditForm()">Edit</button>
         <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
@@ -6177,12 +6222,13 @@ function showToast(msg) {
       <div class="pane-header">
         <button class="pane-back" onclick="dayPaneBack()">←</button>
         <div class="pane-title">Invite</div>
-        <!-- Share button — invitees can forward the invite details to others -->
-        <button id="invite-share-btn" title="Share" aria-label="Share invite"
-                style="background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;"
-                onclick="shareOuting(window._inviteShareOuting || window._calExportOuting)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share
+        <!-- Share-link button — only when the invite's source event has an
+             external link. Shares the URL only; "Share details" stays in body. -->
+        <button id="invite-share-link-btn" title="Share event link" aria-label="Share event link"
+                style="display:none;background:none;border:none;color:var(--lime,#e6f952);font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;align-items:center;gap:6px;"
+                onclick="shareEventLink(window._inviteShareOuting || window._calExportOuting)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Link
         </button>
         <button class="day-sheet-close" onclick="closeDaySheet()">✕</button>
       </div>
