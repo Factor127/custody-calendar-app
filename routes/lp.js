@@ -3,8 +3,9 @@
 const express = require('express');
 const path    = require('path');
 const fs      = require('fs');
+const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();
-const { db }  = require('../db');
+const { db, q }  = require('../db');
 const { sendEmail } = require('../utils/email');
 
 // LP registry - single source of truth for the A/B test.
@@ -134,8 +135,9 @@ ${rows.map(r => {
 });
 
 // ── POST /api/lp/signup ───────────────────────────────────────────────────
-// Unified signup endpoint - captures email + name, logs variant, funnels
-// into the existing waitlist flow so approval/onboarding stays consistent.
+// Unified signup endpoint — captures email + name with full LP attribution,
+// then mints a magic-link token so the LP CTA flows straight into /setup.
+// No waitlist gate: early-access users go directly into onboarding.
 router.post('/api/lp/signup', async (req, res) => {
   const b = req.body || {};
   const email = (b.email || '').trim().toLowerCase();
@@ -170,14 +172,22 @@ router.post('/api/lp/signup', async (req, res) => {
     console.error('[lp signup] insert failed:', e.message);
   }
 
-  // Fold into existing waitlist (same gated-beta flow)
+  // Mint a magic link so the client can redirect into the auth/verify flow.
+  // /api/auth/verify already routes new emails → /setup and existing users → /calendar,
+  // so this single token covers both paths.
+  let redirect = null;
   try {
-    db.prepare('INSERT OR IGNORE INTO waitlist (email) VALUES (?)').run(email);
+    const existing = q.getUserByEmail.get(email);
+    const linkToken = uuidv4();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    q.createMagicLink.run(linkToken, email, existing?.id || null, expiresAt);
+    redirect = `/api/auth/verify/${linkToken}`;
   } catch(e) {
-    console.error('[lp signup] waitlist insert failed:', e.message);
+    console.error('[lp signup] magic link failed:', e.message);
+    return res.status(500).json({ error: 'signup_failed' });
   }
 
-  res.json({ ok: true });
+  res.json({ ok: true, redirect });
 });
 
 module.exports = router;

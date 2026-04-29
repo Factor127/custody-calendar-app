@@ -64,6 +64,40 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
   .thanks h2 { font-size: 22px; margin-bottom: 8px; }
   .thanks p { color: rgba(255,255,255,0.6); font-size: 14px; }
   .fine { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 16px; text-align: center; }
+
+  /* Early-access banner — sets expectations before the form */
+  .ea-banner {
+    margin: -8px 0 22px;
+    padding: 12px 14px;
+    background: rgba(196,214,48,0.08);
+    border: 1px solid rgba(196,214,48,0.25);
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.78);
+  }
+  .ea-banner strong { color: #c4d630; font-weight: 700; }
+
+  /* Google SSO button */
+  .google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 12px;
+    background: #1a1a1a; color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px;
+    font-size: 15px; font-weight: 600; font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .google-btn:hover { border-color: rgba(255,255,255,0.25); background: #1f1f1f; }
+  .google-btn img { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .or-row {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0 4px;
+  }
+  .or-row hr { flex: 1; border: 0; border-top: 1px solid rgba(255,255,255,0.08); }
+  .or-row span { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
 </style>
 <script src="https://t.contentsquare.net/uxa/c6f898e9cb3d8.js"></script>
 </head>
@@ -74,8 +108,19 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     </div>
 
     <div id="form-view">
-      <h1>You're almost in.</h1>
-      <p class="sub">Drop your email - we'll send early access as spots open.</p>
+      <h1>You're getting early access.</h1>
+      <p class="sub">Set up your calendar in about 5 minutes. Expect rough edges — your feedback shapes what's next.</p>
+
+      <div class="ea-banner">
+        <strong>Heads up:</strong> Spontany is in early access. Some features are still being built. You'll see what works and help us decide what to ship next.
+      </div>
+
+      <a href="/auth/google" class="google-btn" id="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
+        Continue with Google
+      </a>
+
+      <div class="or-row"><hr><span>or with email</span><hr></div>
 
       <form id="signup-form">
         <label for="first_name">First name <span style="opacity:0.4">(optional)</span></label>
@@ -84,15 +129,14 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
         <label for="email">Email</label>
         <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" class="cs-mask" data-cs-mask="true">
 
-        <button class="primary" type="submit">Get early access</button>
-        <a href="#" id="nudge-open" class="nudge-link">Not ready now? Nudge me later →</a>
-        <p class="fine">No spam. One email when your spot opens.</p>
+        <button class="primary" type="submit">Get me in →</button>
+        <p class="fine">No password needed. We'll set you up right after this.</p>
       </form>
     </div>
 
     <div id="thanks-view" class="thanks" style="display:none;">
-      <h2>You're on the list.</h2>
-      <p id="thanks-sub">We'll email you as soon as your spot opens.</p>
+      <h2>Setting up your account…</h2>
+      <p id="thanks-sub">One moment.</p>
     </div>
   </main>
 
@@ -159,8 +203,13 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
             content_name: (variant || 'lp') + '_signup',
             src: params.get('src') || 'cta',
           });
+          // Show "Setting up..." state, then redirect into /setup via the
+          // verify endpoint (handles new vs existing email routing).
           document.getElementById('form-view').style.display   = 'none';
           document.getElementById('thanks-view').style.display = 'block';
+          var redirect = (res.body && res.body.redirect) || '/login';
+          // Tiny delay so the "Setting up your account…" frame is perceivable.
+          setTimeout(function() { window.location.replace(redirect); }, 400);
         } else {
           btn.disabled = false;
           btn.textContent = 'Try again';
@@ -171,6 +220,16 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
         btn.textContent = 'Try again';
       });
     });
+
+    // Track Google SSO clicks so we can attribute them to the LP variant
+    // even though the OAuth round-trip drops sessionStorage referrer.
+    var gbtn = document.getElementById('google-btn');
+    if (gbtn) {
+      gbtn.addEventListener('click', function() {
+        sa('signup_google_click', { variant: variant, src: params.get('src') || 'cta' });
+        window.LP && LP.cs && LP.cs(['trackPageEvent', 'signup_google_click']);
+      });
+    }
   </script>
 </body>
 </html>

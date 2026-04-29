@@ -50,6 +50,7 @@
   --muted:     rgba(226,226,226,0.42);
   --blue:      #e6f952;
   --accent:    #e6f952;
+  --btn-primary-text: #0a0a0a;
   --orange:    #ff7351;
   --r:rgba(230,249,82,0.12); --r-border:rgba(230,249,82,0.35);
 }
@@ -248,6 +249,36 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
     }
     .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,.2); }
 
+    /* Early-access pill — appears on intro and step-done framing */
+    .intro-ea-pill {
+      display: inline-block;
+      padding: 5px 12px; border-radius: 999px;
+      background: rgba(230,249,82,0.12); color: var(--lime);
+      border: 1px solid rgba(230,249,82,0.35);
+      font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    /* Persona-pick buttons on intro slide */
+    .persona-picks { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; margin-top: 8px; }
+    .persona-pick {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      color: var(--text); font-family: inherit; font-size: 15px; font-weight: 600;
+      text-align: left; cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+    }
+    .persona-pick:hover  { border-color: rgba(230,249,82,0.5); background: rgba(230,249,82,0.06); }
+    .persona-pick:active { transform: scale(0.98); }
+    .persona-pick .pp-emoji { font-size: 24px; line-height: 1; flex-shrink: 0; }
+    .persona-pick .pp-text  { flex: 1; }
+    .persona-pick .pp-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .persona-pick .pp-sub   { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .persona-pick .pp-arrow { color: var(--muted); font-size: 16px; flex-shrink: 0; }
+
     /* ── Wizard hidden until intro done ── */
     #wizard-main { transition: opacity 0.4s ease; }
 
@@ -327,7 +358,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <!-- Slide 1: General -->
   <div class="intro-slide" id="isl-1">
     <div class="intro-dots">
-      <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+      <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">Friendships need<br>face-to-face time</div>
     <div class="intro-sub">Real connection happens in person - coffee, walks, just being there.</div>
@@ -335,7 +366,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <!-- Slide 2: Problem -->
   <div class="intro-slide" id="isl-2">
     <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+      <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">But sometimes it's just too hard to find the right time</div>
     <div class="intro-sub">Schedules are complex. The back-and-forth is exhausting.</div>
@@ -343,19 +374,54 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <!-- Slide 3: Social calendar concept -->
   <div class="intro-slide" id="isl-3">
     <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">Spontany is your<br>social calendar</div>
     <div class="intro-sub">It maps everyone's availability so plans happen in seconds, not days. No more polling. No more guessing.</div>
   </div>
-  <!-- Slide 4: Tagline + CTA -->
+  <!-- Slide 4: Persona pick — primes which invite tab will be primary at step-done -->
+  <div class="intro-slide" id="isl-persona">
+    <div class="intro-dots">
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
+    </div>
+    <div class="intro-headline">Who do you most<br>want to plan with?</div>
+    <div class="intro-sub" style="margin-bottom: 28px;">Pick the one that fits — you can invite others later.</div>
+    <div class="persona-picks">
+      <button class="persona-pick" type="button" onclick="pickPersona('coparent')">
+        <span class="pp-emoji">🤝</span>
+        <span class="pp-text">
+          <span class="pp-title">My co-parent</span>
+          <span class="pp-sub">Share custody days, coordinate handoffs</span>
+        </span>
+        <span class="pp-arrow">→</span>
+      </button>
+      <button class="persona-pick" type="button" onclick="pickPersona('partner')">
+        <span class="pp-emoji">💛</span>
+        <span class="pp-text">
+          <span class="pp-title">A partner</span>
+          <span class="pp-sub">See when you're both free at the same time</span>
+        </span>
+        <span class="pp-arrow">→</span>
+      </button>
+      <button class="persona-pick" type="button" onclick="pickPersona('friend')">
+        <span class="pp-emoji">🎉</span>
+        <span class="pp-text">
+          <span class="pp-title">A close friend</span>
+          <span class="pp-sub">Match free nights without the back-and-forth</span>
+        </span>
+        <span class="pp-arrow">→</span>
+      </button>
+    </div>
+  </div>
+  <!-- Slide 5: Early-access framing + CTA -->
   <div class="intro-slide" id="isl-4">
     <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
     </div>
+    <div class="intro-ea-pill">Early access</div>
     <div class="intro-headline">Know before<br>you ask.</div>
-    <div class="intro-sub">See who's free. Skip the awkward texts. Make the plan.</div>
-    <button class="intro-cta" onclick="startOnboarding()">Let's get started</button>
+    <div class="intro-sub">You're getting in early — expect rough edges, and your feedback shapes what's next. Setup takes about 5 minutes.</div>
+    <button class="intro-cta" onclick="startOnboarding()">Let's set you up →</button>
   </div>
 </div>
 
@@ -628,7 +694,10 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
 
       <!-- Direct mode only: invite tabs -->
       <div id="done-invite-section" style="display:none;">
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Connect with someone →</div>
+        <!-- Persona-driven climax headline (set by renderDoneScreen when a -->
+        <!-- persona was picked on the intro slide). Falls back to a generic -->
+        <!-- "Connect with someone" prompt when no persona was chosen. -->
+        <div id="done-invite-headline" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">Connect with someone →</div>
         <div class="inv-type-tabs">
           <button class="inv-type-tab active" id="itab-coparent" onclick="switchInviteTab('coparent')">Co-parent</button>
           <button class="inv-type-tab"        id="itab-partner"  onclick="switchInviteTab('partner')">Partner</button>
@@ -669,7 +738,7 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
         </div>
       </div>
 
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px;" onclick="goToCalendar()">
+      <button class="btn btn-primary" id="done-open-calendar-btn" style="width:100%;justify-content:center;margin-top:20px;" onclick="goToCalendar()">
         Open my calendar →
       </button>
       <p id="done-footnote" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">
@@ -703,6 +772,12 @@ const WD_LETTER  = ['S','M','T','W','T','F','S'];
 let ownerName     = 'your co-parent';
 let inviteRelType = 'friend';   // set from invite validation; drives fast-path
 let createdToken  = null;
+// Persona the user picked on the intro slide ('coparent' | 'partner' | 'friend').
+// Drives which invite tab is primary at step-done. Persisted in sessionStorage
+// so it survives a refresh during onboarding.
+let targetInviteType = (function() {
+  try { return sessionStorage.getItem('sp_persona_pick') || null; } catch(e) { return null; }
+})();
 let relStatus     = null;
 let isParent      = true;
 let profilePhotoDataUrl = null;
@@ -777,16 +852,34 @@ function goStep(n) {
 }
 
 // ── Intro sequence ─────────────────────────────────────────────────────────────
-const INTRO_DURATIONS = [2400, 4500, 4500, 4500, null];
+// Slide order: 0 (loading) → 1 → 2 → 3 → 'persona' (waits for tap) → 4 (CTA).
+// `null` = no auto-advance; user action drives the transition.
+const INTRO_SEQUENCE  = [0, 1, 2, 3, 'persona', 4];
+const INTRO_DURATIONS = { 0: 2400, 1: 4500, 2: 4500, 3: 4500, 'persona': null, 4: null };
 let introTimer = null;
 
-function showIntroSlide(n) {
+function showIntroSlide(slideId) {
   clearTimeout(introTimer);
   document.querySelectorAll('.intro-slide').forEach(s => s.classList.remove('active'));
-  const sl = document.getElementById('isl-' + n);
+  const sl = document.getElementById('isl-' + slideId);
   if (sl) sl.classList.add('active');
-  const dur = INTRO_DURATIONS[n];
-  if (dur !== null) introTimer = setTimeout(() => showIntroSlide(n + 1), dur);
+  const dur = INTRO_DURATIONS[slideId];
+  if (dur != null) {
+    const idx = INTRO_SEQUENCE.indexOf(slideId);
+    const nextId = INTRO_SEQUENCE[idx + 1];
+    if (nextId !== undefined) introTimer = setTimeout(() => showIntroSlide(nextId), dur);
+  }
+}
+
+// User picks who they want to plan with on the persona slide. We stash the
+// pick so step-done can pre-select the matching invite tab and lead with that
+// invite as the climactic action.
+function pickPersona(type) {
+  if (type !== 'coparent' && type !== 'partner' && type !== 'friend') return;
+  targetInviteType = type;
+  try { sessionStorage.setItem('sp_persona_pick', type); } catch(e) {}
+  if (typeof fbq !== 'undefined') fbq('trackCustom', 'PersonaPicked', { persona: type });
+  showIntroSlide(4);
 }
 
 function startOnboarding() {
@@ -1240,6 +1333,26 @@ async function saveAndFinish() {
 }
 
 // ── Done screen ────────────────────────────────────────────────────────────────
+// Persona-driven copy for the direct-mode climax. Lives next to renderDoneScreen
+// so the "first invite" framing is visible at the moment the user finishes setup.
+const PERSONA_DONE_COPY = {
+  coparent: {
+    title:   "You're set up. Now bring in your co-parent.",
+    sub:     'Send them this link — once they join, your custody days line up automatically.',
+    headline:'Invite your co-parent →',
+  },
+  partner: {
+    title:   "You're set up. Now invite your partner.",
+    sub:     "Send them this link — you'll see when you're both free at the same time.",
+    headline:'Invite your partner →',
+  },
+  friend: {
+    title:   "You're set up. Now invite your first friend.",
+    sub:     "Send them this link — Spontany matches the nights you're both free.",
+    headline:'Invite a friend →',
+  },
+};
+
 async function renderDoneScreen() {
   if (MODE === 'invite') {
     document.getElementById('done-title').textContent = "You're in! 🎉";
@@ -1247,12 +1360,43 @@ async function renderDoneScreen() {
     document.getElementById('done-footnote').textContent = 'Your schedule is private - only people you approve can see it.';
     await renderOverlapSection();
   } else {
-    document.getElementById('done-title').textContent = 'Your calendar is ready!';
-    document.getElementById('done-sub').textContent   = 'Here are your upcoming free days.';
+    // Direct-mode (LP signup) climax: lead with the "first invite" CTA matching
+    // the persona they picked on the intro slide. Falls back to generic copy
+    // when no persona was chosen (e.g. someone refreshed mid-flow).
+    const personaCopy = targetInviteType && PERSONA_DONE_COPY[targetInviteType];
+    if (personaCopy) {
+      document.getElementById('done-title').textContent          = personaCopy.title;
+      document.getElementById('done-sub').textContent            = personaCopy.sub;
+      document.getElementById('done-invite-headline').textContent = personaCopy.headline;
+    } else {
+      document.getElementById('done-title').textContent = 'Your calendar is ready!';
+      document.getElementById('done-sub').textContent   = 'Here are your upcoming free days.';
+    }
     renderFreeStrip();
     document.getElementById('done-invite-section').style.display = 'block';
     document.getElementById('done-footnote').textContent = 'You can invite more people from your calendar any time.';
     await generateInviteLinks(createdToken);
+
+    // Pre-select the chosen invite tab so the matching panel is the visible one.
+    if (personaCopy) switchInviteTab(targetInviteType);
+
+    // Demote the "Open my calendar" button to a quiet skip link — the invite
+    // is the climax, opening the empty calendar should not compete for the eye.
+    if (personaCopy) {
+      const openBtn = document.getElementById('done-open-calendar-btn');
+      if (openBtn) {
+        openBtn.classList.remove('btn-primary');
+        openBtn.style.background = 'transparent';
+        openBtn.style.color = 'rgba(226,226,226,0.55)';
+        openBtn.style.border = '0';
+        openBtn.style.fontWeight = '500';
+        openBtn.style.fontSize = '13px';
+        openBtn.style.textDecoration = 'underline';
+        openBtn.style.textUnderlineOffset = '3px';
+        openBtn.style.marginTop = '14px';
+        openBtn.textContent = 'Skip for now — open my calendar';
+      }
+    }
   }
 }
 
