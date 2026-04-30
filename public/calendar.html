@@ -1919,12 +1919,27 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
        Elements tagged data-sc-step="N" are visible only when sheet[data-step="N"]. */
     .sc-sheet[data-step="1"] [data-sc-step="2"],
     .sc-sheet[data-step="2"] [data-sc-step="1"] { display:none !important; }
-    /* Step 1 layout: link input fills top, who-row claims the rest, "Let's go" pinned to bottom */
+    /* Step 1 layout: link input fills top, who-grid claims the rest, "Let's go" pinned to bottom.
+       Scroll lives on .sc-who-col; the inner #sc-who-row is the actual parent of the chips
+       and gets converted to a 4-column grid (mobile-friendly: fits a 360px phone). */
     .sc-sheet[data-step="1"] .sc-middle { padding:8px 16px 0; }
     .sc-sheet[data-step="1"] .sc-who-col {
-      flex:1; min-height:0; overflow-y:auto; flex-direction:row; flex-wrap:wrap; align-content:flex-start;
-      border-top:none; padding:14px 4px;
+      flex:1; min-height:0;
+      overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+      border-top:none; padding:16px 8px 24px;
     }
+    /* #sc-who-row carries inline display:flex + gap:10px from the markup;
+       !important is needed to flip it to a grid in step 1. */
+    .sc-sheet[data-step="1"] #sc-who-row {
+      display:grid !important;
+      grid-template-columns:repeat(4, 1fr);
+      gap:18px 6px;
+      align-content:start;
+      align-items:start !important;
+      width:100%;
+    }
+    /* Each chip fills its grid cell so content (avatar + name) centers cleanly */
+    .sc-sheet[data-step="1"] #sc-who-row .sc-who-chip { width:100%; padding:4px 2px; }
     /* Step 2 layout: calendar at top, who-row below, scrollable area for details */
     .sc-sheet[data-step="2"] .sc-middle { display:flex; flex-direction:column; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
     .sc-sheet[data-step="2"] .sc-who-col { border-top:1px solid var(--border); flex-direction:row; flex-wrap:nowrap; overflow-x:auto; padding:10px 12px; }
