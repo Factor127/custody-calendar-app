@@ -3628,6 +3628,7 @@ async function openDaySheet(dateStr) {
 
   renderDaySheetBody(dateStr, isFree, alsoFree, []);
   document.getElementById('day-sheet').classList.add('open');
+  _daySheetMarkOpen(); // push history-state guard so Android back closes the sheet
 
   // Fetch saved opportunity plans for this date
   try {
@@ -3780,13 +3781,47 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
   document.getElementById('day-sheet-body').innerHTML = html;
 }
 
-function closeDaySheet(e) {
-  if (e && e.target !== document.getElementById('day-sheet')) return;
+// ── Day-sheet history-state guard ───────────────────────────────────────────
+// Without this, pressing the Android system back button while the day sheet
+// (event/invite/list pane) is open navigates AWAY from /calendar — i.e. the
+// user gets kicked out of the app. Standard PWA pattern: push a guard state
+// when the modal opens, intercept popstate to close it, route manual closes
+// through history.back so popstate is the single source of truth for
+// "modal closed".
+let _daySheetHistoryActive = false;
+
+function _daySheetMarkOpen() {
+  if (_daySheetHistoryActive) return;
+  _daySheetHistoryActive = true;
+  try { history.pushState({ spontanyModal: 'day-sheet' }, ''); } catch(e) {}
+}
+
+function _daySheetUiClose() {
   document.getElementById('day-sheet').classList.remove('open');
   _dayPaneStack = [];
   _currentOutingId = null;
   _currentInviteeId = null;
+  _daySheetHistoryActive = false;
 }
+
+function closeDaySheet(e) {
+  if (e && e.target !== document.getElementById('day-sheet')) return;
+  if (!document.getElementById('day-sheet')?.classList.contains('open')) return;
+  if (_daySheetHistoryActive) {
+    // history.back pops our pushed state; the popstate handler below
+    // performs the actual UI close. Keeps history clean.
+    try { history.back(); return; } catch(e) {}
+  }
+  _daySheetUiClose();
+}
+
+// Single popstate handler — when a back press pops our pushed state, close
+// the modal instead of letting the browser navigate the page away.
+window.addEventListener('popstate', function() {
+  if (_daySheetHistoryActive && document.getElementById('day-sheet')?.classList.contains('open')) {
+    _daySheetUiClose();
+  }
+});
 
 async function removePlan(planId, dateStr) {
   try {
@@ -3864,6 +3899,7 @@ function dayPaneBack() {
 async function openEventPaneDirect(outingId) {
   _dayPaneStack = [];
   document.getElementById('day-sheet').classList.add('open');
+  _daySheetMarkOpen(); // push history-state guard so Android back closes the sheet
 
   // Fetch detail first to decide which pane to open
   try {
