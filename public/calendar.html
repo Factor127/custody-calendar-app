@@ -1161,7 +1161,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 650;
       background: var(--surface); border-top: 1px solid var(--border);
-      display: flex; padding: 6px 0 env(safe-area-inset-bottom, 6px);
+      /* padding-top bumped 6→14 so the top border line sits ~1.5mm higher
+         relative to the FAB. The FAB is anchored bottom (top:-10px on a
+         fixed-bottom nav) so it stays put on screen — only the line moves. */
+      display: flex; padding: 14px 0 env(safe-area-inset-bottom, 6px);
     }
     .bn-item {
       flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -1894,10 +1897,12 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .sc-overlay.open { background:rgba(0,0,0,0.55); pointer-events:all; }
     .sc-sheet {
-      width:100%; max-height:88vh;
-      background:rgba(14,14,14,0.90);
+      /* Mobile: full-screen take-over so step 1 (link + people) and step 2
+         (calendar + scrollable details) each have the whole viewport. */
+      width:100%; height:100dvh; max-height:100dvh;
+      background:rgba(14,14,14,0.95);
       backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px);
-      border-radius:20px 20px 0 0;
+      border-radius:0;
       transform:translateY(110%);
       opacity:0;
       pointer-events:none;
@@ -1906,12 +1911,48 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     @media(min-width:700px) {
       .sc-overlay { align-items:center; }
-      .sc-sheet { width:50vw; min-width:420px; max-width:560px; border-radius:20px; max-height:82vh;
+      .sc-sheet { width:50vw; min-width:420px; max-width:560px; height:auto; border-radius:20px; max-height:90vh;
                   transform:translateY(120%); } /* larger offset so centered sheet clears the viewport */
     }
     .sc-overlay.open .sc-sheet { transform:translateY(0); opacity:1; pointer-events:all; }
+    /* Step gating — show/hide content based on which step the wizard is on.
+       Elements tagged data-sc-step="N" are visible only when sheet[data-step="N"]. */
+    .sc-sheet[data-step="1"] [data-sc-step="2"],
+    .sc-sheet[data-step="2"] [data-sc-step="1"] { display:none !important; }
+    /* Step 1 layout: link input fills top, who-row claims the rest, "Let's go" pinned to bottom */
+    .sc-sheet[data-step="1"] .sc-middle { padding:8px 16px 0; }
+    .sc-sheet[data-step="1"] .sc-who-col {
+      flex:1; min-height:0; overflow-y:auto; flex-direction:row; flex-wrap:wrap; align-content:flex-start;
+      border-top:none; padding:14px 4px;
+    }
+    /* Step 2 layout: calendar at top, who-row below, scrollable area for details */
+    .sc-sheet[data-step="2"] .sc-middle { display:flex; flex-direction:column; flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    .sc-sheet[data-step="2"] .sc-who-col { border-top:1px solid var(--border); flex-direction:row; flex-wrap:nowrap; overflow-x:auto; padding:10px 12px; }
+
+    /* Step-2 top header: back arrow + title + close */
+    .sc-step2-top { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--border); }
+    .sc-step2-top .sc-back-btn {
+      background:none; border:none; color:var(--text); opacity:0.85; font-size:22px; cursor:pointer;
+      padding:4px 8px; line-height:1; transition:opacity .12s;
+    }
+    .sc-step2-top .sc-back-btn:hover { opacity:1; }
+    .sc-step2-top .sc-step2-title { flex:1; font-size:14px; font-weight:700; color:var(--text); }
+
+    /* "Let's go" CTA — primary button on step 1 */
+    .sc-lets-go-btn {
+      width:100%; padding:14px 16px;
+      background:var(--blue); color:#0a0a0a;
+      border:none; border-radius:14px; cursor:pointer;
+      font-family:inherit; font-size:15px; font-weight:800; letter-spacing:.01em;
+      box-shadow:0 6px 20px rgba(230,249,82,0.30);
+      transition:transform .12s, box-shadow .12s, opacity .12s;
+    }
+    .sc-lets-go-btn:active { transform:scale(0.98); box-shadow:0 3px 12px rgba(230,249,82,0.22); }
+    .sc-lets-go-btn[disabled] { opacity:0.5; cursor:default; box-shadow:none; }
     .sc-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
-    .sc-close-btn { background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); padding:4px 8px; line-height:1; }
+    /* Brighter ✕ — was var(--muted) which read as a faint smudge on the dark crafter background */
+    .sc-close-btn { background:none; border:none; font-size:22px; cursor:pointer; color:var(--text); opacity:0.85; padding:4px 8px; line-height:1; transition:opacity .12s; }
+    .sc-close-btn:hover { opacity:1; }
 
     /* TOP - What? search strip */
     .sc-top { padding:10px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
@@ -2427,12 +2468,25 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- ── Smart Crafter ──────────────────────────────────────────────── -->
+<!-- Two-step wizard:
+     STEP 1 (data-step="1"): link input + WHO circles + "Let's go" CTA
+     STEP 2 (data-step="2"): calendar (with relevant date highlighted) +
+                              WHO circles below + scrollable details + Confirm
+     Elements tagged data-sc-step="N" only render on step N. The step starts
+     at 1 when openSmartCrafter runs. -->
 <div id="sc-overlay" class="sc-overlay">
-  <div id="sc-sheet" class="sc-sheet">
+  <div id="sc-sheet" class="sc-sheet" data-step="1">
     <div class="sc-handle"></div>
 
-    <!-- TOP: What? search strip -->
-    <div class="sc-top">
+    <!-- Step 2 header (back ← + title + close ✕) -->
+    <div class="sc-step2-top" data-sc-step="2">
+      <button class="sc-back-btn" onclick="_scGoToStep1()" aria-label="Back">←</button>
+      <span class="sc-step2-title">Pick a date</span>
+      <button class="sc-close-btn" onclick="closeSC()" aria-label="Close">✕</button>
+    </div>
+
+    <!-- TOP: What? search strip (step 1 only) -->
+    <div class="sc-top" data-sc-step="1">
       <div class="sc-top-row">
         <span class="sc-top-label">What?</span>
         <div class="sc-what-wrap">
@@ -2451,8 +2505,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     <!-- MIDDLE: When calendar (full width) + Who (horizontal row below) -->
     <div class="sc-middle">
-      <!-- WHEN mini calendar -->
-      <div class="sc-when-col">
+      <!-- WHEN mini calendar — step 2 only (calendar+time+kids-warn live here) -->
+      <div class="sc-when-col" data-sc-step="2">
         <div id="sc-clash-bar-when"></div>
         <div class="sc-cal-nav">
           <button class="sc-cal-nav-btn" onclick="scCalPrev()">‹</button>
@@ -2491,9 +2545,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       </div>
     </div>
 
-    <!-- BOTTOM: summary + confirm -->
+    <!-- BOTTOM: step-1 "Let's go" CTA OR step-2 confirm/save -->
     <div class="sc-bottom">
-      <button class="sc-confirm-btn save-later-mode" id="sc-confirm-btn" onclick="scConfirmOrSave()">
+      <button class="sc-lets-go-btn" data-sc-step="1" onclick="_scGoToStep2()">Let's go &rarr;</button>
+      <button class="sc-confirm-btn save-later-mode" data-sc-step="2" id="sc-confirm-btn" onclick="scConfirmOrSave()">
         <span class="sc-confirm-summary empty" id="sc-summary">🔖 Save for later</span>
         <span class="sc-confirm-tick">🔖</span>
       </button>
@@ -8234,6 +8289,9 @@ const _sc = {
 // ── Open / close ──────────────────────────────────────────────────────────────
 
 async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWhoId) {
+  // Always start the wizard on step 1 (link + people). _scGoToStep2 advances.
+  const _sheet = document.getElementById('sc-sheet');
+  if (_sheet) _sheet.dataset.step = '1';
   // Reset state
   _sc.data         = null;
   _sc.selWho       = new Set();
@@ -8336,6 +8394,34 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   }
 
   renderSCSummary();
+}
+
+// ── SC step transitions ─────────────────────────────────────────────────
+// Step 1: link input + people circles + "Let's go". Step 2: calendar +
+// people below + scrollable details + Confirm. Toggling data-step on the
+// sheet flips visibility (CSS data-sc-step rules) without mutating state.
+function _scGoToStep2() {
+  const sheet = document.getElementById('sc-sheet');
+  if (!sheet) return;
+  // If no date is selected yet, jump to a sensible one so the calendar opens
+  // with a relevant highlight (link-extracted date wins; otherwise best free day).
+  if (!_sc.selDate) {
+    _sc.selDate = _scBestDate();
+    if (_sc.selDate) {
+      const _d = new Date(_sc.selDate + 'T00:00:00');
+      _scCalYear  = _d.getFullYear();
+      _scCalMonth = _d.getMonth();
+    }
+  }
+  sheet.dataset.step = '2';
+  // Re-render the calendar so the highlight reflects the (possibly newly-set) selDate
+  if (typeof renderSCCal === 'function') renderSCCal();
+  if (typeof renderSCSummary === 'function') renderSCSummary();
+}
+
+function _scGoToStep1() {
+  const sheet = document.getElementById('sc-sheet');
+  if (sheet) sheet.dataset.step = '1';
 }
 
 function closeSC() {
