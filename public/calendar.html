@@ -2746,11 +2746,26 @@ function _slideCalendar(dir) {
   setTimeout(() => c.classList.remove('slide-left', 'slide-right'), 300);
 }
 
+// Push the current calendar (year, month) onto the browser history so the
+// system back button walks through previously-viewed months instead of
+// exiting the app. Set internally during user-initiated nav (next/prev),
+// not during programmatic month-set (suggestion panel, carousel, etc.).
+function _pushCalendarMonthHistory() {
+  try {
+    history.pushState(
+      { spontanyView: 'calendar', year: currentViewYear, month: currentViewMonth },
+      '',
+      location.pathname + '?token=' + MY_TOKEN
+    );
+  } catch(e) {}
+}
+
 function prevMonth() {
   currentViewMonth--;
   if (currentViewMonth < 0) { currentViewMonth = 11; currentViewYear--; }
   _slideCalendar('prev');
   renderCalendar();
+  _pushCalendarMonthHistory();
 }
 
 function nextMonth() {
@@ -2762,6 +2777,7 @@ function nextMonth() {
   if (currentViewMonth > 11) { currentViewMonth = 0; currentViewYear++; }
   _slideCalendar('next');
   renderCalendar();
+  _pushCalendarMonthHistory();
 }
 
 // ── Swipe navigation ─────────────────────────────────────────────────────────
@@ -2940,6 +2956,11 @@ function nextMonth() {
   if (!params.has('token')) {
     try { history.replaceState(null, '', location.pathname + '?token=' + MY_TOKEN); } catch(e) {}
   }
+  // Seed the initial history entry with calendar coordinates. Each month
+  // change later pushes a new state, so back walks Mar → Feb → Jan → exits.
+  // Done as replaceState (not pushState) so we don't add an extra entry on
+  // every page load. currentViewYear/Month aren't set until renderCalendar
+  // runs, so we defer this with setTimeout(0) below — see _seedCalendarHistory.
 
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
   if (!meRes.ok) { window.location.replace('/login'); return; }
@@ -2964,6 +2985,17 @@ function nextMonth() {
   const _onl = document.getElementById('owner-name-label'); if (_onl) _onl.textContent = `${myName}:`;
 
   await loadMyCalendar();
+
+  // Seed the current history entry with calendar coordinates so popstate can
+  // restore the visible month after a back press. loadMyCalendar runs
+  // renderCalendar which initializes currentViewYear/Month — safe to read now.
+  try {
+    history.replaceState(
+      { spontanyView: 'calendar', year: currentViewYear, month: currentViewMonth },
+      '',
+      location.pathname + '?token=' + MY_TOKEN
+    );
+  } catch(e) {}
 
   // Show connections panel for all users
   document.getElementById('connections-btn').href = `/connections?token=${MY_TOKEN}`;
@@ -3847,8 +3879,10 @@ function _scReviewUiClose() {
 // Single popstate handler — when a back press pops our pushed state, close
 // the topmost open modal instead of letting the browser navigate the page
 // away. Order matters: check the overlay that opens LAST (review) first so
-// it peels off before the wizard underneath it.
-window.addEventListener('popstate', function() {
+// it peels off before the wizard underneath it. If no modal was popped,
+// fall through to calendar-month state restoration so back walks through
+// previously-viewed months instead of exiting the app.
+window.addEventListener('popstate', function(e) {
   if (_scReviewHistoryActive && document.getElementById('sc-review-overlay')?.classList.contains('open')) {
     _scReviewUiClose();
     return;
@@ -3860,6 +3894,15 @@ window.addEventListener('popstate', function() {
   if (_daySheetHistoryActive && document.getElementById('day-sheet')?.classList.contains('open')) {
     _daySheetUiClose();
     return;
+  }
+  // Calendar-state restoration: a previously-pushed month state was popped.
+  const st = e?.state || history.state;
+  if (st && st.spontanyView === 'calendar' && typeof st.year === 'number' && typeof st.month === 'number') {
+    if (currentViewYear !== st.year || currentViewMonth !== st.month) {
+      currentViewYear  = st.year;
+      currentViewMonth = st.month;
+      renderCalendar();
+    }
   }
 });
 
