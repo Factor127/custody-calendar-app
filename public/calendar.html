@@ -2479,6 +2479,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
             onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'; _scTimeChanged(this.value);">
           <button onclick="_scSkipTime()" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;">All day</button>
         </div>
+        <!-- Kids-day warning shown when the picked date (manual or link-extracted) is a custody day -->
+        <div id="sc-kids-day-warn" class="kids-day-warn" style="display:none;margin-top:10px;"></div>
       </div>
       <!-- WHO - horizontal scrollable row -->
       <div class="sc-who-col">
@@ -2925,7 +2927,11 @@ function nextMonth() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (async function init() {
-  if (!MY_TOKEN) { window.location.href = '/'; return; }
+  // location.replace (NOT href) on auth-failure bounces: href would push the
+  // login page into history, so pressing system back from the calendar would
+  // go back to /login. Using replace keeps history clean — back goes to
+  // whatever the user was actually on before they came to the calendar.
+  if (!MY_TOKEN) { window.location.replace('/login'); return; }
 
   // Make sure the visible URL carries the token so browser back/forward never
   // lands on a tokenless URL that triggers the server's redirect-to-login.
@@ -2936,7 +2942,7 @@ function nextMonth() {
   }
 
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
-  if (!meRes.ok) { window.location.href = '/'; return; }
+  if (!meRes.ok) { window.location.replace('/login'); return; }
   const me = await meRes.json();
 
   myName    = me.name;
@@ -8461,6 +8467,11 @@ function renderSCCal() {
   }
 
   grid.innerHTML = html;
+
+  // Kids-day warning — re-evaluated on every cal render so it covers all
+  // SC selDate-mutation paths (manual scSelectDate, _scAcceptUnfurlDate,
+  // and the auto-apply branch in _scUnfurlUrl that fires renderSCWhen).
+  _renderKidsDayWarn('sc-kids-day-warn', _sc.selDate);
 }
 
 // ── Crafter calendar hover tooltip ───────────────────────────────────────────

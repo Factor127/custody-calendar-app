@@ -1565,7 +1565,10 @@ async function validateInvite() {
     const res = await fetch('/api/invites/' + INVITE_TOKEN);
     if (res.status === 409) {
       const saved = localStorage.getItem('myToken');
-      if (saved) { window.location.href = '/calendar?token=' + saved; return; }
+      // Already-used invite + saved login → silently bounce to calendar.
+      // Use replace so /invite/<token> doesn't sit in history (back from
+      // calendar would otherwise go back to a dead invite page → login).
+      if (saved) { window.location.replace('/calendar?token=' + saved); return; }
       showWizardError('This invite has already been used. Ask for a new one.');
       return;
     }

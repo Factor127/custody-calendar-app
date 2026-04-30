@@ -311,7 +311,10 @@ const params = new URLSearchParams(location.search);
 const MY_TOKEN = params.get('token') || localStorage.getItem('myToken');
 let userRole = null;
 
-if (!MY_TOKEN) { window.location.href = '/login'; }
+// Use location.replace (not href) on auth bounces so /login doesn't get
+// pushed onto history — system back from /profile should go to wherever
+// the user came from, not to the login screen.
+if (!MY_TOKEN) { window.location.replace('/login'); }
 else if (!params.has('token')) {
   // Keep token in URL so back/forward navigation preserves auth state and
   // doesn't bounce through /login.
@@ -320,7 +323,7 @@ else if (!params.has('token')) {
 
 (async function init() {
   const res = await fetch(`/api/me?token=${MY_TOKEN}`);
-  if (!res.ok) { window.location.href = '/login'; return; }
+  if (!res.ok) { window.location.replace('/login'); return; }
   const user = await res.json();
 
   userRole = user.role;
