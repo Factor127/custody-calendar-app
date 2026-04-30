@@ -1955,12 +1955,26 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-close-btn:hover { opacity:1; }
 
     /* TOP - What? search strip */
-    .sc-top { padding:10px 14px 10px; border-bottom:1px solid var(--border); flex-shrink:0; }
-    .sc-top-row { display:flex; align-items:center; gap:8px; }
-    .sc-top-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); white-space:nowrap; }
+    .sc-top { padding:14px 16px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .sc-top-row { display:flex; align-items:center; gap:10px; }
+    .sc-top-label { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--text); opacity:0.85; white-space:nowrap; }
     .sc-what-wrap { position:relative; flex:1; }
-    .sc-what-input { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--surface); color:var(--text); box-sizing:border-box; outline:none; font-family:inherit; }
-    .sc-what-input:focus { border-color:var(--accent); }
+    /* Step 1 is the link-input page — make the field prominent: bigger, taller,
+       brighter background and border so it's the obvious place to start.
+       !important on background/border-color is required because there's a
+       global "input, textarea, select { ... !important }" rule earlier in
+       this file (form-fields-in-dark theme) that would otherwise win. */
+    .sc-what-input {
+      width:100%; padding:14px 16px;
+      border:2px solid rgba(230,249,82,0.30) !important;
+      border-radius:12px; font-size:16px;
+      background:rgba(255,255,255,0.06) !important;
+      color:var(--text);
+      box-sizing:border-box; outline:none; font-family:inherit;
+      transition:border-color .12s, background .12s;
+    }
+    .sc-what-input::placeholder { color:rgba(238,238,248,0.45) !important; }
+    .sc-what-input:focus { border-color:var(--accent) !important; background:rgba(255,255,255,0.09) !important; }
     .sc-what-input.loading { opacity:0.6; }
     .sc-what-drop { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; z-index:300; overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:55vh; box-shadow:0 8px 24px rgba(0,0,0,0.5); display:none; }
     .sc-what-drop.open { display:block; }
@@ -1990,14 +2004,16 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-who-col { flex-shrink:0; border-top:1px solid var(--border); overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:8px 10px; display:flex; flex-direction:row; align-items:flex-start; gap:10px; scrollbar-width:none; }
     .sc-who-col::-webkit-scrollbar { display:none; }
     .sc-col-label { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:2px 0; flex-shrink:0; white-space:nowrap; align-self:center; }
-    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 2px; border-radius:10px; transition:background .15s; user-select:none; flex-shrink:0; }
-    .sc-who-chip:hover .sc-who-avatar { box-shadow:0 0 0 2px rgba(230,249,82,0.40); }
-    .sc-who-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; position:relative; background:#2a2a2a; transition:box-shadow .15s,transform .15s; overflow:hidden; }
+    /* Profile circles 2x larger — primary canvas on step 1 (link + people)
+       and still readable when shrunk under the calendar on step 2. */
+    .sc-who-chip { display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; padding:6px 4px; border-radius:14px; transition:background .15s; user-select:none; flex-shrink:0; }
+    .sc-who-chip:hover .sc-who-avatar { box-shadow:0 0 0 3px rgba(230,249,82,0.40); }
+    .sc-who-avatar { width:76px; height:76px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; color:white; position:relative; background:#2a2a2a; transition:box-shadow .15s,transform .15s; overflow:hidden; }
     .sc-who-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-    .sc-who-chip.selected .sc-who-avatar { transform:scale(1.08); box-shadow:0 0 0 2.5px var(--lime), 0 0 10px rgba(230,249,82,0.40); }
-    .sc-who-check { position:absolute; bottom:-2px; right:-2px; background:var(--lime); color:#0a0a0a; border-radius:50%; width:14px; height:14px; font-size:8px; display:none; align-items:center; justify-content:center; }
+    .sc-who-chip.selected .sc-who-avatar { transform:scale(1.06); box-shadow:0 0 0 3px var(--lime), 0 0 14px rgba(230,249,82,0.40); }
+    .sc-who-check { position:absolute; bottom:0; right:0; background:var(--lime); color:#0a0a0a; border-radius:50%; width:24px; height:24px; font-size:13px; display:none; align-items:center; justify-content:center; box-shadow:0 0 0 2px rgba(14,14,14,0.95); }
     .sc-who-chip.selected .sc-who-check { display:flex; }
-    .sc-who-name { font-size:10px; color:var(--text); text-align:center; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sc-who-name { font-size:12px; color:var(--text); text-align:center; width:100%; max-width:88px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* WHEN col - full width mini calendar */
     .sc-when-col { flex-shrink:0; padding:10px 8px; display:flex; flex-direction:column; }
