@@ -3815,11 +3815,51 @@ function closeDaySheet(e) {
   _daySheetUiClose();
 }
 
+// ── SC (Smart Crafter) wizard + its Review overlay history-state guards ────
+// Same pattern as the day-sheet: without this, Android system back navigates
+// AWAY from /calendar while the SC wizard or its review sheet is open — user
+// gets kicked out of the app. Each overlay pushes its own state so a back
+// press peels them off one at a time (review on top → wizard underneath →
+// then a real page nav, if anything else is still in history).
+let _scHistoryActive       = false;
+let _scReviewHistoryActive = false;
+
+function _scMarkOpen() {
+  if (_scHistoryActive) return;
+  _scHistoryActive = true;
+  try { history.pushState({ spontanyModal: 'sc' }, ''); } catch(e) {}
+}
+function _scUiClose() {
+  document.getElementById('sc-overlay')?.classList.remove('open');
+  _scHistoryActive = false;
+}
+
+function _scReviewMarkOpen() {
+  if (_scReviewHistoryActive) return;
+  _scReviewHistoryActive = true;
+  try { history.pushState({ spontanyModal: 'sc-review' }, ''); } catch(e) {}
+}
+function _scReviewUiClose() {
+  document.getElementById('sc-review-overlay')?.classList.remove('open');
+  _scReviewHistoryActive = false;
+}
+
 // Single popstate handler — when a back press pops our pushed state, close
-// the modal instead of letting the browser navigate the page away.
+// the topmost open modal instead of letting the browser navigate the page
+// away. Order matters: check the overlay that opens LAST (review) first so
+// it peels off before the wizard underneath it.
 window.addEventListener('popstate', function() {
+  if (_scReviewHistoryActive && document.getElementById('sc-review-overlay')?.classList.contains('open')) {
+    _scReviewUiClose();
+    return;
+  }
+  if (_scHistoryActive && document.getElementById('sc-overlay')?.classList.contains('open')) {
+    _scUiClose();
+    return;
+  }
   if (_daySheetHistoryActive && document.getElementById('day-sheet')?.classList.contains('open')) {
     _daySheetUiClose();
+    return;
   }
 });
 
@@ -8172,6 +8212,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   _scCalMonth = prefillDate ? +prefillDate.slice(5,7)-1 : _now.getMonth();
 
   document.getElementById('sc-overlay').classList.add('open');
+  _scMarkOpen(); // push history-state guard so Android back closes the wizard
   document.getElementById('sc-who-row').innerHTML =
     '<span style="color:var(--muted);font-size:12px;padding:4px;">Loading…</span>';
   document.getElementById('sc-cal-grid').innerHTML = '';
@@ -8255,16 +8296,36 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
 }
 
 function closeSC() {
-  document.getElementById('sc-overlay').classList.remove('open');
+  if (!document.getElementById('sc-overlay')?.classList.contains('open')) return;
+  if (_scHistoryActive) {
+    // Pop our pushed state; popstate handler does the actual UI close.
+    try { history.back(); return; } catch(e) {}
+  }
+  _scUiClose();
 }
 
 function closeSCReview() {
-  document.getElementById('sc-review-overlay').classList.remove('open');
+  if (!document.getElementById('sc-review-overlay')?.classList.contains('open')) return;
+  if (_scReviewHistoryActive) {
+    try { history.back(); return; } catch(e) {}
+  }
+  _scReviewUiClose();
 }
 
 function closeSCAll() {
-  closeSCReview();
-  closeSC();
+  // Close both overlays in one go and rewind history by however many states
+  // we pushed. Doing two history.back() calls back-to-back is racey across
+  // browsers — go(-N) is reliably one-shot. UI flags get cleared first so
+  // the popstate that follows is a no-op.
+  let depth = 0;
+  if (_scReviewHistoryActive) { _scReviewUiClose(); depth++; }
+  if (_scHistoryActive)       { _scUiClose();       depth++; }
+  if (depth > 0) { try { history.go(-depth); } catch(e) {} }
+  else {
+    // Defensive fallback if no states were pushed
+    document.getElementById('sc-review-overlay')?.classList.remove('open');
+    document.getElementById('sc-overlay')?.classList.remove('open');
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -8988,6 +9049,7 @@ function openSCReview() {
   _scApplyReviewStage();
   renderSCReview();
   document.getElementById('sc-review-overlay').classList.add('open');
+  _scReviewMarkOpen(); // push history-state guard so Android back closes the review overlay
 }
 
 function _scApplyReviewStage() {
