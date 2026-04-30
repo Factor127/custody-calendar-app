@@ -200,7 +200,20 @@ async function unfurlUrl(url, options = {}) {
   if (tl === 'facebook' || tl === 'error' || tl.includes('log in') || tl.includes('sign in')) title = null;
 
   const description = meta('og:description') || meta('description') || null;
-  const image       = meta('og:image') || meta('twitter:image') || null;
+  // Resolve image to an absolute URL and reject obvious favicons. Real-world
+  // pages (e.g. ticketmaster.co.il) sometimes set og:image="favicon.ico" — a
+  // relative path to a 16x16 icon, which renders broken in the app preview.
+  // Treat any URL whose final path segment is a known-favicon name (or that
+  // points to /favicon.*) as no image rather than passing the bad URL through.
+  const image = (() => {
+    const raw = meta('og:image') || meta('twitter:image') || null;
+    if (!raw) return null;
+    let abs;
+    try { abs = new URL(raw, finalUrl).toString(); } catch(e) { return null; }
+    // Reject favicon-style paths: /favicon.ico, favicon.png, apple-touch-icon, etc.
+    if (/(?:^|\/)(?:favicon[._-]?[^\/?#]*|apple-touch-icon[^\/?#]*)(?:\?|#|$)/i.test(abs)) return null;
+    return abs;
+  })();
   const siteName    = meta('og:site_name') || null;
   const ogType      = meta('og:type') || null;
 
@@ -560,10 +573,22 @@ async function unfurlUrl(url, options = {}) {
           const m3 = h.match(/"startDate"\s*:\s*"([^"]{6,30})"/i);
           if (m3) startIsoSub = m3[1];
         }
+        // Resolve listicle item image to an absolute URL against the item's
+        // own page URL, and reject favicons — same fix as the top-level image.
+        let resolvedItemImage = null;
+        if (ogImage) {
+          const decoded = decode(ogImage.trim());
+          try {
+            const abs = new URL(decoded, item.url).toString();
+            if (!/(?:^|\/)(?:favicon[._-]?[^\/?#]*|apple-touch-icon[^\/?#]*)(?:\?|#|$)/i.test(abs)) {
+              resolvedItemImage = abs;
+            }
+          } catch(e) {}
+        }
         return {
           ...item,
           title:     decode(ogTitle?.trim()),
-          image:     decode(ogImage?.trim()),
+          image:     resolvedItemImage,
           start_iso: startIsoSub,
           date:      startIsoSub ? String(startIsoSub).slice(0, 10) : null,
         };
