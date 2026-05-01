@@ -3944,12 +3944,21 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
 // when the modal opens, intercept popstate to close it, route manual closes
 // through history.back so popstate is the single source of truth for
 // "modal closed".
-let _daySheetHistoryActive = false;
+//
+// HARDENING: counter (not boolean) only increments on a successful pushState.
+// If pushState throws (rare but seen on Android Chrome under quota pressure),
+// the counter stays 0 — closeXxx then skips history.back, so we never pop a
+// state that doesn't belong to us (which on a fresh PWA launch ejects the
+// user from the app). closeXxx also closes the UI BEFORE history.back so
+// popstate's job is purely cleanup.
+let _daySheetPushed = 0;
 
 function _daySheetMarkOpen() {
-  if (_daySheetHistoryActive) return;
-  _daySheetHistoryActive = true;
-  try { history.pushState({ spontanyModal: 'day-sheet' }, ''); } catch(e) {}
+  if (_daySheetPushed) return;
+  try {
+    history.pushState({ spontanyModal: 'day-sheet' }, '');
+    _daySheetPushed = 1;
+  } catch(e) { /* push failed; counter stays 0 — closeDaySheet will skip history.back */ }
 }
 
 function _daySheetUiClose() {
@@ -3957,18 +3966,18 @@ function _daySheetUiClose() {
   _dayPaneStack = [];
   _currentOutingId = null;
   _currentInviteeId = null;
-  _daySheetHistoryActive = false;
+  _daySheetPushed = 0;
 }
 
 function closeDaySheet(e) {
   if (e && e.target !== document.getElementById('day-sheet')) return;
   if (!document.getElementById('day-sheet')?.classList.contains('open')) return;
-  if (_daySheetHistoryActive) {
-    // history.back pops our pushed state; the popstate handler below
-    // performs the actual UI close. Keeps history clean.
-    try { history.back(); return; } catch(e) {}
-  }
+  // Close UI FIRST so even if history.back misfires, the modal isn't stuck.
+  const wasPushed = _daySheetPushed;
   _daySheetUiClose();
+  if (wasPushed) {
+    try { history.back(); } catch(e) {}
+  }
 }
 
 // ── SC (Smart Crafter) wizard + its Review overlay history-state guards ────
@@ -3977,27 +3986,33 @@ function closeDaySheet(e) {
 // gets kicked out of the app. Each overlay pushes its own state so a back
 // press peels them off one at a time (review on top → wizard underneath →
 // then a real page nav, if anything else is still in history).
-let _scHistoryActive       = false;
-let _scReviewHistoryActive = false;
+//
+// Counter-only-on-successful-push hardening (see day-sheet block above).
+let _scPushed       = 0;
+let _scReviewPushed = 0;
 
 function _scMarkOpen() {
-  if (_scHistoryActive) return;
-  _scHistoryActive = true;
-  try { history.pushState({ spontanyModal: 'sc' }, ''); } catch(e) {}
+  if (_scPushed) return;
+  try {
+    history.pushState({ spontanyModal: 'sc' }, '');
+    _scPushed = 1;
+  } catch(e) { /* push failed; counter stays 0 — closeSC will skip history.back */ }
 }
 function _scUiClose() {
   document.getElementById('sc-overlay')?.classList.remove('open');
-  _scHistoryActive = false;
+  _scPushed = 0;
 }
 
 function _scReviewMarkOpen() {
-  if (_scReviewHistoryActive) return;
-  _scReviewHistoryActive = true;
-  try { history.pushState({ spontanyModal: 'sc-review' }, ''); } catch(e) {}
+  if (_scReviewPushed) return;
+  try {
+    history.pushState({ spontanyModal: 'sc-review' }, '');
+    _scReviewPushed = 1;
+  } catch(e) { /* push failed; counter stays 0 */ }
 }
 function _scReviewUiClose() {
   document.getElementById('sc-review-overlay')?.classList.remove('open');
-  _scReviewHistoryActive = false;
+  _scReviewPushed = 0;
 }
 
 // Single popstate handler — when a back press pops our pushed state, close
@@ -4006,16 +4021,21 @@ function _scReviewUiClose() {
 // it peels off before the wizard underneath it. If no modal was popped,
 // fall through to calendar-month state restoration so back walks through
 // previously-viewed months instead of exiting the app.
+//
+// Counters (_xxxPushed) are the source of truth for "did we push a state?".
+// They're set to 0 by both the close paths AND by this handler — so once
+// the modal-close branch fires, subsequent popstates flow through to
+// calendar restoration without re-firing the close.
 window.addEventListener('popstate', function(e) {
-  if (_scReviewHistoryActive && document.getElementById('sc-review-overlay')?.classList.contains('open')) {
+  if (_scReviewPushed && document.getElementById('sc-review-overlay')?.classList.contains('open')) {
     _scReviewUiClose();
     return;
   }
-  if (_scHistoryActive && document.getElementById('sc-overlay')?.classList.contains('open')) {
+  if (_scPushed && document.getElementById('sc-overlay')?.classList.contains('open')) {
     _scUiClose();
     return;
   }
-  if (_daySheetHistoryActive && document.getElementById('day-sheet')?.classList.contains('open')) {
+  if (_daySheetPushed && document.getElementById('day-sheet')?.classList.contains('open')) {
     _daySheetUiClose();
     return;
   }
@@ -8495,35 +8515,34 @@ function _scGoToStep1() {
 
 function closeSC() {
   if (!document.getElementById('sc-overlay')?.classList.contains('open')) return;
-  if (_scHistoryActive) {
-    // Pop our pushed state; popstate handler does the actual UI close.
-    try { history.back(); return; } catch(e) {}
-  }
+  // Close UI first (synchronously) so the modal can never be stuck if
+  // history.back misfires. Only call history.back if we actually pushed
+  // a state — otherwise we'd pop someone else's state (calendar-seed,
+  // or worse, the entry before /calendar entirely → eject from app).
+  const wasPushed = _scPushed;
   _scUiClose();
+  if (wasPushed) { try { history.back(); } catch(e) {} }
 }
 
 function closeSCReview() {
   if (!document.getElementById('sc-review-overlay')?.classList.contains('open')) return;
-  if (_scReviewHistoryActive) {
-    try { history.back(); return; } catch(e) {}
-  }
+  const wasPushed = _scReviewPushed;
   _scReviewUiClose();
+  if (wasPushed) { try { history.back(); } catch(e) {} }
 }
 
 function closeSCAll() {
-  // Close both overlays in one go and rewind history by however many states
-  // we pushed. Doing two history.back() calls back-to-back is racey across
-  // browsers — go(-N) is reliably one-shot. UI flags get cleared first so
-  // the popstate that follows is a no-op.
-  let depth = 0;
-  if (_scReviewHistoryActive) { _scReviewUiClose(); depth++; }
-  if (_scHistoryActive)       { _scUiClose();       depth++; }
+  // Close both overlays based on their actual visual state (defensive
+  // against pushState-failure desync, where an overlay is visually open
+  // but its push counter is 0). Then rewind history by exactly the number
+  // of states we DID push — counter-tracked so always honest. Using flags
+  // alone could overshoot history.go(-N) and eject the user from the app.
+  const reviewVisible = document.getElementById('sc-review-overlay')?.classList.contains('open');
+  const scVisible     = document.getElementById('sc-overlay')?.classList.contains('open');
+  const depth = _scReviewPushed + _scPushed;
+  if (reviewVisible) _scReviewUiClose();
+  if (scVisible)     _scUiClose();
   if (depth > 0) { try { history.go(-depth); } catch(e) {} }
-  else {
-    // Defensive fallback if no states were pushed
-    document.getElementById('sc-review-overlay')?.classList.remove('open');
-    document.getElementById('sc-overlay')?.classList.remove('open');
-  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -8859,15 +8878,22 @@ function scCalNext() {
 
     el.addEventListener('touchend', function(e) {
       if (!swiping) return;
+      const wasLocked = locked;
       swiping = false;
-      if (cancelled) return;
+      if (cancelled) { locked = false; return; }
       const dx = e.changedTouches[0].clientX - sx;
       const dy = e.changedTouches[0].clientY - sy;
+      // If the user dragged horizontally (locked) at all, swallow the click
+      // even if dx < TH — otherwise a half-swipe lands on a day cell and
+      // selects an unintended date. The click suppression covers both the
+      // committed-swipe case AND the dragged-but-cancelled case.
+      if (wasLocked) {
+        suppressClickUntil = Date.now() + 350;
+      }
+      locked = false;
       if (Math.abs(dy) > MAX_V) return;
       if (Math.abs(dx) >= TH) {
-        // Suppress the click that would otherwise fire on the day cell
-        // we lifted off of.
-        suppressClickUntil = Date.now() + 350;
+        suppressClickUntil = Date.now() + 350; // ensure it's set even if !wasLocked
         dx < 0 ? scCalNext() : scCalPrev();
       }
     }, { passive: true });
