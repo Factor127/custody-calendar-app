@@ -126,6 +126,7 @@ const analyticsRouter      = require('./routes/analytics');
 const nudgeRouter          = require('./routes/nudge');
 const lpRouter             = require('./routes/lp');
 const shareRouter          = require('./routes/share');
+const pulseRouter          = require('./routes/pulse');
 // routes/sandbox is local-only (gitignored). Optional require so prod doesn't
 // crash when the file isn't present — see .gitignore for why.
 let sandboxRouter = null;
@@ -137,6 +138,7 @@ app.use('/api', pushRouter);
 app.use('/api', matchRouter);
 app.use('/api', analyticsRouter);
 app.use('/api', nudgeRouter);
+app.use('/api', pulseRouter);
 if (sandboxRouter) app.use('/api', sandboxRouter);
 app.use('/', lpRouter);
 app.use('/', shareRouter);
