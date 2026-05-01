@@ -329,6 +329,44 @@ router.get('/invites/:token', (req, res) => {
   });
 });
 
+// POST /api/invites/:token/accept-as-user - claim an invite as an already-logged-in user
+// Mirrors the connection-creation block of /users/register, minus the user-create.
+// Used by the new "I already have an account → log me in" branch of the
+// invite landing page so existing users don't get sent through full
+// onboarding (which then 409s at the duplicate-email check).
+router.post('/invites/:token/accept-as-user', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const token = req.params.token;
+  const invite = q.getInvite.get(token);
+  if (!invite) return res.status(404).json({ error: 'Invite not found' });
+  if (invite.used_by) return res.status(409).json({ error: 'Invite already used' });
+  if (invite.expires_at && invite.expires_at < new Date().toISOString()) {
+    return res.status(410).json({ error: 'Invite expired' });
+  }
+  if (invite.created_by === me.id) {
+    return res.status(400).json({ error: "That's your own invite — can't accept it." });
+  }
+
+  // Claim the invite for the current user
+  q.claimInvite.run(me.id, token);
+
+  // Create the connection (idempotent — if one already exists, leave it)
+  const existingConn = q.getConnectionByRequester.get(me.id);
+  if (!existingConn) {
+    const connId = uuidv4();
+    q.createConnection.run(connId, me.id, invite.created_by);
+    q.updateConnectionRole.run(invite.relationship_type || 'coparent', connId);
+  }
+
+  res.json({
+    ok: true,
+    owner_id:          invite.created_by,
+    relationship_type: invite.relationship_type || 'friend',
+  });
+});
+
 // ── Connections ───────────────────────────────────────────────────────────────
 
 // POST /api/connections/request - partner requests to view owner's calendar
