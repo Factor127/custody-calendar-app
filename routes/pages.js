@@ -12,6 +12,32 @@ router.get('/admin', (req, res) => {
   res.sendFile(path.join(PUBLIC, 'admin.html'));
 });
 
+// ── Web Share Target ─────────────────────────────────────────────────────────
+// Manifest declares share_target.action = '/share-target'. When the user
+// shares a URL (or text containing a URL) from another app — Chrome,
+// Instagram, Facebook, etc. — Android dispatches the share here. We pull
+// the URL out of either the `url` param or from inside `text` (Chrome
+// often puts the URL into text), then bounce to /calendar.html with a
+// shareUrl=… query param so calendar.html's init can open the crafter
+// pre-filled with the link.
+router.get('/share-target', (req, res) => {
+  // Pick whichever param actually contains a URL
+  const candidates = [req.query.url, req.query.text, req.query.title].filter(Boolean);
+  let sharedUrl = null;
+  for (const v of candidates) {
+    const m = String(v).match(/https?:\/\/[^\s]+/i);
+    if (m) { sharedUrl = m[0]; break; }
+  }
+  // Fallback: if nothing looked like a URL, pass the raw text along so
+  // the crafter at least pre-fills the search box with whatever was shared.
+  const fallback = candidates.find(Boolean) || '';
+  const param = sharedUrl || fallback;
+  if (param) {
+    return res.redirect('/calendar.html?shareUrl=' + encodeURIComponent(param));
+  }
+  res.redirect('/calendar.html');
+});
+
 // Login page - served by server.js directly, skip here to avoid conflicts
 
 // First-time setup page - now served by the unified onboard.html

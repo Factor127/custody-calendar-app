@@ -3185,12 +3185,22 @@ function nextMonth() {
   // Deep-link: notification click → open specific event pane
   const _urlParams = new URLSearchParams(window.location.search);
   const _openEventId = _urlParams.get('openEvent');
+  // Web Share Target: a URL shared into the PWA from another app lands at
+  // /share-target which redirects here with ?shareUrl=…. Open the crafter
+  // pre-filled with that link so the user goes straight from "share to
+  // Spontany" to "plan an event around this URL".
+  const _sharedUrl = _urlParams.get('shareUrl');
   if (_openEventId) {
     // Clean the URL so refresh doesn't re-open the pane
     const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
     history.replaceState(null, '', cleanUrl);
     // Small delay so the calendar renders first
     setTimeout(() => openEventPaneDirect(_openEventId), 300);
+  } else if (_sharedUrl) {
+    // Clean the URL so a refresh doesn't re-open the crafter
+    const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
+    history.replaceState(null, '', cleanUrl);
+    setTimeout(() => _openCrafterWithSharedUrl(_sharedUrl), 300);
   } else {
     // No deep-link — surface the freshest pending notification ourselves so
     // the user lands directly on the event that needs their attention,
@@ -6396,10 +6406,15 @@ function _updateAppBadge(count) {
 // adding new categories of "unread" only needs to be edited here.
 function _computeTotalBadge() {
   const pendingActs = (myActivities || []).filter(a => a.to_user_id === myUserId && a.status === 'pending');
+  // Friend invited me — pending incoming outing where I haven't responded yet.
+  // Was missing from totalBadge previously: badge stayed at 0 even though
+  // _autoOpenFreshestPendingNotification was correctly opening these.
+  const pendingIncoming = (myIncomingOutings || []).filter(o => o.my_invitee_status === 'pending');
   return (pendingConnections?.length || 0)
        + (pendingSuggestions?.length || 0)
        + pendingActs.length
-       + (_unreadResponseOutingIds?.length || 0); // NEW: friend RSVP'd on my outing
+       + (_unreadResponseOutingIds?.length || 0)  // friend RSVP'd on my outing
+       + pendingIncoming.length;                  // friend invited me, awaiting my reply
 }
 function _refreshNotifBadgeFromState() {
   const total = _computeTotalBadge();
@@ -8653,6 +8668,23 @@ const _sc = {
 };
 
 // ── Open / close ──────────────────────────────────────────────────────────────
+
+// Web Share Target entry point: opens the crafter, drops the shared URL
+// into the link input, and runs the same unfurl path as if the user had
+// pasted it manually. Called from init() when ?shareUrl=… is present.
+async function _openCrafterWithSharedUrl(sharedUrl) {
+  if (!sharedUrl) return;
+  try {
+    await openSmartCrafter();
+    const input = document.getElementById('sc-what-input');
+    if (input) {
+      input.value = sharedUrl;
+      // Trigger the same change handler that runs on user input — kicks off
+      // unfurl when the value looks like a URL.
+      if (typeof scWhatInputChange === 'function') scWhatInputChange(sharedUrl);
+    }
+  } catch(e) { /* never block on the share path */ }
+}
 
 async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWhoId) {
   // Always start the wizard on step 1 (link + people). _scGoToStep2 advances.

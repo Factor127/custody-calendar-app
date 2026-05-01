@@ -1352,6 +1352,7 @@ router.post('/outings', (req, res) => {
   // Notify registered invitees that they've been invited (non-saved outings only)
   if (status !== 'saved' && invitees.length > 0 && date) {
     const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const eventUrl = `${req.app.locals.BASE_URL || ''}/calendar.html?openEvent=${outingId}`;
     for (const inv of invitees) {
       if (inv.userId) {
         sendPush(inv.userId, {
@@ -1360,7 +1361,9 @@ router.post('/outings', (req, res) => {
           tag:   `outing-invite-${outingId}`,
           url:   `/calendar.html?openEvent=${outingId}`,
         });
-        sendSMSToUser(inv.userId, `${me.name} invited you out on ${dateLabel}: ${message || 'An outing'}. Open Spontany to respond.`, { event: 'outing-invite' });
+        // Include the deep-link so the SMS is actionable. Tapping the URL
+        // opens the app directly on the event card (or prompts login first).
+        sendSMSToUser(inv.userId, `${me.name} invited you out on ${dateLabel}: ${message || 'An outing'}. Respond: ${eventUrl}`, { event: 'outing-invite' });
       }
     }
   }
@@ -1455,7 +1458,8 @@ router.put('/outings/:id/invitees/:inviteeId', (req, res) => {
       url:   `/calendar.html?openEvent=${outing.id}`,
     });
     const rsvpVerb = status === 'accepted' ? 'accepted' : 'declined';
-    sendSMSToUser(outing.created_by, `${me.name} ${rsvpVerb} your outing invite${outing.message ? ': ' + outing.message : ''}.`, { event: 'outing-rsvp' });
+    const eventUrl = `${req.app.locals.BASE_URL || ''}/calendar.html?openEvent=${outing.id}`;
+    sendSMSToUser(outing.created_by, `${me.name} ${rsvpVerb} your outing invite${outing.message ? ': ' + outing.message : ''}. ${eventUrl}`, { event: 'outing-rsvp' });
   }
 });
 
@@ -1817,6 +1821,7 @@ router.put('/outings/:id', (req, res) => {
   // Notify all invitees of the update
   if (title !== undefined || venue !== undefined || event_time !== undefined || venue_address !== undefined) {
     const invitees = q.getOutingInvitees.all(req.params.id);
+    const eventUrl = `${req.app.locals.BASE_URL || ''}/calendar.html?openEvent=${outing.id}`;
     for (const inv of invitees) {
       if (inv.user_id && inv.user_id !== me.id) {
         sendPush(inv.user_id, {
@@ -1825,7 +1830,7 @@ router.put('/outings/:id', (req, res) => {
           tag:   `outing-updated-${outing.id}`,
           url:   `/calendar.html?openEvent=${outing.id}`,
         });
-        sendSMSToUser(inv.user_id, `${me.name} updated your plan: ${venue || outing.venue || outing.message || 'your outing'}`, { event: 'outing-updated' });
+        sendSMSToUser(inv.user_id, `${me.name} updated your plan: ${venue || outing.venue || outing.message || 'your outing'}. ${eventUrl}`, { event: 'outing-updated' });
       }
     }
   }
