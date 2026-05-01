@@ -878,6 +878,23 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       background: rgba(10,8,20,0.52);
     }
     td.has-event-img > *:not(.cell-img-bg) { position: relative; z-index: 1; }
+    /* ── Event with no image: still show "this day's booked" via a soft
+         lime→purple gradient overlay so the cell isn't visually empty when
+         the unfurl couldn't extract an image. Sits above the base td.r/td.z
+         color but behind the day number / dots. */
+    .cell-noimg-bg {
+      position: absolute; inset: 0; border-radius: 16px;
+      background: linear-gradient(135deg, rgba(230,249,82,0.32) 0%, rgba(124,92,191,0.20) 100%);
+      z-index: 0; pointer-events: none;
+    }
+    td.has-outing-noimg { box-shadow: inset 0 0 0 1.5px rgba(230,249,82,0.45); }
+    td.has-outing-noimg > *:not(.cell-noimg-bg) { position: relative; z-index: 1; }
+    .day-card.has-outing-noimg::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(230,249,82,0.32) 0%, rgba(124,92,191,0.20) 100%);
+      z-index: 0; pointer-events: none;
+    }
+    .day-card.has-outing-noimg { box-shadow: inset 0 0 0 1.5px rgba(230,249,82,0.45); }
     .cell-event-bubble {
       position: absolute; top: -9px; right: -9px; z-index: 20;
       width: 20px; height: 20px; border-radius: 50%;
@@ -2601,7 +2618,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         <div class="sc-cal-grid" id="sc-cal-grid"></div>
         <div class="sc-cal-legend">
           <div class="sc-cal-legend-item">
-            <span class="sc-leg-swatch" style="outline:1.5px solid var(--orange);outline-offset:-1px;"></span> I'm free
+            <span class="sc-leg-swatch" style="outline:1.5px solid rgba(230,249,82,0.5);outline-offset:-1px;"></span> I'm free
           </div>
           <div class="sc-cal-legend-item">
             <span class="sc-leg-swatch" style="background:rgba(230,249,82,0.25);"></span> Others free
@@ -3632,10 +3649,16 @@ function renderCalendar() {
     const eventBubble = outingsOnDay.some(o => o.status === 'saved')
       ? `<div class="cell-event-bubble" title="Saved for later">🔖</div>`
       : (eventImg ? `<div class="cell-event-bubble" title="Event planned">🎟</div>` : '');
-    const imgClass = eventImg ? ' has-event-img' : '';
+    // When there's a booking on this day BUT no image to fill the cell, render
+    // a soft gradient overlay so the cell visibly says "something's planned"
+    // instead of looking empty (only a tiny dot would otherwise show).
+    const hasOutingThisDay = outingsOnDay.some(o => o.status !== 'cancelled');
+    const noImgBg = (!eventImg && hasOutingThisDay) ? `<div class="cell-noimg-bg"></div>` : '';
+    const imgClass = eventImg ? ' has-event-img' : (hasOutingThisDay ? ' has-outing-noimg' : '');
 
     html += `<td class="${tdClass}${actClass}${imgClass}" data-date="${dateStr}" onclick="handleDayClick(this)" onmouseenter="showCellHover(event,'${dateStr}')" onmouseleave="hideCellHover()">
       ${imgBg}
+      ${noImgBg}
       ${eventBubble}
       <div class="cell-top-row">
         <div class="day-num">${day}</div>
@@ -7269,6 +7292,9 @@ function _buildCardHTML(dateStr, offset) {
   // Lightning badge
   const hasEvents = outingsOnDay.some(o => o.status !== 'cancelled');
   const badgeHtml = hasEvents ? `<div class="day-card-badge">⚡</div>` : '';
+  // No image but still booked → soft gradient overlay so the day-card isn't
+  // visually empty (mirrors the same pattern from the monthly cell view).
+  const noImgClass = (!imgOuting && hasEvents) ? ' has-outing-noimg' : '';
 
   // Custody pill (always render, CSS hides on non-center)
   let custodyHtml = '';
@@ -7306,7 +7332,7 @@ function _buildCardHTML(dateStr, offset) {
 
   const posCls = _posClass(offset);
 
-  return `<div class="day-card ${posCls} ${colorClass}" data-date="${dateStr}">
+  return `<div class="day-card ${posCls} ${colorClass}${noImgClass}" data-date="${dateStr}">
     ${imgHtml}
     <div class="day-card-label">${dayLabel}</div>
     ${badgeHtml}
@@ -8686,6 +8712,33 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
       phone:   c.i_am_target ? c.requester_mobile : c.target_mobile,
       score:   0.5,
     }));
+  }
+
+  // ── Merge in any connections the API didn't return ────────────────────
+  // smart-suggest filters strictly to status='approved' on the server side,
+  // and there's a small lag window after a new friend is added (especially
+  // when the connection is still 'pending' but already visible on the
+  // contacts page). Augment _sc.data.who with anyone in allConnections
+  // not already present, so the WHO list never lags behind the contacts
+  // page. Both 'approved' and 'pending' are included — user should be
+  // able to invite a pending friend; calendar overlap will just be empty
+  // until both sides are connected, which is fine.
+  if (_sc.data.who && Array.isArray(_sc.data.who)) {
+    const known = new Set(_sc.data.who.map(w => w.id));
+    for (const c of (allConnections || [])) {
+      if (!c || known.has(c.id)) continue;
+      if (c.status !== 'approved' && c.status !== 'pending') continue;
+      _sc.data.who.push({
+        id:      c.id,
+        userId:  c.other_user_id,
+        name:    c.other_name || 'Unknown',
+        initial: (c.other_name || '?')[0].toUpperCase(),
+        photo:   c.other_photo || null,
+        type:    c.relationship_type || 'friend',
+        phone:   c.i_am_target ? c.requester_mobile : c.target_mobile,
+        score:   0.5,
+      });
+    }
   }
 
   // Assign colours - reuse existing socialConnections colours if available
