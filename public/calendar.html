@@ -3143,14 +3143,10 @@ function nextMonth() {
   updateNextTime();
   await Promise.all([loadActivities(), loadOutings(), loadPlanDots()]);
 
-  // Check for pending suggestions (notifications dot)
-  const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
-  const totalBadge = pendingConnections.length + pendingSuggestions.length + pendingActs.length;
-  document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
-  // PWA app-icon badge: shows a number on the home-screen icon (Android Chrome,
-  // some other browsers) so the user can see at a glance there's something
-  // waiting. Always reflect the latest computed totalBadge.
-  _updateAppBadge(totalBadge);
+  // Notif dot + PWA app-icon badge: total includes pending connections,
+  // suggestions, activities AND newly-changed invitee statuses on my own
+  // outings (friend RSVP'd accepted/declined since I last looked).
+  _refreshNotifBadgeFromState();
 
   // Deep-link: notification click → open specific event pane
   const _urlParams = new URLSearchParams(window.location.search);
@@ -3215,14 +3211,15 @@ async function loadConnections() {
     pendingSuggestions = sData.suggestions || [];
   }
 
-  const totalBadge = pendingConnections.length + pendingSuggestions.length;
+  // The "pending" badge in the connections panel is connection-specific,
+  // but the global notif dot + app-icon badge cover the broader unread set.
+  const connBadgeCount = pendingConnections.length + pendingSuggestions.length;
   const badge = document.getElementById('pending-badge');
-  document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
   if (badge) {
-    badge.textContent = totalBadge;
-    badge.classList.toggle('hidden', totalBadge === 0);
+    badge.textContent = connBadgeCount;
+    badge.classList.toggle('hidden', connBadgeCount === 0);
   }
-  _updateAppBadge(totalBadge);
+  _refreshNotifBadgeFromState();
 
   renderConnectionsList();
 }
@@ -4197,6 +4194,11 @@ function renderEventPane(data) {
   document.getElementById('event-pane-title').textContent = title;
   if (is_creator) document.getElementById('event-edit-btn').style.display = '';
   if (!is_creator) document.getElementById('private-toggle-row').style.display = '';
+  // Mark this outing's invitee responses as "seen" so the badge dot
+  // and auto-open candidate set don't keep flagging it on next reload.
+  _markOutingResponsesSeen(outing.id, invitees);
+  // Refresh badge after clearing this outing from the unread set.
+  if (typeof _refreshNotifBadgeFromState === 'function') _refreshNotifBadgeFromState();
   // Reveal the header "Link" share when an external URL is present; the body
   // "Share" buttons cover the invite-summary case for everyone.
   _setShareLinkBtn('event-share-link-btn', !!(outing.event_link || outing.source_url));
@@ -5983,6 +5985,9 @@ async function loadOutings() {
     ]);
     if (myRes.ok) { const d = await myRes.json(); myOutings = d.outings || []; }
     if (inRes.ok) { const d = await inRes.json(); myIncomingOutings = d.outings || []; }
+    // Detect invitee status changes since the last loadOutings (e.g. friend
+    // RSVP'd accepted) so we can badge + auto-open the affected outings.
+    _refreshUnreadInviteeResponses();
     // Rebuild date-keyed map
     Object.keys(outingsByDate).forEach(k => delete outingsByDate[k]);
     [...myOutings, ...myIncomingOutings].forEach(o => {
@@ -5992,6 +5997,73 @@ async function loadOutings() {
     renderCalendar(); // refresh so event pills appear in cells
     updateBnBadges();
   } catch(e) {}
+}
+
+// ── Unread invitee-responses (RSVP) tracking ────────────────────────────────
+// "Friend confirmed participation to my booking" doesn't have a server-side
+// `responded_at` column, so we detect it client-side by snapshotting each
+// outing's invitee statuses in localStorage. A change from {pending} to
+// {accepted/declined/maybe} since the last snapshot means "new response I
+// haven't seen yet". The snapshot for an outing is refreshed whenever the
+// user actually views its event pane (renderEventPane), so once they engage
+// the dot clears.
+let _unreadResponseOutingIds = []; // outing IDs with newly-changed invitee status
+const _UNREAD_SNAPSHOT_KEY = 'sp_invitee_snapshot_v1';
+
+function _readInviteeSnapshot() {
+  try { return JSON.parse(localStorage.getItem(_UNREAD_SNAPSHOT_KEY) || '{}') || {}; }
+  catch(e) { return {}; }
+}
+function _writeInviteeSnapshot(snap) {
+  try { localStorage.setItem(_UNREAD_SNAPSHOT_KEY, JSON.stringify(snap)); } catch(e) {}
+}
+
+// Diff current myOutings' invitee statuses vs snapshot. Outings the snapshot
+// has never seen are baselined silently (treated as already-seen — first time
+// the user logs in shouldn't fire 50 dots for old outings). Result is the
+// set of outing IDs where any invitee's status differs from snapshot AND
+// went from 'pending' → a real response.
+function _refreshUnreadInviteeResponses() {
+  const snap = _readInviteeSnapshot();
+  const unread = [];
+  let snapDirty = false;
+  for (const o of (myOutings || [])) {
+    if (!o || !o.id) continue;
+    const cur = {};
+    for (const inv of (o.invitees || [])) {
+      if (inv && inv.id) cur[inv.id] = inv.status || 'pending';
+    }
+    const prev = snap[o.id];
+    if (!prev) {
+      // First time we see this outing — baseline silently
+      snap[o.id] = cur;
+      snapDirty = true;
+      continue;
+    }
+    let changed = false;
+    for (const k of Object.keys(cur)) {
+      if (prev[k] !== cur[k] && prev[k] === 'pending' && cur[k] !== 'pending') {
+        changed = true; break;
+      }
+    }
+    if (changed) unread.push(o.id);
+  }
+  if (snapDirty) _writeInviteeSnapshot(snap);
+  _unreadResponseOutingIds = unread;
+}
+
+// Called when the user actually views an event pane — clears that outing's
+// "unread response" state so the dot doesn't keep re-firing on next load.
+function _markOutingResponsesSeen(outingId, invitees) {
+  if (!outingId) return;
+  const snap = _readInviteeSnapshot();
+  const cur = {};
+  for (const inv of (invitees || [])) {
+    if (inv && inv.id) cur[inv.id] = inv.status || 'pending';
+  }
+  snap[outingId] = cur;
+  _writeInviteeSnapshot(snap);
+  _unreadResponseOutingIds = _unreadResponseOutingIds.filter(id => id !== outingId);
 }
 
 async function setInviteeStatus(outingId, inviteeId, status) {
@@ -6183,11 +6255,9 @@ async function loadActivities() {
     buildActivitiesByDate();
     renderCalendar();
     renderStrip();
-    // Update profile notif dot
-    const pendingActs = myActivities.filter(a => a.to_user_id === myUserId && a.status === 'pending');
-    const totalBadge = pendingConnections.length + pendingSuggestions.length + pendingActs.length;
-    document.getElementById('notif-dot').classList.toggle('hidden', totalBadge === 0);
-    _updateAppBadge(totalBadge);
+    // Update profile notif dot via the centralized helper (includes
+    // unread invitee responses on my outings).
+    _refreshNotifBadgeFromState();
   } catch(e) {}
 }
 
@@ -6208,6 +6278,24 @@ function _updateAppBadge(count) {
   } catch(e) { /* badging API unsupported or denied */ }
 }
 
+// Centralized "total unread" count + dot/badge refresh. Anything that wants
+// the badge re-evaluated (e.g. after the user views an outing and its
+// responses get marked seen) can call this. Single source of truth so
+// adding new categories of "unread" only needs to be edited here.
+function _computeTotalBadge() {
+  const pendingActs = (myActivities || []).filter(a => a.to_user_id === myUserId && a.status === 'pending');
+  return (pendingConnections?.length || 0)
+       + (pendingSuggestions?.length || 0)
+       + pendingActs.length
+       + (_unreadResponseOutingIds?.length || 0); // NEW: friend RSVP'd on my outing
+}
+function _refreshNotifBadgeFromState() {
+  const total = _computeTotalBadge();
+  const dot = document.getElementById('notif-dot');
+  if (dot) dot.classList.toggle('hidden', total === 0);
+  _updateAppBadge(total);
+}
+
 // ── Auto-open the freshest pending notification on app launch ───────────────
 // When the user taps the home-screen icon (no ?openEvent= deep-link) and
 // there's a pending invite or change-suggestion newer than the one we last
@@ -6216,14 +6304,26 @@ function _updateAppBadge(count) {
 // items doesn't re-trigger (last-opened ID is tracked in localStorage).
 function _autoOpenFreshestPendingNotification() {
   try {
+    // ── Priority 1: unread invitee responses on MY outings ─────────────
+    // (friend just RSVP'd accepted/declined). The snapshot is self-clearing
+    // when the user views the event pane, so we don't gate on the
+    // last-auto-opened localStorage key — a NEW response on the SAME
+    // outing should re-open it. If multiple, take the first.
+    if ((_unreadResponseOutingIds || []).length > 0) {
+      const id = _unreadResponseOutingIds[0];
+      setTimeout(() => openEventPaneDirect(id), 400);
+      return;
+    }
+
+    // ── Priority 2: pending invites / suggestions ──────────────────────
+    // These don't have a "seen" mechanism, so we use localStorage to
+    // avoid re-opening the same one on every page refresh.
     const candidates = [];
-    // Pending incoming invites — friend invited me, I haven't responded.
     for (const o of (myIncomingOutings || [])) {
       if (o && o.my_invitee_status === 'pending' && o.id) {
         candidates.push({ id: o.id, ts: new Date(o.created_at || o.updated_at || 0).getTime() });
       }
     }
-    // Pending suggestions — friend proposed a change to one of my outings.
     for (const s of (pendingSuggestions || [])) {
       const oid = s?.outing_id || s?.outingId;
       if (oid) {
@@ -6231,13 +6331,11 @@ function _autoOpenFreshestPendingNotification() {
       }
     }
     if (candidates.length === 0) return;
-    // Newest first
     candidates.sort((a, b) => b.ts - a.ts);
     const newest = candidates[0];
     const lastOpenedId = localStorage.getItem('sp_last_auto_opened_notif') || '';
-    if (newest.id === lastOpenedId) return; // same as last time → don't keep popping it open
+    if (newest.id === lastOpenedId) return;
     localStorage.setItem('sp_last_auto_opened_notif', newest.id);
-    // Small delay so the calendar renders first
     setTimeout(() => openEventPaneDirect(newest.id), 400);
   } catch(e) { /* never block init on a notif-open failure */ }
 }
