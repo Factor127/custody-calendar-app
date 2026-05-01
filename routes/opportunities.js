@@ -3,7 +3,7 @@ const express  = require('express');
 const router   = express.Router();
 const db       = require('../db');
 const { submitUrl, ingestTicketmaster, ingestGooglePlaces, createOpportunity } = require('../services/opportunityIngestion');
-const { matchForUser } = require('../services/opportunityMatcher');
+const { matchForUser, pulseDatesForUser } = require('../services/opportunityMatcher');
 
 // ── Background image fetch for opportunities without images ──────────────
 async function _fetchImageForOpportunity(oppId, url) {
@@ -77,12 +77,33 @@ router.get('/places/autocomplete', async (req, res) => {
 // ── GET /api/opportunities/matches - personalized matches ─────────────────
 router.get('/opportunities/matches', async (req, res) => {
   const user = requireToken(req, res); if (!user) return;
-  const { category, type, limit = 20 } = req.query;
+  const { category, type, limit = 20, date } = req.query;
   try {
-    const matches = await matchForUser(user.id, { category, type, limit: parseInt(limit) });
+    const matches = await matchForUser(user.id, {
+      date: date || null,
+      category,
+      type,
+      limit: parseInt(limit),
+    });
     res.json({ matches });
   } catch(e) {
     console.error('[opportunities/matches]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── GET /api/opportunities/pulse-dates?from=&to= - bulk pulse map ─────────
+// Returns { dates: { 'YYYY-MM-DD': true, ... } } for dates that should
+// pulse on the month grid (dated event match OR scarce friend overlap).
+router.get('/opportunities/pulse-dates', async (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const { from, to } = req.query;
+  if (!from || !to) return res.status(400).json({ error: 'from and to required' });
+  try {
+    const dates = await pulseDatesForUser(user.id, from, to);
+    res.json({ dates });
+  } catch(e) {
+    console.error('[opportunities/pulse-dates]', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -178,6 +199,18 @@ router.post('/opportunities/:id/share', (req, res) => {
   if (!opp || opp.created_by !== user.id) return res.status(403).json({ error: 'forbidden' });
   const note = (req.body.contributor_note || '').slice(0, 200) || null;
   db.shareOpportunity(req.params.id, note);
+  res.json({ ok: true });
+});
+
+// ── POST /api/opportunities/:id/dismiss - "avoid ideas like this" red ✕ ───
+// Marks the opp as dismissed for this user. Future matches hide it.
+// Investigation/learning logic (cross-card avoidance) is intentionally NOT
+// done here — that's a later phase; we just collect the signal.
+router.post('/opportunities/:id/dismiss', (req, res) => {
+  const user = requireToken(req, res); if (!user) return;
+  const opp  = db.getOpportunityById(req.params.id);
+  if (!opp) return res.status(404).json({ error: 'not found' });
+  db.dismissOpportunity(user.id, req.params.id);
   res.json({ ok: true });
 });
 
