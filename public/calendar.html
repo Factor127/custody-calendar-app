@@ -2164,6 +2164,23 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-review-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; position:relative; overflow:hidden; }
     .sc-review-avatar img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:50%; }
     .sc-review-name { flex:1; font-size:14px; font-weight:600; }
+    /* In-app "Invite" button for invitees who already have a Spontany account
+       — sits LEFT of the WhatsApp button, closer to name+avatar. The push
+       went out at outing-create time; this button is the user's
+       acknowledgement that they've handled this contact in-app, no WhatsApp
+       needed. After clicking it changes to "Invited ✓" + disabled. */
+    .sc-review-invite-btn {
+      padding:7px 12px; background:var(--lime); color:#0a0a0a;
+      border:none; border-radius:8px; font-size:13px; font-weight:700;
+      cursor:pointer; font-family:inherit;
+      display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+      transition:opacity .15s, background .15s;
+    }
+    .sc-review-invite-btn:hover { background:#d4e62d; }
+    .sc-review-invite-btn.invited {
+      background:rgba(230,249,82,0.15); color:var(--lime);
+      cursor:default; opacity:0.85;
+    }
     .sc-review-wa-btn { padding:7px 12px; background:#25d366; color:white; border:none; border-radius:8px; font-size:13px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
     .sc-review-remove { background:none; border:none; font-size:20px; color:var(--muted); cursor:pointer; padding:4px 6px; line-height:1; }
     .sc-review-remove:hover { color:#ef4444; }
@@ -4191,7 +4208,25 @@ async function openEventPane(outingId) {
 function renderEventPane(data) {
   const { outing, invitees, messages, is_creator } = data;
   const title = outing.title || outing.venue || outing.message || 'Plan';
-  document.getElementById('event-pane-title').textContent = title;
+  const eventUrl = outing.event_link || outing.source_url || null;
+  // Title in the header. When an external event_link exists, make it tap-to-open
+  // (with subtle cursor/underline) so users can jump from the description
+  // straight to the source page (Eventbrite, Granada Theater, etc.).
+  const titleEl = document.getElementById('event-pane-title');
+  titleEl.textContent = title;
+  if (eventUrl) {
+    titleEl.style.cursor = 'pointer';
+    titleEl.style.textDecoration = 'underline';
+    titleEl.style.textUnderlineOffset = '3px';
+    titleEl.style.textDecorationColor = 'rgba(230,249,82,0.45)';
+    titleEl.title = 'Open event page';
+    titleEl.onclick = () => window.open(eventUrl, '_blank', 'noopener');
+  } else {
+    titleEl.style.cursor = '';
+    titleEl.style.textDecoration = '';
+    titleEl.title = '';
+    titleEl.onclick = null;
+  }
   if (is_creator) document.getElementById('event-edit-btn').style.display = '';
   if (!is_creator) document.getElementById('private-toggle-row').style.display = '';
   // Mark this outing's invitee responses as "seen" so the badge dot
@@ -4201,13 +4236,20 @@ function renderEventPane(data) {
   if (typeof _refreshNotifBadgeFromState === 'function') _refreshNotifBadgeFromState();
   // Reveal the header "Link" share when an external URL is present; the body
   // "Share" buttons cover the invite-summary case for everyone.
-  _setShareLinkBtn('event-share-link-btn', !!(outing.event_link || outing.source_url));
+  _setShareLinkBtn('event-share-link-btn', !!eventUrl);
 
   let html = '';
 
-  // Image header
+  // Image header — also wrap in a clickable link when an external event URL
+  // is present, so tapping the poster jumps to the source page.
   if (outing.image_url) {
-    html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
+    if (eventUrl) {
+      html += `<a href="${eventUrl}" target="_blank" rel="noopener" style="display:block;">
+        <img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;cursor:pointer;" loading="lazy">
+      </a>`;
+    } else {
+      html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
+    }
   }
 
   // Event details - date, time, venue
@@ -4284,6 +4326,53 @@ function renderEventPane(data) {
     Share
   </button>`;
   html += `</div>`;
+
+  // ── Tickets section ─────────────────────────────────────────────────────
+  // For events with an external link, let each participant mark "I already
+  // bought tickets" and show the per-person status to everyone. State lives
+  // on outings.creator_tickets_purchased + outing_invitees.tickets_purchased.
+  if (eventUrl) {
+    const myInvRow = invitees.find(i => i.user_id === myUserId);
+    const myStatus = is_creator
+      ? !!outing.creator_tickets_purchased
+      : !!myInvRow?.tickets_purchased;
+    // Build the participants summary: creator + all invitees, with "You"
+    // for the current user and a ✓ next to anyone who marked tickets.
+    const creatorName = is_creator ? 'You' : (outing.creator_name || 'Creator');
+    const participants = [
+      { name: creatorName, purchased: !!outing.creator_tickets_purchased },
+      ...invitees.map(i => ({
+        name: i.user_id === myUserId ? 'You' : (i.name || 'Guest'),
+        purchased: !!i.tickets_purchased,
+      })),
+    ];
+    const haveCount = participants.filter(p => p.purchased).length;
+    const summaryHtml = participants.map(p => {
+      const tick = p.purchased ? '✓ ' : '';
+      const color = p.purchased ? 'var(--lime)' : 'rgba(238,238,248,0.45)';
+      return `<span style="color:${color};">${tick}${p.name}</span>`;
+    }).join(', ');
+    const myCanToggle = is_creator || !!myInvRow;
+    const toggleHtml = myCanToggle
+      ? `<button id="ep-tickets-toggle"
+                 data-outing-id="${outing.id}"
+                 data-purchased="${myStatus ? '1' : '0'}"
+                 onclick="_toggleMyTickets(this)"
+                 style="background:${myStatus ? 'rgba(230,249,82,0.15)' : 'transparent'};
+                        border:1px solid ${myStatus ? 'var(--lime)' : 'rgba(230,249,82,0.28)'};
+                        border-radius:10px;padding:8px 14px;
+                        color:${myStatus ? 'var(--lime)' : 'rgba(230,249,82,0.75)'};
+                        font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;text-align:center;">
+            ${myStatus ? '✓ I have tickets' : '🎟️ I already bought tickets'}
+          </button>`
+      : '';
+    html += `<div style="padding:0 16px 12px;">
+      ${toggleHtml}
+      <div style="margin-top:8px;font-size:11px;color:rgba(238,238,248,0.55);line-height:1.55;">
+        🎟️ <strong style="color:rgba(238,238,248,0.85);">${haveCount}/${participants.length}</strong> have tickets &middot; ${summaryHtml}
+      </div>
+    </div>`;
+  }
 
   // Suggest changes (invitees - non-creator participants)
   if (!is_creator) {
@@ -9627,9 +9716,17 @@ function renderSCWhatsApp() {
     <div id="sc-review-people">
       ${personData.map((pd, i) => {
         const color = _sc.colors[pd.w.id] || '#aec013';
+        // Show in-app "Invite" button only for invitees who already have a
+        // Spontany account (have userId). Phone-only contacts skip straight
+        // to the WhatsApp option as before.
+        const isAppUser = !!pd.w.userId;
+        const inviteBtn = isAppUser
+          ? `<button class="sc-review-invite-btn" data-app-id="${pd.w.id}" onclick="_scMarkInAppInvited(this)">Invite</button>`
+          : '';
         return `<div class="sc-review-person" id="sc-rp-${pd.w.id}">
           <div class="sc-review-avatar" style="background:${color};">${pd.w.initial}${pd.w.photo ? `<img src="${pd.w.photo}" alt="" onerror="this.remove();">` : ''}</div>
           <div class="sc-review-name">${pd.w.name}</div>
+          ${inviteBtn}
           <a class="sc-review-wa-btn" data-wi="${i}" href="#" target="_blank" rel="noopener">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             Send
@@ -9644,6 +9741,46 @@ function renderSCWhatsApp() {
     const a = body.querySelector(`[data-wi="${i}"]`);
     if (a) a.href = pd.url;
   });
+}
+
+// Toggle the "I already bought tickets" flag for the current user on this
+// outing. Server figures out whether this is the creator (updates outings
+// row) or an invitee (updates outing_invitees row). After success, re-fetch
+// detail + re-render so everyone's display is in sync.
+async function _toggleMyTickets(btn) {
+  if (!btn || !btn.dataset?.outingId) return;
+  const outingId = btn.dataset.outingId;
+  const purchased = btn.dataset.purchased !== '1'; // toggle current state
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/outings/${outingId}/tickets-purchased?token=${MY_TOKEN}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ purchased }),
+    });
+    if (!r.ok) throw new Error('Failed');
+    // Refresh the event pane so the summary line reflects the new state
+    const detRes = await fetch(`/api/outings/${outingId}/detail?token=${MY_TOKEN}`);
+    if (detRes.ok) {
+      const data = await detRes.json();
+      renderEventPane(data);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    showToast?.('Could not update ticket status — try again');
+  }
+}
+
+// Click handler for the in-app "Invite" button on the review WhatsApp stage.
+// The push notification was already dispatched by the server when the outing
+// was pre-created (api.js: sendPush at outing-create), so this is purely a
+// UX confirmation — flip the button to "Invited ✓" and disable it so the
+// user knows they've handled this contact and don't need to send WhatsApp.
+function _scMarkInAppInvited(btn) {
+  if (!btn || btn.classList.contains('invited')) return;
+  btn.classList.add('invited');
+  btn.disabled = true;
+  btn.innerHTML = '✓ Invited';
 }
 
 function _scIsSoftInvite() {

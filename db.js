@@ -45,6 +45,10 @@ try { db.exec('ALTER TABLE outings ADD COLUMN image_url TEXT'); } catch(e) { /* 
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN decline_note TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN title TEXT'); } catch(e) { /* already exists */ }
+// Per-user "I already bought tickets" flag for events with external link.
+// Tracked separately for the creator (on outings) and each invitee (on outing_invitees).
+try { db.exec('ALTER TABLE outings ADD COLUMN creator_tickets_purchased INTEGER DEFAULT 0'); } catch(e) { /* already exists */ }
+try { db.exec('ALTER TABLE outing_invitees ADD COLUMN tickets_purchased INTEGER DEFAULT 0'); } catch(e) { /* already exists */ }
 
 // ── Push subscriptions ────────────────────────────────────────────────────────
 db.exec(`CREATE TABLE IF NOT EXISTS push_subscriptions (

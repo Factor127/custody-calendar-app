@@ -1389,6 +1389,35 @@ router.get('/outings/incoming', (req, res) => {
   res.json({ outings: result });
 });
 
+// PUT /api/outings/:id/tickets-purchased - per-user "I already have tickets"
+// toggle for events with an external ticket link. Creator updates the
+// creator_tickets_purchased flag on the outing; an invitee updates the
+// tickets_purchased flag on their own outing_invitees row. Idempotent.
+router.put('/outings/:id/tickets-purchased', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const outing = q.getOutingById.get(req.params.id);
+  if (!outing) return res.status(404).json({ error: 'Outing not found' });
+
+  const purchased = req.body && req.body.purchased ? 1 : 0;
+
+  if (outing.created_by === me.id) {
+    db.prepare('UPDATE outings SET creator_tickets_purchased = ? WHERE id = ?')
+      .run(purchased, outing.id);
+    return res.json({ ok: true, role: 'creator', purchased: !!purchased });
+  }
+
+  // Invitee path — find the caller's own invitee row
+  const invitees = q.getOutingInvitees.all(outing.id);
+  const myInv = invitees.find(i => i.user_id === me.id);
+  if (!myInv) return res.status(403).json({ error: 'Not part of this event' });
+
+  db.prepare('UPDATE outing_invitees SET tickets_purchased = ? WHERE id = ?')
+    .run(purchased, myInv.id);
+  res.json({ ok: true, role: 'invitee', purchased: !!purchased });
+});
+
 // PUT /api/outings/:id/invitees/:inviteeId - update one invitee's status
 // Allowed if: you are the outing creator (can update any invitee)
 //          OR you are the invitee updating your own record
@@ -1835,12 +1864,13 @@ router.get('/outings/:id/detail', (req, res) => {
   res.json({
     outing: { ...outing, event_link },
     invitees: invitees.map(i => ({
-      id:           i.id,
-      user_id:      i.user_id,
-      name:         i.user_name || i.name,
-      photo:        i.user_photo || null,
-      status:       i.status,
-      decline_note: i.decline_note || null,
+      id:                 i.id,
+      user_id:            i.user_id,
+      name:               i.user_name || i.name,
+      photo:              i.user_photo || null,
+      status:             i.status,
+      decline_note:       i.decline_note || null,
+      tickets_purchased:  !!i.tickets_purchased,
     })),
     messages: messages.map(m => ({
       id:           m.id,
