@@ -233,6 +233,96 @@ body { background: linear-gradient(145deg, #e6f952, #aec013); color:var(--text);
 }
 .group-link:hover { text-decoration:underline; }
 
+/* Real groups: uniform grid, click-anywhere card */
+.groups-heading-row {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin:36px 0 6px;
+}
+.groups-grid-real {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+}
+.group-card-real {
+  cursor:pointer; transition: border-color .15s, background .15s;
+  position:relative;
+}
+.group-card-real:hover { border-color:rgba(230,249,82,0.35); background:rgba(255,255,255,0.02); }
+.group-card-real .group-name { font-size:17px; font-weight:800; }
+.group-card-meta {
+  font-size:12px; color:var(--muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+.group-card-pending-pill {
+  font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+  background:rgba(230,249,82,0.12); color:var(--lime);
+  padding:2px 7px; border-radius:99px;
+}
+
+/* Pending invites banner (top of Groups section) */
+.group-invite-card {
+  background:linear-gradient(135deg, rgba(230,249,82,0.10), rgba(230,249,82,0.02));
+  border:1.5px solid rgba(230,249,82,0.35);
+  border-radius:14px; padding:14px 16px;
+  display:flex; gap:12px; align-items:center; margin:24px 0 0;
+  animation:prefSlide .25s ease;
+}
+.group-invite-card + .group-invite-card { margin-top:10px; }
+.group-invite-text { flex:1; font-size:14px; color:var(--text); line-height:1.4; }
+.group-invite-text strong { color:var(--lime); }
+.group-invite-actions { display:flex; gap:6px; flex-shrink:0; }
+
+/* Member picker chips (in create dialog + add-member row) */
+.group-member-picker {
+  display:flex; flex-wrap:wrap; gap:6px;
+  max-height:240px; overflow-y:auto;
+  padding:4px 2px;
+}
+.member-pick-chip {
+  background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.12);
+  border-radius:20px; padding:7px 13px;
+  font-size:13px; font-weight:600; color:var(--muted);
+  cursor:pointer; transition:all .15s; user-select:none;
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:inherit;
+}
+.member-pick-chip:hover { border-color:rgba(230,249,82,0.4); color:var(--text); }
+.member-pick-chip.selected {
+  background:rgba(230,249,82,0.15); border-color:var(--lime); color:var(--lime);
+}
+.member-pick-chip .chip-check { font-weight:800; }
+
+/* Detail roster rows */
+.group-roster-row {
+  display:flex; align-items:center; gap:12px; padding:10px 0;
+  border-bottom:1px solid var(--border);
+}
+.group-roster-row:last-child { border-bottom:none; }
+.group-roster-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--lime); flex-shrink:0; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800; color:#0a0a0a;
+}
+.group-roster-avatar img { width:100%; height:100%; object-fit:cover; }
+.group-roster-info { flex:1; min-width:0; }
+.group-roster-name {
+  font-size:14px; font-weight:700; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.group-roster-status {
+  font-size:11px; color:var(--muted); margin-top:2px;
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.group-roster-status.accepted { color:var(--lime); }
+.group-roster-status.declined,
+.group-roster-status.removed,
+.group-roster-status.left { color:#f87171; }
+.group-roster-remove {
+  background:none; border:none; color:var(--muted); cursor:pointer;
+  font-size:18px; padding:4px 8px; border-radius:6px;
+  transition:background .12s, color .12s;
+}
+.group-roster-remove:hover { background:rgba(248,113,113,0.10); color:#f87171; }
+
 /* ── iCal ────────────────────────────────────────────────────────────── */
 .ical-card {
   margin-top:28px; padding:16px 20px;
@@ -454,29 +544,22 @@ input::placeholder { color:var(--muted); }
     <p class="text-muted" id="connections-loading">Loading…</p>
   </div>
 
-  <!-- Groups section (visual placeholder) -->
-  <div class="groups-heading">Groups</div>
-  <div class="groups-grid">
-    <div class="group-card primary">
-      <div class="group-label">Primary Node</div>
-      <div class="group-name">The Family Hub</div>
-      <div class="group-desc">Central coordination for all co-parenting schedules and household logistics.</div>
-      <div class="group-members" id="group-members-row">
-        <div class="group-member-count" style="margin-left:0;">-</div>
-      </div>
-    </div>
-    <div class="group-card">
-      <div class="group-icon-wrap">🧭</div>
-      <div class="group-name" style="font-size:16px;">Social Nexus</div>
-      <div class="group-desc">Inner circle of trusted friends for spontaneous gatherings.</div>
-      <a href="#" class="group-link">View Group →</a>
-    </div>
-    <div class="group-card">
-      <div class="group-icon-wrap">💼</div>
-      <div class="group-name" style="font-size:16px;">Project Kinetic</div>
-      <div class="group-desc">Business partners with shared visibility windows.</div>
-      <a href="#" class="group-link">View Group →</a>
-    </div>
+  <!-- Groups section (dynamic) -->
+  <div id="group-invites-banner"></div>
+
+  <div class="groups-heading-row">
+    <div class="groups-heading" style="margin:0;">Groups</div>
+    <button class="btn btn-outline btn-sm" onclick="openCreateGroupDialog()">+ New group</button>
+  </div>
+  <p class="text-muted" style="margin:0 0 14px;font-size:12px;">Save a crew you invite together — one tap to add them all to a future plan.</p>
+
+  <div class="groups-grid groups-grid-real" id="created-groups-list">
+    <p class="text-muted" id="groups-loading" style="grid-column:1/-1;">Loading…</p>
+  </div>
+
+  <div id="member-of-section" style="display:none;margin-top:24px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;">Groups you're in</div>
+    <div class="groups-grid groups-grid-real" id="member-of-list"></div>
   </div>
 
   <!-- iCal subscribe -->
@@ -599,6 +682,51 @@ input::placeholder { color:var(--muted); }
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('invite-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Create / rename group dialog ──────────────────────────────────────── -->
+<div class="modal-overlay" id="group-dialog">
+  <div class="modal">
+    <h2 id="group-dialog-title">Create a group</h2>
+    <p class="text-muted" style="margin:-4px 0 14px;font-size:13px;" id="group-dialog-desc">
+      Save a crew you invite together. Members must accept the invitation.
+    </p>
+    <div class="field-group" style="margin-bottom:14px;">
+      <label class="field-label">Group name</label>
+      <input id="group-name-input" type="text" maxlength="60" placeholder="e.g. Trivia Crew"
+        style="width:100%;padding:11px 14px;background:#1a1a1a;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;">
+    </div>
+    <div id="group-members-field">
+      <div class="field-label" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+        <span>Members</span>
+        <span id="group-member-pick-count" class="text-muted" style="font-size:12px;font-weight:500;">0 selected</span>
+      </div>
+      <div id="group-member-picker" class="group-member-picker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('group-dialog')">Cancel</button>
+      <button class="btn btn-primary" id="group-dialog-submit" onclick="submitGroupDialog()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Group detail dialog ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="group-detail">
+  <div class="modal">
+    <h2 id="group-detail-name" style="margin-bottom:4px;"></h2>
+    <p class="text-muted" id="group-detail-meta" style="font-size:12px;margin:0 0 14px;"></p>
+
+    <div id="group-detail-roster" style="max-height:280px;overflow-y:auto;margin-bottom:14px;"></div>
+
+    <div id="group-detail-add-row" style="display:none;margin:0 0 12px;">
+      <div class="field-label" style="margin-bottom:6px;font-size:12px;">Add a member</div>
+      <div id="group-detail-add-picker" class="group-member-picker" style="max-height:140px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="modal-actions" id="group-detail-actions">
+      <!-- Filled dynamically based on creator vs member -->
     </div>
   </div>
 </div>
@@ -1427,6 +1555,7 @@ async function init() {
   await loadConnections();
   await loadConnPrefs();
   checkShowPrefCard();
+  loadGroups();
 
   // Handle Google Contacts OAuth callback results
   const contactsImported = params.get('contacts_imported');
@@ -1456,6 +1585,303 @@ async function init() {
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });
+
+// ── Groups ─────────────────────────────────────────────────────────────────
+let myGroups = { created: [], member_of: [], pending_invites: [] };
+let createGroupSelectedIds = new Set();
+let currentGroupDetail = null;
+let detailAddPickerOpen = false;
+
+async function loadGroups() {
+  try {
+    const res = await fetch(`/api/groups?token=${MY_TOKEN}`);
+    if (res.ok) myGroups = await res.json();
+  } catch(e) { /* keep prior state */ }
+  renderGroups();
+}
+
+function renderGroups() {
+  // Pending invites banner
+  const banner = document.getElementById('group-invites-banner');
+  banner.innerHTML = (myGroups.pending_invites || []).map(inv => `
+    <div class="group-invite-card">
+      <div class="group-invite-text">
+        <strong>${escapeHtml(inv.creator_name)}</strong> invited you to the group
+        <strong>"${escapeHtml(inv.name)}"</strong>
+      </div>
+      <div class="group-invite-actions">
+        <button class="btn btn-outline btn-sm" onclick="declineGroupInvite('${inv.id}')">Decline</button>
+        <button class="btn btn-primary btn-sm" onclick="acceptGroupInvite('${inv.id}')">Accept</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Groups I created
+  const createdEl = document.getElementById('created-groups-list');
+  if (!myGroups.created || myGroups.created.length === 0) {
+    createdEl.innerHTML = `<p class="text-muted" style="grid-column:1/-1;font-size:13px;">No groups yet. Create one to invite the same people together.</p>`;
+  } else {
+    createdEl.innerHTML = myGroups.created.map(g => {
+      const total   = g.member_count;
+      const pending = g.pending_count;
+      const pendingPill = pending > 0
+        ? `<span class="group-card-pending-pill">${pending} pending</span>` : '';
+      return `<div class="group-card group-card-real" onclick="openGroupDetail('${g.id}')">
+        <div class="group-name">${escapeHtml(g.name)}</div>
+        <div class="group-card-meta">
+          <span>${total} ${total === 1 ? 'member' : 'members'}</span>
+          ${pendingPill}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Groups I'm a member of
+  const memberSection = document.getElementById('member-of-section');
+  const memberList    = document.getElementById('member-of-list');
+  if (myGroups.member_of && myGroups.member_of.length) {
+    memberSection.style.display = 'block';
+    memberList.innerHTML = myGroups.member_of.map(g => `
+      <div class="group-card group-card-real" onclick="openGroupDetail('${g.id}')">
+        <div class="group-name">${escapeHtml(g.name)}</div>
+        <div class="group-card-meta">by ${escapeHtml(g.creator_name)}</div>
+      </div>
+    `).join('');
+  } else {
+    memberSection.style.display = 'none';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+// ── Create group dialog ────────────────────────────────────────────────────
+function openCreateGroupDialog(prefilledIds) {
+  createGroupSelectedIds = new Set(prefilledIds || []);
+  document.getElementById('group-dialog-title').textContent = 'Create a group';
+  document.getElementById('group-dialog-desc').textContent  =
+    'Save a crew you invite together. Members must accept the invitation.';
+  document.getElementById('group-name-input').value = '';
+  document.getElementById('group-dialog-submit').textContent = 'Create';
+  document.getElementById('group-members-field').style.display = '';
+  renderCreateGroupPicker();
+  document.getElementById('group-dialog').classList.add('open');
+  setTimeout(() => document.getElementById('group-name-input').focus(), 60);
+}
+
+function renderCreateGroupPicker() {
+  const approved = (allConnections || []).filter(c => c.status === 'approved');
+  const picker   = document.getElementById('group-member-picker');
+  if (approved.length === 0) {
+    picker.innerHTML = `<p class="text-muted" style="font-size:13px;">Add some connections first — group members must be approved contacts.</p>`;
+  } else {
+    picker.innerHTML = approved.map(c => {
+      const sel = createGroupSelectedIds.has(c.other_user_id);
+      return `<button type="button" class="member-pick-chip${sel ? ' selected' : ''}"
+        onclick="toggleCreateMemberPick('${c.other_user_id}')">
+        ${sel ? '<span class="chip-check">✓</span>' : ''}${escapeHtml(c.other_name)}
+      </button>`;
+    }).join('');
+  }
+  document.getElementById('group-member-pick-count').textContent =
+    `${createGroupSelectedIds.size} selected`;
+}
+
+function toggleCreateMemberPick(userId) {
+  if (createGroupSelectedIds.has(userId)) createGroupSelectedIds.delete(userId);
+  else createGroupSelectedIds.add(userId);
+  renderCreateGroupPicker();
+}
+
+async function submitGroupDialog() {
+  const name = document.getElementById('group-name-input').value.trim();
+  if (!name) return showToast('Group name required');
+  const memberIds = [...createGroupSelectedIds];
+  const btn = document.getElementById('group-dialog-submit');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const res = await fetch(`/api/groups?token=${MY_TOKEN}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, member_user_ids: memberIds })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.error || 'Failed to create group'); return; }
+    closeModal('group-dialog');
+    showToast(`✓ Group "${name}" created`);
+    await loadGroups();
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create';
+  }
+}
+
+// ── Group detail dialog ────────────────────────────────────────────────────
+async function openGroupDetail(groupId) {
+  detailAddPickerOpen = false;
+  document.getElementById('group-detail-add-row').style.display = 'none';
+  try {
+    const res = await fetch(`/api/groups/${groupId}?token=${MY_TOKEN}`);
+    if (!res.ok) { showToast('Could not open group'); return; }
+    const data = await res.json();
+    currentGroupDetail = { ...data.group, members: data.members };
+  } catch(e) { showToast('Network error'); return; }
+  renderGroupDetail();
+  document.getElementById('group-detail').classList.add('open');
+}
+
+function renderGroupDetail() {
+  if (!currentGroupDetail) return;
+  const g = currentGroupDetail;
+  const isCreator = !!g.is_creator;
+  const accepted  = g.members.filter(m => m.status === 'accepted').length;
+  const total     = g.members.length;
+
+  document.getElementById('group-detail-name').textContent = g.name;
+  document.getElementById('group-detail-meta').textContent = isCreator
+    ? `${accepted} of ${total} accepted${isCreator ? ' • You created this group' : ''}`
+    : `Created by ${g.creator_name || ''}`;
+
+  const roster = document.getElementById('group-detail-roster');
+  roster.innerHTML = g.members.map(m => {
+    const initial = (m.name || '?').charAt(0).toUpperCase();
+    const photo   = m.photo
+      ? `<img src="${escapeHtml(m.photo)}" alt="" onerror="this.remove();">`
+      : '';
+    const removeBtn = (isCreator && m.status !== 'removed' && m.user_id !== g.creator_user_id)
+      ? `<button class="group-roster-remove" title="Remove" onclick="removeGroupMember('${m.id}')">×</button>`
+      : '';
+    return `<div class="group-roster-row">
+      <div class="group-roster-avatar">${photo || initial}</div>
+      <div class="group-roster-info">
+        <div class="group-roster-name">${escapeHtml(m.name || 'Unknown')}</div>
+        <div class="group-roster-status ${m.status}">${m.status}</div>
+      </div>
+      ${removeBtn}
+    </div>`;
+  }).join('') || `<p class="text-muted" style="font-size:13px;">No members yet.</p>`;
+
+  // Actions
+  const actions = document.getElementById('group-detail-actions');
+  if (isCreator) {
+    actions.innerHTML = `
+      <button class="btn btn-outline" onclick="closeModal('group-detail')">Close</button>
+      <button class="btn btn-outline" onclick="toggleAddMemberPicker()">+ Add member</button>
+      <button class="btn btn-outline" onclick="renameCurrentGroup()">Rename</button>
+      <button class="btn btn-outline" onclick="deleteCurrentGroup()" style="color:#f87171;border-color:rgba(248,113,113,0.4);">Delete</button>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button class="btn btn-outline" onclick="closeModal('group-detail')">Close</button>
+      <button class="btn btn-outline" onclick="leaveCurrentGroup()" style="color:#f87171;border-color:rgba(248,113,113,0.4);">Leave</button>
+    `;
+  }
+}
+
+function toggleAddMemberPicker() {
+  detailAddPickerOpen = !detailAddPickerOpen;
+  document.getElementById('group-detail-add-row').style.display = detailAddPickerOpen ? '' : 'none';
+  if (detailAddPickerOpen) renderDetailAddPicker();
+}
+
+function renderDetailAddPicker() {
+  const g = currentGroupDetail;
+  if (!g) return;
+  // Connections that aren't already accepted/pending in this group
+  const existingActive = new Set(
+    g.members.filter(m => m.status === 'accepted' || m.status === 'pending').map(m => m.user_id)
+  );
+  const candidates = (allConnections || [])
+    .filter(c => c.status === 'approved' && !existingActive.has(c.other_user_id));
+
+  const picker = document.getElementById('group-detail-add-picker');
+  if (!candidates.length) {
+    picker.innerHTML = `<p class="text-muted" style="font-size:13px;">Everyone you're connected to is already in this group.</p>`;
+    return;
+  }
+  picker.innerHTML = candidates.map(c =>
+    `<button type="button" class="member-pick-chip" onclick="addMemberToCurrentGroup('${c.other_user_id}', this)">+ ${escapeHtml(c.other_name)}</button>`
+  ).join('');
+}
+
+async function addMemberToCurrentGroup(userId, btnEl) {
+  if (!currentGroupDetail) return;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '…'; }
+  const res = await fetch(`/api/groups/${currentGroupDetail.id}/members?token=${MY_TOKEN}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_ids: [userId] })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { showToast(data.error || 'Failed to add'); return; }
+  if (data.skipped && data.skipped.length) {
+    showToast(`Skipped: ${data.skipped[0].reason.replace('_', ' ')}`);
+  } else {
+    showToast('✓ Invite sent');
+  }
+  await openGroupDetail(currentGroupDetail.id);
+  await loadGroups();
+}
+
+async function removeGroupMember(memberId) {
+  if (!currentGroupDetail) return;
+  if (!confirm('Remove this member from the group?')) return;
+  const res = await fetch(`/api/groups/${currentGroupDetail.id}/members/${memberId}?token=${MY_TOKEN}`, { method: 'DELETE' });
+  if (!res.ok) { showToast('Failed to remove'); return; }
+  showToast('Removed');
+  await openGroupDetail(currentGroupDetail.id);
+  await loadGroups();
+}
+
+async function renameCurrentGroup() {
+  if (!currentGroupDetail) return;
+  const newName = prompt('New group name:', currentGroupDetail.name);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed) return showToast('Name required');
+  if (trimmed === currentGroupDetail.name) return;
+  const res = await fetch(`/api/groups/${currentGroupDetail.id}?token=${MY_TOKEN}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: trimmed })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { showToast(data.error || 'Failed to rename'); return; }
+  showToast('✓ Renamed');
+  await openGroupDetail(currentGroupDetail.id);
+  await loadGroups();
+}
+
+async function deleteCurrentGroup() {
+  if (!currentGroupDetail) return;
+  if (!confirm(`Delete "${currentGroupDetail.name}"? This can't be undone.`)) return;
+  const res = await fetch(`/api/groups/${currentGroupDetail.id}?token=${MY_TOKEN}`, { method: 'DELETE' });
+  if (!res.ok) { showToast('Failed to delete'); return; }
+  closeModal('group-detail');
+  showToast('Group deleted');
+  await loadGroups();
+}
+
+async function leaveCurrentGroup() {
+  if (!currentGroupDetail) return;
+  if (!confirm(`Leave "${currentGroupDetail.name}"?`)) return;
+  const res = await fetch(`/api/groups/${currentGroupDetail.id}/leave?token=${MY_TOKEN}`, { method: 'POST' });
+  if (!res.ok) { showToast('Failed to leave'); return; }
+  closeModal('group-detail');
+  showToast('You left the group');
+  await loadGroups();
+}
+
+async function acceptGroupInvite(groupId) {
+  const res = await fetch(`/api/groups/${groupId}/accept?token=${MY_TOKEN}`, { method: 'POST' });
+  if (res.ok) { showToast('✓ Joined'); await loadGroups(); }
+  else { showToast('Could not accept'); }
+}
+
+async function declineGroupInvite(groupId) {
+  const res = await fetch(`/api/groups/${groupId}/decline?token=${MY_TOKEN}`, { method: 'POST' });
+  if (res.ok) { showToast('Declined'); await loadGroups(); }
+  else { showToast('Could not decline'); }
+}
 
 init();
 </script>

@@ -44,6 +44,9 @@ try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) 
 try { db.exec('ALTER TABLE outings ADD COLUMN image_url TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN rsvp_token TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outing_invitees ADD COLUMN decline_note TEXT'); } catch(e) { /* already exists */ }
+// Groups epic: a magic link used for a group-join invite carries the group_id.
+// NULL for any non-group link (email auth, partner invites).
+try { db.exec('ALTER TABLE magic_links ADD COLUMN group_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN title TEXT'); } catch(e) { /* already exists */ }
 // Per-user "I already bought tickets" flag for events with external link.
 // Tracked separately for the creator (on outings) and each invitee (on outing_invitees).
@@ -296,6 +299,44 @@ db.exec(`CREATE TABLE IF NOT EXISTS plans (
   FOREIGN KEY (user_id) REFERENCES users(id)
 )`);
 
+// ── Opportunity dismissals ("avoid ideas like this" red ✕) ─────────────────
+// Just a mark per (user × opportunity). Future analysis logic builds on this;
+// today the matcher uses it only to hide the dismissed opp from that user.
+db.exec(`CREATE TABLE IF NOT EXISTS opportunity_dismissals (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  opportunity_id TEXT NOT NULL,
+  created_at     TEXT DEFAULT (datetime('now')),
+  UNIQUE(user_id, opportunity_id),
+  FOREIGN KEY (user_id)        REFERENCES users(id),
+  FOREIGN KEY (opportunity_id) REFERENCES opportunities(id)
+)`);
+
+// ── Pulse: things the user saved from elsewhere but hasn't actioned yet ─────
+// Append-only by design — even past-dated events stay as fingerprint signal.
+// kind='event' has event_date; kind='venue' has none and lives by created_at.
+db.exec(`CREATE TABLE IF NOT EXISTS pulse_items (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  kind           TEXT NOT NULL CHECK(kind IN ('venue','event')),
+  url            TEXT,
+  title          TEXT,
+  description    TEXT,
+  image_url      TEXT,
+  source_domain  TEXT,
+  event_date     TEXT,
+  event_time     TEXT,
+  location_name  TEXT,
+  category       TEXT,
+  price_tier     TEXT CHECK(price_tier IN ('free','low','medium','high')),
+  raw_text       TEXT,
+  notes          TEXT,
+  created_at     TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+)`);
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_pulse_user_date    ON pulse_items(user_id, event_date)'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_pulse_user_created ON pulse_items(user_id, created_at)'); } catch(e) {}
+
 db.exec(`CREATE TABLE IF NOT EXISTS outing_messages (
   id TEXT PRIMARY KEY,
   outing_id TEXT NOT NULL,
@@ -315,6 +356,46 @@ db.exec(`CREATE TABLE IF NOT EXISTS outing_suggestions (
   suggested_place TEXT,
   status TEXT DEFAULT 'pending',
   created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// ── Groups (creator-owned named rosters for repeat invites) ─────────────────
+// See docs/groups-epic-spec.md. Members must be approved connections of the
+// creator; group invites reuse the magic_links flow (see ALTER above).
+db.exec(`CREATE TABLE IF NOT EXISTS groups (
+  id              TEXT PRIMARY KEY,
+  creator_user_id TEXT NOT NULL,
+  name            TEXT NOT NULL,
+  created_at      TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (creator_user_id) REFERENCES users(id)
+)`);
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_creator_name ON groups(creator_user_id, name)'); } catch(e) {}
+
+db.exec(`CREATE TABLE IF NOT EXISTS group_members (
+  id             TEXT PRIMARY KEY,
+  group_id       TEXT NOT NULL,
+  user_id        TEXT,
+  invited_phone  TEXT,
+  invited_email  TEXT,
+  status         TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending','accepted','declined','removed','left')),
+  invited_at     TEXT DEFAULT (datetime('now')),
+  responded_at   TEXT,
+  FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)  REFERENCES users(id)
+)`);
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_gm_group ON group_members(group_id)'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_gm_user  ON group_members(user_id)'); } catch(e) {}
+
+// Audit row: which group (if any) originated an outing's invitee fan-out.
+// Used host-side for the "Invited via <Group>" label. ON DELETE CASCADE so
+// deleting a group quietly drops the label without retro-cancelling outings.
+db.exec(`CREATE TABLE IF NOT EXISTS outing_group_origin (
+  outing_id TEXT NOT NULL,
+  group_id  TEXT NOT NULL,
+  sent_at   TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (outing_id, group_id),
+  FOREIGN KEY (outing_id) REFERENCES outings(id),
+  FOREIGN KEY (group_id)  REFERENCES groups(id) ON DELETE CASCADE
 )`);
 
 // ── Campaign analytics ───────────────────────────────────────────────────────
@@ -605,6 +686,24 @@ const q = {
     WHERE c.requester_id = ? OR c.target_id = ?
     ORDER BY c.created_at DESC
   `),
+  // Active (approved + unexpired) non-coparent connections — used by the
+  // opportunity matcher to find friend/partner overlaps. Returns the OTHER
+  // user's id/name so callers don't need to disambiguate requester vs target.
+  getActiveSocialConnections: db.prepare(`
+    SELECT c.id,
+           c.relationship_type,
+           c.approved_until,
+           CASE WHEN c.requester_id = ? THEN c.target_id    ELSE c.requester_id END AS other_user_id,
+           CASE WHEN c.requester_id = ? THEN u_t.name       ELSE u_r.name       END AS other_name,
+           CASE WHEN c.requester_id = ? THEN u_t.photo      ELSE u_r.photo      END AS other_photo
+    FROM connections c
+    JOIN users u_r ON c.requester_id = u_r.id
+    JOIN users u_t ON c.target_id    = u_t.id
+    WHERE (c.requester_id = ? OR c.target_id = ?)
+      AND c.status = 'approved'
+      AND c.relationship_type != 'coparent'
+      AND (c.approved_until IS NULL OR c.approved_until >= date('now'))
+  `),
   updateConnectionRole:            db.prepare(`UPDATE connections SET relationship_type = ? WHERE id = ?`),
   updateDesiredDuration:           db.prepare(`UPDATE connections SET desired_duration_days = ? WHERE id = ?`),
   renewConnection:  db.prepare("UPDATE connections SET approved_until = ? WHERE id = ?"),
@@ -702,6 +801,15 @@ const q = {
   `),
   getConnectionPrefs:     db.prepare('SELECT * FROM connection_preferences WHERE user_id = ? AND connection_id = ?'),
   getAllPrefsForUser:      db.prepare('SELECT * FROM connection_preferences WHERE user_id = ?'),
+
+  // ── Opportunity dismissals ──────────────────────────────────────────────
+  insertDismissal: db.prepare(`
+    INSERT OR IGNORE INTO opportunity_dismissals (id, user_id, opportunity_id)
+    VALUES (?, ?, ?)
+  `),
+  getDismissedOppIds: db.prepare(
+    'SELECT opportunity_id FROM opportunity_dismissals WHERE user_id = ?'
+  ),
 
   // Opportunities
   createOpportunity: db.prepare(`
@@ -872,6 +980,81 @@ const q = {
   updateOutingFull: db.prepare(`
     UPDATE outings SET title = ?, venue = ?, event_time = ?, venue_address = ?
     WHERE id = ? AND created_by = ?
+  `),
+
+  // ── Groups ──────────────────────────────────────────────────────────────────
+  createGroup:        db.prepare('INSERT INTO groups (id, creator_user_id, name) VALUES (?, ?, ?)'),
+  getGroupById:       db.prepare('SELECT * FROM groups WHERE id = ?'),
+  getGroupsCreatedBy: db.prepare('SELECT * FROM groups WHERE creator_user_id = ? ORDER BY created_at DESC'),
+  renameGroup:        db.prepare('UPDATE groups SET name = ? WHERE id = ? AND creator_user_id = ?'),
+  deleteGroup:        db.prepare('DELETE FROM groups WHERE id = ? AND creator_user_id = ?'),
+
+  addGroupMember: db.prepare(`
+    INSERT INTO group_members (id, group_id, user_id, invited_phone, invited_email, status)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `),
+  getGroupMembers: db.prepare(`
+    SELECT gm.*, u.name AS user_name, u.photo AS user_photo, u.mobile AS user_mobile
+    FROM group_members gm
+    LEFT JOIN users u ON u.id = gm.user_id
+    WHERE gm.group_id = ?
+    ORDER BY gm.invited_at
+  `),
+  getGroupMemberById:   db.prepare('SELECT * FROM group_members WHERE id = ?'),
+  getGroupMemberByUser: db.prepare('SELECT * FROM group_members WHERE group_id = ? AND user_id = ?'),
+  getAcceptedGroupMembers: db.prepare(`
+    SELECT gm.id, gm.user_id, u.name AS user_name, u.photo AS user_photo, u.mobile AS user_mobile
+    FROM group_members gm
+    JOIN users u ON u.id = gm.user_id
+    WHERE gm.group_id = ? AND gm.status = 'accepted'
+  `),
+  // Groups (created-by-me) where a given user is an accepted member - drives crafter tabs
+  getMyGroupsContainingUser: db.prepare(`
+    SELECT g.id, g.name FROM groups g
+    JOIN group_members gm ON gm.group_id = g.id
+    WHERE g.creator_user_id = ? AND gm.user_id = ? AND gm.status = 'accepted'
+  `),
+  // For "groups I'm a member of" - shown on the group-member side of Contacts
+  getMyAcceptedMemberships: db.prepare(`
+    SELECT g.id, g.name, g.creator_user_id, u.name AS creator_name
+    FROM group_members gm
+    JOIN groups g ON g.id = gm.group_id
+    JOIN users  u ON u.id = g.creator_user_id
+    WHERE gm.user_id = ? AND gm.status = 'accepted'
+  `),
+  // Pending invites awaiting my accept/decline (drives the in-app inbox banner)
+  getMyPendingInvites: db.prepare(`
+    SELECT g.id, g.name, g.creator_user_id, u.name AS creator_name,
+           u.photo AS creator_photo, gm.id AS member_id, gm.invited_at
+    FROM group_members gm
+    JOIN groups g ON g.id = gm.group_id
+    JOIN users  u ON u.id = g.creator_user_id
+    WHERE gm.user_id = ? AND gm.status = 'pending'
+    ORDER BY gm.invited_at DESC
+  `),
+  updateGroupMemberStatus: db.prepare(`
+    UPDATE group_members SET status = ?, responded_at = datetime('now') WHERE id = ?
+  `),
+  // Re-invite a declined/removed/left member: reset to pending, clear responded_at
+  reinviteGroupMember: db.prepare(`
+    UPDATE group_members
+    SET status = 'pending', invited_at = datetime('now'), responded_at = NULL
+    WHERE id = ?
+  `),
+  // Used when a magic-link join is accepted by a (possibly newly-registered) user
+  linkGroupMemberToUser: db.prepare(`
+    UPDATE group_members
+    SET user_id = ?, status = 'accepted', responded_at = datetime('now')
+    WHERE id = ?
+  `),
+
+  recordOutingGroupOrigin: db.prepare(
+    'INSERT OR IGNORE INTO outing_group_origin (outing_id, group_id) VALUES (?, ?)'
+  ),
+  getOutingGroupOrigin: db.prepare(`
+    SELECT g.id, g.name FROM outing_group_origin ogo
+    JOIN groups g ON g.id = ogo.group_id
+    WHERE ogo.outing_id = ?
   `),
 };
 
@@ -1106,4 +1289,11 @@ module.exports = {
   // Re-export core user/calendar helpers for convenience in services
   getDaysForUserInRange: (userId, from, to) => q.getDaysForUserInRange.all(userId, from, to),
   getUserByToken: (token) => q.getUserByToken.get(token),
+  getDayForUser: (userId, date) => q.getDay.get(userId, date),
+  getActiveSocialConnections: (userId) => q.getActiveSocialConnections.all(userId, userId, userId, userId, userId),
+  dismissOpportunity: (userId, opportunityId) => {
+    const { randomUUID } = require('crypto');
+    return q.insertDismissal.run(randomUUID(), userId, opportunityId);
+  },
+  getDismissedOppIds: (userId) => q.getDismissedOppIds.all(userId).map(r => r.opportunity_id),
 };

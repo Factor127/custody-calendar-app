@@ -1302,7 +1302,7 @@ router.post('/outings', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
-  const { id: pregenId, date, message, title, invitees,
+  const { id: pregenId, date, message, title, invitees, via_group_id,
           venue, venue_address, venue_place_id, opportunity_id, image_url, status, event_time } = req.body;
   if (!Array.isArray(invitees) || (invitees.length === 0 && status !== 'saved')) {
     return res.status(400).json({ error: 'invitees required' });
@@ -1318,6 +1318,16 @@ router.post('/outings', (req, res) => {
   for (const inv of invitees) {
     const invId = uuidv4();
     q.createOutingInvitee.run(invId, outingId, inv.userId || null, inv.name, inv.phone || null, inv.rsvpToken || null);
+  }
+
+  // Audit trail: record this outing as group-fanned, only if the caller owns
+  // the cited group. Silently skipped for invalid/unowned ids — the outing
+  // itself still succeeds, the host just won't see the "Invited via X" tag.
+  if (via_group_id) {
+    const group = q.getGroupById.get(via_group_id);
+    if (group && group.creator_user_id === me.id) {
+      q.recordOutingGroupOrigin.run(outingId, via_group_id);
+    }
   }
 
   // If there's a linked opportunity and a date, create a plan for the creator
@@ -1375,7 +1385,16 @@ router.get('/outings', (req, res) => {
   if (!me) return;
 
   const outings = q.getOutingsForUser.all(me.id);
-  const result = outings.map(o => ({ ...o, invitees: q.getOutingInvitees.all(o.id) }));
+  const result = outings.map(o => {
+    // Group origin (host-side only) - drives the "Invited via <Group>" label.
+    // Returns null if this outing wasn't fan-out from a group.
+    const origin = q.getOutingGroupOrigin.get(o.id) || null;
+    return {
+      ...o,
+      invitees: q.getOutingInvitees.all(o.id),
+      via_group: origin ? { id: origin.id, name: origin.name } : null,
+    };
+  });
   res.json({ outings: result });
 });
 
@@ -2318,6 +2337,297 @@ router.post('/users/rotate-token', (req, res) => {
   const newToken = uuidv4();
   q.updateUserToken.run(newToken, me.id);
   res.json({ token: newToken });
+});
+
+// ── Groups ────────────────────────────────────────────────────────────────────
+// Creator-owned named rosters for repeat invites. See docs/groups-epic-spec.md.
+
+// Members must be drawn from the creator's approved connections.
+function _isApprovedConnection(myUserId, otherUserId) {
+  const conn = q.getConnectionBetween.get(myUserId, otherUserId, otherUserId, myUserId);
+  return Boolean(conn && conn.status === 'approved');
+}
+
+function _notifyGroupInvite(targetUserId, creatorName, groupName) {
+  sendPush(targetUserId, {
+    title: `👥 ${creatorName} invited you to a group`,
+    body:  `Join "${groupName}" to be invited together to future plans.`,
+    tag:   'group-invite',
+    url:   '/connections',
+  });
+  sendSMSToUser(
+    targetUserId,
+    `${creatorName} invited you to the group "${groupName}" on Spontany. Open the app to accept.`,
+    { event: 'group-invite' }
+  );
+}
+
+// POST /api/groups - create a group with initial members (all pending)
+router.post('/groups', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const name = String(req.body.name || '').trim();
+  const memberIds = Array.isArray(req.body.member_user_ids) ? req.body.member_user_ids : [];
+
+  if (!name) return res.status(400).json({ error: 'Group name is required' });
+  if (name.length > 60) return res.status(400).json({ error: 'Group name is too long (max 60)' });
+
+  // Validate every member is an approved connection (and not the creator themselves)
+  for (const uid of memberIds) {
+    if (uid === me.id) return res.status(400).json({ error: 'You are the creator; do not add yourself' });
+    if (!_isApprovedConnection(me.id, uid)) {
+      return res.status(400).json({ error: `Not an approved connection: ${uid}` });
+    }
+  }
+
+  const groupId = uuidv4();
+  try {
+    q.createGroup.run(groupId, me.id, name);
+  } catch (e) {
+    if (String(e.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'You already have a group with that name' });
+    }
+    throw e;
+  }
+
+  const memberRows = [];
+  for (const uid of memberIds) {
+    const memberId = uuidv4();
+    q.addGroupMember.run(memberId, groupId, uid, null, null, 'pending');
+    memberRows.push({ id: memberId, user_id: uid });
+  }
+
+  res.json({ group: { id: groupId, name, creator_user_id: me.id }, members: memberRows });
+
+  // Notify each invited member (push + SMS)
+  for (const m of memberRows) {
+    _notifyGroupInvite(m.user_id, me.name, name);
+  }
+});
+
+// GET /api/groups - groups I created + groups I'm an accepted member of
+router.get('/groups', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const created = q.getGroupsCreatedBy.all(me.id).map(g => {
+    const members = q.getGroupMembers.all(g.id);
+    return {
+      id: g.id, name: g.name, created_at: g.created_at,
+      member_count: members.length,
+      accepted_count: members.filter(m => m.status === 'accepted').length,
+      pending_count:  members.filter(m => m.status === 'pending').length,
+    };
+  });
+
+  const memberOf       = q.getMyAcceptedMemberships.all(me.id);
+  const pendingInvites = q.getMyPendingInvites.all(me.id);
+
+  res.json({ created, member_of: memberOf, pending_invites: pendingInvites });
+});
+
+// GET /api/groups/:id - detail (creator + accepted members can view)
+router.get('/groups/:id', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+
+  const isCreator = group.creator_user_id === me.id;
+  const myMembership = q.getGroupMemberByUser.get(group.id, me.id);
+  const isAcceptedMember = myMembership && myMembership.status === 'accepted';
+  if (!isCreator && !isAcceptedMember) return res.status(403).json({ error: 'Not your group' });
+
+  const members = q.getGroupMembers.all(group.id);
+  // Non-creators see only the accepted roster (per spec: members see each other once joined)
+  const visibleMembers = isCreator ? members : members.filter(m => m.status === 'accepted');
+
+  const creator = q.getUserById.get(group.creator_user_id);
+  res.json({
+    group: {
+      id: group.id,
+      name: group.name,
+      creator_user_id: group.creator_user_id,
+      creator_name: creator?.name,
+      is_creator: isCreator,
+      created_at: group.created_at,
+    },
+    members: visibleMembers.map(m => ({
+      id: m.id,
+      user_id: m.user_id,
+      name: m.user_name,
+      photo: m.user_photo,
+      status: isCreator ? m.status : 'accepted',
+      invited_at: m.invited_at,
+      responded_at: m.responded_at,
+    })),
+  });
+});
+
+// PATCH /api/groups/:id - rename (creator only)
+router.patch('/groups/:id', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const name = String(req.body.name || '').trim();
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  if (name.length > 60) return res.status(400).json({ error: 'Name too long (max 60)' });
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.creator_user_id !== me.id) return res.status(403).json({ error: 'Only the creator can rename' });
+
+  try {
+    q.renameGroup.run(name, group.id, me.id);
+  } catch (e) {
+    if (String(e.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'You already have a group with that name' });
+    }
+    throw e;
+  }
+  res.json({ ok: true, name });
+});
+
+// DELETE /api/groups/:id - delete (creator only). Cascades to members + origin rows.
+router.delete('/groups/:id', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.creator_user_id !== me.id) return res.status(403).json({ error: 'Only the creator can delete' });
+
+  q.deleteGroup.run(group.id, me.id);
+  res.json({ ok: true });
+});
+
+// POST /api/groups/:id/members - add one or more members (creator only)
+// Body: { user_ids: [...] }   or   { user_id: "..." }
+router.post('/groups/:id/members', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.creator_user_id !== me.id) return res.status(403).json({ error: 'Only the creator can add members' });
+
+  const ids = Array.isArray(req.body.user_ids)
+    ? req.body.user_ids
+    : (req.body.user_id ? [req.body.user_id] : []);
+  if (!ids.length) return res.status(400).json({ error: 'user_ids required' });
+
+  const added = [];
+  const skipped = [];
+  for (const uid of ids) {
+    if (uid === me.id) { skipped.push({ user_id: uid, reason: 'self' }); continue; }
+    if (!_isApprovedConnection(me.id, uid)) { skipped.push({ user_id: uid, reason: 'not_connected' }); continue; }
+
+    const existing = q.getGroupMemberByUser.get(group.id, uid);
+    if (existing) {
+      if (existing.status === 'pending' || existing.status === 'accepted') {
+        skipped.push({ user_id: uid, reason: 'already_member' });
+        continue;
+      }
+      // declined / removed / left — re-invite resets the row to pending
+      q.reinviteGroupMember.run(existing.id);
+      added.push({ id: existing.id, user_id: uid, reinvited: true });
+    } else {
+      const memberId = uuidv4();
+      q.addGroupMember.run(memberId, group.id, uid, null, null, 'pending');
+      added.push({ id: memberId, user_id: uid, reinvited: false });
+    }
+  }
+
+  res.json({ added, skipped });
+
+  for (const a of added) {
+    _notifyGroupInvite(a.user_id, me.name, group.name);
+  }
+});
+
+// DELETE /api/groups/:id/members/:memberId - remove a member (creator only)
+router.delete('/groups/:id/members/:memberId', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.creator_user_id !== me.id) return res.status(403).json({ error: 'Only the creator can remove members' });
+
+  const member = q.getGroupMemberById.get(req.params.memberId);
+  if (!member || member.group_id !== group.id) return res.status(404).json({ error: 'Member not found' });
+
+  q.updateGroupMemberStatus.run('removed', member.id);
+  res.json({ ok: true });
+
+  if (member.user_id) {
+    sendPush(member.user_id, {
+      title: 'Removed from a group',
+      body:  `You were removed from "${group.name}".`,
+      tag:   'group-removed',
+      url:   '/connections',
+    });
+  }
+});
+
+// POST /api/groups/:id/leave - member self-removes
+router.post('/groups/:id/leave', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+  if (group.creator_user_id === me.id) {
+    return res.status(400).json({ error: 'Creator cannot leave; delete the group instead' });
+  }
+
+  const member = q.getGroupMemberByUser.get(group.id, me.id);
+  if (!member) return res.status(404).json({ error: 'Not a member' });
+
+  q.updateGroupMemberStatus.run('left', member.id);
+  res.json({ ok: true });
+});
+
+// POST /api/groups/:id/accept - in-app accept of a pending join invite
+router.post('/groups/:id/accept', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+
+  const member = q.getGroupMemberByUser.get(group.id, me.id);
+  if (!member) return res.status(404).json({ error: 'Not invited' });
+  if (member.status !== 'pending') return res.status(400).json({ error: `Already ${member.status}` });
+
+  q.updateGroupMemberStatus.run('accepted', member.id);
+  res.json({ ok: true });
+
+  // Quietly notify creator of the join
+  sendPush(group.creator_user_id, {
+    title: `${me.name} joined "${group.name}"`,
+    body:  'They\'ll receive future group invites.',
+    tag:   `group-accepted-${group.id}`,
+    url:   '/connections',
+  });
+});
+
+// POST /api/groups/:id/decline - in-app decline of a pending join invite
+router.post('/groups/:id/decline', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const group = q.getGroupById.get(req.params.id);
+  if (!group) return res.status(404).json({ error: 'Group not found' });
+
+  const member = q.getGroupMemberByUser.get(group.id, me.id);
+  if (!member) return res.status(404).json({ error: 'Not invited' });
+  if (member.status !== 'pending') return res.status(400).json({ error: `Already ${member.status}` });
+
+  q.updateGroupMemberStatus.run('declined', member.id);
+  res.json({ ok: true });
 });
 
 module.exports = router;

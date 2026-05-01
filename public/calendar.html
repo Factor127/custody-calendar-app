@@ -487,6 +487,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
     /* ── Mobile overrides ────────────────────────────────────────────────── */
     @media (max-width:520px) {
+      /* Hide month nav arrows on mobile — swipe interaction is used instead */
+      .month-nav-arrow { display: none !important; }
       /* Day cells - shorter so more fits on screen */
       td { height: 72px !important; padding: 7px 7px 5px !important; }
       /* Strip-view day cards */
@@ -711,6 +713,44 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       border-bottom:1px solid var(--border); }
     .wa-queue-item:last-child { border-bottom:none; }
     .wa-sent-badge { font-size:10px; font-weight:700; color:#43a047; margin-left:auto; }
+
+    /* ── Save-as-group chip (post-outing-invite prompt) ───────────────── */
+    .save-group-chip {
+      display:inline-block; padding:5px 12px;
+      background:rgba(230,249,82,0.10);
+      border:1px solid rgba(230,249,82,0.35);
+      border-radius:99px; font-size:12px; font-weight:600;
+      color:var(--accent, #e6f952);
+    }
+
+    /* ── Groups row in social-invite-modal step 1 ─────────────────────── */
+    .invite-groups-row {
+      display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px;
+    }
+    .invite-groups-row:empty { margin:0; }
+    .invite-group-chip {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:7px 13px;
+      background:rgba(255,255,255,0.05);
+      border:1.5px solid rgba(255,255,255,0.12);
+      border-radius:20px;
+      font-size:13px; font-weight:600; color:var(--text);
+      cursor:pointer; user-select:none;
+      font-family:inherit;
+      transition: border-color .15s, background .15s, color .15s;
+    }
+    .invite-group-chip:hover { border-color:rgba(230,249,82,0.4); }
+    .invite-group-chip.selected {
+      background:rgba(230,249,82,0.15);
+      border-color:var(--accent, #e6f952);
+      color:var(--accent, #e6f952);
+    }
+    .invite-group-chip.disabled {
+      opacity:0.5; cursor:not-allowed;
+    }
+    .invite-group-chip-meta {
+      font-size:11px; font-weight:500; opacity:0.65;
+    }
 
     /* ── Outing in notif panel ───────────────────────────────────────── */
     .notif-outing { border-left:3px solid #ff7043 !important; }
@@ -971,6 +1011,14 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .dpc-status.pending  { background: rgba(255,115,81,0.20); color: #ff7351; }
     .dpc-status.accepted { background: rgba(74,222,128,0.20); color: #4ade80; }
     .dpc-status.planning { background: rgba(230,249,82,0.15); color: var(--lime); }
+    /* Host-side "Invited via <Group>" label - shown only on outings I created
+       that were fanned out from a group selection. Invitees never see this. */
+    .dpc-via-group {
+      font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px;
+      background:rgba(230,249,82,0.10); color:var(--lime, #e6f952);
+      border:1px solid rgba(230,249,82,0.28);
+      max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
     .dpc-actions { display: flex; gap: 8px; margin-top: 10px; }
     .dpc-btn {
       flex: 1; padding: 8px 0; border: none; border-radius: 10px;
@@ -992,6 +1040,54 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       background: rgba(230,249,82,0.08); border: 1px solid rgba(230,249,82,0.18);
       font-size: 12px; color: rgba(230,249,82,0.85); font-weight: 600;
     }
+
+    /* ── Day-sheet Ideas section (relational/event/solo cards) ─────────── */
+    .dss-bucket-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: rgba(238,238,248,0.30);
+      padding: 8px 16px 4px;
+    }
+    .dss-idea-card {
+      position: relative;
+      background: rgba(124, 92, 191, 0.07);
+      border: 1px solid rgba(167, 139, 250, 0.18);
+      border-radius: 14px;
+      padding: 12px 40px 12px 14px;   /* right padding leaves room for ✕ */
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: transform .15s ease, opacity .25s ease, border-color .15s ease;
+    }
+    .dss-idea-card:hover { border-color: rgba(167, 139, 250, 0.40); transform: translateY(-1px); }
+    .dss-idea-card.is-relational { border-color: rgba(230,249,82,0.28); background: rgba(230,249,82,0.06); }
+    .dss-idea-card.is-relational:hover { border-color: rgba(230,249,82,0.50); }
+    .dss-idea-card.is-fading { opacity: 0; transform: translateX(40px); pointer-events: none; }
+    .dss-idea-img {
+      width: 100%; height: 80px; object-fit: cover;
+      border-radius: 10px; margin-bottom: 8px;
+    }
+    .dss-idea-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .dss-idea-reason { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .dss-idea-pulse {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: #f97316; margin-right: 6px; vertical-align: middle;
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+      animation: dssIdeaPulse 1.6s infinite;
+    }
+    @keyframes dssIdeaPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(249,115,22,0.55); }
+      70%  { box-shadow: 0 0 0 8px rgba(249,115,22,0); }
+      100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+    }
+    .dss-idea-x {
+      position: absolute; top: 8px; right: 8px;
+      width: 26px; height: 26px; border-radius: 50%;
+      border: none; background: rgba(239,68,68,0.10);
+      color: #f87171; font-size: 14px; font-weight: 700;
+      cursor: pointer; line-height: 1; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit;
+    }
+    .dss-idea-x:hover { background: rgba(239,68,68,0.22); color: #fca5a5; }
 
     /* ── Pane navigation within day sheet ─────────────────────────────── */
     .day-pane { display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
@@ -1543,6 +1639,71 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .browse-url-input:focus { outline:none; border-color:var(--accent); }
     .browse-url-input::placeholder { color:var(--muted); }
+
+    /* ── Pulse sheet ─────────────────────────────────────────────────── */
+    .pulse-section-label {
+      font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;
+      letter-spacing:.08em; margin:18px 4px 8px;
+    }
+    .pulse-empty {
+      text-align:center; color:var(--muted); padding:36px 16px 24px; font-size:13px; line-height:1.55;
+    }
+    .pulse-empty .pulse-empty-icon { font-size:28px; margin-bottom:10px; opacity:.7; }
+    .pulse-card {
+      display:flex; gap:12px; align-items:stretch;
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+      border-radius:14px; padding:10px; margin-top:8px; transition:all .15s;
+    }
+    .pulse-card:hover { background:rgba(255,255,255,0.05); }
+    .pulse-thumb {
+      width:72px; height:72px; flex-shrink:0; border-radius:10px; overflow:hidden;
+      background:linear-gradient(135deg,#2a2240,#181028);
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px; color:rgba(255,255,255,0.35);
+    }
+    .pulse-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .pulse-body { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .pulse-title {
+      font-size:14px; font-weight:700; color:var(--text); line-height:1.3;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      overflow:hidden; word-break:break-word;
+    }
+    .pulse-meta { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+    .pulse-meta-item { font-size:11px; color:var(--muted); }
+    .pulse-meta-dot { color:rgba(255,255,255,0.18); }
+    .pulse-badge {
+      font-size:10px; font-weight:800; padding:2px 7px; border-radius:9px;
+      letter-spacing:.04em; text-transform:uppercase;
+    }
+    .pulse-badge.free { background:rgba(230,249,82,0.16); color:var(--lime);
+                        border:1px solid rgba(230,249,82,0.32); }
+    .pulse-badge.kids { background:rgba(124,92,191,0.18); color:#c5b5ff;
+                        border:1px solid rgba(124,92,191,0.36); }
+    .pulse-badge.open { background:rgba(255,255,255,0.05); color:var(--muted);
+                        border:1px solid rgba(255,255,255,0.10); }
+    .pulse-actions {
+      display:flex; flex-direction:column; gap:6px; justify-content:center; flex-shrink:0;
+      padding-left:4px;
+    }
+    .pulse-icon-btn {
+      background:transparent; border:none; cursor:pointer; padding:6px; border-radius:8px;
+      color:var(--muted); font-size:14px; transition:all .15s; width:30px; height:30px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .pulse-icon-btn:hover { background:rgba(255,255,255,0.06); color:var(--text); }
+    .pulse-icon-btn.danger:hover { background:rgba(248,113,113,0.12); color:#f87171; }
+
+    /* ── Share-target choice sheet ── */
+    .share-choice-card {
+      display:flex; gap:12px; align-items:flex-start;
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+      border-radius:14px; padding:12px; margin:0 16px 14px;
+    }
+    .share-choice-card .pulse-thumb { width:60px; height:60px; }
+    .share-choice-buttons {
+      display:flex; flex-direction:column; gap:10px; padding:0 16px 20px;
+    }
+
     .opp-card {
       background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
       border-radius:14px; padding:14px 16px; margin-top:10px; cursor:pointer;
@@ -1773,6 +1934,21 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .plan-dot {
       width:5px; height:5px; border-radius:50%; background:var(--accent);
       margin:1px auto 0; display:block;
+    }
+    /* Cell pulse dot — fired by matcher's is_pulse_worthy (dated event or
+       scarce friend overlap). Top-right of the cell so it doesn't fight the
+       day-number top-left or the plan-dot center. */
+    .cell-pulse-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f97316; z-index: 4; pointer-events: none;
+      box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.55);
+      animation: cellPulseDot 1.8s infinite;
+    }
+    @keyframes cellPulseDot {
+      0%   { box-shadow: 0 0 0 0 rgba(249,115,22,0.55); }
+      70%  { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+      100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
     }
     .browse-submit-status { font-size:12px; color:var(--muted); padding:6px 16px; min-height:20px; }
 
@@ -2071,6 +2247,35 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     .sc-who-check { position:absolute; top:-6px; right:-4px; background:var(--lime); color:#0a0a0a; border-radius:50%; width:24px; height:24px; font-size:13px; display:none; align-items:center; justify-content:center; box-shadow:0 0 0 2px rgba(14,14,14,0.95); z-index:2; }
     .sc-who-chip.selected .sc-who-check { display:flex; }
     .sc-who-name { font-size:12px; color:var(--text); text-align:center; width:100%; max-width:88px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* Group "tab" inline with people chips: stacked-people icon, accent ring */
+    .sc-who-chip.is-group .sc-who-avatar-group {
+      background:rgba(230,249,82,0.08);
+      box-shadow:inset 0 0 0 1.5px rgba(230,249,82,0.30);
+      font-size:30px;
+    }
+    .sc-who-chip.is-group:hover .sc-who-avatar-group {
+      box-shadow:inset 0 0 0 1.5px rgba(230,249,82,0.30), 0 0 0 3px rgba(230,249,82,0.40);
+    }
+    .sc-who-chip.is-group.selected .sc-who-avatar-group {
+      transform:scale(1.06);
+      box-shadow:inset 0 0 0 1.5px rgba(230,249,82,0.30), 0 0 0 3px var(--lime), 0 0 14px rgba(230,249,82,0.40);
+    }
+    .sc-who-chip.is-group .sc-who-name { color:var(--accent, #e6f952); font-weight:700; }
+    /* Empty-state teaser chip (only shown when user has 0 groups) */
+    .sc-who-chip.sc-who-teaser .sc-who-avatar-teaser {
+      background:transparent;
+      border:1.5px dashed rgba(230,249,82,0.45);
+      color:var(--accent, #e6f952);
+      font-size:34px; font-weight:300; line-height:1;
+    }
+    .sc-who-chip.sc-who-teaser:hover .sc-who-avatar-teaser {
+      border-color:var(--accent, #e6f952);
+      box-shadow:0 0 0 3px rgba(230,249,82,0.20);
+    }
+    .sc-who-chip.sc-who-teaser .sc-who-name {
+      color:var(--accent, #e6f952);
+      font-style:italic;
+    }
 
     /* WHEN col - full width mini calendar */
     .sc-when-col { flex-shrink:0; padding:10px 8px; display:flex; flex-direction:column; }
@@ -2273,9 +2478,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 
 <!-- ── Month heading row: prev / month+year / next + edit ── -->
 <div id="month-heading-row" style="max-width:680px;margin:0 auto;padding:20px 16px 6px;display:flex;align-items:center;gap:8px;">
-  <button onclick="prevMonth()" style="flex-shrink:0;background:rgba(230,249,82,0.10);border:1.5px solid rgba(230,249,82,0.35);border-radius:10px;color:#e6f952;font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:background .15s,border-color .15s;" onmouseover="this.style.background='rgba(230,249,82,0.20)';this.style.borderColor='rgba(230,249,82,0.65)'" onmouseout="this.style.background='rgba(230,249,82,0.10)';this.style.borderColor='rgba(230,249,82,0.35)'">‹</button>
+  <button class="month-nav-arrow" onclick="prevMonth()" style="flex-shrink:0;background:rgba(230,249,82,0.10);border:1.5px solid rgba(230,249,82,0.35);border-radius:10px;color:#e6f952;font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:background .15s,border-color .15s;" onmouseover="this.style.background='rgba(230,249,82,0.20)';this.style.borderColor='rgba(230,249,82,0.65)'" onmouseout="this.style.background='rgba(230,249,82,0.10)';this.style.borderColor='rgba(230,249,82,0.35)'">‹</button>
   <div class="app-title-strip" id="app-title-strip" style="flex:1;margin:0;padding:0;text-align:center;"></div>
-  <button onclick="nextMonth()" style="flex-shrink:0;background:rgba(230,249,82,0.10);border:1.5px solid rgba(230,249,82,0.35);border-radius:10px;color:#e6f952;font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:background .15s,border-color .15s;" onmouseover="this.style.background='rgba(230,249,82,0.20)';this.style.borderColor='rgba(230,249,82,0.65)'" onmouseout="this.style.background='rgba(230,249,82,0.10)';this.style.borderColor='rgba(230,249,82,0.35)'">›</button>
+  <button class="month-nav-arrow" onclick="nextMonth()" style="flex-shrink:0;background:rgba(230,249,82,0.10);border:1.5px solid rgba(230,249,82,0.35);border-radius:10px;color:#e6f952;font-size:26px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;padding:0;transition:background .15s,border-color .15s;" onmouseover="this.style.background='rgba(230,249,82,0.20)';this.style.borderColor='rgba(230,249,82,0.65)'" onmouseout="this.style.background='rgba(230,249,82,0.10)';this.style.borderColor='rgba(230,249,82,0.35)'">›</button>
   <div style="position:relative;flex-shrink:0;" id="edit-menu-wrap">
     <button class="btn btn-sm" onclick="toggleEditMenu()" title="Edit"
       style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
@@ -2533,6 +2738,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         <div class="invite-step">
           <h2 style="margin:0 0 4px;font-size:17px;text-align:center;">Who do you want to invite?</h2>
           <p id="inv-date-label" class="text-muted" style="margin:0 0 14px;font-size:13px;text-align:center;"></p>
+          <div id="invite-groups-row" class="invite-groups-row"></div>
           <div id="invite-person-list"></div>
           <div class="modal-actions" style="margin-top:16px;">
             <button class="btn btn-outline" style="text-align:center;" onclick="closeModal('social-invite-modal')">Cancel</button>
@@ -2563,6 +2769,25 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
         </div>
 
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- "Save as group?" prompt - fires after a multi-person outing invite -->
+<div class="modal-overlay" id="save-as-group-modal">
+  <div class="modal" style="max-width:380px;">
+    <h2 style="margin:0 0 6px;font-size:17px;">Save as a group?</h2>
+    <p class="text-muted" style="margin:0 0 14px;font-size:13px;">
+      Invite this crew together next time with one tap.
+    </p>
+    <div id="save-group-member-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+    <input id="save-group-name-input" type="text" maxlength="60" placeholder="Group name (e.g. Trivia Crew)"
+      style="width:100%;padding:11px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;"
+      onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+      onkeydown="if(event.key==='Enter')submitSaveAsGroup()">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('save-as-group-modal')">Skip</button>
+      <button class="btn btn-primary" id="save-group-submit-btn" onclick="submitSaveAsGroup()">Save group</button>
     </div>
   </div>
 </div>
@@ -2793,7 +3018,8 @@ let inviteWaSentFlags = {};           // userId → true/false
 let myActivities = [];
 let activitiesByDate = {};
 let activityModalDates = [];
-let planDates = {};  // date → count of plans
+let planDates  = {};  // date → count of plans
+let pulseDates = {};  // date → true; dates with pulse-worthy ideas (matcher)
 
 function isWorkBlock(date) {
   const dow = date.getDay();
@@ -3175,7 +3401,7 @@ function nextMonth() {
 
 
   updateNextTime();
-  await Promise.all([loadActivities(), loadOutings(), loadPlanDots()]);
+  await Promise.all([loadActivities(), loadOutings(), loadPlanDots(), loadPulseDots()]);
 
   // Notif dot + PWA app-icon badge: total includes pending connections,
   // suggestions, activities AND newly-changed invitee statuses on my own
@@ -3197,10 +3423,12 @@ function nextMonth() {
     // Small delay so the calendar renders first
     setTimeout(() => openEventPaneDirect(_openEventId), 300);
   } else if (_sharedUrl) {
-    // Clean the URL so a refresh doesn't re-open the crafter
+    // Clean the URL so a refresh doesn't re-open the choice sheet
     const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
     history.replaceState(null, '', cleanUrl);
-    setTimeout(() => _openCrafterWithSharedUrl(_sharedUrl), 300);
+    // Show a Save-to-Pulse / Plan-now sheet rather than dropping straight
+    // into the crafter — pulse is the default low-friction path.
+    setTimeout(() => _handleSharedUrl(_sharedUrl), 300);
   } else {
     // No deep-link — surface the freshest pending notification ourselves so
     // the user lands directly on the event that needs their attention,
@@ -3647,7 +3875,9 @@ function renderCalendar() {
     const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
     // Plan dot - purple bar if this date has a saved plan
-    const planDot = planDates[dateStr] ? '<span class="plan-dot"></span>' : '';
+    const planDot  = planDates[dateStr]  ? '<span class="plan-dot"></span>' : '';
+    // Pulse dot - orange dot if there's a pulse-worthy idea for this date
+    const pulseDot = pulseDates[dateStr] ? '<span class="cell-pulse-dot"></span>' : '';
 
     // Event image: first outing on this day that has an image_url
     const outingsOnDay = outingsByDate[dateStr] || [];
@@ -3680,6 +3910,7 @@ function renderCalendar() {
       ${avatarHtml}
       ${pendingRing}
       ${planDot}
+      ${pulseDot}
     </td>`;
 
     cellCount++;
@@ -3841,21 +4072,24 @@ async function openDaySheet(dateStr) {
   _dayPaneStack = ['day-pane-list'];
   _showPane('day-pane-list');
 
-  renderDaySheetBody(dateStr, isFree, alsoFree, []);
+  renderDaySheetBody(dateStr, isFree, alsoFree, [], []);
   document.getElementById('day-sheet').classList.add('open');
   _daySheetMarkOpen(); // push history-state guard so Android back closes the sheet
 
-  // Fetch saved opportunity plans for this date
+  // Fetch saved opportunity plans + idea matches for this date in parallel.
+  // Both are non-critical: the sheet renders without them, then refreshes when ready.
   try {
-    const res = await fetch(`/api/plans?from=${dateStr}&to=${dateStr}&token=${MY_TOKEN}`);
-    if (res.ok) {
-      const data = await res.json();
-      renderDaySheetBody(dateStr, isFree, alsoFree, data.plans || []);
-    }
+    const [plansRes, ideasRes] = await Promise.all([
+      fetch(`/api/plans?from=${dateStr}&to=${dateStr}&token=${MY_TOKEN}`),
+      fetch(`/api/opportunities/matches?token=${MY_TOKEN}&date=${dateStr}&limit=10`),
+    ]);
+    const plans = plansRes.ok ? ((await plansRes.json()).plans || []) : [];
+    const ideas = ideasRes.ok ? ((await ideasRes.json()).matches || []) : [];
+    renderDaySheetBody(dateStr, isFree, alsoFree, plans, ideas);
   } catch(e) { /* non-critical */ }
 }
 
-function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
+function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = [], dayIdeas = []) {
   const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
   let html = '';
 
@@ -3895,11 +4129,15 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
       else if (o.venue && o.message && o.venue !== o.message) metaParts.push(o.message);
       if (incoming?.creator_name) metaParts.push('with ' + incoming.creator_name);
       const imgHtml = o.image_url ? `<img src="${o.image_url}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy">` : '';
+      const viaGroupTag = o.via_group
+        ? `<span class="dpc-via-group" title="Invited via the ${o.via_group.name} group">via ${o.via_group.name}</span>`
+        : '';
       html += `<div class="day-plan-card is-accepted" style="cursor:pointer;" onclick="openEventPane('${o.id}')">
         ${imgHtml}
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
           <span class="dpc-title">${title}</span>
           <span class="dpc-status accepted">Confirmed</span>
+          ${viaGroupTag}
         </div>
         ${metaParts.length ? `<div class="dpc-meta">${metaParts.join(' · ')}</div>` : ''}
       </div>`;
@@ -3963,6 +4201,45 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = []) {
           ${p.opp_url ? `<a href="${p.opp_url}" target="_blank" class="dpc-btn dpc-btn-accept" style="text-decoration:none;">Open link ↗</a>` : ''}
           <button class="dpc-btn dpc-btn-cancel" onclick="removePlan('${p.id}','${dateStr}')">Remove</button>
         </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // ── Section: Ideas (relational → event → solo, ranked by matcher) ────────
+  // Filter out ideas that are already planned/saved on this date so we don't
+  // suggest something the user has already actioned.
+  const plannedOppIds = new Set([
+    ...dayPlans.map(p => p.opportunity_id).filter(Boolean),
+    ...dayOutings.map(o => o.opportunity_id).filter(Boolean),
+  ]);
+  const visibleIdeas = (dayIdeas || []).filter(i => !plannedOppIds.has(i.id));
+
+  if (visibleIdeas.length > 0) {
+    html += `<div class="dss-heading">Ideas</div>`;
+    html += '<div class="day-sheet-plans">';
+    let lastBucket = null;
+    for (const idea of visibleIdeas) {
+      // Insert subtle bucket label when reason_type changes
+      if (idea.reason_type !== lastBucket) {
+        const bucketLabel = idea.reason_type === 'relational' ? 'With friends'
+                          : idea.reason_type === 'event'      ? 'Events'
+                          :                                     'For you';
+        html += `<div class="dss-bucket-label">${bucketLabel}</div>`;
+        lastBucket = idea.reason_type;
+      }
+      const escAttr = s => String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      const escHtml = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const imgHtml = idea.image_url
+        ? `<img class="dss-idea-img" src="${escAttr(idea.image_url)}" loading="lazy" onerror="this.remove();">`
+        : '';
+      const pulse = idea.is_pulse_worthy ? `<span class="dss-idea-pulse"></span>` : '';
+      const relClass = idea.reason_type === 'relational' ? ' is-relational' : '';
+      html += `<div class="dss-idea-card${relClass}" id="dss-idea-${escAttr(idea.id)}" onclick="planIdea('${escAttr(idea.id)}','${escAttr(dateStr)}',event)">
+        ${imgHtml}
+        <div class="dss-idea-title">${pulse}${escHtml(idea.title)}</div>
+        <div class="dss-idea-reason">${escHtml(idea.lead_reason)}</div>
+        <button class="dss-idea-x" title="Avoid ideas like this" onclick="dismissIdea('${escAttr(idea.id)}',event)">×</button>
       </div>`;
     }
     html += '</div>';
@@ -4109,6 +4386,24 @@ window.addEventListener('popstate', function(e) {
   }
 });
 
+// Re-fetch plans + ideas for a date and re-render the open day sheet.
+// Shared by removePlan / planIdea so any state change keeps both in sync.
+async function _refreshDaySheet(dateStr) {
+  const isFree   = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
+  const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
+  try {
+    const [plansRes, ideasRes] = await Promise.all([
+      fetch(`/api/plans?from=${dateStr}&to=${dateStr}&token=${MY_TOKEN}`),
+      fetch(`/api/opportunities/matches?token=${MY_TOKEN}&date=${dateStr}&limit=10`),
+    ]);
+    const plans = plansRes.ok ? ((await plansRes.json()).plans || []) : [];
+    const ideas = ideasRes.ok ? ((await ideasRes.json()).matches || []) : [];
+    renderDaySheetBody(dateStr, isFree, alsoFree, plans, ideas);
+  } catch(e) {
+    renderDaySheetBody(dateStr, isFree, alsoFree, [], []);
+  }
+}
+
 async function removePlan(planId, dateStr) {
   try {
     await fetch(`/api/plans/${planId}?token=${MY_TOKEN}`, { method: 'DELETE' });
@@ -4119,17 +4414,44 @@ async function removePlan(planId, dateStr) {
     }
     renderCalendar();
     showToast('Plan removed');
-    // Refresh the day sheet body
-    const isFree   = calendarDays[dateStr]?.owner !== 'self' && !isWorkDay(new Date(dateStr + 'T12:00:00'));
-    const alsoFree = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
-    try {
-      const res2 = await fetch(`/api/plans?from=${dateStr}&to=${dateStr}&token=${MY_TOKEN}`);
-      const data2 = res2.ok ? await res2.json() : { plans: [] };
-      renderDaySheetBody(dateStr, isFree, alsoFree, data2.plans || []);
-    } catch(e2) { renderDaySheetBody(dateStr, isFree, alsoFree, []); }
+    await _refreshDaySheet(dateStr);
   } catch(e) {
     showToast('Could not remove - try again');
   }
+}
+
+// Tap an idea card → save it as a plan on this date.
+// The matcher then hides it from future ideas (it's in plannedOppIds locally).
+async function planIdea(oppId, dateStr, ev) {
+  if (ev) ev.stopPropagation();
+  try {
+    const res = await fetch(`/api/plans?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: dateStr, opportunity_id: oppId }),
+    });
+    if (!res.ok) throw new Error('plan failed');
+    planDates[dateStr] = (planDates[dateStr] || 0) + 1;
+    renderCalendar();
+    showToast('Saved to this date');
+    await _refreshDaySheet(dateStr);
+  } catch(e) {
+    showToast('Could not save - try again');
+  }
+}
+
+// Red ✕ on an idea card → "avoid ideas like this." Animates out, fires
+// dismiss endpoint. Future analysis logic builds on the stored signal.
+async function dismissIdea(oppId, ev) {
+  if (ev) ev.stopPropagation();
+  const card = document.getElementById(`dss-idea-${oppId}`);
+  if (card) card.classList.add('is-fading');
+  try {
+    await fetch(`/api/opportunities/${encodeURIComponent(oppId)}/dismiss?token=${MY_TOKEN}`, {
+      method: 'POST',
+    });
+  } catch(e) { /* non-critical — UI already hid it */ }
+  setTimeout(() => { if (card) card.remove(); }, 260);
 }
 
 async function cancelOuting(outingId, dateStr) {
@@ -5987,10 +6309,88 @@ function hideFreeTooltip() {
 }
 
 // ── Social invite modal ────────────────────────────────────────────────────
+// Cached groups (created by current user) + lazy-loaded accepted-member maps.
+let _inviteGroupsCache       = null;   // [{ id, name, accepted_count, ... }]
+let _inviteGroupMembersCache = {};     // { groupId: [userId, ...] }
+// Tracks the group whose tap most recently produced the current selection.
+// Set when a group is just-fully-selected, cleared on individual toggles or
+// when a different group breaks the clean attribution. Used as the
+// `via_group_id` audit hint sent to POST /api/outings.
+let _inviteLastGroupTap      = null;
+
+async function _loadInviteGroups() {
+  try {
+    const res = await fetch(`/api/groups?token=${MY_TOKEN}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    _inviteGroupsCache = data.created || [];
+  } catch(e) { _inviteGroupsCache = []; }
+}
+
+async function _loadGroupMembers(groupId) {
+  if (_inviteGroupMembersCache[groupId]) return _inviteGroupMembersCache[groupId];
+  const res = await fetch(`/api/groups/${groupId}?token=${MY_TOKEN}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  const ids = (data.members || [])
+    .filter(m => m.status === 'accepted' && m.user_id)
+    .map(m => m.user_id);
+  _inviteGroupMembersCache[groupId] = ids;
+  return ids;
+}
+
+function _renderInviteGroupsRow() {
+  const row = document.getElementById('invite-groups-row');
+  if (!_inviteGroupsCache || !_inviteGroupsCache.length) { row.innerHTML = ''; return; }
+  row.innerHTML = _inviteGroupsCache.map(g => {
+    const cached    = _inviteGroupMembersCache[g.id];
+    const allInSel  = cached && cached.length > 0
+      && cached.every(uid => inviteSelectedPeople.has(uid));
+    const disabled  = (g.accepted_count || 0) === 0;
+    const cls = ['invite-group-chip'];
+    if (allInSel) cls.push('selected');
+    if (disabled) cls.push('disabled');
+    const onclick = disabled ? '' : `onclick="toggleInviteGroup('${g.id}')"`;
+    return `<button type="button" class="${cls.join(' ')}" ${onclick}>
+      ${escapeHtmlInv(g.name)}
+      <span class="invite-group-chip-meta">·&nbsp;${g.accepted_count || 0}</span>
+    </button>`;
+  }).join('');
+}
+
+function escapeHtmlInv(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+async function toggleInviteGroup(groupId) {
+  const memberIds = await _loadGroupMembers(groupId);
+  if (!memberIds.length) return;
+
+  // Are all members already in the selection? If so, deselect; else select all.
+  const allIn = memberIds.every(uid => inviteSelectedPeople.has(uid));
+  for (const uid of memberIds) {
+    if (allIn) inviteSelectedPeople.delete(uid);
+    else       inviteSelectedPeople.add(uid);
+    // Sync the corresponding person-row checkmark
+    const check = document.getElementById(`pcheck-${uid}`);
+    if (check) {
+      check.classList.toggle('checked', inviteSelectedPeople.has(uid));
+      check.textContent = inviteSelectedPeople.has(uid) ? '✓' : '';
+    }
+  }
+  // Set/clear the audit hint. Set only when this tap _selected_ the group;
+  // cleared when this tap deselected the group's members.
+  _inviteLastGroupTap = allIn ? null : groupId;
+  _renderInviteGroupsRow();
+}
+
 function openSocialInviteModal(dateStr) {
   inviteSelectedDate   = dateStr;
   inviteSelectedPeople = new Set();
   inviteWaSentFlags    = {};
+  _inviteLastGroupTap  = null;
 
   document.getElementById('inv-date-label').textContent = conversationalDate(dateStr);
   document.getElementById('invite-msg-area').value =
@@ -6016,6 +6416,9 @@ function openSocialInviteModal(dateStr) {
   // Reset slider to step 1
   inviteGoToStepRaw(1);
   document.getElementById('social-invite-modal').classList.add('open');
+
+  // Load + render groups row (async, non-blocking; row appears once data lands)
+  _loadInviteGroups().then(_renderInviteGroupsRow);
 }
 
 function toggleInvitePerson(userId) {
@@ -6029,6 +6432,10 @@ function toggleInvitePerson(userId) {
     check.classList.toggle('checked', inviteSelectedPeople.has(userId));
     check.textContent = inviteSelectedPeople.has(userId) ? '✓' : '';
   }
+  // Manual individual change breaks any active group attribution
+  _inviteLastGroupTap = null;
+  // Keep group chip selected-state in sync with individual toggles
+  if (typeof _renderInviteGroupsRow === 'function') _renderInviteGroupsRow();
 }
 
 function inviteGoToStepRaw(step) {
@@ -6054,10 +6461,18 @@ function inviteStep3() {
 
   // ── Fire system invite immediately (parallel with WhatsApp) ──────────────
   const invitees = selected.map(sc => ({ userId: sc.userId, name: sc.name, phone: sc.phone || null }));
+  // Cache invitees with a userId for the "save as group?" prompt that fires
+  // when the user dismisses the WhatsApp queue. Reset on every fresh send.
+  _saveGroupPendingInvitees = invitees.filter(i => i.userId);
   fetch(`/api/outings?token=${MY_TOKEN}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date: inviteSelectedDate, message: msg, invitees })
+    body: JSON.stringify({
+      date: inviteSelectedDate,
+      message: msg,
+      invitees,
+      via_group_id: _inviteLastGroupTap || null,
+    })
   }).then(r => { if (r.ok) loadOutings(); });
 
   // ── Build WhatsApp queue ─────────────────────────────────────────────────
@@ -6096,6 +6511,51 @@ function saveOutingAndClose() {
   // This button just closes the modal.
   closeModal('social-invite-modal');
   showToast('✓ Plan saved!');
+  // Offer to remember this crew as a group for one-tap future invites.
+  // Small delay so the social-invite-modal close transition reads cleanly.
+  setTimeout(() => _maybeOfferSaveAsGroup(_saveGroupPendingInvitees), 300);
+}
+
+// ── Save-as-group prompt (post-outing-invite) ─────────────────────────────
+let _saveGroupPendingInvitees = null;
+
+function _maybeOfferSaveAsGroup(invitees) {
+  // Need at least 2 invitees with a userId. Phone-only invitees can't be
+  // group members in v1 (approved-connection invariant). If a mixed batch
+  // would yield <2 with userId, we silently skip.
+  const withId = (invitees || []).filter(i => i.userId);
+  if (withId.length < 2) { _saveGroupPendingInvitees = null; return; }
+  _saveGroupPendingInvitees = withId;
+  document.getElementById('save-group-name-input').value = '';
+  document.getElementById('save-group-member-chips').innerHTML = withId.map(
+    i => `<span class="save-group-chip">${i.name}</span>`
+  ).join('');
+  document.getElementById('save-as-group-modal').classList.add('open');
+  setTimeout(() => document.getElementById('save-group-name-input').focus(), 80);
+}
+
+async function submitSaveAsGroup() {
+  if (!_saveGroupPendingInvitees) return closeModal('save-as-group-modal');
+  const name = document.getElementById('save-group-name-input').value.trim();
+  if (!name) { showToast('Group name required'); return; }
+  const btn = document.getElementById('save-group-submit-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`/api/groups?token=${MY_TOKEN}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        member_user_ids: _saveGroupPendingInvitees.map(i => i.userId),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(data.error || 'Failed to create group'); return; }
+    closeModal('save-as-group-modal');
+    showToast(`✓ Saved "${name}"`);
+    _saveGroupPendingInvitees = null;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save group';
+  }
 }
 
 // ── Load outings ───────────────────────────────────────────────────────────
@@ -6364,6 +6824,22 @@ async function loadPlanDots() {
     if (!res.ok) return;
     const data = await res.json();
     planDates = data.dates || {};
+    renderCalendar();
+  } catch(e) { /* non-critical */ }
+}
+
+// Pulse dots: dates with a matcher-flagged idea (dated event or scarce friend
+// overlap). Cheap one-shot fetch over a 60-day window — matches the matcher's
+// own horizon and covers ~2 month grids without re-fetching on month nav.
+async function loadPulseDots() {
+  try {
+    const fmt = d => d.toISOString().slice(0,10);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const end   = new Date(today); end.setDate(today.getDate() + 60);
+    const res = await fetch(`/api/opportunities/pulse-dates?token=${MY_TOKEN}&from=${fmt(today)}&to=${fmt(end)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    pulseDates = data.dates || {};
     renderCalendar();
   } catch(e) { /* non-critical */ }
 }
@@ -6831,6 +7307,49 @@ function showToast(msg) {
   </div>
 </div>
 
+<!-- ── Pulse sheet: saved venues & dated events the user hasn't actioned yet ── -->
+<div class="modal-overlay" id="pulse-sheet">
+  <div class="browse-inner">
+    <div class="browse-header">
+      <div>
+        <div class="browse-title">⚡ My Pulse</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+          Things you saved — quietly building your vibe fingerprint.
+        </div>
+      </div>
+      <button class="plan-sheet-close" onclick="closePulseSheet()">✕</button>
+    </div>
+    <div class="browse-body" id="pulse-body">
+      <div class="browse-loading">Loading…</div>
+    </div>
+    <div class="browse-submit-bar">
+      <input class="browse-url-input" id="pulse-url-input" type="url" placeholder="Paste a link to save…">
+      <button class="btn btn-primary btn-sm" onclick="submitPulseUrl()" id="pulse-submit-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Share-target choice sheet (Save to Pulse vs. Plan now) ── -->
+<div class="modal-overlay" id="share-choice-sheet">
+  <div class="browse-inner">
+    <div class="browse-header">
+      <div class="browse-title">Shared to Spontany</div>
+      <button class="plan-sheet-close" onclick="closeShareChoiceSheet()">✕</button>
+    </div>
+    <div class="share-choice-card" id="share-choice-card">
+      <div class="pulse-thumb" id="share-choice-thumb">🔗</div>
+      <div class="pulse-body">
+        <div class="pulse-title" id="share-choice-title">Loading…</div>
+        <div class="pulse-meta" id="share-choice-meta"></div>
+      </div>
+    </div>
+    <div class="share-choice-buttons">
+      <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="shareChoiceSavePulse()">⚡ Save to Pulse</button>
+      <button class="btn btn-secondary" style="width:100%;padding:14px;" onclick="shareChoicePlanNow()">📅 Plan around this now</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Opp action sheet (Plan this / Open link) ── -->
 <div class="modal-overlay" id="opp-action-sheet">
   <div class="browse-inner" style="max-height:auto;">
@@ -7050,7 +7569,7 @@ function showToast(msg) {
   <button class="bn-item bn-fab" id="bn-fab-btn" onclick="openSmartCrafter()">
     <div class="bn-fab-inner"><img src="/icons/logo-fab.svg" alt="Spontany" class="bn-fab-logo"></div>
   </button>
-  <button class="bn-item" id="bn-pulse" onclick="showToast('My Pulse - coming soon')">
+  <button class="bn-item" id="bn-pulse" onclick="openPulseSheet()">
     <img src="/icons/pulse.svg" alt="Pulse" class="bn-svg-icon">
     <span class="bn-label">Pulse</span>
   </button>
@@ -7341,7 +7860,8 @@ function _buildCardHTML(dateStr, offset) {
     }</div>`;
   }
 
-  const planDot = planDates[dateStr] ? '<span class="plan-dot"></span>' : '';
+  const planDot  = planDates[dateStr]  ? '<span class="plan-dot"></span>' : '';
+  const pulseDot = pulseDates[dateStr] ? '<span class="cell-pulse-dot"></span>' : '';
   const hasPendingInvite = outingsOnDay.some(o => myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending'));
   const pendingRing = hasPendingInvite ? '<div class="cell-pending-ring"></div>' : '';
 
@@ -7357,6 +7877,7 @@ function _buildCardHTML(dateStr, offset) {
       ${planHtml}
       ${pendingRing}
       ${planDot}
+      ${pulseDot}
     </div>
     <div class="day-card-date-num">${d.getDate()}</div>
   </div>`;
@@ -8686,6 +9207,262 @@ async function _openCrafterWithSharedUrl(sharedUrl) {
   } catch(e) { /* never block on the share path */ }
 }
 
+// ── Pulse: save-for-later venues + dated events ───────────────────────────
+// Append-only by design: nothing disappears, even past events. They become
+// fingerprint signal. Sorted by event_date asc; venues by created_at desc.
+let _pulseItems = [];
+let _shareChoiceUrl = null;
+let _shareChoicePreview = null;
+
+function openPulseSheet() {
+  const sheet = document.getElementById('pulse-sheet');
+  if (!sheet) return;
+  sheet.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadPulseItems();
+}
+
+function closePulseSheet() {
+  document.getElementById('pulse-sheet')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function loadPulseItems() {
+  const body = document.getElementById('pulse-body');
+  if (!body) return;
+  try {
+    const res = await fetch(`/api/pulse?token=${MY_TOKEN}`);
+    if (!res.ok) throw new Error('http_' + res.status);
+    const data = await res.json();
+    _pulseItems = data.items || [];
+    renderPulseItems();
+  } catch(e) {
+    body.innerHTML = `<div class="pulse-empty">Couldn't load your pulse. Try again in a sec.</div>`;
+  }
+}
+
+// Returns { cls, label } for a YYYY-MM-DD against current calendarDays map.
+// 'self' = with-kids day (R), 'coparent' = free day (Z). Anything else → open.
+function _pulseCustodyBadge(dateStr) {
+  if (!dateStr) return null;
+  const d = (typeof calendarDays !== 'undefined' && calendarDays) ? calendarDays[dateStr] : null;
+  if (!d) return { cls: 'open', label: 'Open' };
+  if (d.owner === 'coparent') return { cls: 'free', label: 'Free day' };
+  if (d.owner === 'self')     return { cls: 'kids', label: 'Kids day' };
+  return { cls: 'open', label: 'Open' };
+}
+
+function _pulseFmtDate(dateStr, timeStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr + 'T12:00:00');
+    const opts = { weekday:'short', month:'short', day:'numeric' };
+    let s = d.toLocaleDateString(undefined, opts);
+    if (timeStr) s += ' · ' + timeStr;
+    return s;
+  } catch(e) { return dateStr; }
+}
+
+function _pulseEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function _pulseCardHtml(item) {
+  const isEvent = item.kind === 'event';
+  const badge = isEvent ? _pulseCustodyBadge(item.event_date) : null;
+  const dateStr = isEvent ? _pulseFmtDate(item.event_date, item.event_time) : '';
+  const fallbackIcon = isEvent ? '🎟️' : '📍';
+  const thumb = item.image_url
+    ? `<img src="${_pulseEscape(item.image_url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='${fallbackIcon}'">`
+    : fallbackIcon;
+  const meta = [];
+  if (dateStr) meta.push(`<span class="pulse-meta-item">${_pulseEscape(dateStr)}</span>`);
+  if (badge)   meta.push(`<span class="pulse-badge ${badge.cls}">${badge.label}</span>`);
+  if (item.source_domain) {
+    if (meta.length) meta.push('<span class="pulse-meta-dot">·</span>');
+    meta.push(`<span class="pulse-meta-item">${_pulseEscape(item.source_domain)}</span>`);
+  }
+  const title = item.title || item.url || item.raw_text || 'Untitled';
+  const openBtn = item.url
+    ? `<button class="pulse-icon-btn" title="Open link" onclick="event.stopPropagation(); window.open('${_pulseEscape(item.url)}','_blank','noopener')">🔗</button>`
+    : '';
+  const planBtn = `<button class="pulse-icon-btn" title="Plan around this" onclick="event.stopPropagation(); pulsePlanThis('${item.id}')">📅</button>`;
+  const delBtn  = `<button class="pulse-icon-btn danger" title="Remove" onclick="event.stopPropagation(); deletePulseItem('${item.id}')">✕</button>`;
+
+  return `
+    <div class="pulse-card" data-id="${item.id}">
+      <div class="pulse-thumb">${thumb}</div>
+      <div class="pulse-body">
+        <div class="pulse-title">${_pulseEscape(title)}</div>
+        <div class="pulse-meta">${meta.join('')}</div>
+      </div>
+      <div class="pulse-actions">${planBtn}${openBtn}${delBtn}</div>
+    </div>`;
+}
+
+function renderPulseItems() {
+  const body = document.getElementById('pulse-body');
+  if (!body) return;
+  if (!_pulseItems.length) {
+    body.innerHTML = `
+      <div class="pulse-empty">
+        <div class="pulse-empty-icon">⚡</div>
+        <div><strong>Your pulse is empty.</strong></div>
+        <div style="margin-top:6px;">
+          Share a link to Spontany or paste one below. Venues, concerts, festivals —
+          anything you'd like to revisit. Nothing here gets actioned automatically;
+          this is just where your taste lives.
+        </div>
+      </div>`;
+    return;
+  }
+  // Two buckets — events (chronological) and venues — for visual headers.
+  // The API already orders within each bucket.
+  const events = _pulseItems.filter(i => i.kind === 'event');
+  const venues = _pulseItems.filter(i => i.kind === 'venue');
+  let html = '';
+  if (events.length) {
+    html += `<div class="pulse-section-label">Dated · ${events.length}</div>`;
+    html += events.map(_pulseCardHtml).join('');
+  }
+  if (venues.length) {
+    html += `<div class="pulse-section-label">Venues & places · ${venues.length}</div>`;
+    html += venues.map(_pulseCardHtml).join('');
+  }
+  body.innerHTML = html;
+}
+
+async function submitPulseUrl() {
+  const input = document.getElementById('pulse-url-input');
+  const btn   = document.getElementById('pulse-submit-btn');
+  if (!input || !btn) return;
+  const url = (input.value || '').trim();
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) {
+    showToast('Add http:// or https:// to the link');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const res = await fetch(`/api/pulse?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    if (!res.ok) throw new Error('http_' + res.status);
+    input.value = '';
+    await loadPulseItems();
+    showToast('Saved to pulse');
+  } catch(e) {
+    showToast("Couldn't save — try again");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+async function deletePulseItem(id) {
+  if (!id) return;
+  // Optimistic remove
+  _pulseItems = _pulseItems.filter(i => i.id !== id);
+  renderPulseItems();
+  try {
+    await fetch(`/api/pulse/${encodeURIComponent(id)}?token=${MY_TOKEN}`, { method: 'DELETE' });
+  } catch(e) { /* swallow — next refresh will reconcile */ }
+}
+
+// "Plan this" on a pulse card → reuse the existing crafter with the URL.
+function pulsePlanThis(id) {
+  const item = _pulseItems.find(i => i.id === id);
+  if (!item) return;
+  const seed = item.url || item.title || '';
+  if (!seed) { showToast('Nothing to plan around'); return; }
+  closePulseSheet();
+  setTimeout(() => _openCrafterWithSharedUrl(seed), 220);
+}
+
+// ── Share-target choice sheet ─────────────────────────────────────────────
+// Replaces the previous straight-into-crafter behavior. Pulse is the default
+// path (low friction); planning right now is a single tap further.
+async function _handleSharedUrl(sharedUrl) {
+  if (!sharedUrl) return;
+  _shareChoiceUrl = sharedUrl;
+  _shareChoicePreview = null;
+  const sheet = document.getElementById('share-choice-sheet');
+  if (!sheet) {
+    return _openCrafterWithSharedUrl(sharedUrl);
+  }
+  document.getElementById('share-choice-title').textContent = sharedUrl;
+  document.getElementById('share-choice-meta').innerHTML = '';
+  document.getElementById('share-choice-thumb').innerHTML = '🔗';
+  sheet.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res = await fetch(`/api/pulse/preview?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: sharedUrl })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    _shareChoicePreview = data.preview || null;
+    if (!_shareChoicePreview) return;
+    const p = _shareChoicePreview;
+    document.getElementById('share-choice-title').textContent = p.title || sharedUrl;
+    const thumbEl = document.getElementById('share-choice-thumb');
+    if (p.image_url) {
+      thumbEl.innerHTML = `<img src="${_pulseEscape(p.image_url)}" alt="" onerror="this.parentNode.innerHTML='🔗'">`;
+    }
+    const metaParts = [];
+    if (p.event_date) {
+      metaParts.push(`<span class="pulse-meta-item">${_pulseEscape(_pulseFmtDate(p.event_date, p.event_time))}</span>`);
+      const badge = _pulseCustodyBadge(p.event_date);
+      if (badge) metaParts.push(`<span class="pulse-badge ${badge.cls}">${badge.label}</span>`);
+    }
+    if (p.source_domain) {
+      if (metaParts.length) metaParts.push('<span class="pulse-meta-dot">·</span>');
+      metaParts.push(`<span class="pulse-meta-item">${_pulseEscape(p.source_domain)}</span>`);
+    }
+    document.getElementById('share-choice-meta').innerHTML = metaParts.join('');
+  } catch(e) { /* leave the bare-URL view */ }
+}
+
+function closeShareChoiceSheet() {
+  document.getElementById('share-choice-sheet')?.classList.remove('open');
+  document.body.style.overflow = '';
+  _shareChoiceUrl = null;
+  _shareChoicePreview = null;
+}
+
+async function shareChoiceSavePulse() {
+  if (!_shareChoiceUrl) return closeShareChoiceSheet();
+  const url = _shareChoiceUrl;
+  const preview = _shareChoicePreview;
+  closeShareChoiceSheet();
+  try {
+    const body = preview ? { url, ...preview } : { url };
+    const res = await fetch(`/api/pulse?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('http_' + res.status);
+    showToast('Saved to pulse');
+  } catch(e) {
+    showToast("Couldn't save — try again");
+  }
+}
+
+function shareChoicePlanNow() {
+  const url = _shareChoiceUrl;
+  closeShareChoiceSheet();
+  if (url) setTimeout(() => _openCrafterWithSharedUrl(url), 220);
+}
+
 async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWhoId) {
   // Always start the wizard on step 1 (link + people). _scGoToStep2 advances.
   const _sheet = document.getElementById('sc-sheet');
@@ -8693,6 +9470,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   // Reset state
   _sc.data         = null;
   _sc.selWho       = new Set();
+  _scLastGroupTap  = null;
   _sc.selDate      = prefillSaved?.date || prefillDate || null;
   _sc.selTime      = null;
   _sc.opportunityId = null;
@@ -8790,6 +9568,8 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
     _scCalYear = _d.getFullYear(); _scCalMonth = _d.getMonth();
   }
 
+  // Load groups for this user; render once they arrive (non-blocking)
+  _scLoadGroups().then(renderSCWho);
   renderSCWho();
   renderSCWhen();
   renderSCWhat();
@@ -8962,6 +9742,42 @@ function _scFmtDate(dateStr) {
 
 // ── WHO ───────────────────────────────────────────────────────────────────────
 
+// ── Crafter groups state (created groups + lazy-loaded accepted-member ids) ─
+let _scGroups        = null;     // [{ id, name, accepted_count, ... }]
+let _scGroupMembers  = {};       // { groupId: [userId, ...] }  (user_ids, not who.id)
+let _scLastGroupTap  = null;     // audit hint - same semantics as _inviteLastGroupTap
+
+async function _scLoadGroups() {
+  try {
+    const res = await fetch(`/api/groups?token=${MY_TOKEN}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    _scGroups = data.created || [];
+  } catch(e) { _scGroups = []; }
+}
+
+async function _scLoadGroupMembers(groupId) {
+  if (_scGroupMembers[groupId]) return _scGroupMembers[groupId];
+  const res = await fetch(`/api/groups/${groupId}?token=${MY_TOKEN}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  const ids = (data.members || [])
+    .filter(m => m.status === 'accepted' && m.user_id)
+    .map(m => m.user_id);
+  _scGroupMembers[groupId] = ids;
+  return ids;
+}
+
+// Map a group's user_ids to their corresponding who.id (connection id) entries
+// in the current _sc.data.who. Returns only those that have a matching who entry.
+function _scGroupWhoIds(groupId) {
+  const userIds = _scGroupMembers[groupId] || [];
+  if (!userIds.length || !_sc.data) return [];
+  const whoByUserId = new Map();
+  for (const w of _sc.data.who) if (w.userId) whoByUserId.set(w.userId, w.id);
+  return userIds.map(uid => whoByUserId.get(uid)).filter(Boolean);
+}
+
 function renderSCWho() {
   const row = document.getElementById('sc-who-row');
   if (!row || !_sc.data) return;
@@ -8973,9 +9789,29 @@ function renderSCWho() {
     if (!_sc.selDate || days.length === 0) return 1;   // no date or unknown
     return days.includes(_sc.selDate) ? 0 : 2;          // 0=free, 2=busy
   };
-  const all = [..._sc.data.who].sort((a, b) => _availTier(a) - _availTier(b));
+  // Group's tier = best (lowest) tier among its accepted members that resolve
+  // to a who entry. Falls back to "unknown" if the group has no resolvable members.
+  const _groupTier = (g) => {
+    const whoIds = _scGroupWhoIds(g.id);
+    if (!whoIds.length) return 1;
+    let best = 2;
+    for (const wid of whoIds) {
+      const w = _sc.data.who.find(x => x.id === wid);
+      if (!w) continue;
+      const t = _availTier(w);
+      if (t < best) best = t;
+      if (best === 0) break;
+    }
+    return best;
+  };
 
-  if (!all.length) {
+  const peopleEntries = (_sc.data.who || []).map(w => ({ kind: 'person', w, tier: _availTier(w) }));
+  const groupEntries  = (_scGroups || []).map(g => ({ kind: 'group',  g, tier: _groupTier(g) }));
+  const sorted = [...peopleEntries, ...groupEntries].sort((a, b) => a.tier - b.tier);
+
+  // Empty state for the people side stays the same — only renders if there
+  // are no people AND no groups (nothing meaningful to pick).
+  if (!peopleEntries.length && !groupEntries.length) {
     row.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:4px 0;">
       No connections yet - <a href="#" onclick="bnTab('connections');closeSC();return false;"
         style="color:var(--accent);">add people</a> first.
@@ -8983,32 +9819,107 @@ function renderSCWho() {
     return;
   }
 
-  // Show all contacts in horizontal scrollable row (no limit needed)
-  const show = all;
-
-  row.innerHTML = show.map(w => {
-    const sel  = _sc.selWho.has(w.id);
-    const tier = _availTier(w);
-    const photoLayer = w.photo
-      ? `<img src="${w.photo}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove();">`
-      : '';
-    // "free" label only for confirmed-free contacts on the selected date
-    const freeBadge = (_sc.selDate && tier === 0)
-      ? `<div class="sc-free-badge">free</div>`
-      : '';
-    return `<div class="sc-who-chip${sel ? ' selected' : ''}" onclick="scToggleWho('${w.id}')">
-      <div class="sc-who-avatar">
-        ${w.initial}${photoLayer}
-        <div class="sc-who-check">✓</div>
-      </div>
-      <div class="sc-who-name">${w.name.split(' ')[0]}</div>
-      ${freeBadge}
-    </div>`;
+  let html = sorted.map(entry => {
+    if (entry.kind === 'person') {
+      const w = entry.w;
+      const sel  = _sc.selWho.has(w.id);
+      const photoLayer = w.photo
+        ? `<img src="${w.photo}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.remove();">`
+        : '';
+      const freeBadge = (_sc.selDate && entry.tier === 0)
+        ? `<div class="sc-free-badge">free</div>`
+        : '';
+      return `<div class="sc-who-chip${sel ? ' selected' : ''}" onclick="scToggleWho('${w.id}')">
+        <div class="sc-who-avatar">
+          ${w.initial}${photoLayer}
+          <div class="sc-who-check">✓</div>
+        </div>
+        <div class="sc-who-name">${w.name.split(' ')[0]}</div>
+        ${freeBadge}
+      </div>`;
+    } else {
+      const g = entry.g;
+      const whoIds = _scGroupWhoIds(g.id);
+      const cached = !!_scGroupMembers[g.id];
+      const allSel = cached && whoIds.length > 0 && whoIds.every(id => _sc.selWho.has(id));
+      const freeBadge = (_sc.selDate && entry.tier === 0 && cached)
+        ? `<div class="sc-free-badge">free</div>`
+        : '';
+      return `<div class="sc-who-chip is-group${allSel ? ' selected' : ''}" onclick="scToggleGroup('${g.id}')" title="Group: ${g.name}">
+        <div class="sc-who-avatar sc-who-avatar-group">
+          👥
+          <div class="sc-who-check">✓</div>
+        </div>
+        <div class="sc-who-name">${g.name.split(' ')[0]}</div>
+        ${freeBadge}
+      </div>`;
+    }
   }).join('');
+
+  // Empty-state teaser: zero groups → trailing prompt to make one
+  if (_scGroups !== null && _scGroups.length === 0) {
+    html += `<div class="sc-who-chip sc-who-teaser" onclick="scOpenGroupCreatorFromCrafter()" title="Create a group of friends">
+      <div class="sc-who-avatar sc-who-avatar-teaser">+</div>
+      <div class="sc-who-name">Make a group?</div>
+    </div>`;
+  }
+
+  row.innerHTML = html;
+}
+
+async function scToggleGroup(groupId) {
+  const userIds = await _scLoadGroupMembers(groupId);
+  if (!userIds.length) return;
+  // Resolve to who.id (connection ids) the crafter actually tracks
+  const whoIds = _scGroupWhoIds(groupId);
+  if (!whoIds.length) return;
+
+  const allIn = whoIds.every(id => _sc.selWho.has(id));
+  for (const id of whoIds) {
+    if (allIn) _sc.selWho.delete(id);
+    else       _sc.selWho.add(id);
+  }
+  _scLastGroupTap = allIn ? null : groupId;
+  renderSCWho();
+
+  // Same downstream chain as scToggleWho: re-check clash, refresh date / what / summary
+  if (_sc.selDate && _sc.selWho.size > 0) {
+    const status   = _scAvailStatus(_sc.selDate);
+    const clashBar = document.getElementById('sc-clash-bar-when');
+    if (status === 'all-busy') {
+      const { main } = _scFmtDate(_sc.selDate);
+      clashBar.innerHTML = `<div class="sc-clash-bar">
+        None of your picks are free on ${main}.
+        <button class="sc-clash-action" onclick="scFindNewDate()">Find a new date →</button>
+      </div>`;
+    } else {
+      clashBar.innerHTML = '';
+    }
+  }
+  if (typeof renderSCWhen    === 'function') renderSCWhen();
+  if (typeof renderSCWhat    === 'function' && !_sc.whatInputVal) renderSCWhat();
+  if (typeof renderSCSummary === 'function') renderSCSummary();
+}
+
+// Empty-state teaser tap: pre-populate the save-as-group prompt with whoever
+// is currently selected in _sc.selWho. Falls back to a hint toast if <2 picks.
+function scOpenGroupCreatorFromCrafter() {
+  const selectedWhoIds = [..._sc.selWho];
+  const invitees = selectedWhoIds
+    .map(id => _sc.data.who.find(w => w.id === id))
+    .filter(w => w && w.userId)
+    .map(w => ({ userId: w.userId, name: w.name }));
+  if (invitees.length < 2) {
+    showToast('Pick at least 2 people first to save as a group');
+    return;
+  }
+  _maybeOfferSaveAsGroup(invitees);
 }
 
 function scToggleWho(connId) {
   _sc.selWho.has(connId) ? _sc.selWho.delete(connId) : _sc.selWho.add(connId);
+  // Manual individual change breaks any active group attribution
+  _scLastGroupTap = null;
   renderSCWho();
 
   // Clash check: is the current date still OK?
@@ -9913,7 +10824,7 @@ async function _scPreCreateOuting() {
     const res = await fetch(`/api/outings?token=${MY_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: _sc.selDate, message: whatText, title: whatText || null, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
+      body: JSON.stringify({ date: _sc.selDate, message: whatText, title: whatText || null, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null, via_group_id: _scLastGroupTap || null }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -9953,7 +10864,7 @@ async function finalizeSC() {
       fetch(`/api/outings?token=${MY_TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: _sc.selDate, message: whatText, title: whatText || null, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null }),
+        body: JSON.stringify({ date: _sc.selDate, message: whatText, title: whatText || null, invitees, image_url: imageUrl, event_time: _sc.selTime || null, opportunity_id: _sc.opportunityId || null, via_group_id: _scLastGroupTap || null }),
       }).then(r => { if (r.ok) loadOutings(); });
     }
   }
