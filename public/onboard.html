@@ -1618,6 +1618,9 @@ function _renderInviteAcceptCard({ ownerName, inviterelType, currentUserName, sa
   document.getElementById('intro-overlay').style.display = 'none';
   const wiz = document.getElementById('wizard-main');
   wiz.style.opacity = '1'; wiz.style.pointerEvents = 'auto';
+  // Without .active, .wizard-step is display:none in styles.css → blank screen.
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-0').classList.add('active');
   document.getElementById('step-0').innerHTML = `
     <div style="text-align:center;padding:24px 12px 20px;">
       <div style="font-size:40px;margin-bottom:8px;">👋</div>
@@ -1663,6 +1666,8 @@ function _renderInvitePreludeCard({ ownerName, inviterelType }) {
   document.getElementById('intro-overlay').style.display = 'none';
   const wiz = document.getElementById('wizard-main');
   wiz.style.opacity = '1'; wiz.style.pointerEvents = 'auto';
+  document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-0').classList.add('active');
   document.getElementById('step-0').innerHTML = `
     <div style="text-align:center;padding:24px 12px 20px;">
       <div style="font-size:40px;margin-bottom:8px;">👋</div>
