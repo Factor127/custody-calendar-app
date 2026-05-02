@@ -31,7 +31,7 @@ function getResend() {
 // If email is already registered → login link (existing user).
 // If email is new → setup link (will create account on first use).
 router.post('/auth/request', async (req, res) => {
-  const { email, utm_source, utm_medium, utm_campaign, utm_content, referrer } = req.body;
+  const { email, utm_source, utm_medium, utm_campaign, utm_content, referrer, next } = req.body;
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
@@ -54,7 +54,11 @@ router.post('/auth/request', async (req, res) => {
 
   const BASE_URL = req.app.locals.BASE_URL;
   const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
-  const verifyUrl = `${BASE_URL}/api/auth/verify/${linkToken}`;
+  // Carry deep-link target (e.g. ?shareUrl=…) through the email round-trip
+  // by appending it to the verify URL. /api/auth/verify reads it back and
+  // routes the user to that destination after issuing a fresh token.
+  const nextQs = next ? `?next=${encodeURIComponent(next)}` : '';
+  const verifyUrl = `${BASE_URL}/api/auth/verify/${linkToken}${nextQs}`;
 
   const isNew = !user;
   const subject = isNew ? 'Set up your Spontany calendar' : 'Your Spontany login link';
@@ -137,6 +141,19 @@ router.get('/auth/verify/:token', (req, res) => {
   q.updateUserToken.run(newToken, link.user_id);
 
   const user = q.getUserById.get(link.user_id);
+
+  // If a deep-link target was carried through (?next=…), honour it so the
+  // user lands on the page they originally tried to reach (e.g. share-target
+  // sent them to /calendar.html?shareUrl=…). Otherwise default to their
+  // role-appropriate calendar.
+  const next = req.query.next ? String(req.query.next) : null;
+  if (next && /^\/(?!\/)/.test(next)) {
+    // Only allow same-origin paths (must start with single slash) — guards
+    // against open-redirect abuse where ?next=https://evil.com would bounce
+    // a freshly-issued token off-domain.
+    const sep = next.includes('?') ? '&' : '?';
+    return res.redirect(next + sep + 'token=' + newToken);
+  }
   return res.redirect(
     user.role === 'owner'
       ? `/calendar?token=${newToken}`

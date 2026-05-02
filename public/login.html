@@ -234,11 +234,16 @@ async function requestLink() {
   btn.disabled = true;
   btn.textContent = 'Sending…';
 
+  // Preserve any deep-link target (e.g. ?shareUrl=…) through the magic-link
+  // round-trip so the user lands back on the page they originally tried to
+  // visit instead of bare /calendar.
+  const _next = new URLSearchParams(window.location.search).get('next') || null;
+
   try {
     const res = await fetch('/api/auth/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email, next: _next })
     });
     const data = await res.json();
 
