@@ -248,6 +248,19 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
       transition: transform .12s, box-shadow .12s;
     }
     .intro-cta:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(230,249,82,.2); }
+    /* Per-slide "Next" — lighter than the final CTA so it reads as
+       "skip ahead" rather than the primary action. Sits below the
+       sub copy on slides 1–3. */
+    .intro-next {
+      margin-top: 28px;
+      background: transparent; color: var(--lime);
+      border: 1.5px solid rgba(230,249,82,0.45); border-radius: 999px;
+      padding: 11px 28px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: background .12s, border-color .12s, transform .12s;
+    }
+    .intro-next:hover  { background: rgba(230,249,82,0.08); border-color: rgba(230,249,82,0.7); }
+    .intro-next:active { transform: scale(0.97); }
 
     /* Early-access pill — appears on intro and step-done framing */
     .intro-ea-pill {
@@ -358,65 +371,34 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
   <!-- Slide 1: General -->
   <div class="intro-slide" id="isl-1">
     <div class="intro-dots">
-      <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+      <div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">Friendships need<br>face-to-face time</div>
     <div class="intro-sub">Real connection happens in person - coffee, walks, just being there.</div>
+    <button class="intro-next" type="button" onclick="introNext()">Next →</button>
   </div>
   <!-- Slide 2: Problem -->
   <div class="intro-slide" id="isl-2">
     <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+      <div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">But sometimes it's just too hard to find the right time</div>
     <div class="intro-sub">Schedules are complex. The back-and-forth is exhausting.</div>
+    <button class="intro-next" type="button" onclick="introNext()">Next →</button>
   </div>
   <!-- Slide 3: Social calendar concept -->
   <div class="intro-slide" id="isl-3">
     <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div><div class="intro-dot"></div>
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
     </div>
     <div class="intro-headline">Spontany is your<br>social calendar</div>
     <div class="intro-sub">It maps everyone's availability so plans happen in seconds, not days. No more polling. No more guessing.</div>
+    <button class="intro-next" type="button" onclick="introNext()">Next →</button>
   </div>
-  <!-- Slide 4: Persona pick — primes which invite tab will be primary at step-done -->
-  <div class="intro-slide" id="isl-persona">
-    <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div><div class="intro-dot"></div>
-    </div>
-    <div class="intro-headline">Who do you most<br>want to plan with?</div>
-    <div class="intro-sub" style="margin-bottom: 28px;">Pick the one that fits — you can invite others later.</div>
-    <div class="persona-picks">
-      <button class="persona-pick" type="button" onclick="pickPersona('coparent')">
-        <span class="pp-emoji">🤝</span>
-        <span class="pp-text">
-          <span class="pp-title">My co-parent</span>
-          <span class="pp-sub">Share custody days, coordinate handoffs</span>
-        </span>
-        <span class="pp-arrow">→</span>
-      </button>
-      <button class="persona-pick" type="button" onclick="pickPersona('partner')">
-        <span class="pp-emoji">💛</span>
-        <span class="pp-text">
-          <span class="pp-title">A partner</span>
-          <span class="pp-sub">See when you're both free at the same time</span>
-        </span>
-        <span class="pp-arrow">→</span>
-      </button>
-      <button class="persona-pick" type="button" onclick="pickPersona('friend')">
-        <span class="pp-emoji">🎉</span>
-        <span class="pp-text">
-          <span class="pp-title">A close friend</span>
-          <span class="pp-sub">Match free nights without the back-and-forth</span>
-        </span>
-        <span class="pp-arrow">→</span>
-      </button>
-    </div>
-  </div>
-  <!-- Slide 5: Early-access framing + CTA -->
+  <!-- Slide 4: Early-access framing + CTA -->
   <div class="intro-slide" id="isl-4">
     <div class="intro-dots">
-      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
+      <div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot"></div><div class="intro-dot active"></div>
     </div>
     <div class="intro-ea-pill">Early access</div>
     <div class="intro-headline">Know before<br>you ask.</div>
@@ -777,9 +759,12 @@ let createdToken  = null;
 // Persona the user picked on the intro slide ('coparent' | 'partner' | 'friend').
 // Drives which invite tab is primary at step-done. Persisted in sessionStorage
 // so it survives a refresh during onboarding.
-let targetInviteType = (function() {
-  try { return sessionStorage.getItem('sp_persona_pick') || null; } catch(e) { return null; }
-})();
+// Persona pick was removed from the intro sequence; targetInviteType stays
+// null and step-done falls back to its generic "Your calendar is ready"
+// copy via the personaCopy guard. Clear any stale value left over from a
+// previous session that did pick one.
+let targetInviteType = null;
+try { sessionStorage.removeItem('sp_persona_pick'); } catch(e) {}
 let relStatus     = null;
 let isParent      = true;
 let profilePhotoDataUrl = null;
@@ -854,14 +839,16 @@ function goStep(n) {
 }
 
 // ── Intro sequence ─────────────────────────────────────────────────────────────
-// Slide order: 0 (loading) → 1 → 2 → 3 → 'persona' (waits for tap) → 4 (CTA).
-// `null` = no auto-advance; user action drives the transition.
-const INTRO_SEQUENCE  = [0, 1, 2, 3, 'persona', 4];
-const INTRO_DURATIONS = { 0: 2400, 1: 4500, 2: 4500, 3: 4500, 'persona': null, 4: null };
+// Slide order: 0 (loading) → 1 → 2 → 3 → 4 (CTA).
+// `null` = no auto-advance; user action drives the transition (CTA tap).
+const INTRO_SEQUENCE  = [0, 1, 2, 3, 4];
+const INTRO_DURATIONS = { 0: 2400, 1: 4500, 2: 4500, 3: 4500, 4: null };
 let introTimer = null;
+let _introCurrentSlide = 0;
 
 function showIntroSlide(slideId) {
   clearTimeout(introTimer);
+  _introCurrentSlide = slideId;
   document.querySelectorAll('.intro-slide').forEach(s => s.classList.remove('active'));
   const sl = document.getElementById('isl-' + slideId);
   if (sl) sl.classList.add('active');
@@ -873,16 +860,48 @@ function showIntroSlide(slideId) {
   }
 }
 
-// User picks who they want to plan with on the persona slide. We stash the
-// pick so step-done can pre-select the matching invite tab and lead with that
-// invite as the climactic action.
-function pickPersona(type) {
-  if (type !== 'coparent' && type !== 'partner' && type !== 'friend') return;
-  targetInviteType = type;
-  try { sessionStorage.setItem('sp_persona_pick', type); } catch(e) {}
-  if (typeof fbq !== 'undefined') fbq('trackCustom', 'PersonaPicked', { persona: type });
-  showIntroSlide(4);
+// "Next" button on each slide jumps forward without waiting for the auto-
+// advance timer. Cancels the timer first so we never double-fire.
+function introNext() {
+  clearTimeout(introTimer);
+  const idx = INTRO_SEQUENCE.indexOf(_introCurrentSlide);
+  const nextId = INTRO_SEQUENCE[idx + 1];
+  if (nextId !== undefined) showIntroSlide(nextId);
 }
+
+// "Previous" — used by swipe-right gesture. Loading slide (0) and the
+// final CTA slide stay in place; mid-sequence slides walk back one step.
+function introPrev() {
+  clearTimeout(introTimer);
+  const idx = INTRO_SEQUENCE.indexOf(_introCurrentSlide);
+  if (idx > 1) showIntroSlide(INTRO_SEQUENCE[idx - 1]);
+}
+
+// Swipe gestures on the intro overlay — swipe-left = next, swipe-right =
+// previous. Threshold 50px horizontal, max 80px vertical drift to count
+// as a horizontal swipe (filters out scroll-style gestures).
+(function attachIntroSwipe() {
+  const overlay = document.getElementById('intro-overlay');
+  if (!overlay) return;
+  let sx = 0, sy = 0, tracking = false;
+  overlay.addEventListener('touchstart', (e) => {
+    if (!e.touches || e.touches.length !== 1) return;
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+  overlay.addEventListener('touchend', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const t = (e.changedTouches && e.changedTouches[0]);
+    if (!t) return;
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    if (Math.abs(dy) > 80) return;        // mostly-vertical → not a swipe
+    if (Math.abs(dx) < 50) return;         // too small → just a tap
+    if (dx < 0) introNext(); else introPrev();
+  }, { passive: true });
+})();
 
 function startOnboarding() {
   const overlay = document.getElementById('intro-overlay');
