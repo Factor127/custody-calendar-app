@@ -3380,8 +3380,17 @@ function _bounceToLogin() {
   // lands on a tokenless URL that triggers the server's redirect-to-login.
   // (PWA start_url is /calendar.html, magic-link returns can land tokenless,
   // and some in-app navigations would otherwise leave the URL bare.)
+  //
+  // CRITICAL: preserve any other query params (e.g. ?shareUrl=…). The old
+  // version just replaced the entire query string with ?token=…, which
+  // silently destroyed share-target URLs and made the share chain look
+  // broken even when /share-target had redirected correctly.
   if (!params.has('token')) {
-    try { history.replaceState(null, '', location.pathname + '?token=' + MY_TOKEN); } catch(e) {}
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      sp.set('token', MY_TOKEN);
+      history.replaceState(null, '', location.pathname + '?' + sp.toString());
+    } catch(e) {}
   }
   // Seed the initial history entry with calendar coordinates. Each month
   // change later pushes a new state, so back walks Mar → Feb → Jan → exits.
