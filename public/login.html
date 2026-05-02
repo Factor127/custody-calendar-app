@@ -251,6 +251,23 @@ async function requestLink() {
       document.getElementById('form-state').style.display = 'none';
       document.getElementById('sent-state').style.display = 'block';
       document.getElementById('sent-email').textContent = email;
+      // Email delivery is currently flaky in prod (RESEND_API_KEY may not
+      // be set, or FROM_EMAIL is the resend.dev default that can only
+      // deliver to the account owner). The /api/auth/request response
+      // always includes the magic link token so we can construct the
+      // verify URL client-side and offer it as a tap-through. Temporary
+      // until email is reliable.
+      if (data && data.magic) {
+        const nextQs = _next ? '?next=' + encodeURIComponent(_next) : '';
+        const verifyUrl = '/api/auth/verify/' + data.magic + nextQs;
+        const sentBox = document.getElementById('sent-state');
+        if (sentBox) {
+          const linkEl = document.createElement('div');
+          linkEl.style.cssText = 'margin-top:18px;padding:12px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.4);border-radius:8px;font-size:13px;text-align:center;';
+          linkEl.innerHTML = '<div style="color:#fbbf24;font-weight:600;margin-bottom:6px;">⚡ Skip the email</div><a href="' + verifyUrl + '" style="color:#a78bfa;word-break:break-all;text-decoration:underline;">Tap here to log in directly</a><div style="font-size:11px;color:#8a8aa8;margin-top:6px;">Email delivery is unreliable in this build — use this until it\'s fixed.</div>';
+          sentBox.appendChild(linkEl);
+        }
+      }
     } else {
       showError(data.error || 'Something went wrong. Please try again.');
       btn.disabled = false;
