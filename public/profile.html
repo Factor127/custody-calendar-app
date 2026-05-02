@@ -175,6 +175,14 @@ select { background:#1a1a1a !important; color:var(--text) !important; border-col
     </div>
 
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(226,226,226,0.08);">
+      <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">Replay tour</p>
+      <button class="btn btn-outline" onclick="replayTour()" style="font-size:13px;">
+        ✨ Replay the welcome tour
+      </button>
+      <p style="font-size:12px;color:var(--muted);margin:6px 0 0;">Walks you through the calendar, planning, and Pulse again.</p>
+    </div>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(226,226,226,0.08);">
       <p style="font-size:13px;color:var(--muted);margin:0 0 8px;">Security</p>
       <button class="btn btn-outline" onclick="rotateToken()" style="font-size:13px;">
         🔑 Reset my access link
@@ -600,6 +608,11 @@ function signOut() {
   localStorage.removeItem('myToken');
   localStorage.removeItem('myRole');
   window.location.replace('/');
+}
+
+function replayTour() {
+  try { localStorage.removeItem('spontany_tour_v1'); } catch(e) {}
+  window.location.href = `/calendar?token=${MY_TOKEN}&tour=1`;
 }
 
 async function rotateToken() {
