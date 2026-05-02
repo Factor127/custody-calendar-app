@@ -3452,6 +3452,32 @@ function nextMonth() {
       if (m) { _sharedUrl = m[0]; break; }
     }
   }
+  // ── On-phone diagnostic banner (no DevTools needed) ───────────────────
+  // Shows for ~12s whenever the page loads with ANY query params, so we
+  // can confirm on a phone whether the share-target chain is delivering
+  // URLs and which SW version is actually controlling. Tap ✕ to dismiss.
+  if (window.location.search || _sharedUrl) {
+    try {
+      const banner = document.createElement('div');
+      banner.id = 'share-debug-banner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#fbbf24;color:#000;padding:10px 14px;font:12px/1.4 -apple-system,monospace;box-shadow:0 2px 8px rgba(0,0,0,.3);max-height:50vh;overflow-y:auto;';
+      const escQ = (window.location.search || '(empty)').replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;');
+      banner.innerHTML = '<div style="display:flex;justify-content:space-between;gap:8px;font-weight:700;margin-bottom:4px;"><span>🔍 share-target debug</span><span onclick="this.parentNode.parentNode.remove()" style="cursor:pointer;padding:0 6px;">✕</span></div>'
+        + '<div>SW cache: <b id="share-debug-sw">checking…</b> <span style="opacity:.7">(want spontany-v14)</span></div>'
+        + '<div>Query: <code style="word-break:break-all;">' + escQ + '</code></div>'
+        + '<div>Parsed URL: <code>' + (_sharedUrl || '(none)') + '</code></div>';
+      document.body.prepend(banner);
+      // Probe SW cache name async (best-effort)
+      if (window.caches?.keys) {
+        caches.keys().then(keys => {
+          const sp = keys.find(k => k.startsWith('spontany-')) || '(no spontany cache)';
+          const el = document.getElementById('share-debug-sw');
+          if (el) el.textContent = sp;
+        }).catch(() => {});
+      }
+      setTimeout(() => banner?.remove(), 12000);
+    } catch(e) {}
+  }
   if (_openEventId) {
     // Clean the URL so refresh doesn't re-open the pane
     const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
@@ -11256,5 +11282,6 @@ async function _pushSyncSub(sub) {
 </script>
 
 </div><!-- /#app-frame -->
+<script src="/tour.js" defer></script>
 </body>
 </html>
