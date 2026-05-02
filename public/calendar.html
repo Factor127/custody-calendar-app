@@ -3351,12 +3351,30 @@ function nextMonth() {
 })();
 
 // ── Init ──────────────────────────────────────────────────────────────────
+// Auth-failure bounce that PRESERVES the original URL via ?next=. Critical
+// for the Web Share Target flow: when Android opens the share in a fresh
+// Chrome custom tab (not the installed PWA's auth context), calendar.html
+// loads with ?shareUrl=… but no token. Without preserving next, the share
+// URL gets dropped during login and the user lands on a plain calendar.
+function _bounceToLogin() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    sp.delete('token');  // never carry a stale/missing token forward
+    const qs = sp.toString();
+    if (qs) {
+      const next = window.location.pathname + '?' + qs;
+      return window.location.replace('/login?next=' + encodeURIComponent(next));
+    }
+  } catch(e) {}
+  window.location.replace('/login');
+}
+
 (async function init() {
   // location.replace (NOT href) on auth-failure bounces: href would push the
   // login page into history, so pressing system back from the calendar would
   // go back to /login. Using replace keeps history clean — back goes to
   // whatever the user was actually on before they came to the calendar.
-  if (!MY_TOKEN) { window.location.replace('/login'); return; }
+  if (!MY_TOKEN) { _bounceToLogin(); return; }
 
   // Make sure the visible URL carries the token so browser back/forward never
   // lands on a tokenless URL that triggers the server's redirect-to-login.
@@ -3372,7 +3390,7 @@ function nextMonth() {
   // runs, so we defer this with setTimeout(0) below — see _seedCalendarHistory.
 
   const meRes = await fetch(`/api/me?token=${MY_TOKEN}`);
-  if (!meRes.ok) { window.location.replace('/login'); return; }
+  if (!meRes.ok) { _bounceToLogin(); return; }
   const me = await meRes.json();
 
   myName    = me.name;
