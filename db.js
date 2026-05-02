@@ -336,6 +336,12 @@ db.exec(`CREATE TABLE IF NOT EXISTS pulse_items (
 )`);
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_pulse_user_date    ON pulse_items(user_id, event_date)'); } catch(e) {}
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_pulse_user_created ON pulse_items(user_id, created_at)'); } catch(e) {}
+// Provenance: 'saved' = user picked from share-target/manual paste,
+// 'outing' = auto-inserted when the user proposes an outing. Both feed the
+// fingerprint; the outing source carries higher signal because they acted
+// on it. Existing rows with NULL read as 'saved' via the column DEFAULT.
+try { db.exec("ALTER TABLE pulse_items ADD COLUMN source TEXT DEFAULT 'saved'"); } catch(e) { /* already exists */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_pulse_user_source ON pulse_items(user_id, source)'); } catch(e) {}
 
 db.exec(`CREATE TABLE IF NOT EXISTS outing_messages (
   id TEXT PRIMARY KEY,

@@ -119,7 +119,7 @@ router.get('/pulse', (req, res) => {
   const rows = db.db.prepare(`
     SELECT id, kind, url, title, description, image_url, source_domain,
            event_date, event_time, location_name, category, price_tier,
-           raw_text, notes, created_at
+           raw_text, notes, COALESCE(source, 'saved') AS source, created_at
       FROM pulse_items
      WHERE user_id = ?
      ORDER BY

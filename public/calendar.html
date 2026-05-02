@@ -1681,6 +1681,8 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
                         border:1px solid rgba(124,92,191,0.36); }
     .pulse-badge.open { background:rgba(255,255,255,0.05); color:var(--muted);
                         border:1px solid rgba(255,255,255,0.10); }
+    .pulse-badge.planned { background:rgba(249,115,22,0.16); color:#fdba74;
+                           border:1px solid rgba(249,115,22,0.36); }
     .pulse-actions {
       display:flex; flex-direction:column; gap:6px; justify-content:center; flex-shrink:0;
       padding-left:4px;
@@ -3020,6 +3022,7 @@ let activitiesByDate = {};
 let activityModalDates = [];
 let planDates  = {};  // date → count of plans
 let pulseDates = {};  // date → true; dates with pulse-worthy ideas (matcher)
+let _dayIdeasById = {};  // opp_id → full idea object for the currently-open day sheet
 
 function isWorkBlock(date) {
   const dow = date.getDay();
@@ -4216,6 +4219,12 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = [], dayIdeas =
   const visibleIdeas = (dayIdeas || []).filter(i => !plannedOppIds.has(i.id));
 
   if (visibleIdeas.length > 0) {
+    // Cache the full idea objects so planIdea() can read details (title,
+    // image, source_url, connection_ids) when the user taps a card —
+    // without round-tripping back to /matches.
+    _dayIdeasById = {};
+    for (const i of visibleIdeas) _dayIdeasById[i.id] = i;
+
     html += `<div class="dss-heading">Ideas</div>`;
     html += '<div class="day-sheet-plans">';
     let lastBucket = null;
@@ -4420,24 +4429,57 @@ async function removePlan(planId, dateStr) {
   }
 }
 
-// Tap an idea card → save it as a plan on this date.
-// The matcher then hides it from future ideas (it's in plannedOppIds locally).
+// Tap an idea card → open the crafter, pre-filled from the suggestion:
+// date, opportunity title/image/url, and any connection that's available
+// for this idea (relational / friend-also-free events). The user then
+// continues through the crafter and saves at the end — same exit door as
+// any other path into the wizard.
 async function planIdea(oppId, dateStr, ev) {
   if (ev) ev.stopPropagation();
-  try {
-    const res = await fetch(`/api/plans?token=${MY_TOKEN}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: dateStr, opportunity_id: oppId }),
-    });
-    if (!res.ok) throw new Error('plan failed');
-    planDates[dateStr] = (planDates[dateStr] || 0) + 1;
-    renderCalendar();
-    showToast('Saved to this date');
-    await _refreshDaySheet(dateStr);
-  } catch(e) {
-    showToast('Could not save - try again');
+  const idea = _dayIdeasById[oppId];
+  if (!idea) {
+    // Fallback: cache miss (e.g. stale render). Save directly so the tap
+    // never feels like a no-op.
+    try {
+      await fetch(`/api/plans?token=${MY_TOKEN}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr, opportunity_id: oppId }),
+      });
+      planDates[dateStr] = (planDates[dateStr] || 0) + 1;
+      renderCalendar();
+      showToast('Saved to this date');
+      await _refreshDaySheet(dateStr);
+    } catch(e) { showToast('Could not save - try again'); }
+    return;
   }
+
+  // Hide the day sheet UI without triggering history.back — that popstate
+  // would race the crafter's pushState, and the popstate handler at line
+  // ~4377 would close the crafter the moment it opens (it sees _scPushed=1
+  // and the just-opened sc-overlay). The day sheet's pushed history entry
+  // is harmless; it'll be cleaned up when the user backs out of the crafter.
+  _daySheetUiClose();
+
+  // Open with date + first available connection. Additional connections
+  // (e.g. friend-also-free on a dated event with N>1 friends) get added
+  // post-open so the WHO selection reflects everyone available.
+  const conns = idea.connection_ids || [];
+  await openSmartCrafter(dateStr, null, null, conns[0] || null);
+  for (let i = 1; i < conns.length; i++) _sc.selWho.add(conns[i]);
+
+  // Pre-fill the WHAT step with this opportunity — same shape as
+  // scWhatPickOpp uses when picking from the in-crafter opp browser.
+  _sc.whatInputVal = idea.title || '';
+  const inp = document.getElementById('sc-what-input');
+  if (inp) inp.value = idea.title || '';
+  _sc.selWhat = { custom: idea.title, oppId: idea.id, source_url: idea.source_url };
+  if (idea.source_url) _sc.selWhat.url = idea.source_url;
+  if (idea.image_url)  _sc.selWhat.unfurled = { title: idea.title, image: idea.image_url };
+  _sc.opportunityId = idea.id;
+
+  // Repaint anything that reflects the WHO/WHAT state we just mutated.
+  if (typeof renderSCWho     === 'function') renderSCWho();
+  if (typeof renderSCSummary === 'function') renderSCSummary();
 }
 
 // Red ✕ on an idea card → "avoid ideas like this." Animates out, fires
@@ -9301,24 +9343,32 @@ function _pulseEscape(s) {
 
 function _pulseCardHtml(item) {
   const isEvent = item.kind === 'event';
+  const isPlanned = item.source === 'outing';
   const badge = isEvent ? _pulseCustodyBadge(item.event_date) : null;
   const dateStr = isEvent ? _pulseFmtDate(item.event_date, item.event_time) : '';
-  const fallbackIcon = isEvent ? '🎟️' : '📍';
+  const fallbackIcon = isPlanned ? '📅' : (isEvent ? '🎟️' : '📍');
   const thumb = item.image_url
     ? `<img src="${_pulseEscape(item.image_url)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='${fallbackIcon}'">`
     : fallbackIcon;
   const meta = [];
-  if (dateStr) meta.push(`<span class="pulse-meta-item">${_pulseEscape(dateStr)}</span>`);
-  if (badge)   meta.push(`<span class="pulse-badge ${badge.cls}">${badge.label}</span>`);
+  if (isPlanned) meta.push(`<span class="pulse-badge planned">📅 Planned</span>`);
+  if (dateStr)   meta.push(`<span class="pulse-meta-item">${_pulseEscape(dateStr)}</span>`);
+  if (badge)     meta.push(`<span class="pulse-badge ${badge.cls}">${badge.label}</span>`);
   if (item.source_domain) {
     if (meta.length) meta.push('<span class="pulse-meta-dot">·</span>');
     meta.push(`<span class="pulse-meta-item">${_pulseEscape(item.source_domain)}</span>`);
   }
   const title = item.title || item.url || item.raw_text || 'Untitled';
+  // For 'outing' items the URL is /calendar?openEvent=… — opening it jumps
+  // to the event pane via the existing init handler. For 'saved' items it
+  // opens the source URL in a new tab. We also hide the "plan around this"
+  // button on outing items — they're already planned, so re-plan is noise.
+  const openTitle = isPlanned ? 'Open outing' : 'Open link';
   const openBtn = item.url
-    ? `<button class="pulse-icon-btn" title="Open link" onclick="event.stopPropagation(); window.open('${_pulseEscape(item.url)}','_blank','noopener')">🔗</button>`
+    ? `<button class="pulse-icon-btn" title="${openTitle}" onclick="event.stopPropagation(); window.open('${_pulseEscape(item.url)}','_blank','noopener')">🔗</button>`
     : '';
-  const planBtn = `<button class="pulse-icon-btn" title="Plan around this" onclick="event.stopPropagation(); pulsePlanThis('${item.id}')">📅</button>`;
+  const planBtn = isPlanned ? ''
+    : `<button class="pulse-icon-btn" title="Plan around this" onclick="event.stopPropagation(); pulsePlanThis('${item.id}')">📅</button>`;
   const delBtn  = `<button class="pulse-icon-btn danger" title="Remove" onclick="event.stopPropagation(); deletePulseItem('${item.id}')">✕</button>`;
 
   return `

@@ -1357,6 +1357,29 @@ router.post('/outings', (req, res) => {
     incOppCounter('incOppOutings', opportunity_id);
   }
 
+  // ── Pulse: every proposed outing also seeds a fingerprint item ────────
+  // Drafts (status='saved') and undated rows are skipped — without a date
+  // there's no chronological signal worth capturing. Wrapped in try/catch
+  // so a pulse-write failure never blocks the outing itself.
+  if (status !== 'saved' && date) {
+    try {
+      const { db: rawDb } = require('../db');
+      const pulseId = uuidv4();
+      const pulseTitle = title || message || 'Outing';
+      const pulseUrl   = `${req.app.locals.BASE_URL || ''}/calendar.html?openEvent=${outingId}`;
+      rawDb.prepare(`
+        INSERT INTO pulse_items
+          (id, user_id, kind, url, title, image_url, event_date, event_time,
+           location_name, source, notes)
+        VALUES (?, ?, 'event', ?, ?, ?, ?, ?, ?, 'outing', ?)
+      `).run(
+        pulseId, me.id, pulseUrl, pulseTitle, image_url || null,
+        date, event_time || null, venue || null,
+        message && message !== pulseTitle ? message : null
+      );
+    } catch (e) { console.error('[pulse] outing-hook insert failed:', e.message); }
+  }
+
   res.json({ id: outingId, status: 'pending' });
 
   // Notify registered invitees that they've been invited (non-saved outings only)
