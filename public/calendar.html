@@ -1089,6 +1089,28 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .dss-idea-x:hover { background: rgba(239,68,68,0.22); color: #fca5a5; }
 
+    /* Profile-circle stack on idea cards: best-relationship-first, up to 3
+       visible circles + a +N chip when there are more. Mirrors the look of
+       dss-free-avatar-circle but smaller and inline. */
+    .dss-idea-people {
+      display: flex; align-items: center; margin-top: 8px; padding-left: 2px;
+    }
+    .dss-idea-people-circle {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #fff;
+      border: 2px solid #0a0a0a;
+      margin-left: -8px; flex-shrink: 0; overflow: hidden;
+    }
+    .dss-idea-people-circle:first-child { margin-left: 0; }
+    .dss-idea-people-circle img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .dss-idea-people-more {
+      margin-left: 6px; font-size: 11px; font-weight: 700;
+      color: rgba(238,238,248,0.55);
+    }
+
     /* ── Pane navigation within day sheet ─────────────────────────────── */
     .day-pane { display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
     .day-pane.active { display:flex; }
@@ -3418,7 +3440,18 @@ function nextMonth() {
   // /share-target which redirects here with ?shareUrl=…. Open the crafter
   // pre-filled with that link so the user goes straight from "share to
   // Spontany" to "plan an event around this URL".
-  const _sharedUrl = _urlParams.get('shareUrl');
+  //
+  // Belt and suspenders: in case the SW interferes or the redirect didn't
+  // strip them, also accept raw Web Share Target params (url/text/title).
+  // We extract the first http(s) URL we find in any of them.
+  let _sharedUrl = _urlParams.get('shareUrl');
+  if (!_sharedUrl) {
+    const rawCandidates = [_urlParams.get('url'), _urlParams.get('text'), _urlParams.get('title')].filter(Boolean);
+    for (const raw of rawCandidates) {
+      const m = String(raw).match(/https?:\/\/[^\s]+/i);
+      if (m) { _sharedUrl = m[0]; break; }
+    }
+  }
   if (_openEventId) {
     // Clean the URL so refresh doesn't re-open the pane
     const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
@@ -3426,12 +3459,12 @@ function nextMonth() {
     // Small delay so the calendar renders first
     setTimeout(() => openEventPaneDirect(_openEventId), 300);
   } else if (_sharedUrl) {
-    // Clean the URL so a refresh doesn't re-open the choice sheet
+    // Clean the URL so a refresh doesn't re-trigger the share handling
     const cleanUrl = window.location.pathname + '?token=' + MY_TOKEN;
     history.replaceState(null, '', cleanUrl);
-    // Show a Save-to-Pulse / Plan-now sheet rather than dropping straight
-    // into the crafter — pulse is the default low-friction path.
-    setTimeout(() => _handleSharedUrl(_sharedUrl), 300);
+    // Drop straight into the crafter pre-filled with the shared URL.
+    // (Pulse save is still available manually from the crafter.)
+    setTimeout(() => _openCrafterWithSharedUrl(_sharedUrl), 300);
   } else {
     // No deep-link — surface the freshest pending notification ourselves so
     // the user lands directly on the event that needs their attention,
@@ -4092,6 +4125,36 @@ async function openDaySheet(dateStr) {
   } catch(e) { /* non-critical */ }
 }
 
+// Render a small profile-circle stack for an idea card. connectionIds are
+// resolved against socialConnections (loaded once on init). Up to 3 circles
+// then "+N" chip. Empty string when there are no connections — caller drops
+// the block from the DOM. Best-relationship priority comes from the matcher
+// upstream (partner first, then friends), so we just take in order.
+function _renderIdeaPeople(connectionIds) {
+  if (!Array.isArray(connectionIds) || connectionIds.length === 0) return '';
+  const circles = [];
+  let resolved = 0;
+  for (const cid of connectionIds) {
+    if (resolved >= 3) break;
+    const c = (socialConnections || []).find(s => s.id === cid);
+    if (!c) continue;
+    const initial = (c.initial || (c.name || '?')[0] || '?').toUpperCase();
+    const bg      = c.color || '#7c5cbf';
+    const inner   = c.photo
+      ? `<img src="${c.photo}" alt="" onerror="this.remove();">`
+      : initial;
+    const safeName = (c.name || '').replace(/"/g, '&quot;');
+    circles.push(
+      `<div class="dss-idea-people-circle" style="background:${bg};" title="${safeName}">${inner}</div>`
+    );
+    resolved++;
+  }
+  if (!circles.length) return '';
+  const more = connectionIds.length - resolved;
+  const moreHtml = more > 0 ? `<span class="dss-idea-people-more">+${more}</span>` : '';
+  return `<div class="dss-idea-people">${circles.join('')}${moreHtml}</div>`;
+}
+
 function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = [], dayIdeas = []) {
   const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
   let html = '';
@@ -4244,10 +4307,16 @@ function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = [], dayIdeas =
         : '';
       const pulse = idea.is_pulse_worthy ? `<span class="dss-idea-pulse"></span>` : '';
       const relClass = idea.reason_type === 'relational' ? ' is-relational' : '';
+      // Profile-circle stack: best-relationship-first ordering comes from
+      // the matcher (partner ahead of friends). Visible cap = 3, "+N" chip
+      // for the rest. socialConnections is loaded by loadSocialCalendars()
+      // and shaped {id, name, initial, photo, color}.
+      const peopleHtml = _renderIdeaPeople(idea.connection_ids);
       html += `<div class="dss-idea-card${relClass}" id="dss-idea-${escAttr(idea.id)}" onclick="planIdea('${escAttr(idea.id)}','${escAttr(dateStr)}',event)">
         ${imgHtml}
         <div class="dss-idea-title">${pulse}${escHtml(idea.title)}</div>
         <div class="dss-idea-reason">${escHtml(idea.lead_reason)}</div>
+        ${peopleHtml}
         <button class="dss-idea-x" title="Avoid ideas like this" onclick="dismissIdea('${escAttr(idea.id)}',event)">×</button>
       </div>`;
     }
@@ -9265,18 +9334,47 @@ const _sc = {
 // Web Share Target entry point: opens the crafter, drops the shared URL
 // into the link input, and runs the same unfurl path as if the user had
 // pasted it manually. Called from init() when ?shareUrl=… is present.
+//
+// Diagnostics are intentionally loud — when this breaks on a phone, you
+// can't easily get to console. The toast confirms the URL landed; the
+// console.error tells you where the chain broke.
 async function _openCrafterWithSharedUrl(sharedUrl) {
-  if (!sharedUrl) return;
+  if (!sharedUrl) {
+    console.warn('[share] _openCrafterWithSharedUrl called with no URL');
+    return;
+  }
+  console.log('[share] opening crafter for:', sharedUrl);
   try {
+    let domain = sharedUrl;
+    try { domain = new URL(sharedUrl).hostname.replace(/^www\./, ''); } catch(e) {}
+    if (typeof showToast === 'function') showToast(`🔗 Got ${domain} — opening…`);
+  } catch(e) {}
+
+  try {
+    if (typeof openSmartCrafter !== 'function') {
+      console.error('[share] openSmartCrafter is not defined');
+      if (typeof showToast === 'function') showToast('⚠ Crafter not available');
+      return;
+    }
     await openSmartCrafter();
     const input = document.getElementById('sc-what-input');
-    if (input) {
-      input.value = sharedUrl;
-      // Trigger the same change handler that runs on user input — kicks off
-      // unfurl when the value looks like a URL.
-      if (typeof scWhatInputChange === 'function') scWhatInputChange(sharedUrl);
+    if (!input) {
+      console.error('[share] sc-what-input not found in DOM after openSmartCrafter');
+      if (typeof showToast === 'function') showToast('⚠ Could not find link input');
+      return;
     }
-  } catch(e) { /* never block on the share path */ }
+    input.value = sharedUrl;
+    // Trigger the same change handler that runs on user input — kicks off
+    // unfurl when the value looks like a URL.
+    if (typeof scWhatInputChange === 'function') {
+      scWhatInputChange(sharedUrl);
+    } else {
+      console.warn('[share] scWhatInputChange not defined — unfurl will not auto-fire');
+    }
+  } catch(e) {
+    console.error('[share] failed to open crafter:', e);
+    if (typeof showToast === 'function') showToast('⚠ Share failed: ' + (e.message || 'unknown'));
+  }
 }
 
 // ── Pulse: save-for-later venues + dated events ───────────────────────────

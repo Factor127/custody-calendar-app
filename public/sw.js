@@ -2,7 +2,7 @@
 // Phase 1: Offline shell + static asset caching
 // Phase 2: Push notification handling (added below)
 
-const CACHE_VERSION = 'spontany-v13';
+const CACHE_VERSION = 'spontany-v14';
 const STATIC_ASSETS = [
   '/styles.css',
   '/logo.svg',
@@ -42,6 +42,14 @@ self.addEventListener('fetch', event => {
 
   // API calls: always network-only - never cache auth/data responses
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
+
+  // Web Share Target: bypass SW entirely. The /share-target route does a
+  // 302 redirect to /calendar.html?shareUrl=… and we need the browser to
+  // follow that natively so window.location ends up at the redirected URL.
+  // If we let respondWith() handle it, the SW returns the redirected body
+  // but the address bar stays at /share-target — calendar.html then can't
+  // see ?shareUrl in window.location.search and the share goes nowhere.
+  if (url.pathname === '/share-target') return;
 
   // HTML navigation: network-first, fall back to cached page
   if (request.mode === 'navigate') {
