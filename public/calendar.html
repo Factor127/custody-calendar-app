@@ -1333,6 +1333,22 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .bn-item.bn-fab:active .bn-fab-inner { transform: scale(0.93); box-shadow: 0 2px 10px rgba(230,249,82,0.25); }
     .bn-item.bn-fab.open .bn-fab-inner { transform: rotate(45deg); }
+    /* Notification badge on the crafter FAB - replaces the People-icon dot
+       so users see invite/response counts on the action they tap to react. */
+    .bn-fab-badge {
+      position: absolute; top: -14px; right: calc(50% - 28px);
+      min-width: 20px; height: 20px; border-radius: 10px;
+      background: #ef4444; color: white; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; padding: 0 5px;
+      border: 2px solid #0a0a0a; box-shadow: 0 2px 8px rgba(239,68,68,0.45);
+      z-index: 2; pointer-events: none;
+      animation: fab-badge-pulse 1.8s ease-in-out infinite;
+    }
+    .bn-fab-badge.hidden { display: none; animation: none; }
+    @keyframes fab-badge-pulse {
+      0%, 100% { box-shadow: 0 2px 8px rgba(239,68,68,0.45), 0 0 0 0 rgba(239,68,68,0.55); }
+      50%      { box-shadow: 0 2px 8px rgba(239,68,68,0.45), 0 0 0 8px rgba(239,68,68,0); }
+    }
 
     /* ── FAB action menu ─────────────────────────────────────────────── */
     #fab-menu {
@@ -6824,6 +6840,7 @@ async function loadOutings() {
     });
     renderCalendar(); // refresh so event pills appear in cells
     updateBnBadges();
+    _refreshNotifBadgeFromState(); // keep the crafter FAB badge in sync after RSVPs
   } catch(e) {}
 }
 
@@ -7142,7 +7159,65 @@ function _refreshNotifBadgeFromState() {
   const total = _computeTotalBadge();
   const dot = document.getElementById('notif-dot');
   if (dot) dot.classList.toggle('hidden', total === 0);
+  // Drive the crafter (FAB) badge with invite-related items only — pending
+  // incoming invites + suggestions + unread RSVP confirmations on my outings.
+  // Pure connection requests stay on the People-icon badge.
+  const fb = document.getElementById('bn-fab-badge');
+  if (fb) {
+    const inviteCount = _computeInviteNotifCount();
+    fb.textContent = inviteCount > 9 ? '9+' : String(inviteCount);
+    fb.classList.toggle('hidden', inviteCount === 0);
+  }
   _updateAppBadge(total);
+}
+
+// Count the things that should pop up out of the crafter when tapped:
+// invites awaiting my reply, change suggestions on outings, and friend
+// RSVPs on my outings I haven't viewed yet.
+function _computeInviteNotifCount() {
+  const incoming = (myIncomingOutings || []).filter(o => o.my_invitee_status === 'pending').length;
+  const sugg     = (pendingSuggestions || []).length;
+  const responses = (_unreadResponseOutingIds || []).length;
+  return incoming + sugg + responses;
+}
+
+// Build the ordered queue of pending notifications. Newest first within each
+// bucket; responses come before invites (they're already-acted-on plans the
+// user is most likely tracking). Used by both auto-open at launch and the
+// crafter-tap handler.
+function _pendingNotifQueue() {
+  const out = [];
+  for (const id of (_unreadResponseOutingIds || [])) {
+    if (id) out.push({ id, type: 'response', ts: Date.now() });
+  }
+  for (const o of (myIncomingOutings || [])) {
+    if (o && o.my_invitee_status === 'pending' && o.id) {
+      out.push({ id: o.id, type: 'invite', ts: new Date(o.created_at || o.updated_at || 0).getTime() });
+    }
+  }
+  for (const s of (pendingSuggestions || [])) {
+    const oid = s?.outing_id || s?.outingId;
+    if (oid) out.push({ id: oid, type: 'suggestion', ts: new Date(s.created_at || s.updated_at || 0).getTime() });
+  }
+  // Sort: responses first (already pre-ordered), then invites/suggestions newest-first.
+  const responses = out.filter(x => x.type === 'response');
+  const rest      = out.filter(x => x.type !== 'response').sort((a, b) => b.ts - a.ts);
+  return responses.concat(rest);
+}
+
+// Crafter (FAB) tap handler. If the user has unreviewed invite-related
+// notifications, surface them one at a time — each tap pops the next one
+// for the user to act on. Once the queue is empty, the FAB falls through
+// to its normal job: open the smart crafter to plan something new.
+function onFabTap() {
+  try {
+    const q = _pendingNotifQueue();
+    if (q.length > 0) {
+      openEventPaneDirect(q[0].id);
+      return;
+    }
+  } catch(e) { /* fall through to crafter on any failure */ }
+  openSmartCrafter();
 }
 
 // ── Auto-open the freshest pending notification on app launch ───────────────
@@ -7153,35 +7228,20 @@ function _refreshNotifBadgeFromState() {
 // items doesn't re-trigger (last-opened ID is tracked in localStorage).
 function _autoOpenFreshestPendingNotification() {
   try {
-    // ── Priority 1: unread invitee responses on MY outings ─────────────
-    // (friend just RSVP'd accepted/declined). The snapshot is self-clearing
-    // when the user views the event pane, so we don't gate on the
-    // last-auto-opened localStorage key — a NEW response on the SAME
-    // outing should re-open it. If multiple, take the first.
-    if ((_unreadResponseOutingIds || []).length > 0) {
-      const id = _unreadResponseOutingIds[0];
-      setTimeout(() => openEventPaneDirect(id), 400);
+    const q = _pendingNotifQueue();
+    if (q.length === 0) return;
+
+    // Responses use the snapshot in localStorage, so opening the event pane
+    // self-clears them. Always open the freshest response if one is queued.
+    const firstResp = q.find(x => x.type === 'response');
+    if (firstResp) {
+      setTimeout(() => openEventPaneDirect(firstResp.id), 400);
       return;
     }
 
-    // ── Priority 2: pending invites / suggestions ──────────────────────
-    // These don't have a "seen" mechanism, so we use localStorage to
-    // avoid re-opening the same one on every page refresh.
-    const candidates = [];
-    for (const o of (myIncomingOutings || [])) {
-      if (o && o.my_invitee_status === 'pending' && o.id) {
-        candidates.push({ id: o.id, ts: new Date(o.created_at || o.updated_at || 0).getTime() });
-      }
-    }
-    for (const s of (pendingSuggestions || [])) {
-      const oid = s?.outing_id || s?.outingId;
-      if (oid) {
-        candidates.push({ id: oid, ts: new Date(s.created_at || s.updated_at || 0).getTime() });
-      }
-    }
-    if (candidates.length === 0) return;
-    candidates.sort((a, b) => b.ts - a.ts);
-    const newest = candidates[0];
+    // For invites/suggestions there's no "seen" snapshot — gate by
+    // localStorage so refreshing the calendar doesn't re-pop the same one.
+    const newest = q[0];
     const lastOpenedId = localStorage.getItem('sp_last_auto_opened_notif') || '';
     if (newest.id === lastOpenedId) return;
     localStorage.setItem('sp_last_auto_opened_notif', newest.id);
@@ -7812,8 +7872,9 @@ function showToast(msg) {
     <img src="/icons/daily-view.svg" alt="Day" id="bn-view-icon" class="bn-svg-icon">
     <span class="bn-label" id="bn-view-label">Day</span>
   </button>
-  <button class="bn-item bn-fab" id="bn-fab-btn" onclick="openSmartCrafter()">
+  <button class="bn-item bn-fab" id="bn-fab-btn" onclick="onFabTap()">
     <div class="bn-fab-inner"><img src="/icons/logo-fab.svg" alt="Spontany" class="bn-fab-logo"></div>
+    <div class="bn-fab-badge hidden" id="bn-fab-badge">0</div>
   </button>
   <button class="bn-item" id="bn-pulse" onclick="openPulseSheet()">
     <img src="/icons/pulse.svg" alt="Pulse" class="bn-svg-icon">
@@ -11178,7 +11239,9 @@ async function saveForLaterSC() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function updateBnBadges() {
-  const connPending = document.getElementById('notif-dot')?.classList.contains('hidden') ? 0 : 1;
+  // People-icon badge: pure connection requests only. Invite/response/
+  // suggestion notifications now live on the crafter FAB (#bn-fab-badge).
+  const connPending = (pendingConnections?.length || 0);
   const cb = document.getElementById('bn-conn-badge');
   if (cb) { cb.textContent = connPending; cb.classList.toggle('hidden', connPending === 0); }
 
