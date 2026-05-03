@@ -3964,12 +3964,10 @@ function renderCalendar() {
       }).join('')
     }</div>` : '';
 
-    // Avatar bubbles: 1 face + count of others free on this day
-    const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
-    const avatarHtml = freeFriends.length ? `<div class="cell-avatars">
-      ${scAvatar(freeFriends[0], 16, 'border:1.5px solid var(--cell-bg);')}
-      ${freeFriends.length > 1 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 1}</span>` : ''}
-    </div>` : '';
+    // Avatar bubbles intentionally omitted from the monthly grid — too much
+    // visual noise across 30+ cells. Tapping a day opens the day-sheet
+    // which has the full "who's free" list with tappable faces.
+    const avatarHtml = '';
 
     // Pulsing dot for incoming outings I haven't responded to
     const hasPendingInvite = (outingsByDate[dateStr] || []).some(o =>
@@ -8045,15 +8043,10 @@ function _buildCardHTML(dateStr, offset) {
     custodyHtml = `<div class="day-card-custody"><span class="day-card-custody-pill ${isMine ? 'custody' : 'free'}">${isMine ? 'My custody' : 'Kid-free'}</span></div>`;
   }
 
-  // Avatars
-  const freeFriends = socialConnections.filter(sc => sc.days[dateStr]?.owner !== 'self');
-  let avatarHtml = '';
-  if (freeFriends.length) {
-    avatarHtml = `<div class="cell-avatars">
-      ${freeFriends.slice(0, 3).map(sc => scAvatar(sc, 22, 'border:2px solid rgba(20,20,30,0.8);')).join('')}
-      ${freeFriends.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freeFriends.length - 3}</span>` : ''}
-    </div>`;
-  }
+  // Avatars intentionally omitted from the day-card strip — too much
+  // visual noise across the scrolling row. Tapping a day-card opens the
+  // day-sheet which has the full "who's free" list with tappable faces.
+  const avatarHtml = '';
 
   // Plan bubbles
   const dayOutings = outingsOnDay.filter(o => o.status !== 'cancelled');
