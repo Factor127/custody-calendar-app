@@ -12,13 +12,23 @@ function getClient() {
 
 const FROM = () => process.env.FROM_EMAIL || 'Spontany <noreply@spontany.app>';
 
+// Redact an email for logs — keep first 2 chars of local-part + full domain.
+// Enough to identify in support cases, not enough to be PII in a leaked log.
+function redactEmail(e) {
+  if (!e) return '?';
+  const s = String(e);
+  const at = s.indexOf('@');
+  if (at < 1) return '***';
+  return `${s.slice(0, 2)}***${s.slice(at)}`;
+}
+
 /**
  * Send a calendar invite (.ics attachment) via Resend.
  * Fire-and-forget safe - logs errors but doesn't throw.
  */
 async function sendCalendarInvite({ to, subject, bodyText, icsContent, method = 'REQUEST' }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log('[email] RESEND_API_KEY not set - skipping invite to', to);
+    console.log('[email] RESEND_API_KEY not set - skipping invite to', redactEmail(to));
     return;
   }
   try {
@@ -33,9 +43,9 @@ async function sendCalendarInvite({ to, subject, bodyText, icsContent, method = 
         content_type: `text/calendar; method=${method}; charset=UTF-8`,
       }],
     });
-    console.log('[email] Sent', method, 'to', to);
+    console.log('[email] Sent', method, 'to', redactEmail(to));
   } catch (err) {
-    console.error('[email] Failed to send to', to, err.message);
+    console.error('[email] Failed to send to', redactEmail(to), err.message);
   }
 }
 
@@ -44,7 +54,7 @@ async function sendCalendarInvite({ to, subject, bodyText, icsContent, method = 
  */
 async function sendEmail({ to, subject, bodyText, html, from, replyTo }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log('[email] RESEND_API_KEY not set - skipping email to', to);
+    console.log('[email] RESEND_API_KEY not set - skipping email to', redactEmail(to));
     return;
   }
   try {
@@ -57,9 +67,9 @@ async function sendEmail({ to, subject, bodyText, html, from, replyTo }) {
     if (html)    payload.html     = html;
     if (replyTo) payload.reply_to = replyTo;
     await getClient().emails.send(payload);
-    console.log('[email] Sent email to', to);
+    console.log('[email] Sent email to', redactEmail(to));
   } catch (err) {
-    console.error('[email] Failed to send email to', to, err.message);
+    console.error('[email] Failed to send email to', redactEmail(to), err.message);
   }
 }
 

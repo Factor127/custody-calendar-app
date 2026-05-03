@@ -305,13 +305,17 @@ async function sendSequenceEmail(user, step, is2b = false) {
     html:      tpl.html,
   });
 
+  // Redact email for log (first 2 of local-part + domain)
+  const at = String(user.email || '').indexOf('@');
+  const redacted = at > 0 ? `${user.email.slice(0,2)}***${user.email.slice(at)}` : '***';
+
   if (is2b) {
     getDb().prepare('UPDATE users SET email_seq_2b_sent = 1, email_seq_last_sent = ? WHERE id = ?')
       .run(new Date().toISOString(), user.id);
-    console.log(`[seq] Sent Email 2b to ${user.email}`);
+    console.log(`[seq] Sent Email 2b to ${redacted}`);
   } else {
     markStep(user.id, step);
-    console.log(`[seq] Sent Email ${step} to ${user.email}`);
+    console.log(`[seq] Sent Email ${step} to ${redacted}`);
   }
 }
 
