@@ -24,8 +24,10 @@ const AB_VARIANTS = (() => {
 })();
 
 app.set('trust proxy', 1);
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// 100KB is plenty for our JSON APIs; the HTML import path uses multer with its
+// own limit (set inside routes/api.js). Caps payload-based DoS / memory abuse.
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // ── A/B intercept for /match and /match.html (ad traffic entry point) ──────
 // Must be registered BEFORE express.static and the pages router so we can
@@ -160,14 +162,15 @@ app.post('/api/waitlist', (req, res) => {
 });
 
 app.get('/api/admin/waitlist', (req, res) => {
-  const token = req.query.token || req.headers['x-admin-token'];
+  // Header-only admin token — see routes/admin.js requireAdmin
+  const token = req.headers['x-admin-token'];
   if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(403).json({ error: 'Forbidden' });
   const rows = _db.prepare('SELECT * FROM waitlist ORDER BY created_at DESC').all();
   res.json({ waitlist: rows });
 });
 
 app.put('/api/admin/waitlist/:id/approve', async (req, res) => {
-  const token = req.query.token || req.headers['x-admin-token'];
+  const token = req.headers['x-admin-token'];
   if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(403).json({ error: 'Forbidden' });
   const row = _db.prepare('SELECT * FROM waitlist WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Not found' });
@@ -335,13 +338,15 @@ app.get('/api/email/unsubscribe', (req, res) => {
       const user = db.prepare('SELECT id, name FROM users WHERE access_token = ?').get(token);
       if (user) {
         db.prepare('UPDATE users SET unsubscribed = 1 WHERE id = ?').run(user.id);
+        const safeFirst = String((user.name || '').split(' ')[0] || '')
+          .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         return res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
           <style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
           .box{text-align:center;max-width:400px;padding:40px;} h1{font-size:24px;margin-bottom:12px;} p{color:rgba(238,238,248,0.6);font-size:14px;line-height:1.6;}
           a{color:#e6f952;text-decoration:none;}</style></head>
           <body><div class="box">
             <h1>You're unsubscribed.</h1>
-            <p>We'll stop sending you email updates, ${user.name.split(' ')[0]}.</p>
+            <p>We'll stop sending you email updates, ${safeFirst}.</p>
             <p style="margin-top:20px;"><a href="/">Back to Spontany</a></p>
           </div></body></html>`);
       }
