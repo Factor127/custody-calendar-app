@@ -94,6 +94,8 @@
     .top-contrib-stat { color:#6b7280; font-size:12px; }
   </style>
 <script src="https://t.contentsquare.net/uxa/c6f898e9cb3d8.js"></script>
+<!-- vis-network: 2D force-directed graph with physics, zoom, drag — used in the Network tab -->
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
 
@@ -108,6 +110,7 @@
   <button class="tab" onclick="switchTab('opportunities')">Opportunities</button>
   <button class="tab" onclick="switchTab('submissions')">Submissions</button>
   <button class="tab" onclick="switchTab('users')">Users</button>
+  <button class="tab" onclick="switchTab('network')">Network</button>
   <button class="tab active" onclick="switchTab('analytics')">Analytics</button>
   <button class="tab" onclick="switchTab('waitlist')">Waitlist</button>
 </div>
@@ -214,6 +217,48 @@
       </thead>
       <tbody id="user-rows"><tr><td colspan="10" class="empty">Loading…</td></tr></tbody>
     </table>
+  </div>
+</div>
+
+<!-- ── Network panel ── -->
+<div class="panel" id="panel-network">
+  <div class="stats" id="network-stats"></div>
+
+  <div class="toolbar">
+    <label style="font-size:12px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:6px;">
+      Layout
+      <select id="net-layout" class="inline-sel" onchange="reflowNetwork()">
+        <option value="physics">Force-directed (physics)</option>
+        <option value="hierarchical">Hierarchical</option>
+      </select>
+    </label>
+    <label style="font-size:12px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:6px;">
+      Show
+      <select id="net-filter" class="inline-sel" onchange="reflowNetwork()">
+        <option value="all">All connections</option>
+        <option value="approved">Approved only</option>
+        <option value="pending">Pending only</option>
+      </select>
+    </label>
+    <label style="font-size:12px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="net-hide-isolated" onchange="reflowNetwork()" style="vertical-align:middle;">
+      Hide isolated users
+    </label>
+    <button class="btn" onclick="loadNetwork()">↺ Refresh</button>
+    <button class="btn" onclick="netFit()">⤢ Fit</button>
+    <span style="margin-left:auto;font-size:12px;color:#6b7280;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#1e40af;border-radius:2px;"></span>Co-parent</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#9d174d;border-radius:2px;"></span>Partner</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#065f46;border-radius:2px;"></span>Friend</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#9ca3af;border-radius:2px;border-top:1px dashed #6b7280;"></span>Pending</span>
+    </span>
+  </div>
+
+  <div id="network-canvas" style="background:white;border:1px solid #e5e7eb;border-radius:10px;height:680px;position:relative;overflow:hidden;">
+    <div class="empty" id="network-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">Loading…</div>
+  </div>
+  <div id="net-detail" style="margin-top:14px;background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;font-size:13px;color:#6b7280;">
+    Click a node or edge to inspect details here.
   </div>
 </div>
 
@@ -392,6 +437,7 @@
 const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
 let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wlLoaded = false;
+let _network = null, _networkLoaded = false, _netInstance = null;
 
 // Send ADMIN_TOKEN as X-Admin-Token header instead of ?token= query param.
 // Tokens in URLs leak into Railway access logs and browser history. We keep
@@ -415,12 +461,13 @@ let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wl
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const idx = { opportunities: 0, submissions: 1, users: 2, analytics: 3, waitlist: 4 }[name];
+  const idx = { opportunities: 0, submissions: 1, users: 2, network: 3, analytics: 4, waitlist: 5 }[name];
   document.querySelectorAll('.tab')[idx].classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'opportunities' && _opps.length === 0) loadOpps();
   if (name === 'submissions'   && _subs.length === 0) loadSubs();
   if (name === 'users'         && _users.length === 0) loadUsers();
+  if (name === 'network'       && !_networkLoaded)     loadNetwork();
   if (name === 'analytics'     && !_analyticsLoaded)   loadAnalytics();
   if (name === 'waitlist'      && !_wlLoaded)          loadWaitlist();
 }
@@ -1015,6 +1062,173 @@ async function loadAnalytics() {
     showError('Failed to load analytics');
   }
 }
+
+// ── Network graph (users + connections, force-directed 2D) ──────────────
+async function loadNetwork() {
+  document.getElementById('network-loading').style.display = '';
+  document.getElementById('network-loading').textContent = 'Loading…';
+  try {
+    const res = await fetch(`/api/admin/network?token=${ADMIN_TOKEN}`);
+    if (!res.ok) { showError('Failed to load network'); return; }
+    _network = await res.json();
+    _networkLoaded = true;
+    renderNetworkStats();
+    drawNetwork();
+  } catch (e) {
+    showError('Failed to load network: ' + (e.message || e));
+  }
+}
+
+function renderNetworkStats() {
+  if (!_network) return;
+  const { nodes, edges } = _network;
+  const approved = edges.filter(e => e.status === 'approved').length;
+  const pending  = edges.filter(e => e.status === 'pending').length;
+  const isolated = nodes.filter(n => n.degree === 0).length;
+  const byType = edges.reduce((acc, e) => { acc[e.relationship_type] = (acc[e.relationship_type]||0)+1; return acc; }, {});
+  const avgDeg = nodes.length ? (edges.length * 2 / nodes.length).toFixed(2) : '0';
+  document.getElementById('network-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${nodes.length}</div><div class="stat-label">Users</div></div>
+    <div class="stat-card"><div class="stat-num">${edges.length}</div><div class="stat-label">Connections</div></div>
+    <div class="stat-card"><div class="stat-num">${approved}</div><div class="stat-label">Approved</div></div>
+    <div class="stat-card"><div class="stat-num">${pending}</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card"><div class="stat-num">${isolated}</div><div class="stat-label">Isolated</div></div>
+    <div class="stat-card"><div class="stat-num">${avgDeg}</div><div class="stat-label">Avg degree</div></div>
+    <div class="stat-card"><div class="stat-num">${byType.coparent||0} / ${byType.partner||0} / ${byType.friend||0}</div><div class="stat-label">Co/Pa/Fr</div></div>
+  `;
+}
+
+const _NET_REL_COLOR = {
+  coparent: '#1e40af',  // blue
+  partner:  '#9d174d',  // pink/magenta
+  friend:   '#065f46',  // green
+};
+const _NET_ROLE_COLOR = {
+  owner:   { bg: '#dbeafe', border: '#1e40af', text: '#1e3a8a' },
+  partner: { bg: '#d1fae5', border: '#065f46', text: '#064e3b' },
+};
+
+function drawNetwork() {
+  if (!_network) return;
+  if (typeof vis === 'undefined') {
+    document.getElementById('network-loading').textContent = 'vis-network failed to load (check internet).';
+    return;
+  }
+
+  const layoutMode  = document.getElementById('net-layout')?.value  || 'physics';
+  const filterMode  = document.getElementById('net-filter')?.value  || 'all';
+  const hideIsolated = document.getElementById('net-hide-isolated')?.checked;
+
+  // Filter edges first; compute per-node degree against the filtered set
+  const edgesFiltered = _network.edges.filter(e =>
+    filterMode === 'all' ? true : e.status === filterMode
+  );
+  const liveDegree = {};
+  for (const n of _network.nodes) liveDegree[n.id] = 0;
+  for (const e of edgesFiltered) {
+    if (liveDegree[e.from] !== undefined) liveDegree[e.from]++;
+    if (liveDegree[e.to]   !== undefined) liveDegree[e.to]++;
+  }
+
+  const nodesFiltered = _network.nodes.filter(n => !hideIsolated || liveDegree[n.id] > 0);
+
+  const visNodes = nodesFiltered.map(n => {
+    const role = _NET_ROLE_COLOR[n.role] || _NET_ROLE_COLOR.owner;
+    const deg  = liveDegree[n.id] || 0;
+    return {
+      id:    n.id,
+      label: n.label,
+      title: `${n.label}\n${n.email || '(no email)'}\n${n.role} · ${deg} connection${deg === 1 ? '' : 's'}\nJoined ${fmtDate(n.joined)}${n.city ? '\n' + n.city : ''}`,
+      shape: 'dot',
+      size:  Math.min(40, 12 + deg * 4),
+      color: { background: role.bg, border: role.border, highlight: { background: role.bg, border: '#111827' } },
+      font:  { color: role.text, size: 13, face: 'system-ui, sans-serif', strokeWidth: 3, strokeColor: '#ffffff' },
+      borderWidth: deg === 0 ? 1 : 2,
+    };
+  });
+
+  const visEdges = edgesFiltered.map(e => {
+    const colour = _NET_REL_COLOR[e.relationship_type] || '#6b7280';
+    const dashes = e.status === 'pending';
+    return {
+      id:    e.id,
+      from:  e.from,
+      to:    e.to,
+      color: { color: colour, highlight: '#111827', opacity: e.status === 'approved' ? 0.85 : 0.55 },
+      width: e.status === 'approved' ? 2 : 1.5,
+      dashes,
+      title: `${e.relationship_type} · ${e.status}\nSince ${fmtDate(e.created_at)}`,
+      smooth: { enabled: true, type: 'continuous', roundness: 0.2 },
+    };
+  });
+
+  const container = document.getElementById('network-canvas');
+  // Clear any previous instance / loading text
+  container.innerHTML = '';
+
+  const data = {
+    nodes: new vis.DataSet(visNodes),
+    edges: new vis.DataSet(visEdges),
+  };
+  const options = {
+    interaction: { hover: true, tooltipDelay: 120, navigationButtons: true, keyboard: true, zoomView: true, dragView: true },
+    physics: layoutMode === 'physics' ? {
+      enabled: true,
+      solver: 'forceAtlas2Based',
+      forceAtlas2Based: { gravitationalConstant: -50, centralGravity: 0.01, springLength: 120, springConstant: 0.08, damping: 0.5 },
+      stabilization: { iterations: 220, fit: true },
+    } : { enabled: false },
+    layout: layoutMode === 'hierarchical' ? {
+      hierarchical: { enabled: true, direction: 'UD', sortMethod: 'hubsize', nodeSpacing: 140, levelSeparation: 110 },
+    } : { improvedLayout: true },
+    edges: { arrows: { to: { enabled: false } }, selectionWidth: 2 },
+    nodes: { shadow: { enabled: true, size: 6, x: 0, y: 2, color: 'rgba(17,24,39,0.18)' } },
+  };
+
+  if (_netInstance) { try { _netInstance.destroy(); } catch(e){} _netInstance = null; }
+  _netInstance = new vis.Network(container, data, options);
+
+  _netInstance.on('selectNode', params => {
+    const id = params.nodes[0];
+    const n = _network.nodes.find(x => x.id === id);
+    if (!n) return;
+    const peers = _network.edges
+      .filter(e => e.from === id || e.to === id)
+      .map(e => {
+        const otherId = e.from === id ? e.to : e.from;
+        const other = _network.nodes.find(x => x.id === otherId);
+        return `<li>${esc(other?.label || otherId)} <span class="badge b-${e.relationship_type === 'coparent' ? 'owner' : e.relationship_type === 'partner' ? 'partner' : 'free'}">${esc(e.relationship_type)}</span> <span class="badge b-${e.status === 'approved' ? 'approved' : 'pending'}">${esc(e.status)}</span></li>`;
+      });
+    document.getElementById('net-detail').innerHTML = `
+      <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:4px;">${esc(n.label)} <span class="badge b-${n.role === 'owner' ? 'owner' : 'partner'}">${esc(n.role)}</span></div>
+      <div style="color:#6b7280;font-size:12px;margin-bottom:8px;">${esc(n.email || '(no email)')}${n.city ? ' · ' + esc(n.city) : ''} · joined ${fmtDate(n.joined)}</div>
+      <div style="color:#374151;font-size:12px;margin-bottom:4px;font-weight:600;">${peers.length} connection${peers.length === 1 ? '' : 's'}</div>
+      <ul style="margin:0;padding-left:18px;color:#374151;font-size:12px;line-height:1.7;">${peers.join('') || '<li style="color:#9ca3af;list-style:none;padding-left:0;">No connections</li>'}</ul>
+    `;
+  });
+  _netInstance.on('selectEdge', params => {
+    if (params.nodes.length) return; // node-select handled above
+    const id = params.edges[0];
+    const e = _network.edges.find(x => x.id === id);
+    if (!e) return;
+    const a = _network.nodes.find(x => x.id === e.from);
+    const b = _network.nodes.find(x => x.id === e.to);
+    document.getElementById('net-detail').innerHTML = `
+      <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:4px;">${esc(a?.label || e.from)} ↔ ${esc(b?.label || e.to)}</div>
+      <div style="color:#374151;font-size:12px;">
+        Type: <span class="badge b-${e.relationship_type === 'coparent' ? 'owner' : e.relationship_type === 'partner' ? 'partner' : 'free'}">${esc(e.relationship_type)}</span>
+        Status: <span class="badge b-${e.status === 'approved' ? 'approved' : 'pending'}">${esc(e.status)}</span>
+        Since ${fmtDate(e.created_at)}
+      </div>
+    `;
+  });
+  _netInstance.on('deselectNode', () => {
+    document.getElementById('net-detail').innerHTML = 'Click a node or edge to inspect details here.';
+  });
+}
+
+function reflowNetwork() { if (_network) drawNetwork(); }
+function netFit() { if (_netInstance) _netInstance.fit({ animation: { duration: 400, easingFunction: 'easeInOutQuad' } }); }
 
 // ── Waitlist ─────────────────────────────────────────────────────────────
 async function loadWaitlist() {

@@ -50,6 +50,57 @@ router.get('/admin/users', (req, res) => {
   res.json({ users });
 });
 
+// GET /api/admin/network - users + connections shaped for a 2D network graph.
+// Nodes = users (with degree + role for sizing/colour); edges = connections
+// (with relationship_type + status for styling).
+router.get('/admin/network', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const users = db.prepare(`
+    SELECT id, name, email, role, created_at,
+           COALESCE(city, '') AS city
+    FROM users
+    ORDER BY created_at ASC
+  `).all();
+
+  const connections = db.prepare(`
+    SELECT id, requester_id, target_id, status,
+           COALESCE(relationship_type, 'coparent') AS relationship_type,
+           created_at
+    FROM connections
+    WHERE status != 'rejected'
+  `).all();
+
+  // Compute degree per user so the frontend can size nodes by influence.
+  const degree = {};
+  for (const u of users) degree[u.id] = 0;
+  for (const c of connections) {
+    if (degree[c.requester_id] !== undefined) degree[c.requester_id]++;
+    if (degree[c.target_id]    !== undefined) degree[c.target_id]++;
+  }
+
+  const nodes = users.map(u => ({
+    id:     u.id,
+    label:  u.name,
+    email:  u.email,
+    role:   u.role,
+    city:   u.city,
+    joined: u.created_at,
+    degree: degree[u.id] || 0,
+  }));
+
+  const edges = connections.map(c => ({
+    id:                c.id,
+    from:              c.requester_id,
+    to:                c.target_id,
+    status:            c.status,
+    relationship_type: c.relationship_type,
+    created_at:        c.created_at,
+  }));
+
+  res.json({ nodes, edges });
+});
+
 // PUT /api/admin/connections/:id/role - admin changes a connection's relationship label
 router.put('/admin/connections/:id/role', (req, res) => {
   if (!requireAdmin(req, res)) return;
