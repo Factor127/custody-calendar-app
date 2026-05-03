@@ -2,6 +2,7 @@
 
 const express = require('express');
 const router  = express.Router();
+const twilio  = require('twilio');
 const { db }  = require('../db');
 const { sendSMS, toE164, isValidE164 } = require('../utils/sms');
 
@@ -114,6 +115,23 @@ router.post('/nudge/schedule', (req, res) => {
 // Configure in Twilio Console: Phone Numbers → your number → Messaging →
 // "A message comes in" → Webhook → https://spontany.io/api/nudge/webhook
 router.post('/nudge/webhook', express.urlencoded({ extended: false }), (req, res) => {
+  // Verify the request actually came from Twilio. Without this, anyone can
+  // POST arbitrary phone numbers and opt them out of nudges (or pollute data).
+  const sig = req.header('X-Twilio-Signature');
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!authToken) {
+    console.error('[nudge] webhook called but TWILIO_AUTH_TOKEN not set; rejecting');
+    return res.status(503).end();
+  }
+  // Reconstruct the URL Twilio signed against. Behind Railway's proxy, use
+  // BASE_URL so the host matches what Twilio was configured with in console.
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const fullUrl = `${baseUrl}${req.originalUrl}`;
+  if (!sig || !twilio.validateRequest(authToken, sig, fullUrl, req.body)) {
+    console.warn('[nudge] webhook signature invalid; rejecting');
+    return res.status(403).end();
+  }
+
   const from = (req.body.From || '').trim();
   const raw  = (req.body.Body || '').trim();
   const body = raw.toUpperCase();
