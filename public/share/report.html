@@ -126,6 +126,20 @@
     var TOKEN = location.pathname.split('/')[2];
     var content = document.getElementById('content');
 
+    // HTML escape + URL whitelist for partner-controlled fields (person_b_name,
+    // venue title/category/location, image_url, source_url). Opportunities are
+    // user-submitted, so anything here could be malicious.
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+      });
+    }
+    function safeUrl(u) {
+      if (!u) return '';
+      var s = String(u);
+      return /^(https?:\/\/|\/|data:image\/)/i.test(s) ? s : '';
+    }
+
     function fmtDate(ymd) {
       var d = new Date(ymd + 'T12:00:00');
       return {
@@ -140,7 +154,7 @@
         title = 'Nothing yet';
         body  = 'Neither of you has filled in their schedule. Start with <a href="/share/' + TOKEN + '/me" style="color:#a78bfa;">your side</a>.';
       } else if (!s.b_done) {
-        title = 'Waiting on ' + (s.person_b_name || 'them') + '…';
+        title = 'Waiting on ' + esc(s.person_b_name || 'them') + '…';
         body  = 'You\'re done. We\'ll text you the moment they finish.';
       } else {
         title = 'Waiting on you';
@@ -169,17 +183,20 @@
         return map[(cat || '').toLowerCase()] || '✨';
       }
       var venueCards = (data.venues || []).map(function(v) {
-        var img = v.image_url
-          ? '<img src="' + v.image_url + '" alt="">'
+        var safeImg = safeUrl(v.image_url);
+        var img = safeImg
+          ? '<img src="' + esc(safeImg) + '" alt="">'
           : '<div class="venue-emoji">' + catEmoji(v.category) + '</div>';
         var meta = [];
-        if (v.location_name) meta.push(v.location_name);
-        if (v.price_tier)    meta.push('<span class="price">' + v.price_tier + '</span>');
-        return '<a class="venue" href="' + (v.source_url || '#') + '" target="_blank" rel="noopener" onclick="if(typeof sa===\'function\')sa(\'share_venue_click\',{id:' + v.id + '});">' +
+        if (v.location_name) meta.push(esc(v.location_name));
+        if (v.price_tier)    meta.push('<span class="price">' + esc(v.price_tier) + '</span>');
+        var safeHref = safeUrl(v.source_url) || '#';
+        var idAttr = parseInt(v.id, 10) || 0;   // numeric only — safe for inline JS
+        return '<a class="venue" href="' + esc(safeHref) + '" target="_blank" rel="noopener" onclick="if(typeof sa===\'function\')sa(\'share_venue_click\',{id:' + idAttr + '});">' +
           img +
           '<div class="body">' +
-          (v.category ? '<span class="cat">' + v.category + '</span>' : '') +
-          '<h3>' + v.title + '</h3>' +
+          (v.category ? '<span class="cat">' + esc(v.category) + '</span>' : '') +
+          '<h3>' + esc(v.title) + '</h3>' +
           '<div class="meta">' + meta.join(' · ') + '</div>' +
           '</div>' +
         '</a>';
