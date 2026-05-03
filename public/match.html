@@ -2067,10 +2067,12 @@ async function initPersonB(token) {
     splash.style.minHeight = 'calc(100vh - 80px)';
 
     if (data.status === 'completed') {
+      const escDone = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      const safeNameDone = escDone(data.person_a_name || 'them');
       headline.innerHTML = 'This match is<br><em>already done.</em>';
       if (sub) sub.style.display = 'none';
       props.innerHTML = `
-        <div class="splash-prop"><span class="splash-prop-icon">✅</span><div class="splash-prop-text">Ask ${data.person_a_name || 'them'} to share the result with you</div></div>
+        <div class="splash-prop"><span class="splash-prop-icon">✅</span><div class="splash-prop-text">Ask ${safeNameDone} to share the result with you</div></div>
         <div class="splash-prop"><span class="splash-prop-icon">🔄</span><div class="splash-prop-text">Or start your own match with someone new</div></div>
       `;
       if (fine) fine.textContent = '';
@@ -2079,16 +2081,18 @@ async function initPersonB(token) {
       return;
     }
 
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const name = data.person_a_name || 'Someone';
-    headline.innerHTML = `${name} wants to check<br><em>your match.</em>`;
+    const safeName = esc(name);
+    headline.innerHTML = `${safeName} wants to check<br><em>your match.</em>`;
     if (sub) sub.style.display = 'none';
     props.innerHTML = `
-      <div class="splash-prop"><span class="splash-prop-icon">🔒</span><div class="splash-prop-text"><strong>Your schedule stays private</strong> - ${name} won't see your exact days or pattern, only how well you match</div></div>
+      <div class="splash-prop"><span class="splash-prop-icon">🔒</span><div class="splash-prop-text"><strong>Your schedule stays private</strong> - ${safeName} won't see your exact days or pattern, only how well you match</div></div>
       <div class="splash-prop"><span class="splash-prop-icon">⚡</span><div class="splash-prop-text"><strong>Takes 30 seconds</strong> - tap your custody days and you'll both see if your free nights line up</div></div>
     `;
     if (fine) fine.textContent = '';
     btn.textContent = 'Enter my schedule →';
-    // Set privacy note for Person B's schedule screen
+    // Set privacy note for Person B's schedule screen — textContent so any name is safe
     const privText = document.getElementById('privacy-note-text');
     if (privText) privText.textContent = `Your exact schedule is never shared with ${name}. They'll only see your match type and how many days overlap.`;
   } catch(e) { /* network error - show normal splash screen */ }
