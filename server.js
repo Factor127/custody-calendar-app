@@ -330,12 +330,14 @@ app.get('/api/email/open', (req, res) => {
 });
 
 // ── Email sequence: unsubscribe ───────────────────────────────────────────────
+// Looked up by users.unsubscribe_token (NOT access_token). Older emails that
+// embedded the session access_token return 410 Gone — emails self-rotate.
 app.get('/api/email/unsubscribe', (req, res) => {
   const { token } = req.query;
   if (token) {
     try {
       const { db } = require('./db');
-      const user = db.prepare('SELECT id, name FROM users WHERE access_token = ?').get(token);
+      const user = db.prepare('SELECT id, name FROM users WHERE unsubscribe_token = ?').get(token);
       if (user) {
         db.prepare('UPDATE users SET unsubscribed = 1 WHERE id = ?').run(user.id);
         const safeFirst = String((user.name || '').split(' ')[0] || '')
@@ -351,6 +353,16 @@ app.get('/api/email/unsubscribe', (req, res) => {
           </div></body></html>`);
       }
     } catch(e) { /* non-critical */ }
+    // Token supplied but no match → either an expired pre-rotation link or junk.
+    return res.status(410).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Link expired</title>
+      <style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+      .box{text-align:center;max-width:400px;padding:40px;} h1{font-size:24px;margin-bottom:12px;} p{color:rgba(238,238,248,0.6);font-size:14px;line-height:1.6;}
+      a{color:#e6f952;text-decoration:none;}</style></head>
+      <body><div class="box">
+        <h1>This link has expired.</h1>
+        <p>Use the unsubscribe link in a recent email, or reply to any Spontany email and we'll take care of it.</p>
+        <p style="margin-top:20px;"><a href="/">Back to Spontany</a></p>
+      </div></body></html>`);
   }
   res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Unsubscribed</title>
     <style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#eeeef8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}

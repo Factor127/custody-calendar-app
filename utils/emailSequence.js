@@ -75,14 +75,28 @@ function trackingPixel(userId, step) {
   return `<img src="${BASE_URL()}/api/email/open?u=${userId}&s=${step}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;outline:0;">`;
 }
 
-// Unsubscribe link using the user's access token (already a secret - no extra token needed).
-function unsubLink(token) {
-  return `${BASE_URL()}/api/email/unsubscribe?token=${token}`;
+// Unsubscribe link uses a per-user `unsubscribe_token` distinct from the
+// session access_token, so a forwarded email can't be turned into account access.
+function unsubLink(unsubToken) {
+  return `${BASE_URL()}/api/email/unsubscribe?token=${unsubToken}`;
+}
+
+// Returns the user's unsubscribe_token, lazily generating + persisting one
+// if the row predates the migration (e.g. created mid-deploy).
+function ensureUnsubToken(user) {
+  if (user.unsubscribe_token) return user.unsubscribe_token;
+  const { randomUUID } = require('crypto');
+  const t = randomUUID();
+  try {
+    getDb().prepare('UPDATE users SET unsubscribe_token = ? WHERE id = ?').run(t, user.id);
+    user.unsubscribe_token = t;
+  } catch (e) { /* unique-conflict near-impossible; fall back to in-memory token */ }
+  return t;
 }
 
 // ── Shared layout wrapper ─────────────────────────────────────────────────────
-function layout({ title, preheader, body, ctaText, ctaUrl, userId, step, token }) {
-  const unsub = unsubLink(token);
+function layout({ title, preheader, body, ctaText, ctaUrl, userId, step, unsubToken }) {
+  const unsub = unsubLink(unsubToken);
   const pixel = trackingPixel(userId, step);
   const btn   = ctaText && ctaUrl
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;">
@@ -147,6 +161,7 @@ function layout({ title, preheader, body, ctaText, ctaUrl, userId, step, token }
 function email1(user) {
   const firstName = user.name.split(' ')[0];
   const appUrl = `${BASE_URL()}/calendar.html?token=${user.access_token}`;
+  const unsubToken = ensureUnsubToken(user);
   const body = `
     <p>Hey ${firstName},</p>
     <p>Welcome to Spontany.</p>
@@ -167,14 +182,15 @@ function email1(user) {
     preview: 'The guessing game is over.',
     html: layout({ title: 'Welcome to Spontany', preheader: 'The guessing game is over.',
                    body, ctaText: 'Open Spontany', ctaUrl: appUrl,
-                   userId: user.id, step: 1, token: user.access_token }),
-    text: `Hey ${firstName},\n\nWelcome to Spontany.\n\nYou just joined a smarter way to handle the scheduling chaos that comes with life after divorce.\n\nHere's how it works:\n1. Add your custody schedule - takes 2 minutes.\n2. Invite your people - partner, co-parent, friends.\n3. See who's actually free - and make the plan.\n\nOpen Spontany: ${appUrl}\n\nWelcome aboard,\nRan @ Spontany\n\nP.S. - Got questions? Just reply to this email. I read every one.\n\nUnsubscribe: ${unsubLink(user.access_token)}`,
+                   userId: user.id, step: 1, unsubToken }),
+    text: `Hey ${firstName},\n\nWelcome to Spontany.\n\nYou just joined a smarter way to handle the scheduling chaos that comes with life after divorce.\n\nHere's how it works:\n1. Add your custody schedule - takes 2 minutes.\n2. Invite your people - partner, co-parent, friends.\n3. See who's actually free - and make the plan.\n\nOpen Spontany: ${appUrl}\n\nWelcome aboard,\nRan @ Spontany\n\nP.S. - Got questions? Just reply to this email. I read every one.\n\nUnsubscribe: ${unsubLink(unsubToken)}`,
   };
 }
 
 function email2(user) {
   const firstName = user.name.split(' ')[0];
   const calUrl = `${BASE_URL()}/calendar.html?token=${user.access_token}`;
+  const unsubToken = ensureUnsubToken(user);
   const body = `
     <p>Hey ${firstName},</p>
     <p>The hardest part of any app is getting started. Good news - Spontany's setup takes about as long as ordering a coffee.</p>
@@ -187,14 +203,15 @@ function email2(user) {
     preview: 'The fastest setup you\'ll do all week.',
     html: layout({ title: 'Set up your calendar', preheader: 'The fastest setup you\'ll do all week.',
                    body, ctaText: 'Set up my calendar', ctaUrl: calUrl,
-                   userId: user.id, step: 2, token: user.access_token }),
-    text: `Hey ${firstName},\n\nThe hardest part of any app is getting started. Good news - Spontany's setup takes about as long as ordering a coffee.\n\nOpen the app and add your custody days. That's it. R days, Z days - just tap the calendar and mark which days are yours.\n\nSet up my calendar: ${calUrl}\n\nTwo minutes now saves you hours of texting later.\n\n- Ran\n\nUnsubscribe: ${unsubLink(user.access_token)}`,
+                   userId: user.id, step: 2, unsubToken }),
+    text: `Hey ${firstName},\n\nThe hardest part of any app is getting started. Good news - Spontany's setup takes about as long as ordering a coffee.\n\nOpen the app and add your custody days. That's it. R days, Z days - just tap the calendar and mark which days are yours.\n\nSet up my calendar: ${calUrl}\n\nTwo minutes now saves you hours of texting later.\n\n- Ran\n\nUnsubscribe: ${unsubLink(unsubToken)}`,
   };
 }
 
 function email2b(user) {
   const firstName = user.name.split(' ')[0];
   const calUrl = `${BASE_URL()}/calendar.html?token=${user.access_token}`;
+  const unsubToken = ensureUnsubToken(user);
   const body = `
     <p>Hey ${firstName},</p>
     <p>Totally get it - life's busy. Just a quick note: your Spontany calendar is set up and ready for you. All it needs is your custody schedule.</p>
@@ -206,14 +223,15 @@ function email2b(user) {
     preview: 'No pressure - just a quick reminder.',
     html: layout({ title: 'Your calendar is waiting', preheader: 'No pressure - just a quick reminder.',
                    body, ctaText: 'Add my schedule', ctaUrl: calUrl,
-                   userId: user.id, step: 2, token: user.access_token }),
-    text: `Hey ${firstName},\n\nTotally get it - life's busy. Just a quick note: your Spontany calendar is set up and ready for you. All it needs is your custody schedule.\n\nAdd my schedule: ${calUrl}\n\nTakes less time than this email did.\n\n- Ran\n\nUnsubscribe: ${unsubLink(user.access_token)}`,
+                   userId: user.id, step: 2, unsubToken }),
+    text: `Hey ${firstName},\n\nTotally get it - life's busy. Just a quick note: your Spontany calendar is set up and ready for you. All it needs is your custody schedule.\n\nAdd my schedule: ${calUrl}\n\nTakes less time than this email did.\n\n- Ran\n\nUnsubscribe: ${unsubLink(unsubToken)}`,
   };
 }
 
 function email3(user) {
   const firstName = user.name.split(' ')[0];
   const calUrl = `${BASE_URL()}/calendar.html?token=${user.access_token}`;
+  const unsubToken = ensureUnsubToken(user);
   const body = `
     <p>Hey ${firstName},</p>
     <p>Your calendar's looking good. But here's the thing - Spontany gets really powerful when someone else is on it too.</p>
@@ -232,14 +250,15 @@ function email3(user) {
     preview: 'One invite changes everything.',
     html: layout({ title: 'Invite your people', preheader: 'One invite changes everything.',
                    body, ctaText: 'Send an invite', ctaUrl: calUrl,
-                   userId: user.id, step: 3, token: user.access_token }),
-    text: `Hey ${firstName},\n\nYour calendar's looking good. But Spontany gets really powerful when someone else is on it too.\n\nInvite the person you coordinate with most. They answer 7 quick questions. You approve. And suddenly - no more back-and-forth.\n\nSend an invite: ${calUrl}\n\nOne invite. That's all it takes to see the magic.\n\n- Ran\n\nUnsubscribe: ${unsubLink(user.access_token)}`,
+                   userId: user.id, step: 3, unsubToken }),
+    text: `Hey ${firstName},\n\nYour calendar's looking good. But Spontany gets really powerful when someone else is on it too.\n\nInvite the person you coordinate with most. They answer 7 quick questions. You approve. And suddenly - no more back-and-forth.\n\nSend an invite: ${calUrl}\n\nOne invite. That's all it takes to see the magic.\n\n- Ran\n\nUnsubscribe: ${unsubLink(unsubToken)}`,
   };
 }
 
 function email4(user) {
   const firstName = user.name.split(' ')[0];
   const calUrl = `${BASE_URL()}/calendar.html?token=${user.access_token}`;
+  const unsubToken = ensureUnsubToken(user);
   const body = `
     <p>Hey ${firstName},</p>
     <p>Quick story.</p>
@@ -254,13 +273,14 @@ function email4(user) {
     preview: 'A story that might sound familiar.',
     html: layout({ title: 'A story that might sound familiar', preheader: 'A story that might sound familiar.',
                    body, ctaText: 'Try it this weekend', ctaUrl: calUrl,
-                   userId: user.id, step: 4, token: user.access_token }),
-    text: `Hey ${firstName},\n\nQuick story.\n\nDaniel has his kids every other week. His girlfriend has hers on a different schedule. Every time they wanted to plan a date, it turned into a 20-message investigation.\n\nThen they got on Spontany.\n\nNow Daniel opens the app, sees the overlap in their free time, and texts: "Thursday looks good. Italian?" One message. Done.\n\nTry it this weekend: ${calUrl}\n\n- Ran\n\nP.S. - Daniel isn't a real person (yet). But his story is real for thousands of people. Including, probably, you.\n\nUnsubscribe: ${unsubLink(user.access_token)}`,
+                   userId: user.id, step: 4, unsubToken }),
+    text: `Hey ${firstName},\n\nQuick story.\n\nDaniel has his kids every other week. His girlfriend has hers on a different schedule. Every time they wanted to plan a date, it turned into a 20-message investigation.\n\nThen they got on Spontany.\n\nNow Daniel opens the app, sees the overlap in their free time, and texts: "Thursday looks good. Italian?" One message. Done.\n\nTry it this weekend: ${calUrl}\n\n- Ran\n\nP.S. - Daniel isn't a real person (yet). But his story is real for thousands of people. Including, probably, you.\n\nUnsubscribe: ${unsubLink(unsubToken)}`,
   };
 }
 
 function email5(user) {
   const firstName = user.name.split(' ')[0];
+  const unsubToken = ensureUnsubToken(user);
   // Email 5 is plain-text only - intentionally personal, no button
   const body = `
     <p>Hey ${firstName},</p>
@@ -277,8 +297,8 @@ function email5(user) {
     preview: 'I genuinely want to know.',
     html: layout({ title: "How's it going?", preheader: 'I genuinely want to know.',
                    body, ctaText: null, ctaUrl: null,
-                   userId: user.id, step: 5, token: user.access_token }),
-    text: `Hey ${firstName},\n\nIt's been two weeks since you signed up. I wanted to check in personally.\n\nIs Spontany helping? Is something confusing? Is there a feature you wish existed?\n\nJust hit reply and tell me: What's one thing you'd change about Spontany?\n\nNo survey. No form. Just talk to me.\n\nThanks for being an early user.\n\n- Ran\nFounder, Spontany\n\nUnsubscribe: ${unsubLink(user.access_token)}`,
+                   userId: user.id, step: 5, unsubToken }),
+    text: `Hey ${firstName},\n\nIt's been two weeks since you signed up. I wanted to check in personally.\n\nIs Spontany helping? Is something confusing? Is there a feature you wish existed?\n\nJust hit reply and tell me: What's one thing you'd change about Spontany?\n\nNo survey. No form. Just talk to me.\n\nThanks for being an early user.\n\n- Ran\nFounder, Spontany\n\nUnsubscribe: ${unsubLink(unsubToken)}`,
   };
 }
 

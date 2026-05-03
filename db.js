@@ -38,6 +38,18 @@ try { db.exec('ALTER TABLE users ADD COLUMN email_seq_opened TEXT DEFAULT \'[]\'
 try { db.exec('ALTER TABLE users ADD COLUMN email_seq_2b_sent INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN unsubscribed INTEGER DEFAULT 0'); } catch(e) {}
 try { db.exec('ALTER TABLE users ADD COLUMN sms_opt_in INTEGER DEFAULT 1'); } catch(e) {}
+// Per-user unsubscribe credential, distinct from access_token so unsubscribe
+// links in forwarded emails can't be turned into account takeovers.
+try { db.exec('ALTER TABLE users ADD COLUMN unsubscribe_token TEXT'); } catch(e) {}
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_unsub_token ON users(unsubscribe_token)'); } catch(e) {}
+try {
+  const rows = db.prepare('SELECT id FROM users WHERE unsubscribe_token IS NULL').all();
+  if (rows.length) {
+    const { randomUUID } = require('crypto');
+    const upd = db.prepare('UPDATE users SET unsubscribe_token = ? WHERE id = ?');
+    for (const r of rows) upd.run(randomUUID(), r.id);
+  }
+} catch(e) { /* table may not exist yet on first run */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_place_id TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN venue_address TEXT'); } catch(e) { /* already exists */ }
 try { db.exec('ALTER TABLE outings ADD COLUMN opportunity_id TEXT'); } catch(e) { /* already exists */ }
@@ -581,8 +593,8 @@ const q = {
   // Legacy single-tenant helpers (kept for backward compat)
   getOwner:            db.prepare("SELECT * FROM users WHERE role = 'owner' LIMIT 1"),
   ownerExists:         db.prepare("SELECT 1 AS found FROM users WHERE role = 'owner' LIMIT 1"),
-  createUser:          db.prepare('INSERT INTO users (id, name, role, access_token) VALUES (?, ?, ?, ?)'),
-  createUserWithEmail: db.prepare('INSERT INTO users (id, name, role, access_token, email) VALUES (?, ?, ?, ?, ?)'),
+  createUser:          db.prepare('INSERT INTO users (id, name, role, access_token, unsubscribe_token) VALUES (?, ?, ?, ?, ?)'),
+  createUserWithEmail: db.prepare('INSERT INTO users (id, name, role, access_token, email, unsubscribe_token) VALUES (?, ?, ?, ?, ?, ?)'),
   updateUserToken:     db.prepare('UPDATE users SET access_token = ? WHERE id = ?'),
   updateUserEmail:     db.prepare('UPDATE users SET email = ? WHERE id = ?'),
   updateUserMobile:      db.prepare('UPDATE users SET mobile = ? WHERE id = ?'),

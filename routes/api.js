@@ -65,7 +65,7 @@ router.post('/users/setup', (req, res) => {
 
   const id = uuidv4();
   const token = uuidv4();
-  q.createUserWithEmail.run(id, name.trim(), 'owner', token, link.email);
+  q.createUserWithEmail.run(id, name.trim(), 'owner', token, link.email, uuidv4());
 
   // Link Google ID if the user came via Google SSO
   if (google_id)           q.updateGoogleId.run(google_id, id);
@@ -146,7 +146,7 @@ router.post('/users/register', (req, res) => {
 
   const userId = uuidv4();
   const token = uuidv4();
-  q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail);
+  q.createUserWithEmail.run(userId, name.trim(), 'partner', token, normalEmail, uuidv4());
   if (normalMobile)        q.updateUserMobile.run(normalMobile, userId);
   if (age)                 db.prepare('UPDATE users SET age = ? WHERE id = ?').run(age, userId);
   if (relationship_status) db.prepare('UPDATE users SET relationship_status = ? WHERE id = ?').run(relationship_status, userId);

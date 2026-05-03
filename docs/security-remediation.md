@@ -71,14 +71,10 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Fix:** export `isPrivateHost(host)` and `assertPublicHttpUrl(rawUrl)` from `utils/ssrf.js`. Hardened with RFC 6598 CGNAT (100.64/10) and multicast/reserved (224+).
 - **Commit:** `2de7746`
 
-### [ ] C1 — Separate unsubscribe token from session
-- **Where:** `server.js:333-358` (route handler), `db.js` (schema), `utils/emailSequence.js` + any other email senders that link to `/api/email/unsubscribe`.
-- **Why:** `?token=` in unsubscribe links is the user's `access_token` — anyone seeing a forwarded email gets full account access.
-- **Fix sketch:**
-  1. Add `unsubscribe_token TEXT UNIQUE` column on `users`. Backfill with random uuids on next-write or via one-shot migration.
-  2. Update `/api/email/unsubscribe` handler to look up by `unsubscribe_token`, not `access_token`.
-  3. Update every email-template helper that builds an unsubscribe URL (`utils/emailSequence.js`, `utils/email.js` if any, `routes/api.js` weekly digest).
-  4. Old links 410 — acceptable; emails self-rotate.
+### [x] C1 — Separate unsubscribe token from session
+- **Where:** `server.js:333-371` (route handler), `db.js` (schema + backfill + INSERT statements), `routes/api.js:68,149` (user-creation callers stamp unsubscribe_token at insert), `utils/emailSequence.js` (every template now passes `user.unsubscribe_token` via `ensureUnsubToken()` lazy-fill helper).
+- **Why:** `?token=` in unsubscribe links was the user's `access_token` — anyone seeing a forwarded email got full account access.
+- **Fix:** `unsubscribe_token TEXT` column with unique index `idx_users_unsub_token`. Startup backfill stamps random UUID on every NULL row. New users get one stamped at INSERT. `/api/email/unsubscribe` now looks up by `unsubscribe_token`; any other token returns 410 Gone with a "use a recent email" page. The weekly-digest email in `routes/api.js` does not currently include an unsubscribe link, so no change needed there.
 - **Commit:** _pending_
 
 ### [ ] C5 — RSVP PATCH IDOR
@@ -176,4 +172,5 @@ Server-side first, then client. Two sessions.
 
 ## Session log
 
-- **2026-05-03** — Audit complete; plan written (commit `a5f630b`). Phase 1 started: `utils/ssrf.js` + apply to pulse/ical/opportunities/unfurl, C2/C3/C4 done (commit `2de7746`). Next: C1 unsubscribe token.
+- **2026-05-03** — Audit complete; plan written (commit `a5f630b`). Phase 1 started: `utils/ssrf.js` + apply to pulse/ical/opportunities/unfurl, C2/C3/C4 done (commit `2de7746`).
+- **2026-05-03** — C1 done: `unsubscribe_token` column added with unique index + startup backfill, stamped on new users via `q.createUserWithEmail`, all 5 sequence email templates switched to `ensureUnsubToken(user)`. `/api/email/unsubscribe` now keys on `unsubscribe_token`; legacy access-token links return 410. Verified live (sandbox-ran row): old token → 410, junk → 410, valid → 200 + `unsubscribed=1`. Next: C5 RSVP PATCH IDOR.
