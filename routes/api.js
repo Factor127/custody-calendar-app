@@ -4,7 +4,41 @@ const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr, normalizePhone } = require('../db');
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+// 2MB is the practical ceiling for an HTML calendar backup; larger uploads
+// almost certainly mean abuse or accidental wrong-file selection.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+// ── SSRF guard for /api/unfurl ────────────────────────────────────────────────
+// Block requests targeting private/loopback/link-local IPs and the cloud
+// metadata service. Authenticated users could otherwise probe Railway's
+// internal network or pull credentials from a metadata endpoint.
+function isPrivateOrInternal(host) {
+  if (!host) return true;
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h === 'metadata.google.internal') return true;
+  // IPv4 literal?
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const [a,b,c,d] = m.slice(1).map(Number);
+    if ([a,b,c,d].some(n => n > 255)) return true;
+    if (a === 10) return true;                              // 10.0.0.0/8
+    if (a === 127) return true;                             // 127.0.0.0/8 loopback
+    if (a === 169 && b === 254) return true;                // 169.254.0.0/16 link-local + AWS metadata
+    if (a === 172 && b >= 16 && b <= 31) return true;       // 172.16.0.0/12
+    if (a === 192 && b === 168) return true;                // 192.168.0.0/16
+    if (a === 0) return true;                               // 0.0.0.0/8
+    return false;
+  }
+  // IPv6 literal? Reject loopback and ULA and link-local.
+  if (h.startsWith('[')) {
+    const ip = h.slice(1, h.indexOf(']')).toLowerCase();
+    if (ip === '::1' || ip === '::') return true;
+    if (ip.startsWith('fc') || ip.startsWith('fd')) return true;  // ULA fc00::/7
+    if (ip.startsWith('fe80')) return true;                       // link-local
+    return false;
+  }
+  return false;
+}
 
 const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
 const { sendCalendarInvite, sendEmail } = require('../utils/email');
@@ -310,18 +344,21 @@ router.post('/invites/generate', (req, res) => {
 // GET /api/invites/:token - validate an invite token (used by onboarding page)
 router.get('/invites/:token', (req, res) => {
   const token = req.params.token;
-  console.log(`[invite-validate] token="${token}"`);
+  // Don't log the full token — anyone with it can claim the invite. Log a
+  // short fingerprint that's enough to correlate across log lines.
+  const tokFp = token ? token.slice(0, 6) + '…' : '(empty)';
+  console.log(`[invite-validate] token=${tokFp}`);
   const invite = q.getInvite.get(token);
   if (!invite) {
-    console.log(`[invite-validate] NOT FOUND for token="${token}"`);
+    console.log(`[invite-validate] NOT FOUND for token=${tokFp}`);
     return res.status(404).json({ error: 'Invite not found' });
   }
   if (invite.used_by) {
-    console.log(`[invite-validate] ALREADY USED by "${invite.used_by}" for token="${token}"`);
+    console.log(`[invite-validate] ALREADY USED for token=${tokFp}`);
     return res.status(409).json({ error: 'Invite already used', used: true });
   }
   const owner = q.getUserById.get(invite.created_by);
-  console.log(`[invite-validate] OK - owner="${owner?.name}", relType="${invite.relationship_type}"`);
+  console.log(`[invite-validate] OK token=${tokFp} relType=${invite.relationship_type}`);
   res.json({
     valid:             true,
     owner_name:        owner?.name || 'your partner',
@@ -746,16 +783,19 @@ function parseHtmlBackup(html) {
     const year = parseInt(titleParts[2]);
     if (!monthNum || !year) continue;
 
-    // Extract all td.r and td.z cells
-    const cellRegex = /<td\s+class="([^"]*(?:^|\s)(?:r|z)(?:\s|$)[^"]*)"[^>]*>([\s\S]*?)<\/td>/g;
+    // Match every <td class="...">...</td>, then membership-check classes in JS.
+    // Bounded character classes + simple word-split avoid ReDoS on adversarial
+    // class strings (the previous (?:^|\s)(?:r|z)(?:\s|$) alternation was the
+    // potential pathological case).
+    const cellRegex = /<td\s+class="([^"]{0,200})"[^>]{0,200}>([\s\S]{0,4000}?)<\/td>/g;
     let cellMatch;
     while ((cellMatch = cellRegex.exec(block)) !== null) {
       const classList = cellMatch[1];
       const cellContent = cellMatch[2];
 
-      // Determine owner: 'r' class means R has kids (→ self for R = owner)
-      const isR = /(?:^|\s)r(?:\s|$)/.test(classList);
-      const isZ = /(?:^|\s)z(?:\s|$)/.test(classList);
+      const classes = classList.split(/\s+/).filter(Boolean);
+      const isR = classes.includes('r');
+      const isZ = classes.includes('z');
       if (!isR && !isZ) continue;
       const owner = isR ? 'self' : 'coparent';
 
@@ -1728,6 +1768,13 @@ router.get('/unfurl', async (req, res) => {
   // Sent as -new Date().getTimezoneOffset() from the browser
   const clientOffsetMin = parseInt(req.query.co) || 0;
   if (!url.match(/^https?:\/\//i)) return res.status(400).json({ error: 'Invalid URL' });
+
+  // Block SSRF-style URLs (private IPs, loopback, cloud metadata endpoint).
+  let parsedHost = '';
+  try { parsedHost = new URL(url).hostname; } catch { return res.status(400).json({ error: 'Invalid URL' }); }
+  if (isPrivateOrInternal(parsedHost)) {
+    return res.status(400).json({ error: 'URL not allowed' });
+  }
 
   try {
     const r = await sharedUnfurlUrl(url, {
