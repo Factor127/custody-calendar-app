@@ -101,7 +101,7 @@ router.post('/auth/request', async (req, res) => {
     console.log(`   ${verifyUrl}\n`);
   }
 
-  res.json({ sent: true, magic: linkToken });
+  res.json({ sent: true });
 });
 
 // ── GET /api/auth/verify/:token ───────────────────────────────────────────────
