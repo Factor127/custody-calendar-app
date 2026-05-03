@@ -1,7 +1,35 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { db, q } = require('../db');
+
+// ── In-memory rate limiter for /api/auth/request ──────────────────────────────
+// Caps Resend cost amplification + sender-domain abuse if someone scripts
+// magic-link spam. Single-dyno on Railway, so a Map is fine; reset on restart.
+const RL_IP   = new Map();   // ip    → [{ ts }, ...]
+const RL_MAIL = new Map();   // email → [{ ts }, ...]
+const IP_LIMIT_PER_10MIN = 5;
+const EMAIL_LIMIT_PER_HOUR = 3;
+function rateLimitAllow(map, key, windowMs, max) {
+  const now = Date.now();
+  const cutoff = now - windowMs;
+  const arr = (map.get(key) || []).filter(e => e.ts > cutoff);
+  if (arr.length >= max) { map.set(key, arr); return false; }
+  arr.push({ ts: now });
+  map.set(key, arr);
+  return true;
+}
+// Periodic cleanup so the maps don't grow forever
+setInterval(() => {
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  for (const m of [RL_IP, RL_MAIL]) {
+    for (const [k, arr] of m) {
+      const fresh = arr.filter(e => e.ts > cutoff);
+      if (fresh.length === 0) m.delete(k); else m.set(k, fresh);
+    }
+  }
+}, 10 * 60 * 1000).unref();
 
 // ── Google OAuth helpers ──────────────────────────────────────────────────────
 const GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -37,6 +65,14 @@ router.post('/auth/request', async (req, res) => {
   }
 
   const normalEmail = email.trim().toLowerCase();
+
+  // Rate limit before doing anything that costs money or generates email volume.
+  // 'trust proxy 1' is set in server.js so req.ip reflects the real client IP.
+  const ip = req.ip || 'unknown';
+  if (!rateLimitAllow(RL_IP,   ip,          10 * 60 * 1000, IP_LIMIT_PER_10MIN) ||
+      !rateLimitAllow(RL_MAIL, normalEmail, 60 * 60 * 1000, EMAIL_LIMIT_PER_HOUR)) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a few minutes before trying again.' });
+  }
   const user = q.getUserByEmail.get(normalEmail);
 
   // Save UTM attribution on user record (first touch wins - don't overwrite)
@@ -237,12 +273,20 @@ router.get('/auth/google', (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) return res.status(500).send('Google login is not configured.');
 
+  // CSRF protection: random state stashed in an httpOnly cookie, echoed back by
+  // Google in the callback, and verified there. Cookie is short-lived.
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie('g_oauth_state', state, {
+    maxAge: 10 * 60 * 1000, httpOnly: true, sameSite: 'lax', secure: req.protocol === 'https'
+  });
+
   const params = new URLSearchParams({
     client_id:     clientId,
     redirect_uri:  googleRedirectUri(req),
     response_type: 'code',
     scope:         'openid email profile',
     prompt:        'select_account',   // always show account picker
+    state,
   });
 
   res.redirect(`${GOOGLE_AUTH_URL}?${params}`);
@@ -251,8 +295,16 @@ router.get('/auth/google', (req, res) => {
 // ── GET /auth/google/callback ─────────────────────────────────────────────────
 // Google redirects here with ?code=... after the user approves
 router.get('/auth/google/callback', async (req, res) => {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
   if (error || !code) return res.redirect('/?error=google_denied');
+
+  // Verify CSRF state. Cookie was set by /auth/google before redirecting out.
+  const cookieState = (req.headers.cookie || '').split(';').map(s => s.trim())
+    .find(s => s.startsWith('g_oauth_state='))?.slice('g_oauth_state='.length);
+  if (!state || !cookieState || state !== cookieState) {
+    return res.redirect('/?error=google_state_mismatch');
+  }
+  res.clearCookie('g_oauth_state');
 
   try {
     // 1. Exchange code for tokens
