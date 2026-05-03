@@ -2017,6 +2017,39 @@ router.post('/outings/:id/rsvp', (req, res) => {
 
   q.updateOutingRsvp.run(status, note || null, myInvitee.id);
 
+  // ── Pulse: accepting an invite (confirmed/maybe) seeds the invitee's
+  // fingerprint with the underlying event/venue. Skipped for declined/
+  // ignored. Dedupes on (user_id, source, url) so re-confirming after a
+  // status flip doesn't spam the list. Wrapped in try/catch so a pulse-
+  // write failure never blocks the RSVP itself.
+  if (status === 'confirmed' || status === 'maybe') {
+    try {
+      const { db: rawDb } = require('../db');
+      const baseUrl   = req.app.locals.BASE_URL || '';
+      const pulseUrl  = `${baseUrl}/calendar.html?openEvent=${outing.id}`;
+      const pulseTitle = outing.title || outing.venue || outing.message || 'Outing';
+      const exists = rawDb.prepare(
+        "SELECT 1 FROM pulse_items WHERE user_id = ? AND source = 'outing-rsvp' AND url = ?"
+      ).get(me.id, pulseUrl);
+      if (!exists) {
+        const pulseId = uuidv4();
+        rawDb.prepare(`
+          INSERT INTO pulse_items
+            (id, user_id, kind, url, title, image_url, event_date, event_time,
+             location_name, source, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'outing-rsvp', ?)
+        `).run(
+          pulseId, me.id,
+          outing.date ? 'event' : 'venue',
+          pulseUrl, pulseTitle, outing.image_url || null,
+          outing.date || null, outing.event_time || null,
+          outing.venue || null,
+          status === 'maybe' ? 'Marked as maybe' : null
+        );
+      }
+    } catch (e) { console.error('[pulse] rsvp-hook insert failed:', e.message); }
+  }
+
   // Notify creator
   const eventName = outing.venue || outing.message || 'your plan';
   const pushMsgs = {
@@ -2049,6 +2082,36 @@ router.post('/outings/:id/suggest', (req, res) => {
 
   const suggId = uuidv4();
   q.createOutingSuggestion.run(suggId, req.params.id, me.id, suggested_time || null, suggested_place || null);
+
+  // ── Pulse: suggesting an alternate place is a strong signal that the
+  // suggester wants to remember it. Only the place is meaningful (a time
+  // alone is just rescheduling). Dedupes on (user_id, source, location)
+  // so repeat suggestions don't pile up.
+  if (suggested_place) {
+    try {
+      const { db: rawDb } = require('../db');
+      const exists = rawDb.prepare(
+        "SELECT 1 FROM pulse_items WHERE user_id = ? AND source = 'outing-suggest' AND location_name = ?"
+      ).get(me.id, suggested_place);
+      if (!exists) {
+        const pulseId = uuidv4();
+        rawDb.prepare(`
+          INSERT INTO pulse_items
+            (id, user_id, kind, title, event_date, event_time,
+             location_name, source, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'outing-suggest', ?)
+        `).run(
+          pulseId, me.id,
+          outing.date ? 'event' : 'venue',
+          suggested_place,
+          outing.date || null,
+          suggested_time || outing.event_time || null,
+          suggested_place,
+          `Suggested for ${outing.title || outing.venue || outing.message || 'an outing'}`
+        );
+      }
+    } catch (e) { console.error('[pulse] suggest-hook insert failed:', e.message); }
+  }
 
   // System message in chat
   const parts = [suggested_time, suggested_place].filter(Boolean);
