@@ -29,7 +29,8 @@ router.post('/sa', (req, res) => {
 // GET /api/admin/analytics - campaign funnel dashboard data
 router.get('/admin/analytics', (req, res) => {
   const adminToken = process.env.ADMIN_TOKEN;
-  if (!adminToken || req.query.token !== adminToken) return res.status(403).end();
+  // Header-only — see comment in routes/admin.js requireAdmin
+  if (!adminToken || req.headers['x-admin-token'] !== adminToken) return res.status(403).end();
 
   // 1. Match funnel by utm_content (which hook works)
   const funnel = db.prepare(`
@@ -247,7 +248,8 @@ router.get('/admin/analytics', (req, res) => {
 // DELETE /api/admin/analytics - archive then reset analytics data
 router.delete('/admin/analytics', (req, res) => {
   const adminToken = process.env.ADMIN_TOKEN;
-  if (!adminToken || req.query.token !== adminToken) return res.status(403).end();
+  // Header-only — see comment in routes/admin.js requireAdmin
+  if (!adminToken || req.headers['x-admin-token'] !== adminToken) return res.status(403).end();
 
   // Copy everything to permanent archive before clearing
   db.prepare(`

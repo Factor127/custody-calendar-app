@@ -393,6 +393,24 @@ const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
 let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wlLoaded = false;
 
+// Send ADMIN_TOKEN as X-Admin-Token header instead of ?token= query param.
+// Tokens in URLs leak into Railway access logs and browser history. We keep
+// the URL pattern in the existing fetch() call sites for readability, but
+// strip the token here and move it to the header before the request goes out.
+(function patchAdminFetch() {
+  const orig = window.fetch.bind(window);
+  window.fetch = function(input, init = {}) {
+    let url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (typeof url === 'string' && url.startsWith('/api/admin')) {
+      const headers = new Headers(init.headers || {});
+      if (ADMIN_TOKEN) headers.set('X-Admin-Token', ADMIN_TOKEN);
+      url = url.replace(/([?&])token=[^&]*&?/, '$1').replace(/[?&]$/, '');
+      return orig(url, { ...init, headers });
+    }
+    return orig(input, init);
+  };
+})();
+
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));

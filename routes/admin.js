@@ -3,7 +3,9 @@ const router = express.Router();
 const { db } = require('../db');
 
 function requireAdmin(req, res) {
-  const token = req.query.token || req.headers['x-admin-token'];
+  // Header-only — query-string tokens leak into Railway access logs and
+  // browser history. admin.html sends X-Admin-Token via fetch monkey-patch.
+  const token = req.headers['x-admin-token'];
   const adminToken = process.env.ADMIN_TOKEN;
   if (!adminToken) {
     res.status(503).json({ error: 'Admin not configured - set ADMIN_TOKEN env var' });
