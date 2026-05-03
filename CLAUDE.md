@@ -15,14 +15,14 @@ Ran, solo founder building Spontany — a scheduling app for divorcees to manage
 | PWA | Progressive Web App — how Spontany is deployed (not native app store) |
 | Railway | Cloud hosting platform where Spontany backend runs |
 | "Know before you ask" | Core campaign tagline / hook |
-| R/Z days | Custody day types in the calendar (appears in code) |
+| R/Z days | LEGACY term — use **"custody days"** in user-facing copy. R/Z still appears in code/CSS class names (`td.r`, `td.z`) and is fine there. |
 | Opportunities | Events/venues/activities that users can discover and plan around |
 | Outcomes | Plans + outings generated from user-submitted opportunities |
 
 ## Projects
 | Name | What |
 |------|------|
-| **Spontany MVP** | Node.js + Express + SQLite + Vanilla JS frontend, PWA. Calendar, partner invites, admin dashboard, push notifications. Hosted on Railway. ~1 week from friend testing. |
+| **Spontany MVP** | Node.js + Express + SQLite + Vanilla JS frontend, PWA. Hosted on Railway. **In production with ~8 real users (post-launch).** Major surfaces: calendar, partner invites, admin dashboard, push notifications, **Crafter wizard** (2-step plan creation), **Pulse** feed (saved venues + dated events), **Opportunities** matcher (kid-friendly + matching-custody friends), **Groups** (saved crews), **Match tool** (`/match`, no-auth custody compatibility check), **Demo mode**, **LP A/B variants** (`/match/demo?variant=…`), **SMS nudges** via Twilio, **Hotjar** analytics, **Web Share Target**. |
 | **"Know Before You Ask" Campaign** | Pre-launch social ad campaign. $1K budget, Meta + TikTok + X. 4 ad sets, 48 Canva creatives. All docs in workspace folder. Target: 500+ signups in 2 weeks. |
 
 ## Stack
@@ -31,6 +31,8 @@ Ran, solo founder building Spontany — a scheduling app for divorcees to manage
 - **Email:** Resend
 - **Images:** Sharp
 - **Push:** web-push
+- **SMS:** Twilio (nudge worker, `TWILIO_*` env vars)
+- **Analytics:** Hotjar + custom `lpFunnel` / `nudgeStatus` events in `stats.js`
 - **Hosting:** Railway (with persistent volume for DB)
 - **Domains:** spontany.io, spontany.club (registered at GoDaddy, not yet pointed)
 - **Design:** Canva
@@ -67,10 +69,28 @@ Ran, solo founder building Spontany — a scheduling app for divorcees to manage
 - New endpoints have an auth check before processing.
 - New env var is set in Railway *before* merging code that reads it.
 - No hardcoded secrets, tokens, or invite codes in committed files.
+- Don't `git push` unless explicitly asked. Commit freely; pushing is user-triggered because Railway auto-deploys from `main` on push.
+
+## PWA gotchas
+These have all bitten more than once — treat as load-bearing rules, not suggestions.
+
+- **Bump the service worker cache:** if you change anything in `public/` (HTML/CSS/JS), increment the cache version in `public/sw.js`. Otherwise returning users keep the cached file and "the deploy didn't work." (See commits like `sw: bump cache to v15`.)
+- **Static assets must live in `public/`:** Express only serves from `public/`. Files in the repo root will 404 on Railway (carousel images burned us — see `context-backup-2026-04-02b.md`).
+- **Android back button is part of the UX contract:** in any sheet, modal, overlay, or wizard step, back must close *that* — not exit the app. Spontany installs as a PWA on Android and exiting feels like a crash. Pattern: push a history state on open, listen for `popstate` to dismiss.
+- **Web Share Target:** the `/share-target` route + SW intercept is fragile. Preserve `shareUrl` through any auth/login bounce — don't drop it in `history.replaceState` or token-fixup paths.
+
+## Design system
+Battle-earned rules from prior contrast/layout debugging — don't relitigate.
+
+- **Palette:** lime `#e6f952` / obsidian `#0e0e0e` / dark purple `#131321`.
+- **Lime text rule:** any lime background uses `color: #0e0e0e`, never white. Set `--btn-primary-text: #0e0e0e` on every lime page (`.btn-primary` falls back to white otherwise).
+- **App frame:** `#app-frame { background: #0e0e0e; border-radius: 0 0 24px 24px; overflow: clip; }` — pages without this leak the lime body through and look broken.
+- **Custody cells:** `td.r` (kid days) = purple tint `rgba(124,92,191,0.22)`; `td.z` (free days) = lime tint `rgba(230,249,82,0.12)`.
+- **Logo on dark frames:** `filter: brightness(0) invert(1)` (the source SVG is black paths).
 
 ## Brand
 - **Voice:** Smart, fun, mature, sexy
-- **Colors:** Dark navy (#0c0c15), deep purple (#131321), orange (#f97316), purple accent (#7c5cbf / #a78bfa), white text
+- **Colors:** see **Design system** above — lime `#e6f952` / obsidian `#0e0e0e` / dark purple `#131321`. Same palette across marketing and in-app.
 - **Tagline:** "Finds your moments before they slip away."
 - **Target audience:** Divorcees 35–55 with kids aged 0–14
 
@@ -81,6 +101,4 @@ Ran, solo founder building Spontany — a scheduling app for divorcees to manage
 - Asks smart strategic questions — treat as a technical founder who thinks about the full picture
 
 ## Session context backups
-Full history of decisions, fixes, and features built — read these at the start of any session to get full context:
-- `docs/context-backup-2026-04-02.md` — cell colors, landing page, onboard restructure, match tool, logo replacement, contrast fixes, file consolidation
-- `docs/context-backup-2026-04-02b.md` — carousel images fix, commit cleanup
+Older session backups exist under `docs/context-backup-*.md` if needed for archaeology, but the durable rules from them have been promoted into the sections above. Don't read them by default — `git log` and the current code are more reliable.
