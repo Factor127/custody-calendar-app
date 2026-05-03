@@ -69,7 +69,7 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Where:** new `utils/ssrf.js`, applied to `routes/pulse.js` (`fetchMetadata`), `routes/api.js` (`/api/ical/import` + refactor of existing `/api/unfurl` inline guard), `routes/opportunities.js` (`_fetchImageForOpportunity`).
 - **Why:** three external-fetch endpoints lacked the guard already on `/unfurl`; centralising means future hardening (RFC 6598 CGNAT, multicast, etc.) updates all callers at once.
 - **Fix:** export `isPrivateHost(host)` and `assertPublicHttpUrl(rawUrl)` from `utils/ssrf.js`. Hardened with RFC 6598 CGNAT (100.64/10) and multicast/reserved (224+).
-- **Commit:** _filled in by session_
+- **Commit:** `2de7746`
 
 ### [ ] C1 — Separate unsubscribe token from session
 - **Where:** `server.js:333-358` (route handler), `db.js` (schema), `utils/emailSequence.js` + any other email senders that link to `/api/email/unsubscribe`.
@@ -176,4 +176,4 @@ Server-side first, then client. Two sessions.
 
 ## Session log
 
-- **2026-05-03** — Audit complete; plan written. Phase 1 started: `utils/ssrf.js` + apply to pulse/ical/opportunities/unfurl (C2/C3/C4 + cleanup). Next: C1 unsubscribe token.
+- **2026-05-03** — Audit complete; plan written (commit `a5f630b`). Phase 1 started: `utils/ssrf.js` + apply to pulse/ical/opportunities/unfurl, C2/C3/C4 done (commit `2de7746`). Next: C1 unsubscribe token.
