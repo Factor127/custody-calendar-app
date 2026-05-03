@@ -788,14 +788,14 @@ function parseHtmlBackup(html) {
 router.get('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null, work_schedule: user.work_schedule || null, photo: user.photo || null });
+  res.json({ id: user.id, name: user.name, role: user.role, email: user.email || null, mobile: user.mobile || null, coparent_name: user.coparent_name || null, coparent_phone: user.coparent_phone || null, partner_phone: user.partner_phone || null, work_schedule: user.work_schedule || null, photo: user.photo || null, city: user.city || null, city_place_id: user.city_place_id || null });
 });
 
 // PUT /api/me - update profile (name, mobile, coparent_name, work_schedule)
 router.put('/me', (req, res) => {
   const user = requireToken(req, res);
   if (!user) return;
-  const { name, mobile, coparent_name, coparent_phone, partner_phone, work_schedule, photo } = req.body;
+  const { name, mobile, coparent_name, coparent_phone, partner_phone, work_schedule, photo, city, city_place_id } = req.body;
   if (name && name.trim()) {
     q.updateUserProfile.run(name.trim(), mobile ? mobile.trim() : null, user.id);
   } else if (mobile !== undefined) {
@@ -816,6 +816,12 @@ router.put('/me', (req, res) => {
   }
   if (photo !== undefined) {
     db.prepare('UPDATE users SET photo = ? WHERE id = ?').run(photo || null, user.id);
+  }
+  if (city !== undefined) {
+    db.prepare('UPDATE users SET city = ? WHERE id = ?').run(city ? city.trim() : null, user.id);
+  }
+  if (city_place_id !== undefined) {
+    db.prepare('UPDATE users SET city_place_id = ? WHERE id = ?').run(city_place_id || null, user.id);
   }
   res.json({ ok: true });
 });

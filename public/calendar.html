@@ -4923,14 +4923,26 @@ function renderEventPane(data) {
         ignored:   '— Ignored',
         pending:   'Pending',
       })[myInvRow.status] || myInvRow.status || 'Pending';
-      html += `<div style="padding:8px 16px 4px;display:flex;align-items:center;gap:8px;justify-content:space-between;">
+      // Surface a direct "Decline" action alongside "Change RSVP" so users
+      // who confirmed but can no longer make it don't have to hunt for the
+      // option inside the invite pane.
+      const _showDeclineDirect = myInvRow.status !== 'declined' && myInvRow.status !== 'ignored';
+      html += `<div style="padding:8px 16px 4px;display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;">
         <div style="font-size:12px;color:var(--muted);">Your RSVP: <strong style="color:var(--text);">${_statusLabel}</strong></div>
-        <button onclick="openInvitePane('${outing.id}','${myInvRow.id}')"
-                style="background:none;border:1px solid rgba(230,249,82,0.28);border-radius:10px;
-                       padding:6px 12px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
-                       cursor:pointer;font-family:inherit;">
-          Change
-        </button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="openInvitePane('${outing.id}','${myInvRow.id}')"
+                  style="background:none;border:1px solid rgba(230,249,82,0.28);border-radius:10px;
+                         padding:6px 12px;color:rgba(230,249,82,0.75);font-size:12px;font-weight:700;
+                         cursor:pointer;font-family:inherit;">
+            Change RSVP
+          </button>
+          ${_showDeclineDirect ? `<button onclick="openInviteAndDecline('${outing.id}','${myInvRow.id}')"
+                  style="background:none;border:1px solid rgba(239,68,68,0.40);border-radius:10px;
+                         padding:6px 12px;color:#f87171;font-size:12px;font-weight:700;
+                         cursor:pointer;font-family:inherit;">
+            Decline
+          </button>` : ''}
+        </div>
       </div>`;
     }
   }
@@ -5099,6 +5111,16 @@ async function openInvitePane(outingId, inviteeRecordId) {
   }
 }
 
+// Open the invite pane and immediately enter the decline confirmation flow.
+// Used by the event pane's direct "Decline" button so already-confirmed
+// invitees get a one-tap path to decline.
+async function openInviteAndDecline(outingId, inviteeRecordId) {
+  await openInvitePane(outingId, inviteeRecordId);
+  setTimeout(() => {
+    if (typeof startDecline === 'function') startDecline(outingId, inviteeRecordId);
+  }, 30);
+}
+
 function renderInvitePane(data, inviteeRecordId) {
   const { outing, invitees } = data;
   const myInvitee = invitees.find(i => i.id === inviteeRecordId);
@@ -5113,7 +5135,59 @@ function renderInvitePane(data, inviteeRecordId) {
     html += `<img src="${outing.image_url}" style="width:100%;max-height:160px;object-fit:cover;" loading="lazy">`;
   }
 
-  html += `<div style="padding:14px 16px 10px;">`;
+  // Inviter banner — make "who invited me" the first thing on the screen.
+  // outing.creator_name / creator_photo come from getOutingWithInvitees.
+  const _inviterName = outing.creator_name || 'Someone';
+  const _inviterInitial = (_inviterName[0] || '?').toUpperCase();
+  const _inviterAvatar = outing.creator_photo
+    ? `<img src="${outing.creator_photo}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.outerHTML='<div style=\\'width:36px;height:36px;border-radius:50%;background:#7c5cbf;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0;\\'>${_inviterInitial}</div>'">`
+    : `<div style="width:36px;height:36px;border-radius:50%;background:#7c5cbf;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0;">${_inviterInitial}</div>`;
+  html += `<div style="padding:14px 16px 4px;display:flex;align-items:center;gap:10px;">
+    ${_inviterAvatar}
+    <div style="font-size:14px;color:rgba(238,238,248,0.85);"><strong style="color:#eeeef8;">${_inviterName}</strong> invited you</div>
+  </div>`;
+
+  // Custody-status banner for the date — answers "am I kid-free that evening?"
+  // calendarDays is loaded by loadMyCalendar() before any invite pane opens.
+  if (outing.date) {
+    let _custLabel = '', _custBg = '', _custBorder = '', _custColor = '', _custIcon = '';
+    try {
+      const _dObj = new Date(outing.date + 'T12:00:00');
+      const _ownr = (calendarDays && calendarDays[outing.date])?.owner;
+      const _isWork = typeof isWorkDay === 'function' ? isWorkDay(_dObj) : false;
+      // Pick an evening/day phrase from the event time when available.
+      const _t = (outing.event_time || '').toLowerCase();
+      const _evening = /even|night|pm\b|^(1[7-9]|2[0-3]):/.test(_t);
+      const _when = _evening ? 'that evening' : 'that day';
+      if (_ownr === 'self') {
+        _custIcon = '👶'; _custLabel = `Kids are with you ${_when}`;
+        _custBg = 'rgba(255,115,81,0.10)'; _custBorder = 'rgba(255,115,81,0.30)'; _custColor = '#ff7351';
+      } else if (_ownr === 'coparent') {
+        if (_isWork) {
+          _custIcon = '⚠️'; _custLabel = `Kid-free ${_when} — but you're working`;
+          _custBg = 'rgba(255,115,81,0.10)'; _custBorder = 'rgba(255,115,81,0.30)'; _custColor = '#ff7351';
+        } else {
+          _custIcon = '✅'; _custLabel = `You're kid-free ${_when}`;
+          _custBg = 'rgba(74,222,128,0.10)'; _custBorder = 'rgba(74,222,128,0.30)'; _custColor = '#4ade80';
+        }
+      } else if (_isWork) {
+        _custIcon = '⚠️'; _custLabel = `You're working ${_when}`;
+        _custBg = 'rgba(255,115,81,0.10)'; _custBorder = 'rgba(255,115,81,0.30)'; _custColor = '#ff7351';
+      }
+    } catch(e) {}
+    if (_custLabel) {
+      html += `<div style="margin:6px 16px 8px;padding:8px 12px;border-radius:10px;background:${_custBg};border:1px solid ${_custBorder};color:${_custColor};font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;">
+        <span>${_custIcon}</span><span>${_custLabel}</span>
+      </div>`;
+    }
+  }
+
+  html += `<div style="padding:6px 16px 10px;">`;
+  if (outing.date) {
+    const _d = new Date(outing.date + 'T12:00:00');
+    const _dateLabel = _d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    html += `<div style="font-size:13px;font-weight:700;color:rgba(238,238,248,0.85);margin-bottom:4px;">📅 ${_dateLabel}</div>`;
+  }
   html += `<div style="font-size:18px;font-weight:800;color:#eeeef8;margin-bottom:6px;">${title}</div>`;
   if (outing.event_time) {
     html += `<div style="font-size:13px;color:rgba(238,238,248,0.55);margin-bottom:3px;">🕐 ${outing.event_time}</div>`;
