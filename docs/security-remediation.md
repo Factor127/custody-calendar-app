@@ -83,11 +83,11 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Fix:** preferred path — endpoint deleted, "Know any missing details?" UX ripped out. Corrections to outings now flow only through the authenticated creator-only `PUT /api/outings/:id`. Verified live: PATCH route returns generic 404, GET still routes correctly, valid RSVP renders without the fill-section, decline flow show/cancel still work, no console errors.
 - **Commit:** `a538208`
 
-### [ ] H2 — Host-header injection in cron emails
-- **Where:** `server.js:923` (digest), audit other places computing BASE_URL.
-- **Why:** `BASE_URL = process.env.BASE_URL || \`https://${req.headers.host}\`` lets an attacker control link domain in outbound emails.
-- **Fix sketch:** at server boot, if `process.env.NODE_ENV === 'production'` and `!process.env.BASE_URL`, log error and `process.exit(1)`. Remove all `req.headers.host` fallbacks; always use `app.locals.BASE_URL`.
-- **Commit:** _pending_
+### [x] H2 — Host-header injection in cron emails
+- **Where:** `server.js:5-13` (boot guard); `routes/api.js:898` (weekly digest); `routes/share.js:31-33` (share base URL); `routes/nudge.js:128` (Twilio webhook signature URL); `routes/auth.js:39-41,212,237` (Google OAuth redirect URIs in three places).
+- **Why:** `BASE_URL = process.env.BASE_URL || \`https://${req.headers.host}\`` let an attacker control the link domain in outbound emails by spoofing the Host header (cron digest was the loudest example, but every endpoint with the same fallback was equally exploitable).
+- **Fix:** added a fail-fast boot guard — `NODE_ENV === 'production' && !BASE_URL` ⇒ log + `process.exit(1)`. Replaced every `req.headers.host` / `req.get('host')` fallback in the main repo with `req.app.locals.BASE_URL`. Dev still gets the `http://localhost:${PORT}` default from server.js. Verified with `node -c` on all five files.
+- **Commit:** `79d4bec`
 
 ### [ ] H3/H4/H5/H8 — Rate-limit unauth endpoints
 - **Where:** new `utils/rateLimit.js` extracted from `routes/auth.js`. Apply to: `/api/share/create`, `/api/lp/signup`, `/api/match/create`, `/api/match/invite`, `/api/waitlist`. Add a per-phone limiter for SMS-sending paths.
@@ -174,3 +174,4 @@ Server-side first, then client. Two sessions.
 - **2026-05-03** — Audit complete; plan written (commit `a5f630b`). Phase 1 started: `utils/ssrf.js` + apply to pulse/ical/opportunities/unfurl, C2/C3/C4 done (commit `2de7746`).
 - **2026-05-03** — C1 done: `unsubscribe_token` column added with unique index + startup backfill, stamped on new users via `q.createUserWithEmail`, all 5 sequence email templates switched to `ensureUnsubToken(user)`. `/api/email/unsubscribe` now keys on `unsubscribe_token`; legacy access-token links return 410. Verified live (sandbox-ran row): old token → 410, junk → 410, valid → 200 + `unsubscribed=1`. Next: C5 RSVP PATCH IDOR.
 - **2026-05-04** — C5 done: PATCH /api/rsvp/:token deleted, `public/rsvp.html` fill-section + PATCH call ripped out, SW cache bumped v17→v18. Verified live: PATCH → 404, valid RSVP renders cleanly without fill-section, decline flow intact. **Phase 1 complete** — all critical findings closed (C1–C5). Next session: Phase 2 P2-Server (cookie session migration).
+- **2026-05-04** — H2 done: boot guard refuses to start in prod without `BASE_URL`; all `req.headers.host` / `req.get('host')` fallbacks (api.js digest, share.js, nudge.js, auth.js x3) replaced with `req.app.locals.BASE_URL`. Server-side change only, not browser-observable; running dev server unchanged. Next: H3/H4/H5/H8 rate-limit unauth endpoints.
