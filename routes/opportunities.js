@@ -4,9 +4,12 @@ const router   = express.Router();
 const db       = require('../db');
 const { submitUrl, ingestTicketmaster, ingestGooglePlaces, createOpportunity } = require('../services/opportunityIngestion');
 const { matchForUser, pulseDatesForUser } = require('../services/opportunityMatcher');
+const { assertPublicHttpUrl } = require('../utils/ssrf');
 
 // ── Background image fetch for opportunities without images ──────────────
 async function _fetchImageForOpportunity(oppId, url) {
+  // SSRF guard: source_url is user-supplied via /api/opportunities/direct.
+  try { assertPublicHttpUrl(url); } catch (e) { return; }
   try {
     const resp = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' },

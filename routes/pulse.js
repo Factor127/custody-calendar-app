@@ -8,6 +8,7 @@ const express = require('express');
 const crypto  = require('crypto');
 const router  = express.Router();
 const db      = require('../db');
+const { assertPublicHttpUrl } = require('../utils/ssrf');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
@@ -46,6 +47,9 @@ async function fetchMetadata(url) {
   const out = { url, title: null, description: null, image_url: null,
                 source_domain: safeDomain(url), event_date: null, event_time: null,
                 site_name: null };
+  // SSRF guard: refuse private/loopback/metadata hosts before any fetch.
+  try { assertPublicHttpUrl(url); }
+  catch (e) { return out; }
   let html;
   try {
     const resp = await fetch(url, {

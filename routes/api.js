@@ -3,42 +3,11 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const { db, q, generateDaysFromPattern, checkAndRenewConnection, upsertManyDays, toDateStr, normalizePhone } = require('../db');
+const { assertPublicHttpUrl } = require('../utils/ssrf');
 
 // 2MB is the practical ceiling for an HTML calendar backup; larger uploads
 // almost certainly mean abuse or accidental wrong-file selection.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
-
-// ── SSRF guard for /api/unfurl ────────────────────────────────────────────────
-// Block requests targeting private/loopback/link-local IPs and the cloud
-// metadata service. Authenticated users could otherwise probe Railway's
-// internal network or pull credentials from a metadata endpoint.
-function isPrivateOrInternal(host) {
-  if (!host) return true;
-  const h = host.toLowerCase();
-  if (h === 'localhost' || h === 'metadata.google.internal') return true;
-  // IPv4 literal?
-  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (m) {
-    const [a,b,c,d] = m.slice(1).map(Number);
-    if ([a,b,c,d].some(n => n > 255)) return true;
-    if (a === 10) return true;                              // 10.0.0.0/8
-    if (a === 127) return true;                             // 127.0.0.0/8 loopback
-    if (a === 169 && b === 254) return true;                // 169.254.0.0/16 link-local + AWS metadata
-    if (a === 172 && b >= 16 && b <= 31) return true;       // 172.16.0.0/12
-    if (a === 192 && b === 168) return true;                // 192.168.0.0/16
-    if (a === 0) return true;                               // 0.0.0.0/8
-    return false;
-  }
-  // IPv6 literal? Reject loopback and ULA and link-local.
-  if (h.startsWith('[')) {
-    const ip = h.slice(1, h.indexOf(']')).toLowerCase();
-    if (ip === '::1' || ip === '::') return true;
-    if (ip.startsWith('fc') || ip.startsWith('fd')) return true;  // ULA fc00::/7
-    if (ip.startsWith('fe80')) return true;                       // link-local
-    return false;
-  }
-  return false;
-}
 
 const { buildInvite, buildCancellation, buildSubscribeFeed } = require('../utils/ical');
 const { sendCalendarInvite, sendEmail } = require('../utils/email');
@@ -872,7 +841,13 @@ router.post('/ical/import', async (req, res) => {
   if (!me) return;
 
   const { url } = req.body;
-  if (!url || !url.startsWith('http')) return res.status(400).json({ error: 'Valid URL required' });
+  if (!url) return res.status(400).json({ error: 'Valid URL required' });
+
+  // SSRF guard: ical URL is user-supplied; block private/loopback/metadata.
+  try { assertPublicHttpUrl(url); }
+  catch (e) {
+    return res.status(400).json({ error: e.code === 'invalid_url' ? 'Valid URL required' : 'URL not allowed' });
+  }
 
   let text;
   try {
@@ -1767,13 +1742,11 @@ router.get('/unfurl', async (req, res) => {
   // co = client UTC offset in minutes EAST of UTC (Israel = 180, NY = -240)
   // Sent as -new Date().getTimezoneOffset() from the browser
   const clientOffsetMin = parseInt(req.query.co) || 0;
-  if (!url.match(/^https?:\/\//i)) return res.status(400).json({ error: 'Invalid URL' });
 
-  // Block SSRF-style URLs (private IPs, loopback, cloud metadata endpoint).
-  let parsedHost = '';
-  try { parsedHost = new URL(url).hostname; } catch { return res.status(400).json({ error: 'Invalid URL' }); }
-  if (isPrivateOrInternal(parsedHost)) {
-    return res.status(400).json({ error: 'URL not allowed' });
+  // SSRF guard: rejects invalid scheme, private/loopback/metadata hosts.
+  try { assertPublicHttpUrl(url); }
+  catch (e) {
+    return res.status(400).json({ error: e.code === 'invalid_url' ? 'Invalid URL' : 'URL not allowed' });
   }
 
   try {
