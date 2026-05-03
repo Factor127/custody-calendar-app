@@ -77,11 +77,10 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Fix:** `unsubscribe_token TEXT` column with unique index `idx_users_unsub_token`. Startup backfill stamps random UUID on every NULL row. New users get one stamped at INSERT. `/api/email/unsubscribe` now looks up by `unsubscribe_token`; any other token returns 410 Gone with a "use a recent email" page. The weekly-digest email in `routes/api.js` does not currently include an unsubscribe link, so no change needed there.
 - **Commit:** `36678c0`
 
-### [ ] C5 — RSVP PATCH IDOR
-- **Where:** `routes/api.js:1325-1342`.
-- **Why:** any RSVP-token holder can mutate venue/time/address visible to all invitees.
-- **Fix sketch (preferred):** delete the PATCH endpoint entirely; force corrections through the existing authenticated `PUT /api/outings/:id` (creator-only). Audit client (`public/rsvp.html`) for callers and rip out the "edit-on-RSVP" UX if present.
-- **Fix sketch (fallback):** keep PATCH but require the creator's session token in addition to the rsvp token; route becomes `?token=<creator_session>&rsvp=<rsvp_token>` and we cross-check.
+### [x] C5 — RSVP PATCH IDOR
+- **Where:** `routes/api.js` PATCH handler removed; `public/rsvp.html` fill-section UI + PATCH fetch removed; `public/sw.js` cache bumped to v18.
+- **Why:** any RSVP-token holder could mutate venue/time/address visible to all other invitees.
+- **Fix:** preferred path — endpoint deleted, "Know any missing details?" UX ripped out. Corrections to outings now flow only through the authenticated creator-only `PUT /api/outings/:id`. Verified live: PATCH route returns generic 404, GET still routes correctly, valid RSVP renders without the fill-section, decline flow show/cancel still work, no console errors.
 - **Commit:** _pending_
 
 ### [ ] H2 — Host-header injection in cron emails
@@ -174,3 +173,4 @@ Server-side first, then client. Two sessions.
 
 - **2026-05-03** — Audit complete; plan written (commit `a5f630b`). Phase 1 started: `utils/ssrf.js` + apply to pulse/ical/opportunities/unfurl, C2/C3/C4 done (commit `2de7746`).
 - **2026-05-03** — C1 done: `unsubscribe_token` column added with unique index + startup backfill, stamped on new users via `q.createUserWithEmail`, all 5 sequence email templates switched to `ensureUnsubToken(user)`. `/api/email/unsubscribe` now keys on `unsubscribe_token`; legacy access-token links return 410. Verified live (sandbox-ran row): old token → 410, junk → 410, valid → 200 + `unsubscribed=1`. Next: C5 RSVP PATCH IDOR.
+- **2026-05-04** — C5 done: PATCH /api/rsvp/:token deleted, `public/rsvp.html` fill-section + PATCH call ripped out, SW cache bumped v17→v18. Verified live: PATCH → 404, valid RSVP renders cleanly without fill-section, decline flow intact. **Phase 1 complete** — all critical findings closed (C1–C5). Next session: Phase 2 P2-Server (cookie session migration).

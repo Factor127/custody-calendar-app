@@ -1295,26 +1295,9 @@ router.post('/rsvp/:token', (req, res) => {
   res.json({ ok: true, inviterName: inv.inviter_name });
 });
 
-// PATCH /api/rsvp/:token - update outing details via rsvp token (public, no auth)
-// Allows invitees to fill in missing event details when RSVPing
-router.patch('/rsvp/:token', (req, res) => {
-  const inv = q.getInviteeByRsvpToken.get(req.params.token);
-  if (!inv) return res.status(404).json({ error: 'not found' });
-  const outing = q.getOutingById.get(inv.outing_id);
-  if (!outing) return res.status(404).json({ error: 'not found' });
-
-  const { venue, event_time, venue_address } = req.body;
-  // Update with latest values - treat as corrections
-  q.updateOutingFull.run(
-    outing.title || null,
-    venue !== undefined ? (venue || null) : (outing.venue || null),
-    event_time !== undefined ? (event_time || null) : (outing.event_time || null),
-    venue_address !== undefined ? (venue_address || null) : (outing.venue_address || null),
-    inv.outing_id,
-    outing.created_by
-  );
-  res.json({ ok: true });
-});
+// PATCH /api/rsvp/:token was removed (C5 IDOR): any RSVP-token holder could
+// rewrite venue/time/address visible to all other invitees. Corrections now go
+// through the authenticated PUT /api/outings/:id (creator-only).
 
 // ── Outings ───────────────────────────────────────────────────────────────
 
