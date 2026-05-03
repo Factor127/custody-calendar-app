@@ -28,14 +28,58 @@ router.get('/share-target', (req, res) => {
     const m = String(v).match(/https?:\/\/[^\s]+/i);
     if (m) { sharedUrl = m[0]; break; }
   }
-  // Fallback: if nothing looked like a URL, pass the raw text along so
-  // the crafter at least pre-fills the search box with whatever was shared.
   const fallback = candidates.find(Boolean) || '';
   const param = sharedUrl || fallback;
-  if (param) {
-    return res.redirect('/calendar.html?shareUrl=' + encodeURIComponent(param));
-  }
-  res.redirect('/calendar.html');
+
+  // ── DEBUG MODE ──────────────────────────────────────────────────────────
+  // We've been chasing this through 5+ deploys with no resolution. Render
+  // a visible page showing EXACTLY what landed on the server, so we can see
+  // whether Android is sending the share data at all. The page auto-
+  // continues to the calendar after 8 seconds (or click "Continue now").
+  // Remove this block once the share chain is verified end-to-end.
+  const escape = (s) => String(s ?? '(none)').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const logLine = `[share-target] ${new Date().toISOString()} url=${req.query.url||''} text=${req.query.text||''} title=${req.query.title||''} ua=${req.headers['user-agent']||''}`;
+  console.log(logLine);
+  const continueUrl = param
+    ? '/calendar.html?shareUrl=' + encodeURIComponent(param)
+    : '/calendar.html';
+  return res.send(`<!doctype html><html><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Share received - Spontany</title>
+    <style>
+      body { margin:0; font:14px/1.5 -apple-system,system-ui,sans-serif; background:#0c0c15; color:#fff; padding:20px; }
+      h1 { font-size:18px; margin:0 0 16px; color:#fbbf24; }
+      pre { background:#1a1a2a; padding:12px; border-radius:8px; overflow-x:auto; word-break:break-all; white-space:pre-wrap; font-size:12px; }
+      .row { margin:10px 0; }
+      .label { color:#8a8aa8; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+      .val { word-break:break-all; }
+      .empty { color:#55556a; font-style:italic; }
+      a.btn { display:inline-block; margin-top:18px; background:#f97316; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600; }
+      .countdown { color:#8a8aa8; font-size:12px; margin-top:8px; }
+    </style>
+  </head><body>
+    <h1>🔍 /share-target was hit — here's what arrived</h1>
+
+    <div class="row"><div class="label">?url</div><div class="val ${req.query.url ? '' : 'empty'}">${escape(req.query.url)}</div></div>
+    <div class="row"><div class="label">?text</div><div class="val ${req.query.text ? '' : 'empty'}">${escape(req.query.text)}</div></div>
+    <div class="row"><div class="label">?title</div><div class="val ${req.query.title ? '' : 'empty'}">${escape(req.query.title)}</div></div>
+    <div class="row"><div class="label">Extracted URL</div><div class="val ${param ? '' : 'empty'}">${escape(param)}</div></div>
+    <div class="row"><div class="label">User-Agent</div><pre>${escape(req.headers['user-agent'])}</pre></div>
+    <div class="row"><div class="label">Will redirect to</div><div class="val">${escape(continueUrl)}</div></div>
+
+    <a class="btn" href="${continueUrl}">Continue to calendar →</a>
+    <div class="countdown">Auto-continues in <span id="cd">8</span>s</div>
+
+    <script>
+      let n = 8;
+      const el = document.getElementById('cd');
+      const timer = setInterval(() => {
+        n--; if (el) el.textContent = n;
+        if (n <= 0) { clearInterval(timer); window.location.replace(${JSON.stringify(continueUrl)}); }
+      }, 1000);
+    </script>
+  </body></html>`);
 });
 
 // Login page - served by server.js directly, skip here to avoid conflicts
