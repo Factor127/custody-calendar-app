@@ -81,7 +81,7 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Where:** `routes/api.js` PATCH handler removed; `public/rsvp.html` fill-section UI + PATCH fetch removed; `public/sw.js` cache bumped to v18.
 - **Why:** any RSVP-token holder could mutate venue/time/address visible to all other invitees.
 - **Fix:** preferred path — endpoint deleted, "Know any missing details?" UX ripped out. Corrections to outings now flow only through the authenticated creator-only `PUT /api/outings/:id`. Verified live: PATCH route returns generic 404, GET still routes correctly, valid RSVP renders without the fill-section, decline flow show/cancel still work, no console errors.
-- **Commit:** _pending_
+- **Commit:** `a538208`
 
 ### [ ] H2 — Host-header injection in cron emails
 - **Where:** `server.js:923` (digest), audit other places computing BASE_URL.
