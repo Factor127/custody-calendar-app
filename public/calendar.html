@@ -3425,11 +3425,17 @@ function _bounceToLogin() {
   // Seed the current history entry with calendar coordinates so popstate can
   // restore the visible month after a back press. loadMyCalendar runs
   // renderCalendar which initializes currentViewYear/Month — safe to read now.
+  //
+  // CRITICAL: preserve any existing query params (especially ?shareUrl=… from
+  // the Web Share Target chain). Hard-coding `?token=…` here silently dropped
+  // the shared URL before the share-target reader below could see it.
   try {
+    const sp = new URLSearchParams(window.location.search);
+    sp.set('token', MY_TOKEN);
     history.replaceState(
       { spontanyView: 'calendar', year: currentViewYear, month: currentViewMonth },
       '',
-      location.pathname + '?token=' + MY_TOKEN
+      location.pathname + '?' + sp.toString()
     );
   } catch(e) {}
 
@@ -3501,7 +3507,7 @@ function _bounceToLogin() {
       } catch(e) {}
 
       banner.innerHTML = '<div style="display:flex;justify-content:space-between;gap:8px;font-weight:700;margin-bottom:4px;"><span>🔍 share-target debug</span><span onclick="this.parentNode.parentNode.remove()" style="cursor:pointer;padding:0 6px;">✕</span></div>'
-        + '<div>SW cache: <b id="share-debug-sw">checking…</b> <span style="opacity:.7">(want spontany-v14)</span></div>'
+        + '<div>SW cache: <b id="share-debug-sw">checking…</b></div>'
         + '<div>Query: <code style="word-break:break-all;">' + escQ + '</code></div>'
         + '<div>Parsed URL: <code>' + (_sharedUrl || '(none)') + '</code></div>'
         + traceHtml;
