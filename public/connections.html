@@ -1089,11 +1089,14 @@ function renderGoogleMatches(matches, totalContacts) {
   countEl.textContent = `${matches.length} of your Google contacts are on Spontany`;
   section.style.display = 'block';
 
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const safePhoto = p => (p && /^(https:\/\/|data:image\/)/.test(String(p))) ? String(p) : '';
+
   listEl.innerHTML = matches.map(({ contactName, user, connection }) => {
     const connStatus = connection?.status;
     let actionHtml;
     if (!connection) {
-      actionHtml = `<button onclick="sendFriendRequest('${user.id}',this)"
+      actionHtml = `<button data-uid="${esc(user.id)}" class="js-add-friend"
         style="padding:7px 14px;background:var(--accent);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;">
         + Add
       </button>`;
@@ -1103,11 +1106,17 @@ function renderGoogleMatches(matches, totalContacts) {
       actionHtml = `<span style="font-size:12px;color:#4ade80;font-weight:600;flex-shrink:0;">✓ Connected</span>`;
     }
 
-    const displayName = user.name !== contactName ? `${user.name} <span style="color:var(--muted);font-size:11px;">(${contactName})</span>` : user.name;
+    const safeName = esc(user.name);
+    const safeContact = esc(contactName);
+    const displayName = user.name !== contactName
+      ? `${safeName} <span style="color:var(--muted);font-size:11px;">(${safeContact})</span>`
+      : safeName;
+    const photoUrl = safePhoto(user.photo);
+    const initial = esc((user.name || '?')[0].toUpperCase());
 
     return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
       <div style="width:38px;height:38px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0;overflow:hidden;">
-        ${user.photo ? `<img src="${user.photo}" style="width:100%;height:100%;object-fit:cover;">` : user.name[0].toUpperCase()}
+        ${photoUrl ? `<img src="${esc(photoUrl)}" style="width:100%;height:100%;object-fit:cover;">` : initial}
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;color:var(--text);">${displayName}</div>
@@ -1116,6 +1125,10 @@ function renderGoogleMatches(matches, totalContacts) {
       ${actionHtml}
     </div>`;
   }).join('');
+
+  listEl.querySelectorAll('.js-add-friend').forEach(btn => {
+    btn.addEventListener('click', () => sendFriendRequest(btn.dataset.uid, btn));
+  });
 }
 
 function clearGoogleMatches() {
