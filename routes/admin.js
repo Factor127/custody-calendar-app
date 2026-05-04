@@ -1,6 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
+const { sendEmail } = require('../utils/email');
+
+// Founder-personal outreach: from the verified updates.spontany.io domain
+// (DKIM/SPF/DMARC pass), reply-to bare spontany.io which forwards via ImprovMX
+// to ran.merkazy@factor127.com. Test sends bypass user lookup and go to that
+// same forwarded address so previews land in the same inbox as real replies.
+const OUTREACH_FROM_DEFAULT     = 'Ran @ Spontany <ran@updates.spontany.io>';
+const OUTREACH_REPLY_TO_DEFAULT = 'ran@spontany.io';
+const OUTREACH_TEST_RECIPIENT   = 'ran.merkazy@factor127.com';
+const OUTREACH_DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Personalize a template by substituting {{first_name}}, {{name}}, etc. against
+// a user row. Pure function, no I/O — caller decides whether to send the result.
+function personalizeOutreach(user, signals, template) {
+  const firstName = (user.name || '').trim().split(/\s+/)[0] || 'there';
+  const days = signals.day_count || 0;
+  const invites = signals.invites_sent || 0;
+  const custodyStatus = days > 0
+    ? `you've set up ${days} custody day${days === 1 ? '' : 's'}`
+    : `you haven't set your custody days yet`;
+  const partnerStatus = invites > 0
+    ? `you've sent ${invites} invite${invites === 1 ? '' : 's'}`
+    : `you haven't invited anyone yet`;
+  const subs = {
+    '{{first_name}}':    firstName,
+    '{{name}}':          user.name || firstName,
+    '{{custody_status}}':custodyStatus,
+    '{{partner_status}}':partnerStatus,
+  };
+  let out = String(template || '');
+  for (const [k, v] of Object.entries(subs)) out = out.split(k).join(v);
+  return out;
+}
 
 function requireAdmin(req, res) {
   // Header-only — query-string tokens leak into Railway access logs and
@@ -273,6 +306,144 @@ router.delete('/admin/users/:id', (req, res) => {
   }
 
   res.json({ deleted: true, name: user.name });
+});
+
+// ── User Outreach (founder ↔ early users) ────────────────────────────────────
+
+// GET /api/admin/outreach/users — users + engagement signals + last-contacted
+router.get('/admin/outreach/users', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const users = db.prepare(`
+    SELECT
+      u.id, u.name, u.email, u.role, u.created_at,
+      COALESCE(u.unsubscribed, 0)             AS unsubscribed,
+      (SELECT COUNT(*) FROM calendar_days WHERE user_id = u.id) AS day_count,
+      (SELECT COUNT(*) FROM invites WHERE created_by = u.id)    AS invites_sent,
+      (SELECT COUNT(*) FROM connections
+        WHERE (requester_id = u.id OR target_id = u.id)
+          AND status = 'approved')            AS active_connections,
+      (SELECT MAX(sent_at) FROM outreach_log WHERE user_id = u.id) AS last_contacted_at,
+      (SELECT subject FROM outreach_log
+        WHERE user_id = u.id ORDER BY sent_at DESC LIMIT 1) AS last_subject
+    FROM users u
+    WHERE u.email IS NOT NULL AND u.email != ''
+    ORDER BY u.created_at DESC
+  `).all();
+
+  res.json({ users });
+});
+
+// POST /api/admin/outreach/preview — { user_id, subject, body } → personalized
+router.post('/admin/outreach/preview', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { user_id, subject, body } = req.body || {};
+  if (!user_id) return res.status(400).json({ error: 'user_id required' });
+
+  const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(user_id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const signals = db.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM calendar_days WHERE user_id = ?) AS day_count,
+      (SELECT COUNT(*) FROM invites WHERE created_by = ?)    AS invites_sent
+  `).get(user_id, user_id);
+
+  res.json({
+    to:      user.email,
+    subject: personalizeOutreach(user, signals, subject),
+    body:    personalizeOutreach(user, signals, body),
+  });
+});
+
+// POST /api/admin/outreach/send — { user_id, subject, body }
+router.post('/admin/outreach/send', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { user_id, subject, body } = req.body || {};
+  if (!user_id || !subject || !body) {
+    return res.status(400).json({ error: 'user_id, subject, body all required' });
+  }
+
+  const user = db.prepare('SELECT id, name, email, unsubscribed FROM users WHERE id = ?').get(user_id);
+  if (!user)        return res.status(404).json({ error: 'User not found' });
+  if (!user.email)  return res.status(400).json({ error: 'User has no email' });
+  if (user.unsubscribed) return res.status(400).json({ error: 'User has unsubscribed' });
+
+  // Block same-subject duplicate sends within 24h to prevent fat-finger disasters.
+  const cutoff = new Date(Date.now() - OUTREACH_DUPLICATE_WINDOW_MS).toISOString();
+  const dup = db.prepare(
+    'SELECT id FROM outreach_log WHERE user_id = ? AND subject = ? AND sent_at > ?'
+  ).get(user_id, subject, cutoff);
+  if (dup) {
+    return res.status(409).json({ error: 'Already sent this subject to this user in the last 24h' });
+  }
+
+  const signals = db.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM calendar_days WHERE user_id = ?) AS day_count,
+      (SELECT COUNT(*) FROM invites WHERE created_by = ?)    AS invites_sent
+  `).get(user_id, user_id);
+
+  const personalSubject = personalizeOutreach(user, signals, subject);
+  const personalBody    = personalizeOutreach(user, signals, body);
+
+  try {
+    await sendEmail({
+      to:       user.email,
+      subject:  personalSubject,
+      bodyText: personalBody,
+      from:     OUTREACH_FROM_DEFAULT,
+      replyTo:  OUTREACH_REPLY_TO_DEFAULT,
+    });
+  } catch (err) {
+    return res.status(502).json({ error: 'Failed to send', detail: err.message });
+  }
+
+  db.prepare('INSERT INTO outreach_log (user_id, email, subject) VALUES (?, ?, ?)')
+    .run(user_id, user.email, personalSubject);
+
+  // Don't echo PII in the response; client already knows who it sent to.
+  res.json({ sent: true, sent_at: new Date().toISOString() });
+});
+
+// POST /api/admin/outreach/send-test — sends to fixed admin address
+router.post('/admin/outreach/send-test', async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { subject, body, user_id } = req.body || {};
+  if (!subject || !body) {
+    return res.status(400).json({ error: 'subject and body required' });
+  }
+
+  // Optional user_id lets the founder preview personalization for a real user
+  // without actually emailing them — useful for sanity-checking variable subs.
+  let personalSubject = subject;
+  let personalBody    = body;
+  if (user_id) {
+    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(user_id);
+    if (user) {
+      const signals = db.prepare(`
+        SELECT
+          (SELECT COUNT(*) FROM calendar_days WHERE user_id = ?) AS day_count,
+          (SELECT COUNT(*) FROM invites WHERE created_by = ?)    AS invites_sent
+      `).get(user_id, user_id);
+      personalSubject = personalizeOutreach(user, signals, subject);
+      personalBody    = personalizeOutreach(user, signals, body);
+    }
+  }
+
+  try {
+    await sendEmail({
+      to:       OUTREACH_TEST_RECIPIENT,
+      subject:  '[TEST] ' + personalSubject,
+      bodyText: personalBody,
+      from:     OUTREACH_FROM_DEFAULT,
+      replyTo:  OUTREACH_REPLY_TO_DEFAULT,
+    });
+  } catch (err) {
+    return res.status(502).json({ error: 'Failed to send', detail: err.message });
+  }
+
+  res.json({ sent: true, to: OUTREACH_TEST_RECIPIENT });
 });
 
 module.exports = router;

@@ -113,6 +113,7 @@
   <button class="tab" onclick="switchTab('network')">Network</button>
   <button class="tab active" onclick="switchTab('analytics')">Analytics</button>
   <button class="tab" onclick="switchTab('waitlist')">Waitlist</button>
+  <button class="tab" onclick="switchTab('outreach')">Outreach</button>
 </div>
 
 <!-- ── Opportunities panel ── -->
@@ -433,10 +434,86 @@
   </div>
 </div>
 
+<!-- ── Outreach panel — founder-personal emails to early users ── -->
+<div class="panel" id="panel-outreach">
+  <div style="padding: 0 24px; max-width: 900px;">
+    <p style="color:#6b7280;font-size:13px;line-height:1.5;margin:14px 0 12px;">
+      Hand-personal emails to your early users. <strong>From:</strong> Ran @ Spontany &lt;ran@updates.spontany.io&gt; &nbsp;
+      <strong>Reply-To:</strong> ran@spontany.io (forwards to ran.merkazy@factor127.com).
+      Variables: <code>{{first_name}}</code>, <code>{{name}}</code>, <code>{{custody_status}}</code>, <code>{{partner_status}}</code>.
+      Same subject can't be sent twice to one user within 24h (safety rail).
+    </p>
+
+    <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin:14px 0 4px;">Subject</label>
+    <input type="text" id="outreach-subject"
+      style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;"
+      value="Quick question from Spontany's solo founder">
+
+    <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin:14px 0 4px;">Body (plain text)</label>
+    <textarea id="outreach-body" rows="13"
+      style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.5;">Hey {{first_name}},
+
+I'm Ran — solo founder of Spontany. You're one of the first eight people using it, which is why I'm writing personally instead of through a marketing tool.
+
+Two questions:
+
+1. What's the most annoying friction you've hit so far? Could be tiny — often the small stuff matters most.
+2. Would you be up for a 20-minute call this week so I can hear it directly? I'll send a calendar link if yes.
+
+If feedback's easier in writing, just hit reply with whatever's on your mind.
+
+I built this for people in your exact situation, and I'd genuinely value being able to make it work better for you specifically.
+
+— Ran</textarea>
+
+    <div style="display:flex;gap:8px;align-items:center;margin:12px 0;flex-wrap:wrap;">
+      <button class="btn" onclick="sendOutreachTest()">Send test → ran.merkazy@factor127.com</button>
+      <button class="btn" onclick="loadOutreach()">↺ Refresh users</button>
+      <span id="outreach-status" style="font-size:12px;color:#6b7280;"></span>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Joined</th>
+          <th>Custody days</th>
+          <th>Invites sent</th>
+          <th>Active partners</th>
+          <th>Last contacted</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="outreach-rows"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Preview modal -->
+  <div id="outreach-preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;max-width:680px;width:100%;max-height:90vh;overflow:auto;border-radius:10px;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;font-size:16px;font-weight:700;">Preview</h3>
+        <button onclick="closeOutreachPreview()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;">&times;</button>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:8px;"><strong>To:</strong> <span id="prev-to"></span></div>
+      <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;"><span id="prev-subject"></span></div>
+      <pre id="prev-body" style="white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.55;color:#111;margin:0;"></pre>
+      <div style="margin-top:18px;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn" onclick="closeOutreachPreview()">Cancel</button>
+        <button class="btn" style="background:#111;color:white;" id="prev-send-btn">Send for real →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
 let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wlLoaded = false;
+let _outreach = [], _outreachLoaded = false;
 let _network = null, _networkLoaded = false, _netInstance = null;
 
 // Send ADMIN_TOKEN as X-Admin-Token header instead of ?token= query param.
@@ -461,7 +538,7 @@ let _network = null, _networkLoaded = false, _netInstance = null;
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const idx = { opportunities: 0, submissions: 1, users: 2, network: 3, analytics: 4, waitlist: 5 }[name];
+  const idx = { opportunities: 0, submissions: 1, users: 2, network: 3, analytics: 4, waitlist: 5, outreach: 6 }[name];
   document.querySelectorAll('.tab')[idx].classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'opportunities' && _opps.length === 0) loadOpps();
@@ -470,6 +547,7 @@ function switchTab(name) {
   if (name === 'network'       && !_networkLoaded)     loadNetwork();
   if (name === 'analytics'     && !_analyticsLoaded)   loadAnalytics();
   if (name === 'waitlist'      && !_wlLoaded)          loadWaitlist();
+  if (name === 'outreach'      && !_outreachLoaded)    loadOutreach();
 }
 
 function showError(msg) {
@@ -1275,6 +1353,118 @@ async function approveWaitlist(id, email) {
   } else {
     const err = await res.json().catch(() => ({}));
     showError(err.error || 'Approve failed');
+  }
+}
+
+// ── Outreach ────────────────────────────────────────────────────────────────
+function setOutreachStatus(msg, isError) {
+  const el = document.getElementById('outreach-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#b91c1c' : '#059669';
+  if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 6000);
+}
+
+async function loadOutreach() {
+  document.getElementById('outreach-rows').innerHTML = '<tr><td colspan="8" class="empty">Loading…</td></tr>';
+  const res = await fetch(`/api/admin/outreach/users?token=${ADMIN_TOKEN}`);
+  if (!res.ok) { showError('Failed to load outreach users'); return; }
+  const { users } = await res.json();
+  _outreach = users;
+  _outreachLoaded = true;
+  renderOutreach();
+}
+
+function renderOutreach() {
+  const rows = _outreach;
+  if (!rows.length) {
+    document.getElementById('outreach-rows').innerHTML =
+      '<tr><td colspan="8" class="empty">No users with email yet.</td></tr>';
+    return;
+  }
+  document.getElementById('outreach-rows').innerHTML = rows.map(u => {
+    const lastCol = u.last_contacted_at
+      ? `<span title="${esc(u.last_subject || '')}">${fmtDate(u.last_contacted_at)}</span>`
+      : '<span class="muted">never</span>';
+    const unsubBadge = u.unsubscribed
+      ? '<span style="font-size:10px;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:8px;margin-left:6px;">unsub</span>'
+      : '';
+    return `
+      <tr>
+        <td>${esc(u.name || '-')}${unsubBadge}</td>
+        <td style="font-size:12px;color:#6b7280;">${esc(u.email)}</td>
+        <td>${fmtDate(u.created_at)}</td>
+        <td style="text-align:center;">${u.day_count || 0}</td>
+        <td style="text-align:center;">${u.invites_sent || 0}</td>
+        <td style="text-align:center;">${u.active_connections || 0}</td>
+        <td>${lastCol}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn" onclick="previewOutreach('${esc(u.id)}')" ${u.unsubscribed ? 'disabled' : ''}>Preview & send</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function previewOutreach(userId) {
+  const subject = document.getElementById('outreach-subject').value;
+  const body    = document.getElementById('outreach-body').value;
+  if (!subject || !body) { showError('Subject and body required'); return; }
+
+  const res = await fetch(`/api/admin/outreach/preview?token=${ADMIN_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, subject, body })
+  });
+  if (!res.ok) { showError('Preview failed'); return; }
+  const { to, subject: s, body: b } = await res.json();
+
+  document.getElementById('prev-to').textContent = to;
+  document.getElementById('prev-subject').textContent = s;
+  document.getElementById('prev-body').textContent = b;
+  const sendBtn = document.getElementById('prev-send-btn');
+  sendBtn.onclick = () => doSendOutreach(userId, subject, body);
+  document.getElementById('outreach-preview-modal').style.display = 'flex';
+}
+
+function closeOutreachPreview() {
+  document.getElementById('outreach-preview-modal').style.display = 'none';
+}
+
+async function doSendOutreach(userId, subject, body) {
+  const sendBtn = document.getElementById('prev-send-btn');
+  sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
+  const res = await fetch(`/api/admin/outreach/send?token=${ADMIN_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, subject, body })
+  });
+  sendBtn.disabled = false; sendBtn.textContent = 'Send for real →';
+  if (res.ok) {
+    closeOutreachPreview();
+    setOutreachStatus('Sent.', false);
+    loadOutreach();
+  } else {
+    const err = await res.json().catch(() => ({}));
+    setOutreachStatus(err.error || 'Send failed', true);
+  }
+}
+
+async function sendOutreachTest() {
+  const subject = document.getElementById('outreach-subject').value;
+  const body    = document.getElementById('outreach-body').value;
+  if (!subject || !body) { showError('Subject and body required'); return; }
+  setOutreachStatus('Sending test…', false);
+  const res = await fetch(`/api/admin/outreach/send-test?token=${ADMIN_TOKEN}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, body })
+  });
+  if (res.ok) {
+    const j = await res.json();
+    setOutreachStatus('Test sent → ' + j.to, false);
+  } else {
+    const err = await res.json().catch(() => ({}));
+    setOutreachStatus(err.error || 'Test send failed', true);
   }
 }
 
