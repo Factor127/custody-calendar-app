@@ -1,0 +1,24 @@
+# Force LF line endings on commit, regardless of contributor OS.
+# Prevents the CRLF/LF noise diffs we hit when Windows editors re-save files.
+* text=auto eol=lf
+
+# Binary files — never touch.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.zip   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.db    binary
+*.sqlite binary
+*.xlsx  binary
+*.xls   binary
+*.mp3   binary
+*.mp4   binary
+*.mov   binary

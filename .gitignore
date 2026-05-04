@@ -2,10 +2,44 @@ node_modules/
 data/
 *.db
 .env
+.env.*
 .DS_Store
+
+# Secrets — never commit. Move real secrets out of the repo entirely
+# (Railway env vars are the production source of truth).
+API keys.txt
+secrets.txt
+secrets.json
+service-account*.json
+*.pem
+*.key
+*.crt
+.env.local
+.env.production
 
 # Local-only: parser sandbox / paste-to-invite lab.
 # Stays on Ran's machine for testing & iterating on the shared parser
 # (services/unfurl.js). Never deployed.
 routes/sandbox.js
 public/sandbox.html
+
+# Tooling state and large local-only directories
+.claude/
+.agents/
+skills-lock.json
+
+# Raw materials and exports — too big or too messy for git
+Graphics/
+interviews/
+working paper/
+campaign monitoring data/
+dashboard-export-*/
+*.zip
+Spontany Campaign Analytics Manual.html
+Spontany Campaign Analytics Manual_files/
+Spontany backlog - Sheet*.csv
+Spontany backlog - Sheet*.xlsx
+
+# Stray loose files at repo root from past sessions
+carousel-*.png
+SESSION_HANDOFF.md
