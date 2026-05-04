@@ -4907,8 +4907,11 @@ function renderEventPane(data) {
       })[myInvRow.status] || myInvRow.status || 'Pending';
       // Surface a direct "Decline" action alongside "Change RSVP" so users
       // who confirmed but can no longer make it don't have to hunt for the
-      // option inside the invite pane.
+      // option inside the invite pane. For already-declined invitees we
+      // swap that out for a "Hide from my view" button (status='ignored')
+      // so they can clean up the calendar later.
       const _showDeclineDirect = myInvRow.status !== 'declined' && myInvRow.status !== 'ignored';
+      const _showHideDirect    = myInvRow.status === 'declined';
       html += `<div style="padding:8px 16px 4px;display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;">
         <div style="font-size:12px;color:var(--muted);">Your RSVP: <strong style="color:var(--text);">${_statusLabel}</strong></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -4923,6 +4926,12 @@ function renderEventPane(data) {
                          padding:6px 12px;color:#f87171;font-size:12px;font-weight:700;
                          cursor:pointer;font-family:inherit;">
             Decline
+          </button>` : ''}
+          ${_showHideDirect ? `<button onclick="hideDeclinedInvite('${outing.id}','${myInvRow.id}')"
+                  style="background:none;border:1px solid rgba(239,68,68,0.40);border-radius:10px;
+                         padding:6px 12px;color:#f87171;font-size:12px;font-weight:700;
+                         cursor:pointer;font-family:inherit;">
+            Hide from view
           </button>` : ''}
         </div>
       </div>`;
@@ -5101,6 +5110,15 @@ async function openInviteAndDecline(outingId, inviteeRecordId) {
   setTimeout(() => {
     if (typeof startDecline === 'function') startDecline(outingId, inviteeRecordId);
   }, 30);
+}
+
+// Hide a previously-declined invite from the user's calendar view by
+// upgrading its RSVP status to 'ignored'. Reachable from the event pane
+// once an invite has been declined — gives the user a way to clean up
+// later, separate from the immediate post-decline prompt.
+async function hideDeclinedInvite(outingId, inviteeRecordId) {
+  if (!confirm('Hide this declined invite from your calendar? You can still find it from the original sender.')) return;
+  await submitRsvp(outingId, inviteeRecordId, 'ignored');
 }
 
 function renderInvitePane(data, inviteeRecordId) {
@@ -5585,6 +5603,45 @@ function startIgnore(outingId, inviteeId) {
   if (fill) fill.style.display = 'none';
 }
 
+// After a decline lands, ask whether to keep the invite on the calendar or
+// hide it from view. "Hide" upgrades the RSVP to 'ignored' which removes
+// it from day cards / lists. "Keep" just closes the sheet — declined-but-
+// visible. Either choice is reversible from the event pane later.
+function _showDeclineFollowup(outingId, inviteeId) {
+  const body = document.getElementById('invite-pane-body');
+  if (!body) { closeDaySheet(); return; }
+  body.innerHTML = `
+    <div style="padding:24px 18px;text-align:center;">
+      <div style="font-size:34px;margin-bottom:10px;">✗</div>
+      <div style="font-size:16px;font-weight:800;color:#eeeef8;margin-bottom:6px;">Declined</div>
+      <div style="font-size:13px;color:rgba(238,238,248,0.65);line-height:1.5;margin-bottom:18px;">
+        Want to keep this invite on your calendar so you can revisit it,
+        or hide it from your view?
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto;">
+        <button class="btn btn-primary" style="padding:11px;font-size:14px;justify-content:center;" onclick="_declineFollowupKeep()">
+          Keep on my calendar
+        </button>
+        <button class="btn btn-outline" style="padding:11px;font-size:14px;justify-content:center;color:#f87171;border-color:rgba(239,68,68,0.40);" onclick="_declineFollowupHide('${outingId}','${inviteeId}')">
+          Hide from my view
+        </button>
+      </div>
+      <div style="font-size:11px;color:rgba(238,238,248,0.40);margin-top:14px;">
+        You can change this any time from the event.
+      </div>
+    </div>
+  `;
+}
+
+function _declineFollowupKeep() {
+  closeDaySheet();
+}
+
+async function _declineFollowupHide(outingId, inviteeId) {
+  // Re-uses the existing 'ignored' status — removes from day cards / lists.
+  await submitRsvp(outingId, inviteeId, 'ignored');
+}
+
 function cancelIgnoreFlow() {
   document.getElementById('invite-ignore-flow').style.display = 'none';
   document.getElementById('invite-rsvp-area').style.display = '';
@@ -5624,8 +5681,15 @@ async function submitRsvp(outingId, inviteeId, status, note) {
     const toastMsg = status === 'confirmed' ? "You're in! ✓" : status === 'maybe' ? 'Marked as maybe' : status === 'declined' ? 'Declined' : 'Invite removed';
     showToast(toastMsg);
 
-    // For decisive actions (confirmed / declined / ignored) - close the sheet immediately
-    const closeAfter = ['confirmed', 'declined', 'ignored'].includes(status);
+    // After decline: don't close yet — ask the user whether to keep the
+    // invite on their calendar or hide it from view (status='ignored').
+    // Confirmed/maybe/ignored still close immediately as before.
+    if (status === 'declined') {
+      await loadOutings();
+      _showDeclineFollowup(outingId, inviteeId);
+      return;
+    }
+    const closeAfter = ['confirmed', 'ignored'].includes(status);
     if (closeAfter) {
       closeDaySheet();
       await loadOutings();
