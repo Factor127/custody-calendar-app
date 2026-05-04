@@ -577,6 +577,19 @@ db.exec(`CREATE TABLE IF NOT EXISTS waitlist (
   approved_at  TEXT
 )`);
 
+// ── Outreach log (founder→user emails from /api/admin/outreach) ──────────────
+// Records every send so the admin UI can show "last contacted" per user and
+// the send endpoint can guard against same-subject duplicates within a window.
+db.exec(`CREATE TABLE IF NOT EXISTS outreach_log (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  subject    TEXT NOT NULL,
+  sent_at    TEXT DEFAULT (datetime('now'))
+)`);
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_outreach_user ON outreach_log(user_id)'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_outreach_sent ON outreach_log(sent_at)'); } catch(e) {}
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const q = {
