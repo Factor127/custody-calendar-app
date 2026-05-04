@@ -88,7 +88,8 @@ router.post('/auth/request', async (req, res) => {
   q.createMagicLink.run(linkToken, normalEmail, user?.id || null, expiresAt);
 
   const BASE_URL = req.app.locals.BASE_URL;
-  const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+  const FROM_EMAIL = process.env.FROM_EMAIL || 'Ran @ Spontany <ran@updates.spontany.io>';
+  const REPLY_TO   = process.env.REPLY_TO   || 'ran@spontany.io';
   // Carry deep-link target (e.g. ?shareUrl=…) through the email round-trip
   // by appending it to the verify URL. /api/auth/verify reads it back and
   // routes the user to that destination after issuing a fresh token.
@@ -125,7 +126,7 @@ router.post('/auth/request', async (req, res) => {
   const client = getResend();
   if (client) {
     try {
-      await client.emails.send({ from: FROM_EMAIL, to: normalEmail, subject, html });
+      await client.emails.send({ from: FROM_EMAIL, to: normalEmail, subject, html, replyTo: REPLY_TO });
     } catch(err) {
       console.error('Resend error:', err?.message || err);
       return res.status(500).json({ error: 'Failed to send email. Please try again.' });
@@ -165,12 +166,16 @@ router.get('/auth/verify/:token', (req, res) => {
   if (!link.user_id) {
     // New email - pass the magic token to setup; DON'T mark used yet.
     // It will be consumed by POST /api/users/setup when the user completes the wizard.
+    // Track email verification
+    try { q.insertAnalyticsEvent.run(require('uuid').v4(), 'email_verified', 'server_' + link.email, null, null, null, null, null, '/api/auth/verify', null, null, JSON.stringify({ email: link.email, is_new: true })); } catch(e) {}
     return res.redirect(
       `/setup?magic=${req.params.token}&email=${encodeURIComponent(link.email)}`
     );
   }
 
   // Existing user - mark link used and issue a fresh session token
+  // Track returning user verification
+  try { q.insertAnalyticsEvent.run(require('uuid').v4(), 'email_verified', 'server_' + link.email, link.user_id, null, null, null, null, '/api/auth/verify', null, null, JSON.stringify({ email: link.email, is_new: false })); } catch(e) {}
   q.useMagicLink.run(req.params.token);
   const newToken = uuidv4();
   q.updateUserToken.run(newToken, link.user_id);
