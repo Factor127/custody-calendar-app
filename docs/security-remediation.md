@@ -89,11 +89,18 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Fix:** added a fail-fast boot guard — `NODE_ENV === 'production' && !BASE_URL` ⇒ log + `process.exit(1)`. Replaced every `req.headers.host` / `req.get('host')` fallback in the main repo with `req.app.locals.BASE_URL`. Dev still gets the `http://localhost:${PORT}` default from server.js. Verified with `node -c` on all five files.
 - **Commit:** `79d4bec`
 
-### [ ] H3/H4/H5/H8 — Rate-limit unauth endpoints
-- **Where:** new `utils/rateLimit.js` extracted from `routes/auth.js`. Apply to: `/api/share/create`, `/api/lp/signup`, `/api/match/create`, `/api/match/invite`, `/api/waitlist`. Add a per-phone limiter for SMS-sending paths.
-- **Why:** SMS toll fraud, magic-link bombing, signup spam.
-- **Fix sketch:** export `rateLimit({ keyFn, windowMs, max })` middleware. Default `keyFn = req => req.ip`. SMS endpoints additionally use `keyFn = req => req.body.phone` with tighter quota.
-- **Commit:** _pending_
+### [x] H3/H4/H5/H8 — Rate-limit unauth endpoints
+- **Where:** new `utils/rateLimit.js` (exports `createBucket`, `rateLimitAllow`, `rateLimit` middleware factory). Wired into `routes/auth.js` (refactored existing limiter onto shared util — caps unchanged), `routes/share.js` (`/api/share/create`), `routes/lp.js` (`/api/lp/signup`), `routes/match.js` (`/match/create`, `/match/invite`), `server.js` (`/api/waitlist`).
+- **Why:** SMS toll fraud (share/create can fire arbitrary Twilio sends), magic-link inbox bombing (lp/signup mints magic links), drive-by signup spam (waitlist), abuse of unauth match endpoints.
+- **Fix:** caps applied —
+  - `/api/share/create`: 10/IP/10min + per-phone 3/24h (E.164-normalized so format variations don't bypass).
+  - `/api/lp/signup`: 10/IP/10min + 3/email/hour (matches existing `/api/auth/request` thresholds — same threat model).
+  - `/api/waitlist`: 10/IP/10min + 3/email/hour.
+  - `/match/create`, `/match/invite`: 20/IP/10min each (looser since legit per-session use can fire several).
+  - `/api/auth/request`: unchanged thresholds, refactored onto shared util.
+- **Verified live** (in a separate working clone): waitlist per-IP fired at req 11 with limit 10; per-email fired at req 4 with limit 3.
+- **Note:** `/api/match/invite` `sender_name`/`sender_email` impersonation (also called out under H5) is not addressed by this commit — separate problem requiring sender attestation; remains open and tracked under M5 / future work.
+- **Commit:** `31c21b8`
 
 ### [ ] H10 — Use `requireAdmin` helper in server.js inline routes
 - **Where:** `server.js:164`, `server.js:172`.
@@ -175,3 +182,4 @@ Server-side first, then client. Two sessions.
 - **2026-05-03** — C1 done: `unsubscribe_token` column added with unique index + startup backfill, stamped on new users via `q.createUserWithEmail`, all 5 sequence email templates switched to `ensureUnsubToken(user)`. `/api/email/unsubscribe` now keys on `unsubscribe_token`; legacy access-token links return 410. Verified live (sandbox-ran row): old token → 410, junk → 410, valid → 200 + `unsubscribed=1`. Next: C5 RSVP PATCH IDOR.
 - **2026-05-04** — C5 done: PATCH /api/rsvp/:token deleted, `public/rsvp.html` fill-section + PATCH call ripped out, SW cache bumped v17→v18. Verified live: PATCH → 404, valid RSVP renders cleanly without fill-section, decline flow intact. **Phase 1 complete** — all critical findings closed (C1–C5). Next session: Phase 2 P2-Server (cookie session migration).
 - **2026-05-04** — H2 done: boot guard refuses to start in prod without `BASE_URL`; all `req.headers.host` / `req.get('host')` fallbacks (api.js digest, share.js, nudge.js, auth.js x3) replaced with `req.app.locals.BASE_URL`. Server-side change only, not browser-observable; running dev server unchanged. Next: H3/H4/H5/H8 rate-limit unauth endpoints.
+- **2026-05-04** — H3/H4/H5/H8 done: shared `utils/rateLimit.js` extracted; applied to share/create (per-IP + per-phone for SMS toll-fraud), lp/signup, waitlist (per-IP + per-email), match/create, match/invite. auth/request refactored onto shared util with unchanged caps. Code shipped via commit `31c21b8` (landed before this doc tick). Verified live in a separate clone — waitlist 11th req → 429; per-email 4th req → 429. Sender impersonation in match/invite still pending (see H5 note). Next: H10 inline `requireAdmin` consolidation in server.js.
