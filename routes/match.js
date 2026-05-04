@@ -2,6 +2,13 @@ const express = require('express');
 const router  = express.Router();
 const { db }  = require('../db');
 const crypto  = require('crypto');
+const { rateLimit } = require('../utils/rateLimit');
+
+// Per-IP gates for the unauth match endpoints. Caps drive-by spam without
+// blocking legitimate per-session use (a real user creating a match and a
+// follow-up invite from the same IP within minutes stays well under 20).
+const matchCreateLimit = rateLimit({ keyFn: r => r.ip, windowMs: 10 * 60 * 1000, max: 20 });
+const matchInviteLimit = rateLimit({ keyFn: r => r.ip, windowMs: 10 * 60 * 1000, max: 20 });
 
 // Lazy-load Resend for email notifications
 let _resend = null;
@@ -18,7 +25,7 @@ const CATEGORY_ICON = { food:'🍽', nightlife:'🍷', music:'🎵', arts:'🎭'
 
 // POST /api/match/create  - Person A submits their schedule
 // If partner_schedule is also provided (manual entry path), auto-complete the match
-router.post('/match/create', (req, res) => {
+router.post('/match/create', matchCreateLimit, (req, res) => {
   const { name, email, phone, schedule, partner_schedule, utm_source, utm_medium, utm_campaign, utm_content, referrer, device } = req.body;
   if (!schedule) return res.status(400).json({ error: 'Schedule is required' });
 
@@ -216,7 +223,7 @@ router.post('/match/:token/complete', async (req, res) => {
 });
 
 // ── POST /api/match/invite - create a date invite (no auth required) ────────
-router.post('/match/invite', (req, res) => {
+router.post('/match/invite', matchInviteLimit, (req, res) => {
   const { sender_name, sender_email, recipient_name, opportunity_id,
           opportunity_title, opportunity_vibe, date_label, message, match_token } = req.body;
   if (!sender_name) return res.status(400).json({ error: 'sender_name required' });

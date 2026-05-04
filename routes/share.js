@@ -12,6 +12,17 @@ const crypto   = require('crypto');
 const router   = express.Router();
 const { db }   = require('../db');
 const { sendSMS, toE164, isValidE164 } = require('../utils/sms');
+const { createBucket, rateLimitAllow, rateLimit } = require('../utils/rateLimit');
+
+// Per-IP gate for the share-create endpoint, applied as middleware. Per-phone
+// is checked inside the handler against the normalized E.164 value so the
+// same number written different ways still hits the same bucket.
+const shareCreateIpLimit = rateLimit({
+  keyFn: r => r.ip,
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+});
+const SHARE_PHONE_BUCKET = createBucket();
 
 function escHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -47,7 +58,7 @@ function dayKey(dateStr) {
 // ── POST /api/share/create ────────────────────────────────────────────────
 // Body: { person_a_name, person_b_phone, mode: 'text'|'copy', variant,
 //         session_id, utm_* }
-router.post('/api/share/create', async (req, res) => {
+router.post('/api/share/create', shareCreateIpLimit, async (req, res) => {
   const b = req.body || {};
   const name  = (b.person_a_name || '').trim().slice(0, 60);
   const mode  = b.mode === 'copy' ? 'copy' : 'text';
@@ -56,6 +67,13 @@ router.post('/api/share/create', async (req, res) => {
   if (!name) return res.status(400).json({ error: 'name_required' });
   // Phone only required when we're asked to text him directly.
   if (mode === 'text' && !phone) return res.status(400).json({ error: 'invalid_phone' });
+
+  // Per-phone cap for SMS toll-fraud protection: any single recipient can
+  // receive at most 3 invite texts in 24h regardless of which IP sent them.
+  if (mode === 'text' && phone &&
+      !rateLimitAllow(SHARE_PHONE_BUCKET, phone, 24 * 60 * 60 * 1000, 3)) {
+    return res.status(429).json({ error: 'This number has been texted too many times today.' });
+  }
 
   const token = crypto.randomUUID();
 

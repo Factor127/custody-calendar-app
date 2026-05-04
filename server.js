@@ -157,10 +157,23 @@ app.use('/', pagesRouter);
 // ── Waitlist API (public + admin) ─────────────────────────────────────────────
 const { db: _db } = require('./db');
 const { sendEmail } = require('./utils/email');
+const { createBucket, rateLimitAllow } = require('./utils/rateLimit');
+
+// Per-IP + per-email caps on the unauth waitlist signup. Caps drive-by spam
+// without blocking real signups (legit users submit once).
+const WL_RL_IP   = createBucket();
+const WL_RL_MAIL = createBucket();
 
 app.post('/api/waitlist', (req, res) => {
   const email = (req.body.email || '').trim().toLowerCase();
   if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required' });
+
+  const ip = req.ip || 'unknown';
+  if (!rateLimitAllow(WL_RL_IP,   ip,    10 * 60 * 1000, 10) ||
+      !rateLimitAllow(WL_RL_MAIL, email, 60 * 60 * 1000, 3)) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a few minutes before trying again.' });
+  }
+
   try {
     _db.prepare('INSERT OR IGNORE INTO waitlist (email) VALUES (?)').run(email);
     res.json({ ok: true });

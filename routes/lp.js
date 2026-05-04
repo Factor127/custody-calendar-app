@@ -7,6 +7,13 @@ const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();
 const { db, q }  = require('../db');
 const { sendEmail } = require('../utils/email');
+const { createBucket, rateLimitAllow } = require('../utils/rateLimit');
+
+// Buckets for /api/lp/signup. Per-IP caps automated signup spam; per-email
+// caps magic-link inbox bombing on a single victim. Mirrors the limits on
+// /api/auth/request — same threat model, same caps.
+const LP_RL_IP   = createBucket();
+const LP_RL_MAIL = createBucket();
 
 // LP registry - single source of truth for the A/B test.
 // Keep in sync with AB_VARIANTS in server.js (which reads from here).
@@ -142,6 +149,13 @@ router.post('/api/lp/signup', async (req, res) => {
   const b = req.body || {};
   const email = (b.email || '').trim().toLowerCase();
   if (!email || !email.includes('@')) return res.status(400).json({ error: 'invalid_email' });
+
+  // Rate limit before doing anything that mints a magic link or hits Resend.
+  const ip = req.ip || 'unknown';
+  if (!rateLimitAllow(LP_RL_IP,   ip,    10 * 60 * 1000, 10) ||
+      !rateLimitAllow(LP_RL_MAIL, email, 60 * 60 * 1000, 3)) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a few minutes before trying again.' });
+  }
 
   const first_name = (b.first_name || '').trim().slice(0, 40) || null;
 
