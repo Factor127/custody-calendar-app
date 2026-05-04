@@ -3,33 +3,14 @@ const router = express.Router();
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { db, q } = require('../db');
+const { createBucket, rateLimitAllow } = require('../utils/rateLimit');
 
-// ── In-memory rate limiter for /api/auth/request ──────────────────────────────
-// Caps Resend cost amplification + sender-domain abuse if someone scripts
-// magic-link spam. Single-dyno on Railway, so a Map is fine; reset on restart.
-const RL_IP   = new Map();   // ip    → [{ ts }, ...]
-const RL_MAIL = new Map();   // email → [{ ts }, ...]
+// Magic-link rate limit buckets. Per-IP caps scripted spam; per-email caps
+// Resend cost amplification + inbox abuse on a single victim.
+const RL_IP   = createBucket();
+const RL_MAIL = createBucket();
 const IP_LIMIT_PER_10MIN = 5;
 const EMAIL_LIMIT_PER_HOUR = 3;
-function rateLimitAllow(map, key, windowMs, max) {
-  const now = Date.now();
-  const cutoff = now - windowMs;
-  const arr = (map.get(key) || []).filter(e => e.ts > cutoff);
-  if (arr.length >= max) { map.set(key, arr); return false; }
-  arr.push({ ts: now });
-  map.set(key, arr);
-  return true;
-}
-// Periodic cleanup so the maps don't grow forever
-setInterval(() => {
-  const cutoff = Date.now() - 60 * 60 * 1000;
-  for (const m of [RL_IP, RL_MAIL]) {
-    for (const [k, arr] of m) {
-      const fresh = arr.filter(e => e.ts > cutoff);
-      if (fresh.length === 0) m.delete(k); else m.set(k, fresh);
-    }
-  }
-}, 10 * 60 * 1000).unref();
 
 // ── Google OAuth helpers ──────────────────────────────────────────────────────
 const GOOGLE_AUTH_URL  = 'https://accounts.google.com/o/oauth2/v2/auth';
