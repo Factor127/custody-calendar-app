@@ -10,7 +10,8 @@ function getClient() {
   return resendClient;
 }
 
-const FROM = () => process.env.FROM_EMAIL || 'Spontany <noreply@spontany.app>';
+const FROM = () => process.env.FROM_EMAIL || 'Ran @ Spontany <ran@updates.spontany.io>';
+const DEFAULT_REPLY_TO = process.env.REPLY_TO || 'ran@spontany.io';
 
 // Redact an email for logs — keep first 2 chars of local-part + full domain.
 // Enough to identify in support cases, not enough to be PII in a leaked log.
@@ -63,9 +64,9 @@ async function sendEmail({ to, subject, bodyText, html, from, replyTo }) {
       to:       [to],
       subject,
       text:     bodyText,
+      replyTo:  replyTo || DEFAULT_REPLY_TO,
     };
     if (html)    payload.html     = html;
-    if (replyTo) payload.reply_to = replyTo;
     await getClient().emails.send(payload);
     console.log('[email] Sent email to', redactEmail(to));
   } catch (err) {

@@ -16,8 +16,8 @@ function getDb() {
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const FROM        = 'Ran @ Spontany <hello@spontany.io>';
-const REPLY_TO    = 'hello@spontany.io';
+const FROM        = process.env.FROM_EMAIL || 'Ran @ Spontany <ran@updates.spontany.io>';
+const REPLY_TO    = process.env.REPLY_TO   || 'ran@spontany.io';
 const BASE_URL    = () => process.env.BASE_URL || 'https://spontany.io';
 
 // Delays from signup in hours
