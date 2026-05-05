@@ -102,11 +102,12 @@ When picking up cold: `Read docs/security-remediation.md and continue with the n
 - **Note:** `/api/match/invite` `sender_name`/`sender_email` impersonation (also called out under H5) is not addressed by this commit — separate problem requiring sender attestation; remains open and tracked under M5 / future work.
 - **Commit:** `31c21b8`
 
-### [ ] H10 — Use `requireAdmin` helper in server.js inline routes
-- **Where:** `server.js:164`, `server.js:172`.
-- **Why:** drift risk; admin auth changes (like the recent header-only migration) need to be made in two places.
-- **Fix sketch:** export `requireAdmin` from `routes/admin.js`, import in `server.js`, replace inline checks.
-- **Commit:** _pending_
+### [x] H10 — Use `requireAdmin` helper in server.js inline routes
+- **Where:** `routes/admin.js` (now exports `requireAdmin` alongside the router); `server.js` imports it and calls it in `GET /api/admin/waitlist` and `PUT /api/admin/waitlist/:id/approve`.
+- **Why:** the inline checks reimplemented `requireAdmin` from routes/admin.js; admin-auth changes (like the prior X-Admin-Token-only migration) had to be made in two places, drifted easily.
+- **Fix:** `module.exports.requireAdmin = requireAdmin` on routes/admin.js. server.js destructures it from the existing `adminRouter` import. Both inline blocks collapse to `if (!requireAdmin(req, res)) return;` — same pattern used by 14 other admin endpoints. Side benefits: missing `ADMIN_TOKEN` env now returns 503 (config error) instead of being conflated with 403 (bad token); error messages match the rest of the admin surface.
+- **Verified** by syntax check (`node -c`) on both files; not browser-verified because no preview is running in the canonical clone, and the change is a mechanical refactor onto a helper already battle-tested by every other admin route.
+- **Commit:** `efde7c6`
 
 ---
 
@@ -183,3 +184,4 @@ Server-side first, then client. Two sessions.
 - **2026-05-04** — C5 done: PATCH /api/rsvp/:token deleted, `public/rsvp.html` fill-section + PATCH call ripped out, SW cache bumped v17→v18. Verified live: PATCH → 404, valid RSVP renders cleanly without fill-section, decline flow intact. **Phase 1 complete** — all critical findings closed (C1–C5). Next session: Phase 2 P2-Server (cookie session migration).
 - **2026-05-04** — H2 done: boot guard refuses to start in prod without `BASE_URL`; all `req.headers.host` / `req.get('host')` fallbacks (api.js digest, share.js, nudge.js, auth.js x3) replaced with `req.app.locals.BASE_URL`. Server-side change only, not browser-observable; running dev server unchanged. Next: H3/H4/H5/H8 rate-limit unauth endpoints.
 - **2026-05-04** — H3/H4/H5/H8 done: shared `utils/rateLimit.js` extracted; applied to share/create (per-IP + per-phone for SMS toll-fraud), lp/signup, waitlist (per-IP + per-email), match/create, match/invite. auth/request refactored onto shared util with unchanged caps. Code shipped via commit `31c21b8` (landed before this doc tick). Verified live in a separate clone — waitlist 11th req → 429; per-email 4th req → 429. Sender impersonation in match/invite still pending (see H5 note). Next: H10 inline `requireAdmin` consolidation in server.js.
+- **2026-05-05** — H10 done: routes/admin.js now exports `requireAdmin`; server.js destructures from existing adminRouter import and replaces both inline waitlist-admin checks with `if (!requireAdmin(req, res)) return;`. Bonus: missing `ADMIN_TOKEN` env now distinguishes 503 (config) from 403 (bad token). **Phase 1 complete** — all critical and high findings closed (C1–C5, H2, H3/H4/H5/H8, H10). Next: Phase 2 P2-Server (cookie session migration).
