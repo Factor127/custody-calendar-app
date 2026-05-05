@@ -23,6 +23,7 @@ const LPs = [
   { id: 'why-v1',          type: 'explainer',     label: 'Why Spontany exists',        active: false, file: 'public/lp/why-v1/index.html' },
   { id: 'serious-v1',      type: 'teaser-share',  label: 'Let him show he\'s serious', active: false, file: 'public/lp/serious-v1/index.html' },
   { id: 'momentum-v1',     type: 'hero',          label: 'The end of "Are you free?"', active: true,  file: 'public/lp/momentum-v1/index.html' },
+  { id: 'value-v1',        type: 'hero',          label: 'Spontany — Social. No effort.', active: true,  file: 'public/lp/value-v1/index.html' },
 ];
 
 function getActiveLPs() { return LPs.filter(lp => lp.active); }
