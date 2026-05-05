@@ -447,3 +447,4 @@ router.post('/admin/outreach/send-test', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.requireAdmin = requireAdmin;

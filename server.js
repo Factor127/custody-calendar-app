@@ -120,6 +120,7 @@ app.locals.BASE_URL = BASE_URL;
 const authRouter        = require('./routes/auth');
 const apiRouter         = require('./routes/api');
 const adminRouter       = require('./routes/admin');
+const { requireAdmin }  = adminRouter;
 const pagesRouter       = require('./routes/pages');
 const smartSuggestRouter = require('./routes/smart-suggest');
 const pushRouter         = require('./routes/push');
@@ -183,16 +184,13 @@ app.post('/api/waitlist', (req, res) => {
 });
 
 app.get('/api/admin/waitlist', (req, res) => {
-  // Header-only admin token — see routes/admin.js requireAdmin
-  const token = req.headers['x-admin-token'];
-  if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(403).json({ error: 'Forbidden' });
+  if (!requireAdmin(req, res)) return;
   const rows = _db.prepare('SELECT * FROM waitlist ORDER BY created_at DESC').all();
   res.json({ waitlist: rows });
 });
 
 app.put('/api/admin/waitlist/:id/approve', async (req, res) => {
-  const token = req.headers['x-admin-token'];
-  if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(403).json({ error: 'Forbidden' });
+  if (!requireAdmin(req, res)) return;
   const row = _db.prepare('SELECT * FROM waitlist WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Not found' });
   if (row.status === 'approved') return res.json({ ok: true, already: true });
