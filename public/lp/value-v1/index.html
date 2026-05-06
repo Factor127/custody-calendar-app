@@ -371,7 +371,7 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     display: grid;
     /* 3-col grid: number | text | illustration. Right column collapses to
        0 when the prop has no <img> (prop-5 currently — text-only). */
-    grid-template-columns: 56px 1fr 110px;
+    grid-template-columns: 56px 1fr 170px;
     gap: 16px;
     align-items: center;
     padding: 20px 20px 22px;
@@ -388,9 +388,10 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     grid-template-columns: 56px 1fr;
   }
   @media (max-width: 420px) {
-    /* Tighten image column on narrow phones so text has more room */
-    .prop { grid-template-columns: 44px 1fr 88px; gap: 12px; padding: 18px 16px; }
-    .prop:not(:has(.prop-illus)) { grid-template-columns: 44px 1fr; }
+    /* Narrow phones: shrink number column + tighten gaps to keep enough
+       text width while still giving the illustration a legible footprint. */
+    .prop { grid-template-columns: 40px 1fr 130px; gap: 10px; padding: 18px 14px; }
+    .prop:not(:has(.prop-illus)) { grid-template-columns: 40px 1fr; }
   }
   .prop::before {
     /* thin accent bar on the left edge — color cycles per prop */
