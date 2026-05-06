@@ -19,24 +19,8 @@
 <meta name="twitter:image" content="https://spontany.io/lp/value-v1/assets/hero-poster.jpg">
 <link rel="preload" as="image" href="/lp/value-v1/assets/hero-poster.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<!-- Meta Pixel -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-if (!window.__SP_PIXEL_INIT) {
-  window.__SP_PIXEL_INIT = true;
-  fbq('init', '2161239351358950');
-  fbq('track', 'PageView');
-}
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></noscript>
+<!-- Geofenced consent loader: gates Meta Pixel + Contentsquare for EU visitors. -->
+<script defer src="/consent-loader.js"></script>
 <script src="/sa.js"></script>
 <script src="/lp/_shared/lp-tracker.js"></script>
 <style>
@@ -369,9 +353,12 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
   }
   .prop {
     display: grid;
-    /* 3-col grid: number | text | illustration. Right column collapses to
-       0 when the prop has no <img> (prop-5 currently — text-only). */
-    grid-template-columns: 56px 1fr 170px;
+    /* On wider screens (>600px) the illustration sits in its own right-
+       hand column. Below 600px the math forces the text column too narrow
+       if the image stays side-aligned, so we restack the image under the
+       text in the @media block below — see comments there. */
+    grid-template-columns: 56px 1fr 200px;
+    grid-template-areas: "num text img";
     gap: 16px;
     align-items: center;
     padding: 20px 20px 22px;
@@ -381,17 +368,37 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     position: relative;
     overflow: hidden;
   }
+  .prop-num   { grid-area: num; }
+  .prop-text  { grid-area: text; }
+  .prop-illus { grid-area: img; }
+
   /* Props without an illustration collapse back to a 2-col layout so the
      text column reclaims the right-hand space. Uses :has() so we don't
      have to add per-prop modifier classes. */
   .prop:not(:has(.prop-illus)) {
     grid-template-columns: 56px 1fr;
+    grid-template-areas: "num text";
   }
-  @media (max-width: 420px) {
-    /* Narrow phones: shrink number column + tighten gaps to keep enough
-       text width while still giving the illustration a legible footprint. */
-    .prop { grid-template-columns: 40px 1fr 130px; gap: 10px; padding: 18px 14px; }
-    .prop:not(:has(.prop-illus)) { grid-template-columns: 40px 1fr; }
+  @media (max-width: 600px) {
+    /* Phones / narrow screens: stack the illustration under the body
+       text (still indented to align with text, leaving the number in
+       its own left lane). Lets the image render at ~280px wide — which
+       is actually legible — instead of crushing it to ~130px to fit
+       beside the text. */
+    .prop {
+      grid-template-columns: 44px 1fr;
+      grid-template-areas:
+        "num text"
+        ".   img";
+      align-items: start;
+      gap: 8px 12px;
+      padding: 18px 16px 20px;
+    }
+    .prop:not(:has(.prop-illus)) {
+      grid-template-columns: 44px 1fr;
+      grid-template-areas: "num text";
+    }
+    .prop-illus { margin-top: 10px; max-width: 320px; }
   }
   .prop::before {
     /* thin accent bar on the left edge — color cycles per prop */
@@ -1024,7 +1031,6 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     z-index: 1;
   }
 </style>
-<script src="https://t.contentsquare.net/uxa/c6f898e9cb3d8.js"></script>
 </head>
 <body>
 
