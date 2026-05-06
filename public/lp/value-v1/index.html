@@ -369,15 +369,28 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
   }
   .prop {
     display: grid;
-    grid-template-columns: 56px 1fr;
+    /* 3-col grid: number | text | illustration. Right column collapses to
+       0 when the prop has no <img> (prop-5 currently — text-only). */
+    grid-template-columns: 56px 1fr 110px;
     gap: 16px;
-    align-items: start;
+    align-items: center;
     padding: 20px 20px 22px;
     background: var(--panel);
     border: 1px solid var(--panel-edge);
     border-radius: 16px;
     position: relative;
     overflow: hidden;
+  }
+  /* Props without an illustration collapse back to a 2-col layout so the
+     text column reclaims the right-hand space. Uses :has() so we don't
+     have to add per-prop modifier classes. */
+  .prop:not(:has(.prop-illus)) {
+    grid-template-columns: 56px 1fr;
+  }
+  @media (max-width: 420px) {
+    /* Tighten image column on narrow phones so text has more room */
+    .prop { grid-template-columns: 44px 1fr 88px; gap: 12px; padding: 18px 16px; }
+    .prop:not(:has(.prop-illus)) { grid-template-columns: 44px 1fr; }
   }
   .prop::before {
     /* thin accent bar on the left edge — color cycles per prop */
@@ -438,17 +451,18 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
     font-weight: 800;
     color: var(--gold);
   }
-  /* Illustration that lives inside a prop card, below the body copy.
-     Spans the full width of the text column so the number stays in its
-     left lane. Subtle rounded corners + faint border keeps it visually
-     part of the card rather than floating. */
+  /* Illustration occupies its own column on the right side of the prop
+     card, half the previous footprint. Vertically centered with the text
+     so short cards (prop-1) and longer cards (prop-3) line up cleanly. */
   .prop-illus {
     display: block;
     width: 100%;
-    margin: 14px 0 0;
-    border-radius: 12px;
+    height: auto;
+    margin: 0;
+    border-radius: 10px;
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.04);
+    align-self: center;
   }
 
   .strip-result {
@@ -1055,8 +1069,8 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
           <div class="prop-text">
             <strong>One chat less with your ex.</strong>
             <span>No more calendar mess. Suggest a swap, co-parent confirms, <em>BAM</em> — it's sorted.</span>
-            <img class="prop-illus" src="/lp/value-v1/assets/feature1.svg" alt="Custody swap suggested in Spontany — partner confirms in one tap" loading="lazy">
           </div>
+          <img class="prop-illus" src="/lp/value-v1/assets/feature1.svg" alt="Custody swap suggested in Spontany — partner confirms in one tap" loading="lazy">
         </div>
 
         <div class="prop prop-2">
@@ -1064,8 +1078,8 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
           <div class="prop-text">
             <strong>Know when your partner's kid-free — without asking <em>them</em>.</strong>
             <span>See instantly if they've got the night of that gig you've been eyeing. Plan it as a surprise. Skip the "are you free?" text.</span>
-            <img class="prop-illus" src="/lp/value-v1/assets/feature2.svg" alt="Spontany shows when you and your partner are both kid-free" loading="lazy">
           </div>
+          <img class="prop-illus" src="/lp/value-v1/assets/feature6.svg" alt="Spontany shows when you and your partner are both kid-free" loading="lazy">
         </div>
 
         <div class="prop prop-3">
@@ -1073,8 +1087,8 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
           <div class="prop-text">
             <strong>Gig idea → invite, in <em>one click</em>.</strong>
             <span>Drop a party link into Spontany. It pulls the details, finds who from your crew is free, fires the invite. One click.</span>
-            <img class="prop-illus" src="/lp/value-v1/assets/feature3.svg" alt="Drop a link, Spontany pulls the event details and fires invites in one click" loading="lazy">
           </div>
+          <img class="prop-illus" src="/lp/value-v1/assets/feature3.svg" alt="Drop a link, Spontany pulls the event details and fires invites in one click" loading="lazy">
         </div>
 
         <div class="prop prop-4">
@@ -1082,8 +1096,8 @@ src="https://www.facebook.com/tr?id=2161239351358950&ev=PageView&noscript=1"/></
           <div class="prop-text">
             <strong>Ideas that actually fit your night.</strong>
             <span>Spontany learns what you like <em>and</em> what your friends like — and suggests plans you'd both say yes to.</span>
-            <img class="prop-illus" src="/lp/value-v1/assets/feature5.svg" alt="Spontany suggests plans matched to what you and your friends both like" loading="lazy">
           </div>
+          <img class="prop-illus" src="/lp/value-v1/assets/feature5.svg" alt="Spontany suggests plans matched to what you and your friends both like" loading="lazy">
         </div>
 
         <div class="prop prop-5">
