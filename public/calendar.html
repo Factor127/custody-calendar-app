@@ -2281,7 +2281,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
        crop via its own border-radius:50%. */
     .sc-who-avatar { width:76px; height:76px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; color:white; position:relative; background:#2a2a2a; transition:box-shadow .15s,transform .15s; }
     .sc-who-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-    .sc-who-chip.selected .sc-who-avatar { transform:scale(1.06); box-shadow:0 0 0 3px var(--lime), 0 0 14px rgba(230,249,82,0.40); }
+    .sc-who-chip.selected .sc-who-avatar { transform:scale(1.06); box-shadow:0 0 0 4px var(--lime), 0 0 18px rgba(230,249,82,0.55); }
     /* Check badge sits above the circle's top edge (was bottom-right and
        getting clipped behind the avatar's overflow:hidden + lime ring). */
     .sc-who-check { position:absolute; top:-6px; right:-4px; background:var(--lime); color:#0a0a0a; border-radius:50%; width:24px; height:24px; font-size:13px; display:none; align-items:center; justify-content:center; box-shadow:0 0 0 2px rgba(14,14,14,0.95); z-index:2; }
@@ -2298,9 +2298,10 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     }
     .sc-who-chip.is-group.selected .sc-who-avatar-group {
       transform:scale(1.06);
-      box-shadow:inset 0 0 0 1.5px rgba(230,249,82,0.30), 0 0 0 3px var(--lime), 0 0 14px rgba(230,249,82,0.40);
+      background:rgba(230,249,82,0.18);
+      box-shadow:inset 0 0 0 1.5px var(--lime), 0 0 0 4px var(--lime), 0 0 18px rgba(230,249,82,0.55);
     }
-    .sc-who-chip.is-group .sc-who-name { color:var(--accent, #e6f952); font-weight:700; }
+    .sc-who-chip.is-group .sc-who-name { color:var(--accent, #e6f952); font-weight:700; max-width:110px; }
     /* Empty-state teaser chip (only shown when user has 0 groups) */
     .sc-who-chip.sc-who-teaser .sc-who-avatar-teaser {
       background:transparent;
@@ -2548,8 +2549,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       <button class="btn btn-sm btn-primary" onclick="saveChangeDays()" style="background:#43a047;border-color:#43a047;">Save &amp; Notify Co-parent</button>
     </div>
   </div>
-  <div class="edit-notice notice-holiday" id="holiday-edit-notice">
-    🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.
+  <div class="edit-notice notice-holiday" id="holiday-edit-notice" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <span>🏖️ <span class="bold">Edit Holidays:</span> Click any day to cycle tags: none → H → V → none.</span>
+    <button class="btn btn-sm btn-primary" onclick="setEditMode('holiday', false)" style="background:#43a047;border-color:#43a047;">Done</button>
   </div>
 
   <div class="calendar-container" id="calendar-container">
@@ -3901,6 +3903,16 @@ function renderCalendar() {
   let cellCount = firstDow;
   if (firstDow > 0) { html += '<tr>'; for (let i = 0; i < firstDow; i++) html += '<td class="empty"></td>'; }
 
+  // Outings the current user declined or ignored — hidden from the cell visual
+  // (image background, no-img overlay, plan bubbles). Still appear in the day
+  // sheet so the user can revisit / change their mind.
+  const _cellHideOutingIds = new Set();
+  for (const i of myIncomingOutings) {
+    if (i.my_invitee_status === 'declined' || i.my_invitee_status === 'ignored') {
+      _cellHideOutingIds.add(i.id);
+    }
+  }
+
   for (let day = 1; day <= daysInMonth; day++) {
     if (cellCount % 7 === 0) html += '<tr>';
 
@@ -3934,7 +3946,7 @@ function renderCalendar() {
     const freeBadge = '';
 
     // Plan bubbles for outings on this day
-    const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
+    const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled' && !_cellHideOutingIds.has(o.id));
     const outingHtml = dayOutings.length ? `<div class="cell-plans">${
       dayOutings.slice(0, 6).map(o => {
         const isPending = myIncomingOutings.some(i => i.id === o.id && i.my_invitee_status === 'pending');
@@ -4051,8 +4063,12 @@ function showCellHover(event, dateStr) {
       <div class="chc-avatars">${bubbles}${extra}</div>`;
   }
 
-  // Plans / outings
-  const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
+  // Plans / outings — same hide rule as the cell itself: skip outings the
+  // user declined or ignored so the hover card matches what they see on the grid.
+  const dayOutings = (outingsByDate[dateStr] || []).filter(o => {
+    if (o.status === 'cancelled') return false;
+    return !myIncomingOutings.some(i => i.id === o.id && (i.my_invitee_status === 'declined' || i.my_invitee_status === 'ignored'));
+  });
   let plansSection = '';
   if (dayOutings.length) {
     const rows = dayOutings.map(o => {
@@ -9552,6 +9568,7 @@ const _sc = {
   colors:         {},         // connId → hex color
   expanded:       false,      // WHO row expanded to show all
   savedOutingId:  null,       // id of a 'saved' outing being converted
+  personalNote:   '',         // freeform note prepended to each WhatsApp message
 };
 
 // ── Open / close ──────────────────────────────────────────────────────────────
@@ -9868,6 +9885,7 @@ async function openSmartCrafter(prefillDate, prefillOpp, prefillSaved, prefillWh
   _sc.savedOutingId  = null;
   _sc.pregenOutingId = null;
   _sc.rsvpTokens     = {};
+  _sc.personalNote   = '';
 
   // Reset calendar to current month
   const _now = new Date();
@@ -10208,9 +10226,20 @@ function renderSCWho() {
     return best;
   };
 
+  const _isSel = (entry) => {
+    if (entry.kind === 'person') return _sc.selWho.has(entry.w.id);
+    const whoIds = _scGroupWhoIds(entry.g.id);
+    return whoIds.length > 0 && whoIds.every(id => _sc.selWho.has(id));
+  };
   const peopleEntries = (_sc.data.who || []).map(w => ({ kind: 'person', w, tier: _availTier(w) }));
   const groupEntries  = (_scGroups || []).map(g => ({ kind: 'group',  g, tier: _groupTier(g) }));
-  const sorted = [...peopleEntries, ...groupEntries].sort((a, b) => a.tier - b.tier);
+  // Selected first (so they stay visible in step-2's horizontal scroll), then by availability tier.
+  const sorted = [...peopleEntries, ...groupEntries].sort((a, b) => {
+    const sa = _isSel(a) ? 0 : 1;
+    const sb = _isSel(b) ? 0 : 1;
+    if (sa !== sb) return sa - sb;
+    return a.tier - b.tier;
+  });
 
   // Empty state for the people side stays the same — only renders if there
   // are no people AND no groups (nothing meaningful to pick).
@@ -10253,7 +10282,7 @@ function renderSCWho() {
           👥
           <div class="sc-who-check">✓</div>
         </div>
-        <div class="sc-who-name">${g.name.split(' ')[0]}</div>
+        <div class="sc-who-name" title="${g.name}">${g.name}</div>
         ${freeBadge}
       </div>`;
     }
@@ -11058,7 +11087,17 @@ function renderSCReview() {
         </div>`;
       }).join('')}
     </div>
-    <button class="sc-add-person-btn" onclick="scAddPersonFromReview()">＋ Add someone</button>`;
+    <button class="sc-add-person-btn" onclick="scAddPersonFromReview()">＋ Add someone</button>
+    <div style="margin:18px 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Personal note <span style="font-weight:500;text-transform:none;letter-spacing:0;color:rgba(238,238,248,0.45);">(optional)</span></div>
+    <textarea id="sc-personal-note"
+      placeholder="e.g. heard about it from Sarah · the DJ killed it last time · &#10;been ages since we hung out!"
+      maxlength="280"
+      oninput="_sc.personalNote = this.value;"
+      style="width:100%;min-height:72px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);font-family:inherit;font-size:13px;line-height:1.4;resize:vertical;box-sizing:border-box;outline:none;"
+    >${_sc.personalNote || ''}</textarea>
+    <div style="font-size:11px;color:rgba(238,238,248,0.45);margin-top:6px;line-height:1.4;">
+      Added to each WhatsApp message · keeps it personal, not auto-blasted.
+    </div>`;
 }
 
 function renderSCWhatsApp() {
@@ -11076,11 +11115,15 @@ function renderSCWhatsApp() {
   const eventUrl = _sc.selWhat?.url || null;
   const eventLink = eventUrl ? `\n\n🔗 ${eventUrl}` : '';
   const groupRsvpNote = _sc.pregenOutingId ? `\n\nRSVP via Spontany: ${window.location.origin}/calendar?openEvent=${_sc.pregenOutingId}` : '';
+  const _groupNote = (_sc.personalNote || '').trim();
+  const _groupNoteSuffix = _groupNote ? `\n\n${_groupNote}` : '';
   const groupMsg = (soft
     ? `hey ${names}! thinking about getting together${whatText ? ` - ${whatText}` : ''} sometime, anyone up for it?`
-    : `hey ${names}! ${whatText ? whatText + ' - ' : ''}${dateMain}? who's in?`) + eventLink + groupRsvpNote;
+    : `hey ${names}! ${whatText ? whatText + ' - ' : ''}${dateMain}? who's in?`) + _groupNoteSuffix + eventLink + groupRsvpNote;
   const groupWaUrl = `https://wa.me/?text=${encodeURIComponent(groupMsg)}`;
 
+  const personalNote = (_sc.personalNote || '').trim();
+  const noteSuffix = personalNote ? `\n\n${personalNote}` : '';
   const personData = selected.map(w => {
     // Build RSVP/event deep link - prefer per-invitee rsvp_token, fall back to general event link
     let rsvpLink = '';
@@ -11090,7 +11133,11 @@ function renderSCWhatsApp() {
     } else if (_sc.pregenOutingId) {
       rsvpLink = `\n\nView on Spontany: ${window.location.origin}/calendar?openEvent=${_sc.pregenOutingId}`;
     }
-    const msg = _scPersonMsg(w, whatText, dateMain, soft) + eventLink + rsvpLink;
+    // Auto-include "also coming: …" so each invitee sees who else is in the loop —
+    // less generic than a bare "you in?" message.
+    const others = selected.filter(s => s.id !== w.id).map(s => s.name.split(' ')[0]);
+    const alsoComing = others.length ? `\n\nAlso coming: ${others.join(', ')}` : '';
+    const msg = _scPersonMsg(w, whatText, dateMain, soft) + noteSuffix + alsoComing + eventLink + rsvpLink;
     let num = w.phone ? w.phone.replace(/[^0-9]/g, '') : null;
     if (num && num.startsWith('0')) num = num.slice(1);
     const url = num
@@ -11469,3 +11516,4 @@ async function _pushSyncSub(sub) {
 <script src="/tour.js" defer></script>
 </body>
 </html>
+<!-- test -->
