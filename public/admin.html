@@ -444,6 +444,24 @@
       Same subject can't be sent twice to one user within 24h (safety rail).
     </p>
 
+    <!-- Template versioning bar — saved in localStorage per browser -->
+    <div id="outreach-tpl-bar" style="display:flex;align-items:center;gap:8px;margin:14px 0 4px;padding:8px 10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;flex-wrap:wrap;">
+      <button class="btn" id="outreach-tpl-prev" onclick="outreachPrevTpl()" title="Previous template" style="padding:4px 10px;line-height:1;">←</button>
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:200px;">
+        <span style="font-size:12px;font-weight:700;color:#374151;">Template:</span>
+        <span id="outreach-tpl-name" style="font-size:13px;color:#111;font-weight:600;">—</span>
+        <span id="outreach-tpl-counter" style="font-size:11px;color:#6b7280;"></span>
+        <span id="outreach-tpl-dirty" style="display:none;font-size:11px;color:#b45309;background:#fef3c7;padding:1px 8px;border-radius:10px;">unsaved changes</span>
+      </div>
+      <button class="btn" id="outreach-tpl-next" onclick="outreachNextTpl()" title="Next template" style="padding:4px 10px;line-height:1;">→</button>
+      <div id="outreach-tpl-save-actions" style="display:none;gap:6px;">
+        <button class="btn" onclick="outreachUpdateTpl()" style="background:#111;color:#fff;">Update template</button>
+        <button class="btn" onclick="outreachSaveNewTpl()">Save as new</button>
+      </div>
+      <button class="btn" onclick="outreachRenameTpl()" style="padding:4px 8px;font-size:11px;">Rename</button>
+      <button class="btn" onclick="outreachDeleteTpl()" style="padding:4px 8px;font-size:11px;color:#b91c1c;">Delete</button>
+    </div>
+
     <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin:14px 0 4px;">Subject</label>
     <input type="text" id="outreach-subject"
       style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;"
@@ -1468,8 +1486,163 @@ async function sendOutreachTest() {
   }
 }
 
+// ── Outreach template versioning (localStorage, per-browser) ───────────────
+const OUTREACH_TPL_KEY = 'spontany_outreach_templates_v1';
+let _outreachTpls = { currentId: null, templates: [] };
+
+function outreachLoadTpls() {
+  try {
+    const raw = localStorage.getItem(OUTREACH_TPL_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.templates)) _outreachTpls = parsed;
+    }
+  } catch (_) {}
+  if (!_outreachTpls.templates.length) {
+    const subject = document.getElementById('outreach-subject').value;
+    const body    = document.getElementById('outreach-body').value;
+    const seed = { id: 'tpl_' + Date.now(), name: 'Default', subject, body };
+    _outreachTpls = { currentId: seed.id, templates: [seed] };
+    outreachPersist();
+  }
+  outreachRenderBar();
+  outreachLoadCurrentIntoFields();
+  outreachWireDirtyListeners();
+}
+
+function outreachPersist() {
+  try { localStorage.setItem(OUTREACH_TPL_KEY, JSON.stringify(_outreachTpls)); } catch (_) {}
+}
+
+function outreachCurrentIdx() {
+  return _outreachTpls.templates.findIndex(t => t.id === _outreachTpls.currentId);
+}
+
+function outreachCurrent() {
+  const idx = outreachCurrentIdx();
+  return idx >= 0 ? _outreachTpls.templates[idx] : null;
+}
+
+function outreachLoadCurrentIntoFields() {
+  const t = outreachCurrent();
+  if (!t) return;
+  document.getElementById('outreach-subject').value = t.subject;
+  document.getElementById('outreach-body').value    = t.body;
+  outreachCheckDirty();
+}
+
+function outreachRenderBar() {
+  const idx = outreachCurrentIdx();
+  const total = _outreachTpls.templates.length;
+  const t = outreachCurrent();
+  document.getElementById('outreach-tpl-name').textContent = t ? t.name : '—';
+  document.getElementById('outreach-tpl-counter').textContent = total ? `(${idx + 1} / ${total})` : '';
+  document.getElementById('outreach-tpl-prev').disabled = total < 2;
+  document.getElementById('outreach-tpl-next').disabled = total < 2;
+}
+
+function outreachIsDirty() {
+  const t = outreachCurrent();
+  if (!t) return false;
+  const subject = document.getElementById('outreach-subject').value;
+  const body    = document.getElementById('outreach-body').value;
+  return subject !== t.subject || body !== t.body;
+}
+
+function outreachCheckDirty() {
+  const dirty = outreachIsDirty();
+  document.getElementById('outreach-tpl-dirty').style.display        = dirty ? 'inline-block' : 'none';
+  document.getElementById('outreach-tpl-save-actions').style.display = dirty ? 'flex' : 'none';
+}
+
+function outreachWireDirtyListeners() {
+  ['outreach-subject', 'outreach-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.tplWired) return;
+    el.dataset.tplWired = '1';
+    el.addEventListener('input', outreachCheckDirty);
+  });
+}
+
+function outreachConfirmDiscardIfDirty() {
+  if (!outreachIsDirty()) return true;
+  return confirm('You have unsaved changes to this template. Switch and discard them?');
+}
+
+function outreachPrevTpl() {
+  if (_outreachTpls.templates.length < 2) return;
+  if (!outreachConfirmDiscardIfDirty()) return;
+  const idx = outreachCurrentIdx();
+  const next = (idx - 1 + _outreachTpls.templates.length) % _outreachTpls.templates.length;
+  _outreachTpls.currentId = _outreachTpls.templates[next].id;
+  outreachPersist();
+  outreachRenderBar();
+  outreachLoadCurrentIntoFields();
+}
+
+function outreachNextTpl() {
+  if (_outreachTpls.templates.length < 2) return;
+  if (!outreachConfirmDiscardIfDirty()) return;
+  const idx = outreachCurrentIdx();
+  const next = (idx + 1) % _outreachTpls.templates.length;
+  _outreachTpls.currentId = _outreachTpls.templates[next].id;
+  outreachPersist();
+  outreachRenderBar();
+  outreachLoadCurrentIntoFields();
+}
+
+function outreachUpdateTpl() {
+  const t = outreachCurrent();
+  if (!t) return;
+  t.subject = document.getElementById('outreach-subject').value;
+  t.body    = document.getElementById('outreach-body').value;
+  outreachPersist();
+  outreachCheckDirty();
+  setOutreachStatus('Template "' + t.name + '" updated.', false);
+}
+
+function outreachSaveNewTpl() {
+  const subject = document.getElementById('outreach-subject').value;
+  const body    = document.getElementById('outreach-body').value;
+  const suggested = (subject || 'Untitled').slice(0, 40);
+  const name = prompt('Name this template:', suggested);
+  if (!name) return;
+  const tpl = { id: 'tpl_' + Date.now(), name: name.trim(), subject, body };
+  _outreachTpls.templates.push(tpl);
+  _outreachTpls.currentId = tpl.id;
+  outreachPersist();
+  outreachRenderBar();
+  outreachCheckDirty();
+  setOutreachStatus('Saved as "' + tpl.name + '".', false);
+}
+
+function outreachRenameTpl() {
+  const t = outreachCurrent();
+  if (!t) return;
+  const name = prompt('Rename template:', t.name);
+  if (!name) return;
+  t.name = name.trim();
+  outreachPersist();
+  outreachRenderBar();
+}
+
+function outreachDeleteTpl() {
+  const t = outreachCurrent();
+  if (!t) return;
+  if (_outreachTpls.templates.length === 1) { alert("Can't delete the last template."); return; }
+  if (!confirm('Delete template "' + t.name + '"?')) return;
+  const idx = outreachCurrentIdx();
+  _outreachTpls.templates.splice(idx, 1);
+  const fallback = _outreachTpls.templates[Math.max(0, idx - 1)];
+  _outreachTpls.currentId = fallback.id;
+  outreachPersist();
+  outreachRenderBar();
+  outreachLoadCurrentIntoFields();
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 loadAnalytics();
+outreachLoadTpls();
 </script>
 </body>
 </html>
