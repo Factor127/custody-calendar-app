@@ -1,0 +1,36 @@
+name: SW Cache Bump Gate
+
+on:
+  pull_request:
+    paths:
+      - 'public/**'
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Determine base ref
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ref=origin/${{ github.event.pull_request.base.ref }}" >> "$GITHUB_OUTPUT"
+            git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 || true
+          else
+            # push to main: compare against previous commit
+            echo "ref=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check SW cache version bump
+        run: node scripts/check-sw-bump.js "${{ steps.base.outputs.ref }}"

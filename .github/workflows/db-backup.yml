@@ -1,0 +1,188 @@
+name: Off-Railway DB backup
+
+# Why this exists: Railway holds the only live copy of calendar.db, with real
+# user PII (custody days, kid info, partner contacts). If Railway loses the
+# volume — billing dispute, account takeover, region outage, fat-fingered
+# `railway down` — we have nothing to restore from. This workflow runs from
+# GitHub's infra, encrypts the dump with age before it leaves the runner, and
+# stores it in Backblaze B2. The age private key is NOT in this repo or in
+# GitHub secrets — it lives in Ran's password manager + paper backup. So
+# even a full GitHub compromise can't decrypt the backups.
+#
+# See docs/backup-restore.md for the one-time setup and the restore drill.
+
+on:
+  schedule:
+    # 09:00 UTC nightly = 02:00 PT / 04:00 CT / 12:00 IDT. Runs after the
+    # busiest US evening planning window has settled.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you running this manually?'
+        required: false
+        default: 'manual smoke test'
+
+# Only one backup at a time. If yesterday's run is still going (network was
+# slow, etc.), don't pile up — finish that one first.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # All secret material flows through env, never on the command line —
+      # process listings on shared runners are theoretically observable, and
+      # GitHub redacts secrets in `env:` but not in `run:` arguments.
+      BASE_URL:        ${{ secrets.PROD_BASE_URL }}
+      ADMIN_TOKEN:     ${{ secrets.ADMIN_TOKEN }}
+      AGE_PUBLIC_KEY:  ${{ secrets.AGE_PUBLIC_KEY }}
+      AWS_ACCESS_KEY_ID:     ${{ secrets.B2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.B2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION:    ${{ secrets.B2_REGION }}     # e.g. us-west-004
+      B2_ENDPOINT:           ${{ secrets.B2_ENDPOINT }}   # e.g. https://s3.us-west-004.backblazeb2.com
+      B2_BUCKET:             ${{ secrets.B2_BUCKET }}     # e.g. spontany-backups
+
+    steps:
+      - name: Check out repo (for prune script)
+        uses: actions/checkout@v4
+
+      - name: Sanity-check required secrets
+        run: |
+          set -euo pipefail
+          missing=()
+          for v in BASE_URL ADMIN_TOKEN AGE_PUBLIC_KEY AWS_ACCESS_KEY_ID \
+                   AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION B2_ENDPOINT B2_BUCKET; do
+            if [ -z "${!v:-}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+          # Cheap shape check on the age public key — catches a paste of the
+          # private key by mistake (which would render every backup readable
+          # by anyone with repo write access).
+          case "$AGE_PUBLIC_KEY" in
+            age1*) ;;
+            *) echo "::error::AGE_PUBLIC_KEY does not look like an age recipient (expected age1...)"; exit 1 ;;
+          esac
+          if echo "$AGE_PUBLIC_KEY" | grep -q 'AGE-SECRET-KEY'; then
+            echo "::error::AGE_PUBLIC_KEY contains a private key. ROTATE IMMEDIATELY."
+            exit 1
+          fi
+
+      - name: Install age
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends age
+          age --version
+
+      - name: Pull live SQLite snapshot from Railway
+        run: |
+          set -euo pipefail
+          mkdir -p backup-tmp
+          # -fsS: fail on HTTP errors, silent except on error, show error on stderr.
+          # --max-time 600: 10min cap; a healthy SQLite dump for ~8 users is
+          # well under a second, but VACUUM INTO of a degraded volume could be slow.
+          # Header-only auth: token never appears in the URL or in any log.
+          curl -fsS \
+            --max-time 600 \
+            --retry 3 --retry-delay 10 --retry-connrefused \
+            -H "X-Admin-Token: $ADMIN_TOKEN" \
+            -H "User-Agent: spontany-backup-cron/1.0" \
+            -o backup-tmp/calendar.db \
+            "$BASE_URL/api/admin/backup"
+
+          # Validate the SQLite header. Magic bytes for any SQLite 3 file are
+          # the literal ASCII string "SQLite format 3" followed by NUL. If
+          # we don't see them, we got an HTML error page or a corrupted dump.
+          head -c 15 backup-tmp/calendar.db | grep -q 'SQLite format 3' || {
+            echo "::error::Downloaded file is not a SQLite database. Refusing to encrypt and upload garbage."
+            ls -la backup-tmp/
+            exit 1
+          }
+
+          size=$(stat -c%s backup-tmp/calendar.db)
+          echo "Snapshot size: $size bytes"
+          if [ "$size" -lt 4096 ]; then
+            echo "::error::Snapshot is suspiciously small ($size bytes). Refusing to upload."
+            exit 1
+          fi
+
+      - name: Encrypt snapshot with age
+        run: |
+          set -euo pipefail
+          # We pass the recipient via a heredoc-fed file so the public key
+          # never appears in `ps` / runner logs.
+          recip_file="$(mktemp)"
+          printf '%s\n' "$AGE_PUBLIC_KEY" > "$recip_file"
+          age -R "$recip_file" \
+              -o backup-tmp/calendar.db.age \
+              backup-tmp/calendar.db
+          rm -f "$recip_file"
+
+          # Shred the plaintext copy. shred is overkill on a tmpfs runner
+          # disk that's destroyed at job end, but it's cheap insurance and
+          # documents intent.
+          shred -u backup-tmp/calendar.db || rm -f backup-tmp/calendar.db
+
+          enc_size=$(stat -c%s backup-tmp/calendar.db.age)
+          echo "Encrypted size: $enc_size bytes"
+
+      - name: Upload encrypted blob to Backblaze B2
+        run: |
+          set -euo pipefail
+          # ISO date in UTC. Day-granularity is intentional — we only run
+          # nightly. If you ever move to multiple-per-day, switch to ISO
+          # timestamps and update the prune script's date parser.
+          stamp="$(date -u +%Y-%m-%d)"
+          key="daily/spontany-${stamp}.db.age"
+
+          # --no-progress keeps logs short and avoids printing the path
+          # repeatedly. AWS_* env vars + --endpoint-url is all aws cli
+          # needs to talk to B2 over the S3-compatible API.
+          aws s3 cp \
+            --no-progress \
+            --endpoint-url "$B2_ENDPOINT" \
+            backup-tmp/calendar.db.age \
+            "s3://$B2_BUCKET/$key"
+
+          # Verify the object actually landed and matches what we uploaded.
+          local_size=$(stat -c%s backup-tmp/calendar.db.age)
+          remote_size=$(aws s3api head-object \
+            --endpoint-url "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" \
+            --key "$key" \
+            --query 'ContentLength' --output text)
+          if [ "$local_size" != "$remote_size" ]; then
+            echo "::error::Upload size mismatch: local=$local_size remote=$remote_size"
+            exit 1
+          fi
+          echo "Uploaded s3://$B2_BUCKET/$key ($remote_size bytes)"
+          echo "BACKUP_KEY=$key" >> "$GITHUB_ENV"
+
+      - name: Apply GFS-lite retention (14 daily / 8 weekly / 12 monthly)
+        run: |
+          set -euo pipefail
+          chmod +x scripts/prune-backups.sh
+          scripts/prune-backups.sh
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Backup result" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${BACKUP_KEY:-}" ]; then
+            echo "- Uploaded: \`$BACKUP_KEY\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- :x: No upload completed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "- Bucket: \`$B2_BUCKET\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- See [docs/backup-restore.md](../blob/main/docs/backup-restore.md) for restore drill." >> "$GITHUB_STEP_SUMMARY"

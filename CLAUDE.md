@@ -71,10 +71,28 @@ Ran, solo founder building Spontany — a scheduling app for divorcees to manage
 - No hardcoded secrets, tokens, or invite codes in committed files.
 - Don't `git push` unless explicitly asked. Commit freely; pushing is user-triggered because Railway auto-deploys from `main` on push.
 
+### 2FA / account security
+2FA on every service. Authenticator app (or hardware key) — never SMS, SIM swap is the realistic threat for a domain owner. Priority order by blast radius:
+
+1. **GoDaddy** — highest priority. Domain hijack = magic links break, push origin mismatch, Resend SPF/DKIM stop validating, can't even reset things because resets go to email on that domain. Also enable **registrar lock** (transfer lock) and confirm the recovery email isn't on a domain hosted at GoDaddy (circular dependency).
+2. **Personal email (ranmer2000@gmail.com)** — recovery channel for everything else, effectively the master key. Hardware key here if anywhere.
+3. **GitHub** — push to `main` auto-deploys to Railway, so compromised GitHub = compromised prod. Consider signed commits.
+4. **Google OAuth admin (Google Cloud Console)** — compromised here means rotated client secret locks users out, or a malicious redirect URI phishes them.
+5. **Railway, Resend, Twilio** — hold prod secrets / send on your behalf. Check Railway's GitHub deploy token doesn't bypass 2FA on re-auth.
+6. **Anthropic, Hotjar, Canva, accounting tools, business bank** — lower blast radius but still required.
+
+## Merge gates
+Hard gates — a commit/PR cannot land without these passing. Not advice, not "load-bearing rules" — gates.
+
+- **SW cache bump (enforced):** if any file in `public/` changes, `CACHE_VERSION` in `public/sw.js` MUST be incremented in the same commit/PR. Otherwise returning PWA users keep the stale cache and "the deploy didn't work."
+  - **Local enforcement:** `.git/hooks/pre-commit` runs `scripts/check-sw-bump.js --staged`. Installed automatically by `npm install` (via the `prepare` script) or manually with `node scripts/install-hooks.js`.
+  - **CI enforcement:** `.github/workflows/sw-cache-bump.yml` runs the same check on PRs touching `public/**` and on pushes to `main`.
+  - **Bypass:** `git commit --no-verify` skips the local hook. Don't — the CI gate will still catch it on push, and you'll have wasted a deploy.
+
 ## PWA gotchas
 These have all bitten more than once — treat as load-bearing rules, not suggestions.
 
-- **Bump the service worker cache:** if you change anything in `public/` (HTML/CSS/JS), increment the cache version in `public/sw.js`. Otherwise returning users keep the cached file and "the deploy didn't work." (See commits like `sw: bump cache to v15`.)
+- **Bump the service worker cache:** see **Merge gates** above — this is now enforced by a pre-commit hook + CI, not a habit. (Historical: commits like `sw: bump cache to v15`.)
 - **Static assets must live in `public/`:** Express only serves from `public/`. Files in the repo root will 404 on Railway (carousel images burned us — see `context-backup-2026-04-02b.md`).
 - **Android back button is part of the UX contract:** in any sheet, modal, overlay, or wizard step, back must close *that* — not exit the app. Spontany installs as a PWA on Android and exiting feels like a crash. Pattern: push a history state on open, listen for `popstate` to dismiss.
 - **Web Share Target:** the `/share-target` route + SW intercept is fragile. Preserve `shareUrl` through any auth/login bounce — don't drop it in `history.replaceState` or token-fixup paths.

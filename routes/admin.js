@@ -446,5 +446,89 @@ router.post('/admin/outreach/send-test', async (req, res) => {
   res.json({ sent: true, to: OUTREACH_TEST_RECIPIENT });
 });
 
+// ── Off-platform encrypted DB backup ────────────────────────────────────────
+// GET /api/admin/backup
+//
+// Streams a consistent snapshot of the live SQLite database. Pulled nightly
+// by .github/workflows/db-backup.yml, which encrypts the bytes with `age`
+// before uploading to Backblaze B2. Why an HTTP endpoint instead of reading
+// /data/calendar.db off the volume directly: GitHub Actions has no direct
+// volume access on Railway, and copying a hot WAL file off-disk risks a
+// torn snapshot. VACUUM INTO is SQLite's blessed hot-backup primitive — it
+// produces a defragmented, transactionally-consistent file even under WAL
+// with concurrent writers (which only briefly block on a read lock).
+//
+// Auth: header-only (X-Admin-Token). Never accept ?token= here — the dump
+// URL would otherwise land in Railway's HTTP access log right next to a
+// fresh copy of every user's PII.
+router.get('/admin/backup', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const os   = require('os');
+  const path = require('path');
+  const fs   = require('fs');
+  const { randomUUID } = require('crypto');
+
+  // UUID-suffixed tmp file so concurrent calls (manual + cron) can't collide.
+  // os.tmpdir() is ephemeral on Railway, which is exactly what we want — the
+  // unencrypted snapshot must not survive a restart.
+  const tmpPath = path.join(os.tmpdir(), `spontany-backup-${randomUUID()}.db`);
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    fs.unlink(tmpPath, () => {}); // best-effort; never throws upward
+  };
+
+  try {
+    // Path is fully controlled (os.tmpdir + UUID, no user input), but we
+    // still escape single-quotes per SQLite's string-literal rules so a
+    // future change to tmpPath can't accidentally inject SQL.
+    const escaped = tmpPath.replace(/'/g, "''");
+    db.exec(`VACUUM INTO '${escaped}'`);
+  } catch (err) {
+    cleanup();
+    // Don't echo err.message — VACUUM errors can include the DB path, which
+    // we don't want sitting in client-side logs / GH Actions output.
+    console.error('[admin/backup] VACUUM INTO failed:', err && err.message);
+    return res.status(500).json({ error: 'Backup snapshot failed' });
+  }
+
+  // Stat for Content-Length so the client (and any proxy) can detect a
+  // truncated stream. If stat fails the file vanished — bail.
+  let size;
+  try {
+    size = fs.statSync(tmpPath).size;
+  } catch (err) {
+    cleanup();
+    console.error('[admin/backup] snapshot vanished before stream:', err && err.message);
+    return res.status(500).json({ error: 'Backup snapshot failed' });
+  }
+
+  const dateStamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Length', String(size));
+  res.setHeader('Content-Disposition', `attachment; filename="spontany-${dateStamp}.db"`);
+  // Belt-and-suspenders: keep this dump out of any cache layer.
+  res.setHeader('Cache-Control', 'no-store, must-revalidate');
+
+  const stream = fs.createReadStream(tmpPath);
+  stream.on('error', (err) => {
+    console.error('[admin/backup] stream error:', err && err.message);
+    cleanup();
+    if (!res.headersSent) res.status(500).end();
+    else res.destroy(err);
+  });
+  stream.on('end',   cleanup);
+  stream.on('close', cleanup);
+  res.on('close',    cleanup); // client hung up before we finished writing
+  stream.pipe(res);
+
+  // Audit trail without leaking PII or the token. Useful when checking that
+  // last night's cron actually fired.
+  console.log(`[admin/backup] snapshot streamed, ${size} bytes, ${dateStamp}`);
+});
+
 module.exports = router;
 module.exports.requireAdmin = requireAdmin;

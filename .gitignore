@@ -43,3 +43,6 @@ Spontany backlog - Sheet*.xlsx
 # Stray loose files at repo root from past sessions
 carousel-*.png
 SESSION_HANDOFF.md
+
+# Personal strategy notes (voice memos, transcripts) — local-only.
+strategy/
