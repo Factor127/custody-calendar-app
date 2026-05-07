@@ -2527,6 +2527,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
       style="width:32px;height:32px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✏️</button>
     <div id="edit-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.35);z-index:200;min-width:190px;overflow:hidden;">
       <button onclick="startHolidayEdit()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);color:var(--text);">🏖️ Edit Holidays</button>
+      <button onclick="openHolidayImport()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);color:var(--text);">🎒 Import school holidays</button>
       <button onclick="openSuggestFlow()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);color:var(--text);">💡 Suggest Changes</button>
       <button onclick="startChangeDays()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);color:var(--text);">📅 Change days</button>
       <button onclick="openKidsExport()" style="display:block;width:100%;text-align:left;padding:11px 16px;border:none;background:none;cursor:pointer;font-size:14px;color:var(--text);">🖨️ Kids schedule</button>
@@ -2830,6 +2831,30 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('save-as-group-modal')">Skip</button>
       <button class="btn btn-primary" id="save-group-submit-btn" onclick="submitSaveAsGroup()">Save group</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── School-holiday import modal ──────────────────────────────────
+     Loads regions from /holidays.json, lets the user pick one, then
+     bulk-tags matching dates as 'H' via /api/calendar/save. Skips dates
+     outside the user's already-generated custody schedule and any date
+     ≤ today. -->
+<div class="modal-overlay" id="holiday-import-modal">
+  <div class="modal" style="max-width:440px;">
+    <h2 style="margin:0 0 6px;font-size:17px;">Import school holidays</h2>
+    <p class="text-muted" style="margin:0 0 14px;font-size:13px;">
+      Tags days as holidays in your calendar so you don't accidentally plan during a school break.
+    </p>
+    <div id="hi-region-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+      <div style="font-size:13px;color:var(--muted);text-align:center;padding:14px;">Loading…</div>
+    </div>
+    <div style="font-size:11px;color:rgba(238,238,248,0.45);margin-bottom:14px;line-height:1.5;">
+      Only future days that already exist in your custody schedule will be tagged. Existing H/V tags are kept as-is.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('holiday-import-modal')">Cancel</button>
+      <button class="btn btn-primary" id="hi-import-btn" onclick="applyHolidayImport()" disabled>Pick a region</button>
     </div>
   </div>
 </div>
@@ -6543,6 +6568,123 @@ document.addEventListener('click', e => {
 function startHolidayEdit() {
   document.getElementById('edit-dropdown').style.display = 'none';
   setEditMode('holiday', true);
+}
+
+// ── School-holiday import ───────────────────────────────────────────────
+// Static JSON at /holidays.json defines regions (Dallas ISD, Israel state, …)
+// each with a flat list of {date, name}. Import bulk-tags the matching dates
+// as 'H' via /api/calendar/save, skipping past dates and dates the user
+// hasn't generated custody for yet.
+let _holidayDataCache = null;
+let _selectedHolidayRegion = null;
+
+async function openHolidayImport() {
+  document.getElementById('edit-dropdown').style.display = 'none';
+  _selectedHolidayRegion = null;
+  document.getElementById('holiday-import-modal').classList.add('open');
+
+  if (!_holidayDataCache) {
+    try {
+      const r = await fetch('/holidays.json', { cache: 'no-cache' });
+      if (!r.ok) throw new Error();
+      _holidayDataCache = await r.json();
+    } catch (e) {
+      document.getElementById('hi-region-list').innerHTML =
+        '<div style="font-size:13px;color:#f87171;text-align:center;padding:14px;">Could not load holiday data.</div>';
+      return;
+    }
+  }
+  _renderHolidayImportList();
+}
+
+function _renderHolidayImportList() {
+  const today = new Date().toISOString().slice(0, 10);
+  const html = (_holidayDataCache.regions || []).map(r => {
+    const future = r.days.filter(d => d.date >= today);
+    const inRange = future.filter(d => calendarDays[d.date]);
+    const skip = future.length - inRange.length;
+    const sel = _selectedHolidayRegion === r.id;
+    const meta = inRange.length
+      ? `${r.school_year || ''} · ${inRange.length} days will be tagged${skip ? ` · ${skip} skipped (no custody set)` : ''}`
+      : `${r.school_year || ''} · no matching dates in your calendar yet`;
+    return `
+      <label class="hi-region${sel ? ' selected' : ''}" style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px solid ${sel ? 'var(--lime)' : 'var(--border)'};border-radius:10px;cursor:pointer;background:${sel ? 'rgba(230,249,82,0.10)' : 'transparent'};transition:border-color .12s,background .12s;">
+        <input type="radio" name="hi-region" value="${r.id}" ${sel ? 'checked' : ''} onchange="selectHolidayRegion('${r.id}')" style="margin:3px 0 0;cursor:pointer;flex-shrink:0;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);">${r.label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4;">${meta}</div>
+        </div>
+      </label>
+    `;
+  }).join('');
+  document.getElementById('hi-region-list').innerHTML = html;
+
+  const region = (_holidayDataCache.regions || []).find(r => r.id === _selectedHolidayRegion);
+  const btn = document.getElementById('hi-import-btn');
+  if (!region) {
+    btn.disabled = true;
+    btn.textContent = 'Pick a region';
+  } else {
+    const willTag = region.days.filter(d => d.date >= today && calendarDays[d.date]).length;
+    if (willTag === 0) {
+      btn.disabled = true;
+      btn.textContent = 'No matching dates';
+    } else {
+      btn.disabled = false;
+      btn.textContent = `Import ${willTag} ${willTag === 1 ? 'holiday' : 'holidays'}`;
+    }
+  }
+}
+
+function selectHolidayRegion(id) {
+  _selectedHolidayRegion = id;
+  _renderHolidayImportList();
+}
+
+async function applyHolidayImport() {
+  const region = (_holidayDataCache?.regions || []).find(r => r.id === _selectedHolidayRegion);
+  if (!region) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const toApply = [];
+  let skipped = 0;
+  let already = 0;
+  for (const h of region.days) {
+    if (h.date < today) continue;
+    const existing = calendarDays[h.date];
+    if (!existing) { skipped++; continue; }
+    const tags = existing.tags || [];
+    if (tags.includes('H') || tags.includes('V')) { already++; continue; }
+    toApply.push({ date: h.date, owner: existing.owner, tags: ['H', ...tags] });
+  }
+
+  const btn = document.getElementById('hi-import-btn');
+  if (!toApply.length) {
+    showToast(already ? `Already tagged · ${skipped} skipped` : `No new dates to tag · ${skipped} skipped`);
+    return;
+  }
+
+  btn.disabled = true;
+  const origLabel = btn.textContent;
+  btn.textContent = 'Importing…';
+
+  try {
+    const res = await fetch(`/api/calendar/save?token=${MY_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: toApply }),
+    });
+    if (!res.ok) throw new Error();
+    for (const d of toApply) calendarDays[d.date] = { owner: d.owner, tags: d.tags };
+    renderCalendar();
+    closeModal('holiday-import-modal');
+    const skipMsg = skipped ? ` · ${skipped} skipped` : '';
+    showToast(`Tagged ${toApply.length} ${toApply.length === 1 ? 'holiday' : 'holidays'}${skipMsg}`);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = origLabel;
+    showToast('Could not save - try again');
+  }
 }
 
 // ── Suggest changes flow ──────────────────────────────────────────────
