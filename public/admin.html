@@ -114,6 +114,7 @@
   <button class="tab active" onclick="switchTab('analytics')">Analytics</button>
   <button class="tab" onclick="switchTab('waitlist')">Waitlist</button>
   <button class="tab" onclick="switchTab('outreach')">Outreach</button>
+  <button class="tab" onclick="switchTab('interviews')">Interviews</button>
 </div>
 
 <!-- ── Opportunities panel ── -->
@@ -527,12 +528,160 @@ I built this for people in your exact situation, and I'd genuinely value being a
   </div>
 </div>
 
+<!-- ── Interviews panel ── -->
+<div class="panel" id="panel-interviews">
+  <div style="padding: 0 24px; max-width: 1100px;">
+    <p style="color:#6b7280;font-size:13px;line-height:1.5;margin:14px 0 12px;">
+      Tracker for user research interviews. Per-question Q&amp;A lives in markdown under
+      <code>strategy/interviews/</code>; this tab is for follow-up status and the
+      three synthesis fields that compound across interviews. Canonical guide:
+      <code>docs/interview-guide.md</code>.
+    </p>
+
+    <div id="iv-summary" style="display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;font-size:13px;color:#374151;"></div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin:12px 0;flex-wrap:wrap;">
+      <button class="btn" style="background:#111;color:#fff;" onclick="openInterviewForm()">+ New interview</button>
+      <button class="btn" onclick="loadInterviews()">↺ Refresh</button>
+      <select id="iv-filter-status" onchange="renderInterviews()" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <option value="">All statuses</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="done">Done</option>
+        <option value="synthesized">Synthesized</option>
+        <option value="lapsed">Lapsed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select id="iv-filter-type" onchange="renderInterviews()" style="padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        <option value="">All types</option>
+        <option value="active">Active user</option>
+        <option value="lapsed">Lapsed user</option>
+        <option value="prospect">Prospect</option>
+        <option value="power">Power user</option>
+      </select>
+      <span id="iv-status" style="font-size:12px;color:#6b7280;"></span>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Custody</th>
+          <th>Usage</th>
+          <th>Status</th>
+          <th>Synthesis</th>
+          <th>Markdown</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="iv-rows"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Interview form modal (create + edit) -->
+  <div id="iv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:20px;overflow:auto;">
+    <div style="background:white;max-width:760px;width:100%;max-height:92vh;overflow:auto;border-radius:10px;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 id="iv-modal-title" style="margin:0;font-size:18px;font-weight:700;">New interview</h3>
+        <button onclick="closeInterviewForm()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;">&times;</button>
+      </div>
+
+      <input type="hidden" id="iv-id" value="">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Interview ID *</label>
+          <input type="text" id="iv-interview-id" placeholder="2026-05-12-michal" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;">
+          <div style="font-size:11px;color:#6b7280;margin-top:3px;">Match the markdown filename in <code>strategy/interviews/</code>.</div>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">First name *</label>
+          <input type="text" id="iv-name" placeholder="Michal" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Date *</label>
+          <input type="date" id="iv-date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Interviewee type *</label>
+          <select id="iv-type" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+            <option value="active">Active user</option>
+            <option value="lapsed">Lapsed user</option>
+            <option value="prospect">Prospect</option>
+            <option value="power">Power user</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Custody pattern</label>
+          <input type="text" id="iv-custody" placeholder="50/50 or 80/20 or N/A" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Usage tier</label>
+          <select id="iv-usage" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+            <option value="">—</option>
+            <option value="never">Never</option>
+            <option value="tried_once">Tried once</option>
+            <option value="returns_sometimes">Returns sometimes</option>
+            <option value="active">Active</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Status *</label>
+          <select id="iv-status-input" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+            <option value="scheduled">Scheduled</option>
+            <option value="done">Done</option>
+            <option value="synthesized">Synthesized</option>
+            <option value="lapsed">Lapsed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Audio link (optional)</label>
+          <input type="url" id="iv-audio" placeholder="https://… (Granola, Drive, etc.)" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Markdown path</label>
+        <input type="text" id="iv-mdpath" placeholder="strategy/interviews/2026-05-12-michal.md" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;">
+      </div>
+
+      <div style="margin-top:18px;padding:14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;">
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;">Synthesis (fill within 24h of the interview)</div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin:8px 0 4px;">1. Most specific moment of value (quoted)</label>
+        <textarea id="iv-syn-value" rows="3" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit;"></textarea>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin:10px 0 4px;">2. What they'd miss if it were gone</label>
+        <textarea id="iv-syn-miss" rows="3" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit;"></textarea>
+
+        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin:10px 0 4px;">3. 30-second pitch to a friend (verbatim — wedge candidate)</label>
+        <textarea id="iv-syn-pitch" rows="3" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit;"></textarea>
+      </div>
+
+      <div style="margin-top:14px;">
+        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:4px;">Notes (free-form)</label>
+        <textarea id="iv-notes" rows="4" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit;" placeholder="Anything that didn't fit into the synthesis. Body language, side comments, follow-up to-dos."></textarea>
+      </div>
+
+      <div style="margin-top:18px;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn" id="iv-delete-btn" onclick="deleteInterview()" style="margin-right:auto;color:#b91c1c;display:none;">Delete</button>
+        <button class="btn" onclick="closeInterviewForm()">Cancel</button>
+        <button class="btn" style="background:#111;color:white;" onclick="saveInterview()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const params      = new URLSearchParams(location.search);
 const ADMIN_TOKEN = params.get('token');
 let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wlLoaded = false;
 let _outreach = [], _outreachLoaded = false;
 let _network = null, _networkLoaded = false, _netInstance = null;
+let _interviews = [], _interviewsLoaded = false;
 
 // Send ADMIN_TOKEN as X-Admin-Token header instead of ?token= query param.
 // Tokens in URLs leak into Railway access logs and browser history. We keep
@@ -556,7 +705,7 @@ let _network = null, _networkLoaded = false, _netInstance = null;
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const idx = { opportunities: 0, submissions: 1, users: 2, network: 3, analytics: 4, waitlist: 5, outreach: 6 }[name];
+  const idx = { opportunities: 0, submissions: 1, users: 2, network: 3, analytics: 4, waitlist: 5, outreach: 6, interviews: 7 }[name];
   document.querySelectorAll('.tab')[idx].classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
   if (name === 'opportunities' && _opps.length === 0) loadOpps();
@@ -566,6 +715,7 @@ function switchTab(name) {
   if (name === 'analytics'     && !_analyticsLoaded)   loadAnalytics();
   if (name === 'waitlist'      && !_wlLoaded)          loadWaitlist();
   if (name === 'outreach'      && !_outreachLoaded)    loadOutreach();
+  if (name === 'interviews'    && !_interviewsLoaded)  loadInterviews();
 }
 
 function showError(msg) {
@@ -1638,6 +1788,206 @@ function outreachDeleteTpl() {
   outreachPersist();
   outreachRenderBar();
   outreachLoadCurrentIntoFields();
+}
+
+// ── Interviews ─────────────────────────────────────────────────────────────
+const IV_TYPE_LABEL = { active:'Active', lapsed:'Lapsed', prospect:'Prospect', power:'Power' };
+const IV_STATUS_LABEL = { scheduled:'Scheduled', done:'Done', synthesized:'Synthesized', lapsed:'Lapsed', cancelled:'Cancelled' };
+const IV_USAGE_LABEL = { '':'—', never:'Never', tried_once:'Tried once', returns_sometimes:'Returns sometimes', active:'Active' };
+
+function ivEsc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function loadInterviews() {
+  document.getElementById('iv-status').textContent = 'Loading…';
+  try {
+    const r = await fetch('/api/admin/interviews');
+    if (!r.ok) throw new Error('failed');
+    const data = await r.json();
+    _interviews = data.interviews || [];
+    _interviewsLoaded = true;
+
+    const s = data.summary || {};
+    document.getElementById('iv-summary').innerHTML =
+      '<span><strong>' + (s.total||0) + '</strong> total</span>' +
+      '<span><strong>' + (s.scheduled||0) + '</strong> scheduled</span>' +
+      '<span><strong>' + (s.done||0) + '</strong> done</span>' +
+      '<span><strong>' + (s.synthesized||0) + '</strong> synthesized</span>' +
+      '<span><strong>' + (s.lapsed||0) + '</strong> lapsed</span>' +
+      '<span style="color:#65a30d;"><strong>' + (s.with_pitch||0) + '</strong> with wedge pitch</span>';
+
+    document.getElementById('iv-status').textContent = '';
+    renderInterviews();
+  } catch (e) {
+    document.getElementById('iv-status').textContent = 'Failed to load.';
+    showError('Could not load interviews');
+  }
+}
+
+function renderInterviews() {
+  const body = document.getElementById('iv-rows');
+  const fStatus = document.getElementById('iv-filter-status').value;
+  const fType   = document.getElementById('iv-filter-type').value;
+  const rows = _interviews.filter(function(i) {
+    return (!fStatus || i.status === fStatus) && (!fType || i.interviewee_type === fType);
+  });
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="9" class="empty">No interviews yet. Click + New interview above.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(function(i) {
+    const synthesisIcons = [
+      i.synthesis_value && '🟢',
+      i.synthesis_miss && '🟡',
+      i.synthesis_pitch && '⭐',
+    ].filter(Boolean).join(' ') || '—';
+    const md = i.markdown_path
+      ? '<code style="font-size:11px;color:#6b7280;">' + ivEsc(i.markdown_path.replace(/^strategy\/interviews\//,'')) + '</code>'
+      : '<span style="color:#9ca3af;">—</span>';
+    return '<tr>' +
+      '<td>' + ivEsc(i.interview_date) + '</td>' +
+      '<td><strong>' + ivEsc(i.interviewee_name) + '</strong></td>' +
+      '<td>' + (IV_TYPE_LABEL[i.interviewee_type] || i.interviewee_type) + '</td>' +
+      '<td>' + ivEsc(i.custody_pattern || '—') + '</td>' +
+      '<td>' + (IV_USAGE_LABEL[i.usage_tier || ''] || i.usage_tier || '—') + '</td>' +
+      '<td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:' + ivStatusColor(i.status) + ';color:#fff;">' + (IV_STATUS_LABEL[i.status] || i.status) + '</span></td>' +
+      '<td title="' + ivEsc((i.synthesis_pitch||'').slice(0,300)) + '">' + synthesisIcons + '</td>' +
+      '<td>' + md + '</td>' +
+      '<td><button class="btn" onclick="editInterview(' + i.id + ')" style="padding:4px 10px;font-size:11px;">Edit</button></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function ivStatusColor(s) {
+  return ({
+    scheduled: '#6366f1',
+    done: '#0ea5e9',
+    synthesized: '#16a34a',
+    lapsed: '#9ca3af',
+    cancelled: '#9ca3af',
+  })[s] || '#6b7280';
+}
+
+function openInterviewForm() {
+  document.getElementById('iv-modal-title').textContent = 'New interview';
+  document.getElementById('iv-id').value = '';
+  document.getElementById('iv-interview-id').value = '';
+  document.getElementById('iv-name').value = '';
+  document.getElementById('iv-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('iv-type').value = 'active';
+  document.getElementById('iv-custody').value = '';
+  document.getElementById('iv-usage').value = '';
+  document.getElementById('iv-status-input').value = 'scheduled';
+  document.getElementById('iv-audio').value = '';
+  document.getElementById('iv-mdpath').value = '';
+  document.getElementById('iv-syn-value').value = '';
+  document.getElementById('iv-syn-miss').value = '';
+  document.getElementById('iv-syn-pitch').value = '';
+  document.getElementById('iv-notes').value = '';
+  document.getElementById('iv-delete-btn').style.display = 'none';
+  document.getElementById('iv-interview-id').readOnly = false;
+  document.getElementById('iv-modal').style.display = 'flex';
+}
+
+function editInterview(id) {
+  const i = _interviews.find(function(x) { return x.id === id; });
+  if (!i) return;
+  document.getElementById('iv-modal-title').textContent = 'Edit: ' + i.interviewee_name;
+  document.getElementById('iv-id').value = i.id;
+  document.getElementById('iv-interview-id').value = i.interview_id;
+  document.getElementById('iv-interview-id').readOnly = true;
+  document.getElementById('iv-name').value = i.interviewee_name || '';
+  document.getElementById('iv-date').value = i.interview_date || '';
+  document.getElementById('iv-type').value = i.interviewee_type || 'active';
+  document.getElementById('iv-custody').value = i.custody_pattern || '';
+  document.getElementById('iv-usage').value = i.usage_tier || '';
+  document.getElementById('iv-status-input').value = i.status || 'scheduled';
+  document.getElementById('iv-audio').value = i.audio_link || '';
+  document.getElementById('iv-mdpath').value = i.markdown_path || '';
+  document.getElementById('iv-syn-value').value = i.synthesis_value || '';
+  document.getElementById('iv-syn-miss').value = i.synthesis_miss || '';
+  document.getElementById('iv-syn-pitch').value = i.synthesis_pitch || '';
+  document.getElementById('iv-notes').value = i.notes || '';
+  document.getElementById('iv-delete-btn').style.display = 'inline-block';
+  document.getElementById('iv-modal').style.display = 'flex';
+}
+
+function closeInterviewForm() {
+  document.getElementById('iv-modal').style.display = 'none';
+}
+
+async function saveInterview() {
+  const id = document.getElementById('iv-id').value;
+  const payload = {
+    interviewee_name:  document.getElementById('iv-name').value.trim(),
+    interviewee_type:  document.getElementById('iv-type').value,
+    interview_date:    document.getElementById('iv-date').value,
+    custody_pattern:   document.getElementById('iv-custody').value.trim(),
+    usage_tier:        document.getElementById('iv-usage').value,
+    status:            document.getElementById('iv-status-input').value,
+    audio_link:        document.getElementById('iv-audio').value.trim(),
+    markdown_path:     document.getElementById('iv-mdpath').value.trim(),
+    synthesis_value:   document.getElementById('iv-syn-value').value.trim(),
+    synthesis_miss:    document.getElementById('iv-syn-miss').value.trim(),
+    synthesis_pitch:   document.getElementById('iv-syn-pitch').value.trim(),
+    notes:             document.getElementById('iv-notes').value.trim(),
+  };
+
+  if (!payload.interviewee_name || !payload.interview_date) {
+    showError('Name and date are required.');
+    return;
+  }
+
+  let url, method;
+  if (id) {
+    url = '/api/admin/interviews/' + encodeURIComponent(id);
+    method = 'PUT';
+  } else {
+    payload.interview_id = document.getElementById('iv-interview-id').value.trim();
+    if (!payload.interview_id) {
+      const slug = payload.interviewee_name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      payload.interview_id = payload.interview_date + '-' + slug;
+    }
+    if (!payload.markdown_path) {
+      payload.markdown_path = 'strategy/interviews/' + payload.interview_id + '.md';
+    }
+    url = '/api/admin/interviews';
+    method = 'POST';
+  }
+
+  try {
+    const r = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(function() { return {}; });
+      showError(err.error || 'Save failed');
+      return;
+    }
+    closeInterviewForm();
+    await loadInterviews();
+  } catch (e) {
+    showError('Network error');
+  }
+}
+
+async function deleteInterview() {
+  const id = document.getElementById('iv-id').value;
+  if (!id) return;
+  if (!confirm('Delete this interview? The markdown file in strategy/interviews/ is not affected.')) return;
+  try {
+    const r = await fetch('/api/admin/interviews/' + encodeURIComponent(id), { method: 'DELETE' });
+    if (!r.ok) { showError('Delete failed'); return; }
+    closeInterviewForm();
+    await loadInterviews();
+  } catch (e) {
+    showError('Network error');
+  }
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────

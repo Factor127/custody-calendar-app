@@ -514,6 +514,34 @@ db.exec(`CREATE TABLE IF NOT EXISTS sms_opt_outs (
   created_at TEXT DEFAULT (datetime('now'))
 )`);
 
+// ── User research interviews (admin-only tracker; canonical guide in docs/) ─
+// Lightweight DB-backed list. Synthesis fields are first-class because they
+// are the only fields that compound across interviews. Per-question Q&A still
+// lives in markdown files under strategy/interviews/ — this table is for
+// tracking, follow-up status, and cross-interview queries.
+db.exec(`CREATE TABLE IF NOT EXISTS interviews (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  interview_id        TEXT UNIQUE NOT NULL,
+  interviewee_name    TEXT NOT NULL,
+  interviewee_type    TEXT NOT NULL CHECK(interviewee_type IN ('active','lapsed','prospect','power')),
+  interview_date      TEXT NOT NULL,
+  custody_pattern     TEXT,
+  usage_tier          TEXT,
+  status              TEXT NOT NULL DEFAULT 'scheduled'
+    CHECK(status IN ('scheduled','done','synthesized','lapsed','cancelled')),
+  synthesis_value     TEXT,
+  synthesis_miss      TEXT,
+  synthesis_pitch     TEXT,
+  notes               TEXT,
+  markdown_path       TEXT,
+  audio_link          TEXT,
+  created_at          TEXT DEFAULT (datetime('now')),
+  updated_at          TEXT DEFAULT (datetime('now'))
+)`);
+try { db.exec('CREATE INDEX idx_interviews_status ON interviews(status)'); } catch(e) {}
+try { db.exec('CREATE INDEX idx_interviews_type ON interviews(interviewee_type)'); } catch(e) {}
+try { db.exec('CREATE INDEX idx_interviews_date ON interviews(interview_date)'); } catch(e) {}
+
 // UTM attribution on match requests
 try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_source TEXT'); } catch(e) {}
 try { db.exec('ALTER TABLE match_requests ADD COLUMN utm_medium TEXT'); } catch(e) {}

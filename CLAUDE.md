@@ -118,5 +118,26 @@ Battle-earned rules from prior contrast/layout debugging — don't relitigate.
 - Prefers to build things himself rather than use heavy platforms
 - Asks smart strategic questions — treat as a technical founder who thinks about the full picture
 
+## User research / Interviews
+Spontany has a structured user-research workflow. It exists because the project's biggest historical gap was building before talking — and the next phase is wedge-validation, which means interviews are now first-class.
+
+**Canonical guide:** `docs/interview-guide.md` — the 32-question script with stable IDs (Q1–Q32, QP1–QP6) and type tags (REPLAY, BEHAVIOR, COUNTERFACTUAL, etc.). If you change a question, change it here first.
+
+**Interview corpus:** `strategy/interviews/` — one markdown file per interview, named `YYYY-MM-DD-firstname.md`. The folder has its own README explaining the convention. The template lives at `strategy/interviews/_template.md`.
+
+**Admin tracker:** `/admin?token=…` → Interviews tab. Lightweight DB-backed list of all interviews with synthesis fields and follow-up status. Schema lives in `db.js` (`interviews` table). Endpoints in `routes/admin.js` under `/api/admin/interviews/*`. The admin tab is for tracking and synthesis; the full Q&A still lives in markdown files.
+
+**Slash command:** `/new-interview` scaffolds a new interview file from the template — picks today's date, copies the template, fills in the basics. Use it instead of doing the copy manually.
+
+**Workflow:**
+1. Before an interview: copy `_template.md` → `YYYY-MM-DD-firstname.md` (or use `/new-interview`). Fill the Pre-Interview Setup table. Optionally create the matching admin row at `/admin → Interviews → New`.
+2. Record audio with consent; store outside the repo if sensitive.
+3. Within 24 hours: fill the **Synthesis** section at the top of the markdown file (3 fields). This is the durable artifact — even if the per-question answers never get filled in, the synthesis is what compounds across interviews.
+4. Mirror the synthesis to the admin row so it's queryable from the dashboard.
+
+**Cross-interview synthesis:** when there are 5+ interviews in the corpus, do a meta-pass — open every file, copy the three synthesis items into one document, look for patterns. Q30 answers (the "what would they need to see in the first 30 seconds" question) are the most strategically valuable thing in the entire corpus — they're the wedge headline candidates.
+
+**PII rule:** first names only in committed files. No phone numbers, no exact addresses, no kid names. Audio files with sensitive content stay outside the repo.
+
 ## Session context backups
 Older session backups exist under `docs/context-backup-*.md` if needed for archaeology, but the durable rules from them have been promoted into the sections above. Don't read them by default — `git log` and the current code are more reliable.

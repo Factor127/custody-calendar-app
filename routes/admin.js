@@ -530,5 +530,132 @@ router.get('/admin/backup', (req, res) => {
   console.log(`[admin/backup] snapshot streamed, ${size} bytes, ${dateStamp}`);
 });
 
+// ─── User research interviews ───────────────────────────────────────────────
+// Lightweight CRUD for the admin-side interview tracker. Per-question Q&A
+// stays in markdown; this table is for the synthesis fields, follow-up
+// status, and cross-interview queries. See docs/interview-guide.md.
+
+const VALID_INTERVIEW_TYPES = new Set(['active', 'lapsed', 'prospect', 'power']);
+const VALID_INTERVIEW_STATUSES = new Set(['scheduled', 'done', 'synthesized', 'lapsed', 'cancelled']);
+
+router.get('/admin/interviews', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const interviews = db.prepare(`
+    SELECT id, interview_id, interviewee_name, interviewee_type, interview_date,
+           custody_pattern, usage_tier, status,
+           synthesis_value, synthesis_miss, synthesis_pitch, notes,
+           markdown_path, audio_link, created_at, updated_at
+    FROM interviews
+    ORDER BY interview_date DESC, created_at DESC
+  `).all();
+
+  const summary = db.prepare(`
+    SELECT
+      COUNT(*) AS total,
+      SUM(CASE WHEN status = 'scheduled'    THEN 1 ELSE 0 END) AS scheduled,
+      SUM(CASE WHEN status = 'done'         THEN 1 ELSE 0 END) AS done,
+      SUM(CASE WHEN status = 'synthesized'  THEN 1 ELSE 0 END) AS synthesized,
+      SUM(CASE WHEN status = 'lapsed'       THEN 1 ELSE 0 END) AS lapsed,
+      SUM(CASE WHEN synthesis_pitch IS NOT NULL AND synthesis_pitch != '' THEN 1 ELSE 0 END) AS with_pitch
+    FROM interviews
+  `).get();
+
+  res.json({ interviews, summary });
+});
+
+router.post('/admin/interviews', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const {
+    interview_id, interviewee_name, interviewee_type, interview_date,
+    custody_pattern, usage_tier, status,
+    synthesis_value, synthesis_miss, synthesis_pitch, notes,
+    markdown_path, audio_link,
+  } = req.body || {};
+
+  if (!interview_id || !interviewee_name || !interviewee_type || !interview_date) {
+    return res.status(400).json({ error: 'interview_id, interviewee_name, interviewee_type, interview_date are required' });
+  }
+  if (!VALID_INTERVIEW_TYPES.has(interviewee_type)) {
+    return res.status(400).json({ error: 'invalid interviewee_type' });
+  }
+  if (status && !VALID_INTERVIEW_STATUSES.has(status)) {
+    return res.status(400).json({ error: 'invalid status' });
+  }
+
+  try {
+    const result = db.prepare(`
+      INSERT INTO interviews (
+        interview_id, interviewee_name, interviewee_type, interview_date,
+        custody_pattern, usage_tier, status,
+        synthesis_value, synthesis_miss, synthesis_pitch, notes,
+        markdown_path, audio_link
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      interview_id, interviewee_name, interviewee_type, interview_date,
+      custody_pattern || null, usage_tier || null, status || 'scheduled',
+      synthesis_value || null, synthesis_miss || null, synthesis_pitch || null, notes || null,
+      markdown_path || null, audio_link || null
+    );
+    res.json({ id: result.lastInsertRowid, interview_id });
+  } catch (e) {
+    if (String(e.message || '').includes('UNIQUE')) {
+      return res.status(409).json({ error: 'interview_id already exists' });
+    }
+    res.status(500).json({ error: 'failed to create interview' });
+  }
+});
+
+router.put('/admin/interviews/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'invalid id' });
+
+  const existing = db.prepare('SELECT id FROM interviews WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'not found' });
+
+  const allowed = [
+    'interviewee_name', 'interviewee_type', 'interview_date',
+    'custody_pattern', 'usage_tier', 'status',
+    'synthesis_value', 'synthesis_miss', 'synthesis_pitch', 'notes',
+    'markdown_path', 'audio_link',
+  ];
+  const updates = [];
+  const values = [];
+  for (const key of allowed) {
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, key)) {
+      if (key === 'interviewee_type' && req.body[key] && !VALID_INTERVIEW_TYPES.has(req.body[key])) {
+        return res.status(400).json({ error: 'invalid interviewee_type' });
+      }
+      if (key === 'status' && req.body[key] && !VALID_INTERVIEW_STATUSES.has(req.body[key])) {
+        return res.status(400).json({ error: 'invalid status' });
+      }
+      updates.push(`${key} = ?`);
+      values.push(req.body[key] === '' ? null : req.body[key]);
+    }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'no fields to update' });
+
+  updates.push("updated_at = datetime('now')");
+  values.push(id);
+  db.prepare(`UPDATE interviews SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+
+  res.json({ ok: true });
+});
+
+router.delete('/admin/interviews/:id', (req, res) => {
+  if (!requireAdmin(req, res)) return;
+
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'invalid id' });
+
+  const r = db.prepare('DELETE FROM interviews WHERE id = ?').run(id);
+  if (!r.changes) return res.status(404).json({ error: 'not found' });
+
+  res.json({ ok: true });
+});
+
 module.exports = router;
 module.exports.requireAdmin = requireAdmin;
