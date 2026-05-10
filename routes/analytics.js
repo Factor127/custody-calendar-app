@@ -137,23 +137,7 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY visitors DESC
   `).all();
 
-  // 10. A/B variant funnel (legacy events - kept for historical compatibility)
-  const variantFunnel = db.prepare(`
-    SELECT
-      json_extract(props, '$.variant') AS variant,
-      COUNT(DISTINCT CASE WHEN event='lp_view' THEN session_id END) AS views,
-      COUNT(DISTINCT CASE WHEN event='lp_cta_click' THEN session_id END) AS cta_clicks,
-      COUNT(DISTINCT CASE WHEN event='lp_demo_start' THEN session_id END) AS demo_starts,
-      COUNT(DISTINCT CASE WHEN event='lp_demo_complete' THEN session_id END) AS demo_completes,
-      COUNT(DISTINCT CASE WHEN event='lp_signup' THEN session_id END) AS signups,
-      COUNT(DISTINCT CASE WHEN event='lp_invite_sent' THEN session_id END) AS invites
-    FROM analytics_events
-    WHERE event IN ('lp_view','lp_cta_click','lp_demo_start','lp_demo_complete','lp_signup','lp_invite_sent')
-      AND json_extract(props, '$.variant') IS NOT NULL
-    GROUP BY variant
-  `).all();
-
-  // 11. LP framework funnel - the new canonical metrics.
+  // 10. LP framework funnel - the new canonical metrics.
   // Pulls LP metadata (label, type) from routes/lp.js so the UI can show
   // type pills + fair comparisons.
   let lpFunnel = [];
@@ -185,12 +169,12 @@ router.get('/admin/analytics', (req, res) => {
     });
   } catch(e) { /* lp registry may not be available */ }
 
-  // 12. Nudge pipeline status
+  // 11. Nudge pipeline status
   const nudgeStatus = db.prepare(`
     SELECT status, COUNT(*) AS cnt FROM nudges GROUP BY status
   `).all();
 
-  // 13. LP step fall-through — per variant, unique sessions per demo_step.
+  // 12. LP step fall-through — per variant, unique sessions per demo_step.
   // Answers "where do users drop?" for any LP with totalSteps > 0.
   const lpSteps = db.prepare(`
     SELECT
@@ -205,7 +189,7 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY variant, step_index
   `).all();
 
-  // 14. LP diagnostics — per variant, counts of named non-funnel events.
+  // 13. LP diagnostics — per variant, counts of named non-funnel events.
   // Anything not in the canonical funnel set, surfaced so you can see which
   // sub-flows are engaged (copy_link_copied) or failing (phone_validation_error).
   const CANONICAL = [
@@ -229,7 +213,7 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY variant, sessions DESC
   `).all(...CANONICAL);
 
-  // 15. Abandon-by-step — where do users quit mid-funnel?
+  // 14. Abandon-by-step — where do users quit mid-funnel?
   const lpAbandons = db.prepare(`
     SELECT
       json_extract(props, '$.variant')    AS variant,
@@ -242,7 +226,7 @@ router.get('/admin/analytics', (req, res) => {
     ORDER BY variant, step_index
   `).all();
 
-  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, variantFunnel, lpFunnel, nudgeStatus, lpSteps, lpDiagnostics, lpAbandons });
+  res.json({ funnel, totals, personB, devices, daily, sources, timing, screenFunnel, exitScreens, lpFunnel, nudgeStatus, lpSteps, lpDiagnostics, lpAbandons });
 });
 
 // DELETE /api/admin/analytics - archive then reset analytics data
