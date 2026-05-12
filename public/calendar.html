@@ -3984,10 +3984,21 @@ function renderCalendar() {
       }).join('')
     }</div>` : '';
 
-    // Avatar bubbles intentionally omitted from the monthly grid — too much
-    // visual noise across 30+ cells. Tapping a day opens the day-sheet
-    // which has the full "who's free" list with tappable faces.
-    const avatarHtml = '';
+    // Show partner profile circle(s) on days the partner is free.
+    // Scope: relationship_type='partner' only (not coparent, not friends).
+    // "Free" = partner's own owner === 'coparent' (they don't have kids that day).
+    const freePartners = socialConnections.filter(sc =>
+      sc.type === 'partner' && sc.days[dateStr]?.owner === 'coparent'
+    );
+    const avatarHtml = freePartners.length ? `<div class="cell-avatars">${
+      freePartners.slice(0, 3).map(sc => {
+        const safeName = (sc.name || '').replace(/"/g, '&quot;');
+        const inner = sc.photo
+          ? `<img src="${sc.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.remove();">`
+          : sc.initial;
+        return `<span class="cell-avatar" style="background:${sc.color};overflow:hidden;" title="${safeName}">${inner}</span>`;
+      }).join('')
+    }${freePartners.length > 3 ? `<span class="cell-avatar cell-avatar-more">+${freePartners.length - 3}</span>` : ''}</div>` : '';
 
     // Pulsing dot for incoming outings I haven't responded to
     const hasPendingInvite = (outingsByDate[dateStr] || []).some(o =>
