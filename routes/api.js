@@ -658,21 +658,37 @@ router.post('/suggestions', (req, res) => {
   const me = requireToken(req, res);
   if (!me) return;
 
-  const { changes, note } = req.body;
+  const { connection_id, changes, note } = req.body;
   if (!Array.isArray(changes) || changes.length === 0) {
     return res.status(400).json({ error: 'changes must be a non-empty array' });
   }
 
-  // Find the approved connection - works for both partner (as requester) and owner (as target)
-  let conn = q.getConnectionByRequester.get(me.id);
-  if (!conn || conn.status !== 'approved') {
-    // Owner role: look for any approved connection where they are the target
+  // Prefer the explicit connection_id from the client — it knows which
+  // connection the user picked (always the coparent connection in the
+  // current UI). Without it, suggestions could route to a friend/partner
+  // connection on accounts with multiple approved connections.
+  let conn = null;
+  if (connection_id) {
+    conn = q.getConnectionById.get(connection_id);
+    if (!conn || (conn.requester_id !== me.id && conn.target_id !== me.id)) {
+      return res.status(403).json({ error: 'Not authorized for this connection' });
+    }
+    if (conn.status !== 'approved') {
+      return res.status(403).json({ error: 'Connection not approved' });
+    }
+  } else {
+    // Fallback: pick the user's approved CO-PARENT connection. Filter on
+    // relationship_type so we don't accidentally route to a friend.
     conn = db.prepare(
-      "SELECT * FROM connections WHERE target_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 1"
-    ).get(me.id);
-  }
-  if (!conn || conn.status !== 'approved') {
-    return res.status(403).json({ error: 'No active connection' });
+      `SELECT * FROM connections
+       WHERE (requester_id = ? OR target_id = ?)
+         AND status = 'approved'
+         AND relationship_type = 'coparent'
+       ORDER BY created_at DESC LIMIT 1`
+    ).get(me.id, me.id);
+    if (!conn) {
+      return res.status(403).json({ error: 'No approved co-parent connection' });
+    }
   }
 
   // Send to the other party
@@ -680,6 +696,7 @@ router.post('/suggestions', (req, res) => {
 
   const id = uuidv4();
   q.createSuggestion.run(id, me.id, toUserId, JSON.stringify(changes), note || null);
+  console.log(`[suggestions] created ${id} from=${me.id} to=${toUserId} conn=${conn.id} type=${conn.relationship_type} count=${changes.length}`);
 
   // Push notification fires automatically — it goes via WebPush to whatever
   // device the co-parent has installed the PWA on, no phone-number guesswork.

@@ -6133,7 +6133,13 @@ async function submitSuggestion() {
   const res = await fetch(`/api/suggestions?token=${MY_TOKEN}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ changes, note: document.getElementById('suggest-note')?.value.trim() || suggestReason })
+    body: JSON.stringify({
+      // Explicit connection_id so the backend doesn't have to guess which of
+      // the user's approved connections is the co-parent.
+      connection_id: coparentConn?.id || null,
+      changes,
+      note: document.getElementById('suggest-note')?.value.trim() || suggestReason
+    })
   });
 
   if (res.ok) {
@@ -7641,13 +7647,29 @@ function _pendingNotifQueue() {
     }
   }
   for (const s of (pendingSuggestions || [])) {
-    const oid = s?.outing_id || s?.outingId;
-    if (oid) out.push({ id: oid, type: 'suggestion', ts: new Date(s.created_at || s.updated_at || 0).getTime() });
+    if (!s) continue;
+    const oid = s.outing_id || s.outingId;
+    if (oid) {
+      // Old shape: a co-parent's suggested edit to an outing — opens the event pane.
+      out.push({ id: oid, type: 'suggestion', ts: new Date(s.created_at || s.updated_at || 0).getTime() });
+    } else if (s.id) {
+      // Schedule-change suggestion — opens the approve/decline review panel.
+      out.push({ id: s.id, type: 'schedule-suggestion', ts: new Date(s.created_at || s.updated_at || 0).getTime() });
+    }
   }
   // Sort: responses first (already pre-ordered), then invites/suggestions newest-first.
   const responses = out.filter(x => x.type === 'response');
   const rest      = out.filter(x => x.type !== 'response').sort((a, b) => b.ts - a.ts);
   return responses.concat(rest);
+}
+
+function _openPendingNotif(item) {
+  if (!item) return;
+  if (item.type === 'schedule-suggestion') {
+    openSuggestionModal(item.id);
+  } else {
+    openEventPaneDirect(item.id);
+  }
 }
 
 // Crafter (FAB) tap handler. If the user has unreviewed invite-related
@@ -7658,7 +7680,7 @@ function onFabTap() {
   try {
     const q = _pendingNotifQueue();
     if (q.length > 0) {
-      openEventPaneDirect(q[0].id);
+      _openPendingNotif(q[0]);
       return;
     }
   } catch(e) { /* fall through to crafter on any failure */ }
@@ -7680,7 +7702,7 @@ function _autoOpenFreshestPendingNotification() {
     // self-clears them. Always open the freshest response if one is queued.
     const firstResp = q.find(x => x.type === 'response');
     if (firstResp) {
-      setTimeout(() => openEventPaneDirect(firstResp.id), 400);
+      setTimeout(() => _openPendingNotif(firstResp), 400);
       return;
     }
 
@@ -7690,7 +7712,7 @@ function _autoOpenFreshestPendingNotification() {
     const lastOpenedId = localStorage.getItem('sp_last_auto_opened_notif') || '';
     if (newest.id === lastOpenedId) return;
     localStorage.setItem('sp_last_auto_opened_notif', newest.id);
-    setTimeout(() => openEventPaneDirect(newest.id), 400);
+    setTimeout(() => _openPendingNotif(newest), 400);
   } catch(e) { /* never block init on a notif-open failure */ }
 }
 
