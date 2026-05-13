@@ -2540,7 +2540,7 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 <!-- ── Full inline calendar ── -->
 <div class="cal-section" style="max-width:680px;margin:0 auto;">
 
-  <div class="edit-notice" id="suggest-notice" style="background:rgba(230,81,0,0.12);border:1px solid var(--orange);color:#ffb347;display:none;">
+  <div class="edit-notice" id="suggest-notice" style="background:rgba(230,249,82,0.08);border:1px solid rgba(230,249,82,0.40);color:#e6f952;display:none;">
     💡 <span class="bold">Suggest changes:</span> Click days to propose a different schedule to your partner. Click again to un-propose.
   </div>
   <div class="edit-notice" id="change-notice" style="background:rgba(102,187,106,0.10);border:1px solid #66bb6a;color:#81c784;display:none;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -2682,9 +2682,9 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- Suggest bottom bar (fixed, visible in suggest mode) -->
-<div id="suggest-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid var(--orange); padding:12px 24px; box-shadow:0 -4px 16px rgba(0,0,0,0.12); z-index:100; align-items:center; gap:12px; flex-wrap:wrap;">
-  <span id="suggest-count" style="font-weight:700; font-size:13px; color:var(--orange); white-space:nowrap;">0 days selected</span>
-  <input id="suggest-note" type="text" placeholder="Add a note to your partner (optional)" style="flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:180px;">
+<div id="suggest-panel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1.5px solid rgba(230,249,82,0.45); padding:12px 24px env(safe-area-inset-bottom, 12px); box-shadow:0 -6px 20px rgba(0,0,0,0.45); z-index:700; align-items:center; gap:12px; flex-wrap:wrap;">
+  <span id="suggest-count" style="font-weight:700; font-size:13px; color:#e6f952; white-space:nowrap;">0 days selected</span>
+  <input id="suggest-note" type="text" placeholder="Add a note to your partner (optional)" style="flex:1; padding:8px 12px; background:var(--cell-bg); color:var(--text); border:1.5px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:180px;">
   <button class="btn btn-outline" onclick="cancelSuggest()">Cancel</button>
   <button class="btn btn-primary" onclick="submitSuggestion()">Send suggestion</button>
 </div>
@@ -5903,7 +5903,10 @@ function toggleSuggestMode(on) {
   document.getElementById('suggest-panel').style.display = on ? 'flex' : 'none';
   document.getElementById('suggest-count').textContent = '0 days selected';
   document.getElementById('suggest-note').value = '';
-  document.body.style.paddingBottom = on ? '80px' : '';
+  // Hide bottom nav so the fixed suggest panel isn't obscured.
+  const bn = document.getElementById('bottom-nav');
+  if (bn) bn.style.display = on ? 'none' : '';
+  document.body.style.paddingBottom = on ? '96px' : '';
   renderCalendar();
 }
 
