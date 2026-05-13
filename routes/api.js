@@ -681,8 +681,10 @@ router.post('/suggestions', (req, res) => {
   const id = uuidv4();
   q.createSuggestion.run(id, me.id, toUserId, JSON.stringify(changes), note || null);
 
-  // Notify recipient (push + SMS). The previous version only wrote the row
-  // and returned, so the co-parent had no idea a suggestion was waiting.
+  // Push notification fires automatically — it goes via WebPush to whatever
+  // device the co-parent has installed the PWA on, no phone-number guesswork.
+  // SMS is intentionally NOT auto-sent here: the sender uses the share modal
+  // to pick the right number and trigger the SMS via their native app.
   const count = changes.length;
   const dayWord = count === 1 ? 'day' : 'days';
   const trimmedNote = note ? String(note).trim().slice(0, 80) : '';
@@ -695,12 +697,6 @@ router.post('/suggestions', (req, res) => {
     url:   '/calendar.html',
   });
 
-  sendSMSToUser(
-    toUserId,
-    `${me.name} proposed a schedule change on Spontany (${count} ${dayWord}). Open the app to review.`,
-    { event: 'suggestion-new' }
-  );
-
   res.json({ id, status: 'pending' });
 });
 
@@ -712,6 +708,22 @@ router.get('/suggestions/pending', (req, res) => {
   const suggestions = q.getPendingSuggestionsForOwner.all(me.id);
   res.json({
     suggestions: suggestions.map(s => ({ ...s, changes: JSON.parse(s.changes) }))
+  });
+});
+
+// GET /api/suggestions/sent - suggestions I've sent that are still pending. Used
+// by the calendar to draw the hatched "awaiting approval" frame on those days.
+router.get('/suggestions/sent', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const rows = q.getPendingSuggestionsFromSender.all(me.id);
+  res.json({
+    suggestions: rows.map(s => ({
+      id:         s.id,
+      created_at: s.created_at,
+      changes:    JSON.parse(s.changes)
+    }))
   });
 });
 

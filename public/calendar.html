@@ -185,6 +185,34 @@ td.today .day-num {
 td.act-accepted { box-shadow: inset 0 0 0 1.5px rgba(52,211,153,0.6) !important; }
 td.suggest-proposed { box-shadow: inset 0 0 0 1.5px rgba(255,115,81,0.6) !important; }
 
+/* "Awaiting co-parent approval" — hatched lime ring overlaid via ::after so
+   it composes with whatever fill/today/bothfree the cell already has.
+   mask-composite carves out the inner area so only the padding-area shows,
+   producing a frame that follows the cell's border-radius exactly. */
+td.suggest-awaiting::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 3px;
+  box-sizing: border-box;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(230,249,82,0.85) 0 4px,
+    transparent 4px 9px
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+          mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  z-index: 3;
+}
+
 /* ── Cell hover card ── */
 #cell-hover-card {
   position: fixed; z-index: 9000; pointer-events: none;
@@ -2705,12 +2733,12 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
   </div>
 </div>
 
-<!-- WhatsApp notification modal (shown after suggestion submitted) -->
+<!-- Share modal — shown after a suggestion is submitted -->
 <div id="whatsapp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1050;align-items:center;justify-content:center;padding:16px;">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.55);">
     <strong style="font-size:17px;color:var(--text);">✓ Suggestion sent!</strong>
     <p style="font-size:13px;color:var(--muted);margin:10px 0 16px;">
-      Your co-parent has been notified on their dashboard.<br>Want to also send them a WhatsApp message?
+      Your co-parent has been notified in the app.<br>Also ping them via WhatsApp or SMS?
     </p>
     <div id="whatsapp-phone-wrap" style="margin-bottom:12px;">
       <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Send to:</label>
@@ -2721,14 +2749,15 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
           style="display:none;background:var(--cell-bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;" title="Pick from contacts">📇 Contacts</button>
       </div>
       <div id="whatsapp-self-warn" style="display:none;margin-top:6px;font-size:11px;color:#ffb347;">⚠️ That's your own number — enter your co-parent's number.</div>
-      <label id="whatsapp-save-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;">
-        <input id="whatsapp-save-check" type="checkbox" checked style="width:16px;height:16px;accent-color:#e6f952;">
-        <span>Save this number to my co-parent's contact for next time</span>
-      </label>
+      <div id="whatsapp-saved-hint" style="display:none;margin-top:6px;font-size:11px;color:#9ccc65;">✓ Saved to your co-parent's contact for next time.</div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;">
+    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
       <button class="btn btn-outline" onclick="closeWhatsappModal()">Done</button>
-      <a id="whatsapp-link" href="#" target="_blank" class="btn btn-primary" onclick="onWhatsappSend()"
+      <a id="whatsapp-sms-link" href="#" class="btn btn-primary" onclick="onShareSend('sms')"
+        style="background:var(--cell-bg);border:1.5px solid var(--border);color:var(--text);text-decoration:none;display:none;">
+        📲 Send SMS
+      </a>
+      <a id="whatsapp-link" href="#" target="_blank" class="btn btn-primary" onclick="onShareSend('whatsapp')"
         style="background:#25D366;border-color:#25D366;color:white;text-decoration:none;display:none;">
         📱 Send WhatsApp
       </a>
@@ -3042,6 +3071,7 @@ let partnerConn = null;    // approved PARTNER-type connection
 let coparentConn = null;   // approved COPARENT-type connection
 let pendingConnections = [];
 let pendingSuggestions = [];
+let proposedPendingDates = new Set();
 
 // Calendar data
 let calendarDays = {};        // my days: date -> {owner, tags}
@@ -3588,9 +3618,10 @@ async function loadMyCalendar() {
 
 // ── Load connections ──────────────────────────────────────────────────────
 async function loadConnections() {
-  const [connRes, suggRes] = await Promise.all([
+  const [connRes, suggRes, sentRes] = await Promise.all([
     fetch(`/api/connections/all?token=${MY_TOKEN}`),
-    fetch(`/api/suggestions/pending?token=${MY_TOKEN}`)
+    fetch(`/api/suggestions/pending?token=${MY_TOKEN}`),
+    fetch(`/api/suggestions/sent?token=${MY_TOKEN}`)
   ]);
 
   if (connRes.ok) {
@@ -3602,6 +3633,17 @@ async function loadConnections() {
   if (suggRes.ok) {
     const sData = await suggRes.json();
     pendingSuggestions = sData.suggestions || [];
+  }
+
+  if (sentRes.ok) {
+    const sentData = await sentRes.json();
+    proposedPendingDates = new Set();
+    for (const s of (sentData.suggestions || [])) {
+      for (const c of (s.changes || [])) {
+        if (c.date) proposedPendingDates.add(c.date);
+      }
+    }
+    renderCalendar();
   }
 
   // The "pending" badge in the connections panel is connection-specific,
@@ -3961,7 +4003,8 @@ function renderCalendar() {
     const tdClass = [
       owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
       isToday ? 'today' : '',
-      (owner === 'coparent' && withinWin && pDay && pDay.owner === 'coparent') ? 'bothfree' : ''
+      (owner === 'coparent' && withinWin && pDay && pDay.owner === 'coparent') ? 'bothfree' : '',
+      proposedPendingDates.has(dateStr) ? 'suggest-awaiting' : ''
     ].filter(Boolean).join(' ');
 
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
@@ -6056,6 +6099,8 @@ async function submitSuggestion() {
   });
 
   if (res.ok) {
+    // Capture before cancelSuggest() clears suggestedChanges + re-renders.
+    Object.keys(suggestedChanges).forEach(d => proposedPendingDates.add(d));
     const finalNote = document.getElementById('suggest-note')?.value.trim() || suggestReason;
     cancelSuggest();
     showToast(`✓ Suggestion sent (${count} day${count > 1 ? 's' : ''})`);
@@ -6738,34 +6783,63 @@ function closeWhatsappModal() {
 }
 
 let _whatsappNote = '';
-let _whatsappStartingPhone = '';
 
 function _digits(s) { return (s || '').replace(/\D/g, ''); }
 
-function _buildWhatsappLink(phone, note) {
+function _buildShareMessage(note) {
   const base = `Hi! I've proposed some schedule changes on Spontany.`;
   const notePart = note ? ` Reason: "${note}"` : '';
   const url = ` Review here: ${window.location.origin}/`;
-  return `https://wa.me/${_digits(phone)}?text=${encodeURIComponent(base + notePart + url)}`;
+  return base + notePart + url;
+}
+
+function _buildWhatsappLink(phone, note) {
+  return `https://wa.me/${_digits(phone)}?text=${encodeURIComponent(_buildShareMessage(note))}`;
+}
+
+function _buildSmsLink(phone, note) {
+  // sms: URI — pre-fills the native SMS app so the user reviews + sends.
+  // ?body= works on iOS 8+ and Android Chrome.
+  return `sms:${phone}?body=${encodeURIComponent(_buildShareMessage(note))}`;
+}
+
+// Persist a picked / typed co-parent phone to the user's profile. keepalive
+// lets it survive a tab background when wa.me opens the WhatsApp app.
+async function _saveCoparentPhone(phone) {
+  if (!phone) return false;
+  if (_digits(phone) === _digits(myCoparentPhone)) return false;
+  try {
+    const r = await fetch(`/api/me?token=${MY_TOKEN}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ coparent_phone: phone }),
+      keepalive: true
+    });
+    if (!r.ok) return false;
+    myCoparentPhone = phone;
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 async function showWhatsappModal(note) {
   _whatsappNote = note || '';
-  const modal     = document.getElementById('whatsapp-modal');
-  const linkEl    = document.getElementById('whatsapp-link');
-  const input     = document.getElementById('whatsapp-phone-input');
-  const selfWarn  = document.getElementById('whatsapp-self-warn');
-  const pickBtn   = document.getElementById('whatsapp-pick-contact');
-  const saveRow   = document.getElementById('whatsapp-save-row');
-  const saveCheck = document.getElementById('whatsapp-save-check');
+  const modal    = document.getElementById('whatsapp-modal');
+  const waLink   = document.getElementById('whatsapp-link');
+  const smsLink  = document.getElementById('whatsapp-sms-link');
+  const input    = document.getElementById('whatsapp-phone-input');
+  const selfWarn = document.getElementById('whatsapp-self-warn');
+  const savedHint = document.getElementById('whatsapp-saved-hint');
+  const pickBtn  = document.getElementById('whatsapp-pick-contact');
 
   modal.style.display = 'flex';
-  linkEl.style.display = 'none';
+  waLink.style.display = 'none';
+  smsLink.style.display = 'none';
+  savedHint.style.display = 'none';
 
   input.value = myCoparentPhone || '';
-  _whatsappStartingPhone = myCoparentPhone || '';
 
-  // Contact Picker API is Android-Chrome-only; hide the button elsewhere.
   pickBtn.style.display = ('contacts' in navigator && 'select' in navigator.contacts) ? '' : 'none';
 
   function refresh() {
@@ -6773,18 +6847,19 @@ async function showWhatsappModal(note) {
     const digits = _digits(val);
     const isSelf = myMobile && digits && _digits(myMobile) === digits;
     selfWarn.style.display = isSelf ? 'block' : 'none';
-    const changed = digits && digits !== _digits(_whatsappStartingPhone);
-    saveRow.style.display = changed ? 'flex' : 'none';
-    if (digits.length > 6 && !isSelf) {
-      linkEl.href = _buildWhatsappLink(val, _whatsappNote);
-      linkEl.style.display = 'inline-flex';
+    const usable = digits.length > 6 && !isSelf;
+    if (usable) {
+      waLink.href = _buildWhatsappLink(val, _whatsappNote);
+      smsLink.href = _buildSmsLink(val, _whatsappNote);
+      waLink.style.display = 'inline-flex';
+      smsLink.style.display = 'inline-flex';
     } else {
-      linkEl.style.display = 'none';
+      waLink.style.display = 'none';
+      smsLink.style.display = 'none';
     }
   }
 
   input.oninput = refresh;
-  saveCheck.checked = true;
   refresh();
 }
 
@@ -6793,33 +6868,29 @@ async function pickCoparentContact() {
     const sel = await navigator.contacts.select(['tel', 'name'], { multiple: false });
     if (!sel || !sel.length) return;
     const tel = (sel[0].tel && sel[0].tel[0]) || '';
-    if (tel) {
-      const input = document.getElementById('whatsapp-phone-input');
-      input.value = tel;
-      input.dispatchEvent(new Event('input'));
+    if (!tel) return;
+    const input = document.getElementById('whatsapp-phone-input');
+    input.value = tel;
+    input.dispatchEvent(new Event('input'));
+    // Persist immediately — the user explicitly picked this contact, no
+    // need to wait for them to also tap Send. This also avoids losing the
+    // save when wa.me backgrounds the tab.
+    const saved = await _saveCoparentPhone(tel);
+    if (saved) {
+      const hint = document.getElementById('whatsapp-saved-hint');
+      hint.style.display = 'block';
+      showToast('Saved to co-parent contact');
     }
   } catch (e) {
     // User cancelled the picker or the API rejected — nothing to recover.
   }
 }
 
-async function onWhatsappSend() {
+async function onShareSend(_channel) {
+  // Catch the typed-in case (no contact picker used) so the number still
+  // gets saved before the share app takes over the foreground.
   const input = document.getElementById('whatsapp-phone-input');
-  const saveCheck = document.getElementById('whatsapp-save-check');
-  const newPhone = input.value.trim();
-  const changed = _digits(newPhone) && _digits(newPhone) !== _digits(_whatsappStartingPhone);
-  if (changed && saveCheck.checked) {
-    // Fire-and-forget: don't block the WhatsApp redirect on the save.
-    try {
-      await fetch(`/api/me?token=${MY_TOKEN}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coparent_phone: newPhone })
-      });
-      myCoparentPhone = newPhone;
-      showToast('Saved to co-parent contact');
-    } catch (e) {}
-  }
+  await _saveCoparentPhone(input.value.trim());
   closeWhatsappModal();
 }
 

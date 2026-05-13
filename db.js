@@ -797,6 +797,11 @@ const q = {
     WHERE s.to_user_id = ? AND s.status = 'pending'
     ORDER BY s.created_at DESC
   `),
+  getPendingSuggestionsFromSender: db.prepare(`
+    SELECT id, changes, created_at FROM suggestions
+    WHERE from_user_id = ? AND status = 'pending'
+    ORDER BY created_at DESC
+  `),
   updateSuggestionStatus: db.prepare("UPDATE suggestions SET status = ? WHERE id = ?"),
 
   // Activities
