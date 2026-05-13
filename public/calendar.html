@@ -2690,14 +2690,14 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- Suggest reason modal -->
-<div id="suggest-reason-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:white;border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
-    <strong style="font-size:17px;">💡 Suggest Schedule Changes</strong>
+<div id="suggest-reason-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1050;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.55);">
+    <strong style="font-size:17px;color:var(--text);">💡 Suggest Schedule Changes</strong>
     <p style="font-size:13px;color:var(--muted);margin:10px 0 6px;">
       Select the days you want to change on the calendar, then send the suggestion to your co-parent for approval.
     </p>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">Want to explain why? (optional - your co-parent will see this)</p>
-    <textarea id="suggest-reason-text" placeholder="e.g. I have a work trip that week and need to swap days…" style="width:100%;height:90px;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;"></textarea>
+    <textarea id="suggest-reason-text" placeholder="e.g. I have a work trip that week and need to swap days…" style="width:100%;height:90px;background:var(--cell-bg);color:var(--text);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;resize:none;box-sizing:border-box;"></textarea>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
       <button class="btn btn-outline" onclick="closeSuggestReason()">Cancel</button>
       <button class="btn btn-primary" onclick="startSuggestFromReason()">Continue → select days</button>
@@ -2706,23 +2706,29 @@ td.partner-free::before { background: var(--accent) !important; opacity: 0.6 !im
 </div>
 
 <!-- WhatsApp notification modal (shown after suggestion submitted) -->
-<div id="whatsapp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:white;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
-    <strong style="font-size:17px;">✓ Suggestion sent!</strong>
+<div id="whatsapp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1050;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.55);">
+    <strong style="font-size:17px;color:var(--text);">✓ Suggestion sent!</strong>
     <p style="font-size:13px;color:var(--muted);margin:10px 0 16px;">
       Your co-parent has been notified on their dashboard.<br>Want to also send them a WhatsApp message?
     </p>
-    <div id="whatsapp-no-mobile" style="display:none;font-size:12px;color:var(--muted);margin-bottom:12px;background:#f8f9fa;border-radius:8px;padding:10px 12px;">
-      Your co-parent hasn't added their phone number yet. Ask them to add it in their Profile.
+    <div id="whatsapp-phone-wrap" style="margin-bottom:12px;">
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Send to:</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="whatsapp-phone-input" type="tel" placeholder="+1 555 000 0000"
+          class="field-input" style="flex:1;background:var(--cell-bg);color:var(--text);font-size:14px;">
+        <button id="whatsapp-pick-contact" type="button" onclick="pickCoparentContact()"
+          style="display:none;background:var(--cell-bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;" title="Pick from contacts">📇 Contacts</button>
+      </div>
+      <div id="whatsapp-self-warn" style="display:none;margin-top:6px;font-size:11px;color:#ffb347;">⚠️ That's your own number — enter your co-parent's number.</div>
+      <label id="whatsapp-save-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;">
+        <input id="whatsapp-save-check" type="checkbox" checked style="width:16px;height:16px;accent-color:#e6f952;">
+        <span>Save this number to my co-parent's contact for next time</span>
+      </label>
     </div>
-    <div id="whatsapp-phone-wrap" style="display:none;margin-bottom:14px;">
-      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;">Enter their WhatsApp number:</label>
-      <input id="whatsapp-phone-input" type="tel" placeholder="+1 555 000 0000"
-        class="field-input" style="max-width:220px;font-size:14px;">
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;">
       <button class="btn btn-outline" onclick="closeWhatsappModal()">Done</button>
-      <a id="whatsapp-link" href="#" target="_blank" class="btn btn-primary" onclick="closeWhatsappModal()"
+      <a id="whatsapp-link" href="#" target="_blank" class="btn btn-primary" onclick="onWhatsappSend()"
         style="background:#25D366;border-color:#25D366;color:white;text-decoration:none;display:none;">
         📱 Send WhatsApp
       </a>
@@ -3014,6 +3020,7 @@ let myName = 'Me';
 let myCoparentInitial = 'C';
 let myWorkSchedule = { type: 'none' };
 let myCoparentPhone = null;
+let myMobile        = null;
 let partnerMobile = null;
 
 // Connections - unified (both sides)
@@ -3449,6 +3456,7 @@ function _bounceToLogin() {
   myUserId  = me.id;
   if (me.coparent_name) myCoparentInitial = me.coparent_name[0].toUpperCase();
   myCoparentPhone = me.coparent_phone || null;
+  myMobile        = me.mobile         || null;
   partnerMobile   = me.partner_phone  || null;
   myWorkSchedule = me.work_schedule ? JSON.parse(me.work_schedule) : { type: 'none' };
 
@@ -6729,43 +6737,90 @@ function closeWhatsappModal() {
   document.getElementById('whatsapp-modal').style.display = 'none';
 }
 
+let _whatsappNote = '';
+let _whatsappStartingPhone = '';
+
+function _digits(s) { return (s || '').replace(/\D/g, ''); }
+
+function _buildWhatsappLink(phone, note) {
+  const base = `Hi! I've proposed some schedule changes on Spontany.`;
+  const notePart = note ? ` Reason: "${note}"` : '';
+  const url = ` Review here: ${window.location.origin}/`;
+  return `https://wa.me/${_digits(phone)}?text=${encodeURIComponent(base + notePart + url)}`;
+}
+
 async function showWhatsappModal(note) {
-  const modal = document.getElementById('whatsapp-modal');
-  const linkEl = document.getElementById('whatsapp-link');
-  const noMobileEl = document.getElementById('whatsapp-no-mobile');
-  const phoneWrap = document.getElementById('whatsapp-phone-wrap');
+  _whatsappNote = note || '';
+  const modal     = document.getElementById('whatsapp-modal');
+  const linkEl    = document.getElementById('whatsapp-link');
+  const input     = document.getElementById('whatsapp-phone-input');
+  const selfWarn  = document.getElementById('whatsapp-self-warn');
+  const pickBtn   = document.getElementById('whatsapp-pick-contact');
+  const saveRow   = document.getElementById('whatsapp-save-row');
+  const saveCheck = document.getElementById('whatsapp-save-check');
 
   modal.style.display = 'flex';
   linkEl.style.display = 'none';
-  noMobileEl.style.display = 'none';
-  if (phoneWrap) phoneWrap.style.display = 'none';
 
-  function buildLink(phone) {
-    const base = `Hi! I've proposed some schedule changes on Spontany.`;
-    const notePart = note ? ` Reason: "${note}"` : '';
-    const url = ` Review here: ${window.location.origin}/`;
-    return `https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(base + notePart + url)}`;
+  input.value = myCoparentPhone || '';
+  _whatsappStartingPhone = myCoparentPhone || '';
+
+  // Contact Picker API is Android-Chrome-only; hide the button elsewhere.
+  pickBtn.style.display = ('contacts' in navigator && 'select' in navigator.contacts) ? '' : 'none';
+
+  function refresh() {
+    const val = input.value.trim();
+    const digits = _digits(val);
+    const isSelf = myMobile && digits && _digits(myMobile) === digits;
+    selfWarn.style.display = isSelf ? 'block' : 'none';
+    const changed = digits && digits !== _digits(_whatsappStartingPhone);
+    saveRow.style.display = changed ? 'flex' : 'none';
+    if (digits.length > 6 && !isSelf) {
+      linkEl.href = _buildWhatsappLink(val, _whatsappNote);
+      linkEl.style.display = 'inline-flex';
+    } else {
+      linkEl.style.display = 'none';
+    }
   }
 
-  function wirePhoneInput() {
-    if (!phoneWrap) { noMobileEl.style.display = 'block'; return; }
-    phoneWrap.style.display = 'block';
-    document.getElementById('whatsapp-phone-input').oninput = function() {
-      const val = this.value.trim();
-      if (val.replace(/\D/g,'').length > 6) {
-        linkEl.href = buildLink(val);
-        linkEl.style.display = 'inline-flex';
-      } else { linkEl.style.display = 'none'; }
-    };
-  }
+  input.oninput = refresh;
+  saveCheck.checked = true;
+  refresh();
+}
 
-  // Use co-parent phone stored on own profile (fastest, no extra fetch)
-  if (myCoparentPhone) {
-    linkEl.href = buildLink(myCoparentPhone);
-    linkEl.style.display = 'inline-flex';
-  } else {
-    wirePhoneInput();
+async function pickCoparentContact() {
+  try {
+    const sel = await navigator.contacts.select(['tel', 'name'], { multiple: false });
+    if (!sel || !sel.length) return;
+    const tel = (sel[0].tel && sel[0].tel[0]) || '';
+    if (tel) {
+      const input = document.getElementById('whatsapp-phone-input');
+      input.value = tel;
+      input.dispatchEvent(new Event('input'));
+    }
+  } catch (e) {
+    // User cancelled the picker or the API rejected — nothing to recover.
   }
+}
+
+async function onWhatsappSend() {
+  const input = document.getElementById('whatsapp-phone-input');
+  const saveCheck = document.getElementById('whatsapp-save-check');
+  const newPhone = input.value.trim();
+  const changed = _digits(newPhone) && _digits(newPhone) !== _digits(_whatsappStartingPhone);
+  if (changed && saveCheck.checked) {
+    // Fire-and-forget: don't block the WhatsApp redirect on the save.
+    try {
+      await fetch(`/api/me?token=${MY_TOKEN}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coparent_phone: newPhone })
+      });
+      myCoparentPhone = newPhone;
+      showToast('Saved to co-parent contact');
+    } catch (e) {}
+  }
+  closeWhatsappModal();
 }
 
 // ── Calendar modal ─────────────────────────────────────────────────────────
