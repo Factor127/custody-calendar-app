@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
 const { sendEmail } = require('../utils/email');
+const { textToEmailHtml } = require('../utils/html');
 const { timingSafeEq } = require('../utils/secrets');
 
 // Founder-personal outreach: from the verified updates.spontany.io domain
@@ -393,6 +394,7 @@ router.post('/admin/outreach/send', async (req, res) => {
       to:       user.email,
       subject:  personalSubject,
       bodyText: personalBody,
+      html:     textToEmailHtml(personalBody),
       from:     OUTREACH_FROM_DEFAULT,
       replyTo:  OUTREACH_REPLY_TO_DEFAULT,
     });
@@ -437,6 +439,7 @@ router.post('/admin/outreach/send-test', async (req, res) => {
       to:       OUTREACH_TEST_RECIPIENT,
       subject:  '[TEST] ' + personalSubject,
       bodyText: personalBody,
+      html:     textToEmailHtml(personalBody),
       from:     OUTREACH_FROM_DEFAULT,
       replyTo:  OUTREACH_REPLY_TO_DEFAULT,
     });

@@ -12,4 +12,27 @@ function escHtml(s) {
   }[c]));
 }
 
-module.exports = { escHtml };
+// Render a plain-text email body as safe HTML: escape, wrap bare URLs in
+// anchor tags, convert newlines to <br>. Sending HTML matters because some
+// inbound gateways (Proofpoint URL Defense) rewrite every URL in a message;
+// in plain text the reader sees the long rewritten URL, in HTML the visible
+// anchor text stays clean while the href gets rewritten transparently.
+const URL_RE = /(https?:\/\/[^\s<>]+|www\.[^\s<>]+)/gi;
+const TRAILING_PUNCT = /[.,;:!?)\]]+$/;
+
+function textToEmailHtml(text) {
+  const escaped = escHtml(text);
+  const linked = escaped.replace(URL_RE, (match) => {
+    let trail = '';
+    const m = match.match(TRAILING_PUNCT);
+    if (m) {
+      trail = m[0];
+      match = match.slice(0, -trail.length);
+    }
+    const href = match.startsWith('www.') ? 'http://' + match : match;
+    return `<a href="${href}">${match}</a>${trail}`;
+  });
+  return linked.replace(/\r?\n/g, '<br>\n');
+}
+
+module.exports = { escHtml, textToEmailHtml };
