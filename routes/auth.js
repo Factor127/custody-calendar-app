@@ -203,11 +203,16 @@ router.get('/auth/verify/:token', (req, res) => {
       </body></html>
     `);
   }
-  const newToken = uuidv4();
-  q.updateUserToken.run(newToken, link.user_id);
-  setSessionCookie(res, newToken);
-
+  // Reuse the user's existing access_token so signing in on a new device
+  // doesn't invalidate sessions on the other ones. Only mint a fresh token
+  // for users somehow missing one (defensive — rows are created with one).
   const user = q.getUserById.get(link.user_id);
+  let sessionToken = user.access_token;
+  if (!sessionToken) {
+    sessionToken = uuidv4();
+    q.updateUserToken.run(sessionToken, link.user_id);
+  }
+  setSessionCookie(res, sessionToken);
 
   // If a deep-link target was carried through (?next=…), honour it so the
   // user lands on the page they originally tried to reach (e.g. share-target

@@ -26,10 +26,10 @@ function resolveUserAndBridge(req, res) {
   return user;
 }
 
-// Admin panel. Page shell is gated to a single allowlisted email (env
-// ADMIN_EMAIL) so the admin UI structure isn't visible to ordinary signed-in
-// users. The API endpoints are still independently gated by ADMIN_TOKEN — this
-// is defense in depth, not the primary authorization.
+// Admin panel. Gated to a single allowlisted email (env ADMIN_EMAIL) so the
+// admin UI structure isn't visible to ordinary signed-in users. The API
+// endpoints under /api/admin/* enforce the same session + ADMIN_EMAIL check
+// (see requireAdmin in routes/admin.js), so the cookie is the one credential.
 router.get('/admin', (req, res) => {
   const token = pageToken(req);
   if (!token) return res.status(403).send('<h2>Access denied</h2>');

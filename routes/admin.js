@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../db');
+const { db, q } = require('../db');
 const { sendEmail } = require('../utils/email');
 const { textToEmailHtml } = require('../utils/html');
 const { timingSafeEq } = require('../utils/secrets');
@@ -37,20 +37,31 @@ function personalizeOutreach(user, signals, template) {
   return out;
 }
 
+// Two auth paths:
+//   1. Browser: httpOnly spontany_session cookie resolves to a user whose
+//      email matches ADMIN_EMAIL. Same gate as the /admin page shell.
+//   2. Scripts/cron (no cookie jar): X-Admin-Token header matches ADMIN_TOKEN.
+// ADMIN_EMAIL is the primary credential; ADMIN_TOKEN is kept as a programmatic
+// escape hatch for export-dashboard.js and similar callers.
 function requireAdmin(req, res) {
-  // Header-only — query-string tokens leak into Railway access logs and
-  // browser history. admin.html sends X-Admin-Token via fetch monkey-patch.
-  const token = req.headers['x-admin-token'];
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const sessionToken = req.cookies && req.cookies.spontany_session;
+  if (adminEmail && sessionToken) {
+    const user = q.getUserByToken.get(sessionToken);
+    if (user && (user.email || '').toLowerCase() === adminEmail.toLowerCase()) {
+      return true;
+    }
+  }
   const adminToken = process.env.ADMIN_TOKEN;
-  if (!adminToken) {
-    res.status(503).json({ error: 'Admin not configured - set ADMIN_TOKEN env var' });
+  if (adminToken && timingSafeEq(req.headers['x-admin-token'], adminToken)) {
+    return true;
+  }
+  if (!adminEmail && !adminToken) {
+    res.status(503).json({ error: 'Admin not configured - set ADMIN_EMAIL or ADMIN_TOKEN env var' });
     return false;
   }
-  if (!timingSafeEq(token, adminToken)) {
-    res.status(403).json({ error: 'Invalid admin token' });
-    return false;
-  }
-  return true;
+  res.status(403).json({ error: 'Admin access denied' });
+  return false;
 }
 
 // GET /api/admin/users - all users with basic stats

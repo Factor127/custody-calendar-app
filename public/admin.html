@@ -770,30 +770,14 @@ I built this for people in your exact situation, and I'd genuinely value being a
 </div>
 
 <script>
-const params      = new URLSearchParams(location.search);
-const ADMIN_TOKEN = params.get('token');
+// Admin API auth is the httpOnly spontany_session cookie, which the browser
+// auto-attaches to same-origin /api/admin/* fetches. The /admin page shell is
+// already gated by ADMIN_EMAIL (see routes/pages.js), and /api/admin/* enforces
+// the same check (see requireAdmin in routes/admin.js). No header or URL token.
 let _opps = [], _subs = [], _users = [], _analyticsLoaded = false, _wl = [], _wlLoaded = false;
 let _outreach = [], _outreachLoaded = false;
 let _network = null, _networkLoaded = false, _netInstance = null;
 let _interviews = [], _interviewsLoaded = false;
-
-// Send ADMIN_TOKEN as X-Admin-Token header instead of ?token= query param.
-// Tokens in URLs leak into Railway access logs and browser history. We keep
-// the URL pattern in the existing fetch() call sites for readability, but
-// strip the token here and move it to the header before the request goes out.
-(function patchAdminFetch() {
-  const orig = window.fetch.bind(window);
-  window.fetch = function(input, init = {}) {
-    let url = typeof input === 'string' ? input : (input && input.url) || '';
-    if (typeof url === 'string' && url.startsWith('/api/admin')) {
-      const headers = new Headers(init.headers || {});
-      if (ADMIN_TOKEN) headers.set('X-Admin-Token', ADMIN_TOKEN);
-      url = url.replace(/([?&])token=[^&]*&?/, '$1').replace(/[?&]$/, '');
-      return orig(url, { ...init, headers });
-    }
-    return orig(input, init);
-  };
-})();
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(name) {
@@ -920,8 +904,8 @@ function fmtEventTime(s) {
 async function loadOpps() {
   document.getElementById('opp-rows').innerHTML = '<tr><td colspan="11" class="empty">Loading…</td></tr>';
   const [oppsRes, statsRes] = await Promise.all([
-    fetch(`/api/admin/opportunities?token=${ADMIN_TOKEN}`),
-    fetch(`/api/admin/stats?token=${ADMIN_TOKEN}`)
+    fetch(`/api/admin/opportunities`),
+    fetch(`/api/admin/stats`)
   ]);
   if (!oppsRes.ok) { showError('Failed to load opportunities'); return; }
   const { opportunities } = await oppsRes.json();
@@ -1050,7 +1034,7 @@ function renderOpps() {
 }
 
 async function updateOpp(id, field, value) {
-  const res = await fetch(`/api/admin/opportunities/${id}?token=${ADMIN_TOKEN}`, {
+  const res = await fetch(`/api/admin/opportunities/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ [field]: value })
@@ -1065,7 +1049,7 @@ async function updateOpp(id, field, value) {
 async function deleteOpp(id) {
   const o = _opps.find(x => x.id === id);
   if (!confirm(`Delete "${o?.title || id}"? This also removes any plans linked to it.`)) return;
-  const res = await fetch(`/api/admin/opportunities/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+  const res = await fetch(`/api/admin/opportunities/${id}`, { method: 'DELETE' });
   if (res.ok) { _opps = _opps.filter(x => x.id !== id); renderOpps(); loadOpps(); }
   else showError('Delete failed');
 }
@@ -1074,8 +1058,8 @@ async function deleteOpp(id) {
 async function loadSubs() {
   document.getElementById('sub-rows').innerHTML = '<tr><td colspan="6" class="empty">Loading…</td></tr>';
   const [subsRes, statsRes] = await Promise.all([
-    fetch(`/api/admin/submissions?token=${ADMIN_TOKEN}`),
-    fetch(`/api/admin/stats?token=${ADMIN_TOKEN}`)
+    fetch(`/api/admin/submissions`),
+    fetch(`/api/admin/stats`)
   ]);
   if (!subsRes.ok) { showError('Failed to load submissions'); return; }
   const { submissions } = await subsRes.json();
@@ -1134,7 +1118,7 @@ function renderSubs() {
 
 async function deleteSub(id) {
   if (!confirm('Remove this submission record?')) return;
-  const res = await fetch(`/api/admin/submissions/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+  const res = await fetch(`/api/admin/submissions/${id}`, { method: 'DELETE' });
   if (res.ok) { _subs = _subs.filter(x => x.id !== id); renderSubs(); }
   else showError('Delete failed');
 }
@@ -1142,7 +1126,7 @@ async function deleteSub(id) {
 // ── Users ──────────────────────────────────────────────────────────────────
 async function loadUsers() {
   document.getElementById('user-rows').innerHTML = '<tr><td colspan="7" class="empty">Loading…</td></tr>';
-  const res = await fetch(`/api/admin/users?token=${ADMIN_TOKEN}`);
+  const res = await fetch(`/api/admin/users`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     showError(err.error || `Error ${res.status}`);
@@ -1210,7 +1194,7 @@ async function loadUsers() {
 }
 
 async function setRole(connId, newRole) {
-  const res = await fetch(`/api/admin/connections/${connId}/role?token=${ADMIN_TOKEN}`, {
+  const res = await fetch(`/api/admin/connections/${connId}/role`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ relationship_type: newRole })
@@ -1221,7 +1205,7 @@ async function setRole(connId, newRole) {
 
 async function deleteUser(id, name) {
   if (!confirm(`Delete "${name}" and all their data? This cannot be undone.`)) return;
-  const res = await fetch(`/api/admin/users/${id}?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+  const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
   if (res.ok) loadUsers();
   else {
     const err = await res.json().catch(() => ({}));
@@ -1233,7 +1217,7 @@ async function deleteUser(id, name) {
 async function resetAnalytics() {
   if (!confirm('Clear all analytics data? This cannot be undone.')) return;
   try {
-    const res = await fetch(`/api/admin/analytics?token=${ADMIN_TOKEN}`, { method: 'DELETE' });
+    const res = await fetch(`/api/admin/analytics`, { method: 'DELETE' });
     if (res.ok) {
       _analyticsLoaded = false;
       loadAnalytics();
@@ -1243,7 +1227,7 @@ async function resetAnalytics() {
 
 async function loadAnalytics() {
   try {
-    const res = await fetch(`/api/admin/analytics?token=${ADMIN_TOKEN}`);
+    const res = await fetch(`/api/admin/analytics`);
     if (!res.ok) throw new Error('Failed');
     const d = await res.json();
     _analyticsLoaded = true;
@@ -1408,7 +1392,7 @@ async function loadNetwork() {
   document.getElementById('network-loading').style.display = '';
   document.getElementById('network-loading').textContent = 'Loading…';
   try {
-    const res = await fetch(`/api/admin/network?token=${ADMIN_TOKEN}`);
+    const res = await fetch(`/api/admin/network`);
     if (!res.ok) { showError('Failed to load network'); return; }
     _network = await res.json();
     _networkLoaded = true;
@@ -1573,7 +1557,7 @@ function netFit() { if (_netInstance) _netInstance.fit({ animation: { duration: 
 // ── Waitlist ─────────────────────────────────────────────────────────────
 async function loadWaitlist() {
   document.getElementById('wl-rows').innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
-  const res = await fetch(`/api/admin/waitlist?token=${ADMIN_TOKEN}`);
+  const res = await fetch(`/api/admin/waitlist`);
   if (!res.ok) { showError('Failed to load waitlist'); return; }
   const { waitlist } = await res.json();
   _wl = waitlist;
@@ -1609,7 +1593,7 @@ function renderWaitlist() {
 
 async function approveWaitlist(id, email) {
   if (!confirm(`Approve ${email}? They'll receive an access email.`)) return;
-  const res = await fetch(`/api/admin/waitlist/${id}/approve?token=${ADMIN_TOKEN}`, { method: 'PUT' });
+  const res = await fetch(`/api/admin/waitlist/${id}/approve`, { method: 'PUT' });
   if (res.ok) {
     loadWaitlist();
   } else {
@@ -1629,7 +1613,7 @@ function setOutreachStatus(msg, isError) {
 
 async function loadOutreach() {
   document.getElementById('outreach-rows').innerHTML = '<tr><td colspan="8" class="empty">Loading…</td></tr>';
-  const res = await fetch(`/api/admin/outreach/users?token=${ADMIN_TOKEN}`);
+  const res = await fetch(`/api/admin/outreach/users`);
   if (!res.ok) { showError('Failed to load outreach users'); return; }
   const { users } = await res.json();
   _outreach = users;
@@ -1672,7 +1656,7 @@ async function previewOutreach(userId) {
   const body    = document.getElementById('outreach-body').value;
   if (!subject || !body) { showError('Subject and body required'); return; }
 
-  const res = await fetch(`/api/admin/outreach/preview?token=${ADMIN_TOKEN}`, {
+  const res = await fetch(`/api/admin/outreach/preview`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId, subject, body })
@@ -1695,7 +1679,7 @@ function closeOutreachPreview() {
 async function doSendOutreach(userId, subject, body) {
   const sendBtn = document.getElementById('prev-send-btn');
   sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
-  const res = await fetch(`/api/admin/outreach/send?token=${ADMIN_TOKEN}`, {
+  const res = await fetch(`/api/admin/outreach/send`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId, subject, body })
@@ -1716,7 +1700,7 @@ async function sendOutreachTest() {
   const body    = document.getElementById('outreach-body').value;
   if (!subject || !body) { showError('Subject and body required'); return; }
   setOutreachStatus('Sending test…', false);
-  const res = await fetch(`/api/admin/outreach/send-test?token=${ADMIN_TOKEN}`, {
+  const res = await fetch(`/api/admin/outreach/send-test`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ subject, body })

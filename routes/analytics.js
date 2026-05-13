@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { db, q } = require('../db');
-const { timingSafeEq } = require('../utils/secrets');
+const { requireAdmin } = require('./admin');
 
 // POST /api/sa - lightweight event ingestion (no auth required for match flow)
 router.post('/sa', (req, res) => {
@@ -29,9 +29,7 @@ router.post('/sa', (req, res) => {
 
 // GET /api/admin/analytics - campaign funnel dashboard data
 router.get('/admin/analytics', (req, res) => {
-  const adminToken = process.env.ADMIN_TOKEN;
-  // Header-only — see comment in routes/admin.js requireAdmin
-  if (!adminToken || !timingSafeEq(req.headers['x-admin-token'], adminToken)) return res.status(403).end();
+  if (!requireAdmin(req, res)) return;
 
   // 1. Match funnel by utm_content (which hook works)
   const funnel = db.prepare(`
@@ -232,9 +230,7 @@ router.get('/admin/analytics', (req, res) => {
 
 // DELETE /api/admin/analytics - archive then reset analytics data
 router.delete('/admin/analytics', (req, res) => {
-  const adminToken = process.env.ADMIN_TOKEN;
-  // Header-only — see comment in routes/admin.js requireAdmin
-  if (!adminToken || !timingSafeEq(req.headers['x-admin-token'], adminToken)) return res.status(403).end();
+  if (!requireAdmin(req, res)) return;
 
   // Copy everything to permanent archive before clearing
   db.prepare(`
