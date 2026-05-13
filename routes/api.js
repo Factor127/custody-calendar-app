@@ -770,6 +770,23 @@ router.post('/suggestions/:id/approve', (req, res) => {
   res.json({ status: 'approved', applied: changes.length });
 });
 
+// POST /api/suggestions/:id/cancel - sender withdraws their own pending suggestion.
+// DELETEs the row outright; the suggestions.status CHECK constraint doesn't
+// permit 'cancelled' and adding it would need a migration, but a cancelled
+// proposal has no audit value worth keeping anyway.
+router.post('/suggestions/:id/cancel', (req, res) => {
+  const me = requireToken(req, res);
+  if (!me) return;
+
+  const s = q.getSuggestionById.get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Suggestion not found' });
+  if (s.from_user_id !== me.id) return res.status(403).json({ error: 'Not your suggestion to cancel' });
+  if (s.status !== 'pending') return res.status(409).json({ error: 'Suggestion already handled' });
+
+  q.deletePendingSuggestionFromSender.run(s.id, me.id);
+  res.json({ ok: true });
+});
+
 // POST /api/suggestions/:id/reject - recipient declines suggestion
 router.post('/suggestions/:id/reject', (req, res) => {
   const me = requireToken(req, res);

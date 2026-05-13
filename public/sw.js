@@ -2,7 +2,7 @@
 // Phase 1: Offline shell + static asset caching
 // Phase 2: Push notification handling (added below)
 
-const CACHE_VERSION = 'spontany-v31';
+const CACHE_VERSION = 'spontany-v32';
 const STATIC_ASSETS = [
   '/styles.css',
   '/logo.svg',

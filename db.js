@@ -802,6 +802,9 @@ const q = {
     WHERE from_user_id = ? AND status = 'pending'
     ORDER BY created_at DESC
   `),
+  deletePendingSuggestionFromSender: db.prepare(
+    "DELETE FROM suggestions WHERE id = ? AND from_user_id = ? AND status = 'pending'"
+  ),
   updateSuggestionStatus: db.prepare("UPDATE suggestions SET status = ? WHERE id = ?"),
 
   // Activities

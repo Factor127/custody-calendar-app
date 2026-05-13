@@ -3071,7 +3071,8 @@ let partnerConn = null;    // approved PARTNER-type connection
 let coparentConn = null;   // approved COPARENT-type connection
 let pendingConnections = [];
 let pendingSuggestions = [];
-let proposedPendingDates = new Set();
+let proposedPendingByDate = new Map();
+let incomingPendingByDate = new Map();
 
 // Calendar data
 let calendarDays = {};        // my days: date -> {owner, tags}
@@ -3633,14 +3634,20 @@ async function loadConnections() {
   if (suggRes.ok) {
     const sData = await suggRes.json();
     pendingSuggestions = sData.suggestions || [];
+    incomingPendingByDate = new Map();
+    for (const s of pendingSuggestions) {
+      for (const c of (s.changes || [])) {
+        if (c.date) incomingPendingByDate.set(c.date, s);
+      }
+    }
   }
 
   if (sentRes.ok) {
     const sentData = await sentRes.json();
-    proposedPendingDates = new Set();
+    proposedPendingByDate = new Map();
     for (const s of (sentData.suggestions || [])) {
       for (const c of (s.changes || [])) {
-        if (c.date) proposedPendingDates.add(c.date);
+        if (c.date) proposedPendingByDate.set(c.date, s);
       }
     }
     renderCalendar();
@@ -4004,7 +4011,7 @@ function renderCalendar() {
       owner === 'self' ? 'r' : (owner === 'coparent' ? 'z' : ''),
       isToday ? 'today' : '',
       (owner === 'coparent' && withinWin && pDay && pDay.owner === 'coparent') ? 'bothfree' : '',
-      proposedPendingDates.has(dateStr) ? 'suggest-awaiting' : ''
+      (proposedPendingByDate.has(dateStr) || incomingPendingByDate.has(dateStr)) ? 'suggest-awaiting' : ''
     ].filter(Boolean).join(' ');
 
     const tagHtml = tags.map(t => `<span class="tag">${t}</span>`).join(' ');
@@ -4309,6 +4316,37 @@ function _renderIdeaPeople(connectionIds) {
 function renderDaySheetBody(dateStr, isFree, alsoFree, dayPlans = [], dayIdeas = []) {
   const dayOutings = (outingsByDate[dateStr] || []).filter(o => o.status !== 'cancelled');
   let html = '';
+
+  // Pending custody-change card — shown for both sides while a proposed
+  // schedule change is awaiting approval. Recipient gets a Review button
+  // that opens the existing approve/decline panel.
+  const incomingSugg = incomingPendingByDate.get(dateStr);
+  const outgoingSugg = proposedPendingByDate.get(dateStr);
+  if (incomingSugg) {
+    const dayCount = (incomingSugg.changes || []).length;
+    const moreNote = dayCount > 1 ? ` · part of a ${dayCount}-day proposal` : '';
+    html += `<div class="dss-heading">Pending change</div>
+      <div class="day-plan-card is-pending" style="cursor:pointer;" onclick="reviewSuggestionFromDaySheet('${incomingSugg.id}')">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+          <span class="dpc-title">📅 ${incomingSugg.from_name} proposed a schedule change</span>
+          <span class="dpc-status pending">Action needed</span>
+        </div>
+        <div class="dpc-meta">Tap to review and approve or decline${moreNote}</div>
+      </div>`;
+  } else if (outgoingSugg) {
+    const dayCount = (outgoingSugg.changes || []).length;
+    const moreNote = dayCount > 1 ? ` (cancels the whole ${dayCount}-day proposal)` : '';
+    html += `<div class="dss-heading">Pending change</div>
+      <div class="day-plan-card" style="opacity:0.9;">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+          <span class="dpc-title">📅 Awaiting co-parent's approval</span>
+        </div>
+        <div class="dpc-meta">You proposed a change on this day. Waiting for them to approve.</div>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="cancelMySuggestion('${outgoingSugg.id}', ${dayCount})">Cancel suggestion${moreNote}</button>
+        </div>
+      </div>`;
+  }
 
   // Free-together banner
   if (isFree && alsoFree.length) {
@@ -6100,7 +6138,17 @@ async function submitSuggestion() {
 
   if (res.ok) {
     // Capture before cancelSuggest() clears suggestedChanges + re-renders.
-    Object.keys(suggestedChanges).forEach(d => proposedPendingDates.add(d));
+    // Build a client-side suggestion entry so the outgoing card can show
+    // day count and the Cancel button has a real id to act on.
+    const resData = await res.json().catch(() => ({}));
+    const newSugg = {
+      id:         resData.id,
+      changes:    changes,
+      created_at: new Date().toISOString()
+    };
+    for (const c of changes) {
+      if (c.date) proposedPendingByDate.set(c.date, newSugg);
+    }
     const finalNote = document.getElementById('suggest-note')?.value.trim() || suggestReason;
     cancelSuggest();
     showToast(`✓ Suggestion sent (${count} day${count > 1 ? 's' : ''})`);
@@ -6534,6 +6582,40 @@ async function copyIcalUrl() {
 }
 
 // ── Suggestions ───────────────────────────────────────────────────────────
+// Called from the day-sheet "Pending change" card. Closes the sheet first so
+// the suggestion-panel isn't stacked on top — the panel handles its own
+// dismiss and the day-sheet would be stale (showing the now-resolved card)
+// after approve/decline anyway.
+function reviewSuggestionFromDaySheet(suggId) {
+  _daySheetUiClose();
+  openSuggestionModal(suggId);
+}
+
+async function cancelMySuggestion(suggId, dayCount) {
+  const prompt = dayCount > 1
+    ? `Cancel this suggestion? All ${dayCount} proposed days will be withdrawn.`
+    : 'Cancel this suggestion?';
+  if (!confirm(prompt)) return;
+
+  const res = await fetch(`/api/suggestions/${suggId}/cancel?token=${MY_TOKEN}`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) {
+    showToast('Could not cancel — try again');
+    return;
+  }
+
+  // Drop every date this suggestion covered, not just the one tapped.
+  for (const [date, s] of Array.from(proposedPendingByDate.entries())) {
+    if (s.id === suggId) proposedPendingByDate.delete(date);
+  }
+  _daySheetUiClose();
+  renderCalendar();
+  showToast('Suggestion cancelled');
+  loadConnections();
+}
+
 function openSuggestionModal(suggId) {
   const s = pendingSuggestions.find(x => x.id === suggId);
   if (!s) return;
