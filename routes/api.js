@@ -680,6 +680,27 @@ router.post('/suggestions', (req, res) => {
 
   const id = uuidv4();
   q.createSuggestion.run(id, me.id, toUserId, JSON.stringify(changes), note || null);
+
+  // Notify recipient (push + SMS). The previous version only wrote the row
+  // and returned, so the co-parent had no idea a suggestion was waiting.
+  const count = changes.length;
+  const dayWord = count === 1 ? 'day' : 'days';
+  const trimmedNote = note ? String(note).trim().slice(0, 80) : '';
+  const notePushSuffix = trimmedNote ? ` — "${trimmedNote}"` : '';
+
+  sendPush(toUserId, {
+    title: `${me.name} proposed a schedule change`,
+    body:  `${count} ${dayWord} — tap to review${notePushSuffix}`,
+    tag:   `suggestion-${id}`,
+    url:   '/calendar.html',
+  });
+
+  sendSMSToUser(
+    toUserId,
+    `${me.name} proposed a schedule change on Spontany (${count} ${dayWord}). Open the app to review.`,
+    { event: 'suggestion-new' }
+  );
+
   res.json({ id, status: 'pending' });
 });
 
